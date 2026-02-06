@@ -2,8 +2,8 @@
  * Small Modulus NTT implementation for cuFHE
  * Host-side initialization functions
  *
- * Modulus: P = 625 * 2^20 + 1 = 655360001 (~29.3 bits)
- * P - 1 = 2^20 * 625 = 2^20 * 5^4 (prime factors: 2, 5)
+ * Modulus: P = 1048571 * 2^11 + 1 = 2147473409 (~31.0 bits)
+ * P - 1 = 2^11 * 1048571 (prime factors: 2, 1048571)
  */
 
 #include <include/ntt_gpu/ntt_small_modulus.cuh>
@@ -61,29 +61,29 @@ uint32_t mod_mult(uint32_t a, uint32_t b, uint32_t mod) {
  * For negacyclic convolution, we need psi where psi^N = -1 (mod P)
  * which means psi^(2N) = 1 (mod P) but psi^k != 1 for k < 2N
  *
- * For P = 655360001:
- * P - 1 = 655360000 = 2^20 * 625 = 2^20 * 5^4
+ * For P = 2147473409:
+ * P - 1 = 2147473408 = 2^11 * 1048571
  *
- * Since 2^20 divides (P-1), we have primitive 2^20-th roots of unity
- * For N = 1024 = 2^10, we need 2N = 2048 = 2^11, which divides 2^20
+ * Since 2^11 divides (P-1), we have primitive 2^11-th roots of unity
+ * For N = 1024 = 2^10, we need 2N = 2048 = 2^11, which divides 2^11
  *
  * The primitive (P-1)-th root is found by:
  * g = generator of Z_P^*
  * Then psi_k = g^((P-1)/k) is a primitive k-th root of unity
  */
 uint32_t find_primitive_root(int log_n) {
-    constexpr uint32_t P = small_ntt::P;  // 655360001
-    constexpr uint32_t P_minus_1 = P - 1; // 655360000 = 2^20 * 5^4
+    constexpr uint32_t P = small_ntt::P;  // 2147473409
+    constexpr uint32_t P_minus_1 = P - 1; // 2147473408 = 2^11 * 1048571
 
     // For N = 2^log_n, we need primitive 2^(log_n+1)-th root of unity
     uint32_t two_n = 1U << (log_n + 1);
 
     // First, find a generator g of Z_P^*
-    // P - 1 = 2^20 * 5^4, so we need g where g^((P-1)/2) != 1 and g^((P-1)/5) != 1
+    // P - 1 = 2^11 * 1048571, so we need g where g^((P-1)/q) != 1 for each prime factor q
     uint32_t g = 3;  // Common generator candidate
 
     // Verify g is a generator by checking g^((P-1)/q) != 1 for prime divisors q of P-1
-    // Prime divisors of P-1: 2 and 5
+    // Prime divisors of P-1: 2 and 1048571
     while (true) {
         bool is_generator = true;
 
@@ -91,8 +91,8 @@ uint32_t find_primitive_root(int log_n) {
         if (mod_exp(g, P_minus_1 / 2, P) == 1) {
             is_generator = false;
         }
-        // Check g^((P-1)/5) != 1
-        if (mod_exp(g, P_minus_1 / 5, P) == 1) {
+        // Check g^((P-1)/1048571) != 1
+        if (mod_exp(g, P_minus_1 / 1048571, P) == 1) {
             is_generator = false;
         }
 

@@ -8,14 +8,12 @@
  * This is more efficient than the 64-bit modulus approach for certain use cases
  * as it allows working with smaller integers.
  *
- * Current modulus: P = 625 * 2^20 + 1 = 655360001 (~29.3 bits)
- * - Compatible with TFHEpp RAINTT implementation
+ * Current modulus: P = 1048571 * 2^11 + 1 = 2147473409 (~31.0 bits)
+ * - Chosen as the largest NTT-friendly prime below 2^31, giving maximum
+ *   precision while keeping 32-bit modular add/sub overflow-free
+ * - P < 2^31 ensures a + b < 2P < 2^32 for any a, b in [0, P)
  * - Has 2048th primitive root of unity (required for N=1024 NTT)
- *
- * Note: A larger modulus P = 1433 * 2^21 + 1 = 3005218817 (~31.5 bits) could
- * provide better precision while still satisfying 2*P^2 < 2^64 for safe
- * Montgomery reduction. This would require updating the primitive root
- * calculation (prime factors change from {2,5} to {2,1433}).
+ * - Satisfies 2*P^2 < 2^64 for safe 64-bit Montgomery reduction
  */
 
 #pragma once
@@ -35,14 +33,14 @@ namespace cufhe {
 namespace small_ntt {
 
 // NTT parameters - optimized for GPU
-// P = K * 2^20 + 1 = 655360001 (~29.3 bits) - original RAINTT modulus
-// Larger modulus (31.5 bits) available: K=1433, SHIFTAMOUNT=21 -> P=3005218817
-constexpr uint32_t K = 625;
-constexpr uint32_t SHIFTAMOUNT = 20;
+// P = K * 2^11 + 1 = 2147473409 (~31.0 bits)
+// Largest NTT-friendly prime below 2^31 for overflow-free 32-bit add/sub
+constexpr uint32_t K = 1048571;
+constexpr uint32_t SHIFTAMOUNT = 11;
 constexpr uint32_t WORDBITS = 32;     // Using 32-bit arithmetic on GPU
 
-// NTT modulus: P = K * 2^shiftamount + 1 = 655360001
-constexpr uint32_t P = (K << SHIFTAMOUNT) + 1;  // 655360001
+// NTT modulus: P = K * 2^shiftamount + 1 = 2147473409
+constexpr uint32_t P = (K << SHIFTAMOUNT) + 1;  // 2147473409
 
 // Verify safety constraint at compile time: 2*P^2 < 2^64
 // P must be less than sqrt(2^63) ≈ 3.03 billion for safe 64-bit Montgomery reduction
@@ -52,11 +50,11 @@ static_assert(P < 3037000500ULL, "Modulus too large for safe Montgomery reductio
 constexpr uint32_t MODULUS_BITS = 32;
 constexpr uint64_t BARRETT_MU = (1ULL << 60) / P;  // Pre-computed for 64-bit intermediate
 
-// Montgomery constant: R = 2^32 mod P = 1289748479
+// Montgomery constant: R = 2^32 mod P
 constexpr uint64_t R_TEMP = (1ULL << 32) % P;
 constexpr uint32_t R = static_cast<uint32_t>(R_TEMP);
 
-// R^2 mod P for Montgomery domain conversion = 295825756
+// R^2 mod P for Montgomery domain conversion
 constexpr uint64_t R2_TEMP = (static_cast<uint64_t>(R) * R) % P;
 constexpr uint32_t R2 = static_cast<uint32_t>(R2_TEMP);
 
@@ -318,7 +316,7 @@ extern std::vector<SmallNTTParams> g_small_ntt_params;
 
 /**
  * Small Modulus NTT Handler for cuFHE
- * Uses P = 655360001 (~2^29.3) instead of ~2^60
+ * Uses P = 2147473409 (~2^31.0) instead of ~2^60
  *
  * Key difference from large modulus approach:
  * - Before NTT: Convert Torus32 to NTT modulus via modulus switching
