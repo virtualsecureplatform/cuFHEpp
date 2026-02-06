@@ -523,7 +523,10 @@ public:
 #endif // __CUDACC__
 };
 
-// Alias to provide unified interface with large modulus handler
+// Thread configuration for NTT
+// N/2 threads, each handles 2 elements (e.g., 512 threads for N=1024)
+constexpr uint32_t NTT_THREAD_UNITBIT = 1;
+
 template <uint32_t length = TFHEpp::lvl1param::n>
 using CuNTTHandler = CuSmallNTTHandler<length>;
 

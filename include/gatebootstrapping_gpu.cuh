@@ -3,7 +3,6 @@
 #include <include/cufhe_gpu.cuh>
 #include <include/details/error_gpu.cuh>
 #include <include/details/utils_gpu.cuh>
-#include <include/ntt_gpu/ntt_gpuntt.cuh>
 #include <include/ntt_gpu/ntt_small_modulus.cuh>
 
 namespace cufhe{

@@ -24,8 +24,6 @@
 
 #include <params.hpp>
 
-#include "details/allocator_gpu.cuh"
-#include "ntt_gpu/ntt_gpuntt.cuh"
 #include "ntt_gpu/ntt_small_modulus.cuh"
 
 namespace cufhe {

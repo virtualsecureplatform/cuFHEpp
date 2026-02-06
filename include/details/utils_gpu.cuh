@@ -26,15 +26,7 @@
 
 namespace cufhe {
 
-__device__ inline
-uint32_t ThisBlockRankInGrid() {
-  return blockIdx.x + gridDim.x * (blockIdx.y + gridDim.y * blockIdx.z);
-}
-
-__device__ inline
-uint32_t ThisGridSize() {
-  return gridDim.x * gridDim.y * gridDim.z;
-}
+#ifdef __CUDACC__
 
 __device__ inline
 uint32_t ThisThreadRankInBlock() {
@@ -46,19 +38,6 @@ uint32_t ThisBlockSize() {
   return blockDim.x * blockDim.y * blockDim.z;
 }
 
-template <uint32_t dim_x, uint32_t dim_y, uint32_t dim_z>
-__device__ inline
-void Index3DFrom1D(uint3& t3d, uint32_t t1d) {
-  t3d.x = t1d % dim_x;
-  t1d /= dim_x;
-  t3d.y = t1d % dim_y;
-  t3d.z = t1d / dim_y;
-}
-
-template <uint32_t dim_x, uint32_t dim_y, uint32_t dim_z>
-__device__ inline
-uint3 Index1DFrom3D(uint32_t& t1d, uint3 t3d) {
-  t1d = t3d.x + dim_x * (t3d.y + dim_y * t3d.z);
-}
+#endif // __CUDACC__
 
 } // namespace cufhe
