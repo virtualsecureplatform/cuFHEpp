@@ -1,45 +1,36 @@
-# cuFHE
-CUDA-accelerated Torus Fully Homomorphic Encryption Library. This fork is maintained as a sub project of Virtual Secure Platform. 
-This includes some bug fixes and performance improvement. 
-
-v1.0_beta -- release on Mar/14/2018 original [cuFHE](https://github.com/vernamlab/cuFHE)
-
-v1 -- kvsp v29 compatible version.
-
-v2 -- refactored & reduced shared memory usage (depends on [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) for parameter set select, runnable on old GPUs like GTX 1060Ti but slow)
-
-v3 -- l parallel NTT & fixed shared memory read before write bug by adding __syncthreads(). v3 API is the same as v2.
-
-v4 -- release before Eval Key support.
+# cuFHEpp
+CUDA-accelerated Fully Homomorphic Encryption over the Torus Library.  
+This includes some bug fixes and performance improvements. 
 
 # Citation 
 We provide the BibTeX for citing this library, but since this is a forked version, we recommend that you also cite the original. 
 
-@MISC{vsp-cufhe,
-  title        = "Forked {cuFHE}",
-  author       = "Matsuoka, Kotaro and Matsumoto, Naoki",
-  year         =  2020,
-  howpublished = "\url{https://github.com/virtualsecureplatform/cuFHE}"
+@misc{cufhepp,
+  title        = "cuFHEpp: CUDA implementation of TFHE",
+  author       = "Matsuoka, Kotaro",
+  year         =  2026,
+  howpublished = "\url{https://github.com/virtualsecureplatform/cuFHEpp}"
 }
 
 
-## What is cuFHE?
-The cuFHE library is an open-source library for Fully Homomorphic Encryption (FHE) on CUDA-enabled GPUs. It implements the TFHE scheme [CGGI16][CGGI17] proposed by Chillotti et al. in CUDA C++. Compared to the [TFHE lib](https://github.com/tfhe/tfhe) which reports the fastest gate-by-gate bootstrapping performance on CPUs, the cuFHE library yields almost same performance per SM. Since GPU has a lot of SMs (128 in A100), cuFHE gives better performace if there are enough number of parallely evaluable tasks. The cuFHE library benefits greatly from an improved CUDA implementation of the number-theoretic transform (NTT) proposed in the [cuHE library](https://github.com/vernamlab/cuHE) [Dai15] by Dai and Sunar.
+## What is cuFHEpp?
+The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (FHE) on CUDA-enabled GPUs. It implements the TFHE scheme [CGGI16][CGGI17] proposed by Chillotti et al. in CUDA C++. Compared to the [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp), which reports the fastest gate-by-gate bootstrapping performance on CPUs, the cuFHEpp library yields almost the same performance per SM. Since the GPU has many SMs (128 in the A100), cuFHEpp delivers better performance when there are enough parallelizable tasks. The cuFHEpp library benefits greatly from an improved CUDA implementation of the number-theoretic transform (NTT), [GPU-NTT](https://github.com/Alisah-Ozcan/GPU-NTT).
 
-| [TFHE lib](https://github.com/tfhe/tfhe) | cuFHE |
+| [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) | cuFHE |
 |---|---|
 | 10 ms | 13 ms |
 
 ### System Requirements
-**The library has been tested on Ubuntu Desktop 20.04 & NVIDIA A100 only.**
+**The library has been tested on Ubuntu Desktop 24.04 & NVIDIA A100 only.**
 GPU support requires NVIDIA Driver and NVIDIA CUDA Toolkit.
 
 ### Installation (Linux)
-Do the standard CMake compulation process.
+Do the standard CMake compilation process.
 ```
-cd cufhe
-mkdir build
-cmake .. -DENABLE_TEST=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+cd cufhepp
+cmake -B build -DENABLE_TEST=ON
+cd build
+make
 ```
 
 ### User Manual
@@ -84,15 +75,7 @@ CleanUp(); // for GPU library
 
 Currently implemented gates are `And, AndNY, AndYN, Or, OrNY, OrYN Nand, Nor, Xor, Xnor, Not, Mux, Copy`.
 
-## Acknowledgement
-- We appreciate any bug reports or compiling issues.
-- Dai and Sunar’s work was in part provided by the US National Science Foundation CNS Award #1319130 and #1561536.
-- From the original authors: We gratefully acknowledge the support of NVIDIA Corporation with the donation of the Titan X Pascal GPU used for this research.
-- From VSP team :  We gratefully acknowledge the support of Sakura Internet Inc. for lending us their cloud computing service equipped with one V100 free of charge for most of the development period of v1.
-
 ## Reference
 [CGGI16]: Chillotti, I., Gama, N., Georgieva, M., & Izabachene, M. (2016, December). Faster fully homomorphic encryption: Bootstrapping in less than 0.1 seconds. In International Conference on the Theory and Application of Cryptology and Information Security (pp. 3-33). Springer, Berlin, Heidelberg.
 
 [CGGI17]: Chillotti, I., Gama, N., Georgieva, M., & Izabachène, M. (2017, December). Faster Packed Homomorphic Operations and Efficient Circuit Bootstrapping for TFHE. In International Conference on the Theory and Application of Cryptology and Information Security (pp. 377-408). Springer, Cham.
-
-[Dai15]: Dai, W., & Sunar, B. (2015, September). cuHE: A homomorphic encryption accelerator library. In International Conference on Cryptography and Information Security in the Balkans (pp. 169-186). Springer, Cham.
