@@ -4,7 +4,6 @@ add_library(cufhe_gpu
     cufhe_gates_gpu.cu
     cufhe_gpu.cu
     keyswitch_gpu.cu
-    details/allocator_gpu.cu
     ntt_gpu/ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
     )
 

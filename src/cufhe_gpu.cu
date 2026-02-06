@@ -25,7 +25,6 @@
 #include <cuda_runtime.h>
 
 #include <include/cufhe_gpu.cuh>
-#include <include/details/allocator_gpu.cuh>
 
 namespace cufhe {
 
