@@ -2,8 +2,8 @@
 
 
 #include <include/cufhe_gpu.cuh>
-#include <include/details/error_gpu.cuh>
-#include <include/details/utils_gpu.cuh>
+#include <include/error_gpu.cuh>
+#include <include/utils_gpu.cuh>
 
 namespace cufhe{
 

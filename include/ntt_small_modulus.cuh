@@ -22,7 +22,7 @@
 #include <cstdint>
 #include <vector>
 #include <params.hpp>
-#include <include/details/utils_gpu.cuh>
+#include <include/utils_gpu.cuh>
 
 namespace cufhe {
 

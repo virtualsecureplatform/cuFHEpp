@@ -24,7 +24,7 @@
 
 #include <params.hpp>
 
-#include "ntt_gpu/ntt_small_modulus.cuh"
+#include "ntt_small_modulus.cuh"
 
 namespace cufhe {
 

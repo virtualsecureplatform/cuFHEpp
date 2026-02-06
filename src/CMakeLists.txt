@@ -4,7 +4,7 @@ add_library(cufhe_gpu
     cufhe_gates_gpu.cu
     cufhe_gpu.cu
     keyswitch_gpu.cu
-    ntt_gpu/ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
+    ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
     )
 
 target_link_libraries(cufhe_gpu PUBLIC ntt)  # GPU-NTT library

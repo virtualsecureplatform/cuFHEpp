@@ -6,8 +6,8 @@
  * P - 1 = 2^11 * 1048571 (prime factors: 2, 1048571)
  */
 
-#include <include/ntt_gpu/ntt_small_modulus.cuh>
-#include <include/details/error_gpu.cuh>
+#include <include/ntt_small_modulus.cuh>
+#include <include/error_gpu.cuh>
 #include <cmath>
 #include <vector>
 #include <stdexcept>
