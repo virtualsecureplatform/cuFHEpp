@@ -14,6 +14,10 @@
 
 namespace cufhe {
 
+// Define constant memory for NTT root tables
+__constant__ uint32_t d_const_forward_root[1024];
+__constant__ uint32_t d_const_inverse_root[1024];
+
 // Host-side storage for small NTT parameters per GPU
 std::vector<SmallNTTParams> g_small_ntt_params;
 
@@ -221,6 +225,12 @@ void CuSmallNTTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
                               sizeof(uint32_t) * kLength, cudaMemcpyHostToDevice));
         CuSafeCall(cudaMemcpy(params.inverse_root, g_small_inverse_table.data(),
                               sizeof(uint32_t) * kLength, cudaMemcpyHostToDevice));
+
+        // Also copy root tables to constant memory for this device
+        CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root, g_small_forward_table.data(),
+                                      sizeof(uint32_t) * kLength));
+        CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root, g_small_inverse_table.data(),
+                                      sizeof(uint32_t) * kLength));
 
         params.n_inverse = g_small_n_inverse;
         params.initialized = true;

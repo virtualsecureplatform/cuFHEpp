@@ -145,7 +145,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
                     // Accumulate into each output component
                     #pragma unroll
                     for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
-                        NTTValue bk_val = tgsw_ntt[(((P::targetP::k + 1) * digit_linear + out_k) << P::targetP::nbit) + i];
+                        NTTValue bk_val = __ldg(&tgsw_ntt[(((P::targetP::k + 1) * digit_linear + out_k) << P::targetP::nbit) + i]);
                         sh_accum[out_k * N + i] = small_mod_add(sh_accum[out_k * N + i], small_mod_mult(ntt_val, bk_val));
                     }
                 }
@@ -155,18 +155,13 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
     }
 
     // Step 4: Inverse NTT on accumulated results and add to trlwe
+    // Operate directly on sh_accum to avoid copying to sh_work
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-        // Copy accumulated data to work buffer
-        if (tid < NUM_THREADS) {
-            sh_work[tid] = sh_accum[k_idx * N + tid];
-            sh_work[tid + NUM_THREADS] = sh_accum[k_idx * N + tid + NUM_THREADS];
-        }
-        __syncthreads();
-
-        // Inverse NTT
+        // Inverse NTT directly on the accumulator buffer
+        NTTValue* const sh_ntt_buf = &sh_accum[k_idx * N];
         if (tid < NUM_THREADS) {
             if constexpr (N == 1024) {
-                SmallInverseNTT32_1024(sh_work, ntt.inverse_root_, ntt.n_inverse_, tid);
+                SmallInverseNTT32_1024(sh_ntt_buf, ntt.inverse_root_, ntt.n_inverse_, tid);
             }
         } else {
             for (int s = 0; s < 6; s++) __syncthreads();
@@ -178,9 +173,8 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
             #pragma unroll
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
-                uint32_t val = sh_work[i];
+                uint32_t val = sh_ntt_buf[i];
                 int32_t signed_val = (val > half_mod) ? static_cast<int32_t>(val - small_ntt::P) : static_cast<int32_t>(val);
-                // Modulus switch: convert from P discretization to 2^32
                 trlwe[k_idx * N + i] += ntt_mod_to_torus32(signed_val);
             }
         }

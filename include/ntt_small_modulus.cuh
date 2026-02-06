@@ -47,8 +47,10 @@ constexpr uint32_t P = (K << SHIFTAMOUNT) + 1;  // 2147473409
 static_assert(P < 3037000500ULL, "Modulus too large for safe Montgomery reduction");
 
 // Barrett reduction parameters for 32-bit modulus
+// k must be >= 2*ceil(log2(P)) = 62 for correct single-subtraction Barrett
 constexpr uint32_t MODULUS_BITS = 32;
-constexpr uint64_t BARRETT_MU = (1ULL << 60) / P;  // Pre-computed for 64-bit intermediate
+constexpr uint32_t BARRETT_K = 62;
+constexpr uint64_t BARRETT_MU = (1ULL << BARRETT_K) / P;  // Pre-computed for Barrett reduction
 
 // Montgomery constant: R = 2^32 mod P
 constexpr uint64_t R_TEMP = (1ULL << 32) % P;
@@ -103,6 +105,11 @@ public:
 
 #ifdef __CUDACC__
 
+// Constant memory for NTT root tables (4KB each, well within 64KB limit)
+// Enables broadcast caching when multiple threads access the same root
+extern __constant__ uint32_t d_const_forward_root[1024];
+extern __constant__ uint32_t d_const_inverse_root[1024];
+
 // Modular addition: (a + b) mod P
 __device__ __forceinline__ uint32_t small_mod_add(uint32_t a, uint32_t b) {
     uint32_t sum = a + b;
@@ -115,28 +122,24 @@ __device__ __forceinline__ uint32_t small_mod_sub(uint32_t a, uint32_t b) {
     return (diff >= small_ntt::P) ? (diff - small_ntt::P) : diff;
 }
 
-// Barrett multiplication: (a * b) mod P
-// Uses 64-bit intermediate, suitable for 32-bit modulus
-__device__ __forceinline__ uint32_t small_barrett_mult(uint32_t a, uint32_t b) {
+// Modular multiplication: (a * b) mod P
+// Uses Barrett reduction with k=62 for correct single-subtraction guarantee
+__device__ __forceinline__ uint32_t small_mod_mult(uint32_t a, uint32_t b) {
     constexpr uint32_t p = small_ntt::P;
+    constexpr uint64_t mu = small_ntt::BARRETT_MU;  // floor(2^62 / P), ~31 bits
 
     uint64_t z = static_cast<uint64_t>(a) * b;
 
-    // Barrett reduction: q = floor(z * mu / 2^60)
-    // We use the formula: result = z - q * P
-    uint64_t q = __umul64hi(z, small_ntt::BARRETT_MU);  // Approximate q
-    q = (z * small_ntt::BARRETT_MU) >> 60;
+    // Barrett reduction: q = floor(z * mu / 2^62)
+    // z < P^2 < 2^62, mu < 2^32, so z*mu < 2^94 (needs 128-bit)
+    uint64_t hi = __umul64hi(z, mu);
+    uint64_t lo = z * mu;
+    uint64_t q = (hi << 2) | (lo >> 62);
 
     uint32_t result = static_cast<uint32_t>(z - q * p);
 
-    // One conditional subtraction is enough
+    // With k=62 >= 2*31, Barrett guarantees result < 2P
     return (result >= p) ? (result - p) : result;
-}
-
-// Alternative: Simple modular multiplication with 64-bit intermediate
-__device__ __forceinline__ uint32_t small_mod_mult(uint32_t a, uint32_t b) {
-    uint64_t prod = static_cast<uint64_t>(a) * b;
-    return static_cast<uint32_t>(prod % small_ntt::P);
 }
 
 /**
@@ -147,11 +150,15 @@ __device__ __forceinline__ uint32_t small_mod_mult(uint32_t a, uint32_t b) {
  * This switches the discretization from Torus (mod 2^32) to NTT domain (mod P)
  */
 __device__ __forceinline__ uint32_t torus32_to_ntt_mod(uint32_t torus_val) {
-    constexpr uint64_t P = small_ntt::P;
+    constexpr uint32_t P32 = small_ntt::P;
 
     // res = (a * P + 2^31) >> 32  (rounding)
-    uint64_t temp = static_cast<uint64_t>(torus_val) * P + (1ULL << 31);
-    return static_cast<uint32_t>(temp >> 32);
+    // Use __umulhi for the high 32 bits of 32x32 multiply (single instruction)
+    uint32_t hi = __umulhi(torus_val, P32);
+    uint32_t lo = torus_val * P32;
+    // Add rounding: carry from (lo + 0x80000000) into hi
+    hi += (lo >= 0x80000000u);
+    return hi;
 }
 
 /**
@@ -212,11 +219,12 @@ __device__ __forceinline__ void SmallForwardNTT32_1024(
     int current_root_index;
 
     // First 4 stages need syncthreads
+    // Uses constant memory for root table (broadcast cache benefits stages 0-4)
     #pragma unroll
     for (int lp = 0; lp < 4; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit(sh[in_shared_address], sh[in_shared_address + t],
-                             root_table[current_root_index]);
+                             d_const_forward_root[current_root_index]);
 
         t = t >> 1;
         t_2 -= 1;
@@ -227,11 +235,12 @@ __device__ __forceinline__ void SmallForwardNTT32_1024(
     }
 
     // Last 6 stages - warp-local
+    // Uses __ldg for root table (texture cache handles scattered accesses better)
     #pragma unroll
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit(sh[in_shared_address], sh[in_shared_address + t],
-                             root_table[current_root_index]);
+                             __ldg(&root_table[current_root_index]));
 
         t = t >> 1;
         t_2 -= 1;
@@ -263,11 +272,12 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
     int current_root_index;
 
     // First 6 stages - warp-local
+    // Uses __ldg for root table (texture cache handles scattered accesses better)
     #pragma unroll
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallGentlemanSandeUnit(sh[in_shared_address], sh[in_shared_address + t],
-                                root_table[current_root_index]);
+                                __ldg(&root_table[current_root_index]));
 
         t = t << 1;
         t_2 += 1;
@@ -278,11 +288,12 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
     __syncthreads();
 
     // Last 4 stages - need sync
+    // Uses constant memory for root table (broadcast cache benefits these stages)
     #pragma unroll
     for (int lp = 0; lp < 4; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallGentlemanSandeUnit(sh[in_shared_address], sh[in_shared_address + t],
-                                root_table[current_root_index]);
+                                d_const_inverse_root[current_root_index]);
 
         t = t << 1;
         t_2 += 1;
