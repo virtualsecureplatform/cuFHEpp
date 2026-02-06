@@ -34,46 +34,66 @@ make
 ```
 
 ### User Manual
-Use files in `cufhe/test/` as examples. To summarize, follow the following function calling procedures.
+See files in `test/` as examples. The library uses [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) types for key generation, encryption, and decryption. cuFHEpp handles the GPU-accelerated gate evaluation.
+
 ```c++
-SetGPUNum(2); //Set number of gpu to use. Now use 2 GPU. If you do not specify GPU number, use only 1 GPU.
-SetSeed(); // init random generator seed
-PriKey pri_key;
-PubKey pub_key;
-KeyGen(pub_key, pri_key); // key generation
-// alternatively, write / read key files
-Ptxt pt[2];
-pt[0] = 0; // 0 or 1, single bit
-pt[1] = 1;
+#include <include/cufhe_gpu.cuh>
+using namespace cufhe;
 
-Ctxt ct[4];
-Encrypt(ct[0], pt[0], pri_key);
-Encrypt(ct[1], pt[1], pri_key);
-Encrypt(ct[2], pt[0], pri_key);
-Encrypt(ct[3], pt[1], pri_key);
+using P = TFHEpp::lvl1param;       // Parameter set for ciphertexts
+using brP = TFHEpp::lvl01param;    // Blind rotation parameters
+using iksP = TFHEpp::lvl10param;   // Key switching parameters
 
-Initialize(pub_key); // for GPU library
+// --- Key generation (TFHEpp) ---
+TFHEpp::SecretKey sk;
+TFHEpp::EvalKey ek(sk);
+ek.emplacebk<brP>(sk);    // Bootstrapping key
+ek.emplaceiksk<iksP>(sk); // Key switching key
 
-Stream stream_gpu_0(0); //Create Stream runs on GPU0
-stream_gpu_0.Create();
+// --- Encryption (TFHEpp) ---
+Ctxt<P> ct0, ct1, ct_out;
+TFHEpp::tlweSymEncrypt<P>(ct0.tlwehost, P::μ, sk.key.get<P>());   // Encrypt 1
+TFHEpp::tlweSymEncrypt<P>(ct1.tlwehost, -P::μ, sk.key.get<P>());  // Encrypt 0
 
-Stream stream_gpu_1(1); //Create Stream runs on GPU1
-stream_gpu_1.Create();
+// --- GPU initialization ---
+Initialize(ek);  // Upload keys to GPU
 
-Nand(ct[0], ct[0], ct[1], stream_gpu_0); //Run Nand on GPU0
-Nand(ct[2], ct[2], ct[3], stream_gpu_1); //Run Nand on GPU1
+Stream st;
+st.Create();
 
-Synchronize(); //Synchronize All GPU
+// --- Gate evaluation on GPU ---
+Nand<P>(ct_out, ct0, ct1, st);  // Homomorphic NAND gate
 
-Decrypt(pt[0], ct[0], pri_key);
+Synchronize();  // Wait for all GPU operations to complete
 
-stream_gpu_0.Destroy(); //Destroy Stream
-stream_gpu_1.Destory(); 
+// --- Decryption (TFHEpp) ---
+uint8_t result = TFHEpp::tlweSymDecrypt<P>(ct_out.tlwehost, sk.key.get<P>());
 
-CleanUp(); // for GPU library
+// --- Cleanup ---
+st.Destroy();
+CleanUp();
 ```
 
-Currently implemented gates are `And, AndNY, AndYN, Or, OrNY, OrYN Nand, Nor, Xor, Xnor, Not, Mux, Copy`.
+#### Multi-GPU
+```c++
+SetGPUNum(2);  // Use 2 GPUs (call before Initialize, default is 1)
+Initialize(ek);
+
+Stream st_gpu0(0);  // Stream on GPU 0
+Stream st_gpu1(1);  // Stream on GPU 1
+st_gpu0.Create();
+st_gpu1.Create();
+
+Nand<P>(ct0, ct0, ct1, st_gpu0);  // Run on GPU 0
+Nand<P>(ct2, ct2, ct3, st_gpu1);  // Run on GPU 1
+
+Synchronize();
+```
+
+#### Available Gates
+Binary: `And, AndNY, AndYN, Or, OrNY, OrYN, Nand, Nor, Xor, Xnor`
+Ternary: `Mux, NMux`
+Unary: `Not, Copy`
 
 ## Reference
 [CGGI16]: Chillotti, I., Gama, N., Georgieva, M., & Izabachene, M. (2016, December). Faster fully homomorphic encryption: Bootstrapping in less than 0.1 seconds. In International Conference on the Theory and Application of Cryptology and Information Security (pp. 3-33). Springer, Berlin, Heidelberg.
