@@ -32,19 +32,10 @@ namespace cufhe {
 //=============================================================================
 // Bootstrap Functions
 //
-// Implementation switches between two NTT approaches based on USE_SMALL_NTT_MODULUS:
-//
-// 1. Large modulus (default): ~2^60 modulus, exact integer arithmetic
-//    - NTT domain uses 64-bit FFP type
-//    - No modulus switching needed
-//    - BK storage: 8 bytes per NTT element
-//
-// 2. Small modulus (USE_SMALL_NTT_MODULUS): ~2^29 modulus (RAINTT-style)
-//    - NTT domain uses 32-bit uint32_t type
-//    - Torus discretization switching: 2^32 <-> NTT modulus P
-//    - BK storage: 4 bytes per NTT element (50% memory reduction)
-//
-// Set via CMake: -DUSE_SMALL_NTT_MODULUS=ON
+// Small modulus (~2^31) NTT with Torus discretization switching (RAINTT-style)
+// - NTT domain uses 32-bit uint32_t type
+// - Torus discretization switching: 2^32 <-> NTT modulus P
+// - BK storage: 4 bytes per NTT element
 //=============================================================================
 
 void InitializeNTThandlers(const int gpuNum);
@@ -53,13 +44,10 @@ void BootstrappingKeyToNTT(
     const TFHEpp::BootstrappingKey<P>& bk, const int gpuNum);
 void DeleteBootstrappingKeyNTT(const int gpuNum);
 
-// CMUX operations only available with large modulus
-#ifndef USE_SMALL_NTT_MODULUS
-void CMUXNTTkernel(TFHEpp::lvl1param::T* const res, const FFP* const cs,
+void CMUXNTTkernel(TFHEpp::lvl1param::T* const res, const NTTValue* const cs,
                    TFHEpp::lvl1param::T* const c1,
                    TFHEpp::lvl1param::T* const c0, cudaStream_t st,
                    const int gpuNum);
-#endif
 
 void Bootstrap(TFHEpp::lvl0param::T* const out, const TFHEpp::lvl0param::T* const in,
                const TFHEpp::lvl1param::T mu, const cudaStream_t st, const int gpuNum);

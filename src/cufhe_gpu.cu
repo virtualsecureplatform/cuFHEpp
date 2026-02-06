@@ -46,14 +46,24 @@ cuFHETRLWElvl1::~cuFHETRLWElvl1()
 
 cuFHETRGSWNTTlvl1::cuFHETRGSWNTTlvl1()
 {
-    ctxtInitialize<FFP, TFHEpp::TRGSWNTT<TFHEpp::lvl1param>>(trgswhost,
-                                                             trgswdevices);
+    // Device stores NTTValue (uint32_t), not the host TRGSWNTT type
+    constexpr size_t dev_size = kNumElements * sizeof(NTTValue);
+    trgswdevices.resize(_gpuNum);
+    for (int i = 0; i < _gpuNum; i++) {
+        cudaSetDevice(i);
+        cudaMalloc((void**)&trgswdevices[i], dev_size);
+    }
+    // Pin host memory for async transfers
+    cudaHostRegister(trgswhost.data(), sizeof(trgswhost), cudaHostRegisterDefault);
 }
 
 cuFHETRGSWNTTlvl1::~cuFHETRGSWNTTlvl1()
 {
-    ctxtDelete<FFP, TFHEpp::TRGSWNTT<TFHEpp::lvl1param>>(trgswhost,
-                                                         trgswdevices);
+    cudaHostUnregister(trgswhost.data());
+    for (int i = 0; i < _gpuNum; i++) {
+        cudaSetDevice(i);
+        cudaFree(trgswdevices[i]);
+    }
 }
 
 }  // namespace cufhe

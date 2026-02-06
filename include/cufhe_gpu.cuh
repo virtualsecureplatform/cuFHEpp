@@ -32,8 +32,6 @@
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
 
-// Use optimized HEonGPU-style NTT implementation
-#include "ntt_gpu/ntt_gpuntt.cuh"
 #include "bootstrap_gpu.cuh"
 
 #include <array>
@@ -134,8 +132,11 @@ struct cuFHETRLWElvl1 {
 };
 
 struct cuFHETRGSWNTTlvl1 {
+    static constexpr size_t kNumElements =
+        (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::l *
+        (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::n;
     TFHEpp::TRGSWNTT<TFHEpp::lvl1param> trgswhost;
-    std::vector<FFP*> trgswdevices;
+    std::vector<NTTValue*> trgswdevices;
     cuFHETRGSWNTTlvl1();
     ~cuFHETRGSWNTTlvl1();
 

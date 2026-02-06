@@ -1,13 +1,12 @@
-# Uses optimized HEonGPU-style NTT implementation (GPU-NTT library)
-# NTT implementation selected via USE_SMALL_NTT_MODULUS macro (CMake option)
+# Uses small modulus NTT with GPU-NTT library for NTT primitives
 add_library(cufhe_gpu
     bootstrap_gpu.cu
     cufhe_gates_gpu.cu
     cufhe_gpu.cu
     keyswitch_gpu.cu
     details/allocator_gpu.cu
-    ntt_gpu/ntt_gpuntt.cu         # Large modulus NTT (~2^60)
-    ntt_gpu/ntt_small_modulus.cu  # Small modulus NTT tables (~2^29)
+    ntt_gpu/ntt_gpuntt.cu         # GPU-NTT handler and NTT primitives
+    ntt_gpu/ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
     )
 
 target_link_libraries(cufhe_gpu PUBLIC ntt)  # GPU-NTT library

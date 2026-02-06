@@ -18,7 +18,7 @@ The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (
 
 | [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) | cuFHE |
 |---|---|
-| 10 ms | 13 ms |
+| 10 ms | 27 ms |
 
 ### System Requirements
 **The library has been tested on Ubuntu Desktop 24.04 & NVIDIA A100 only.**

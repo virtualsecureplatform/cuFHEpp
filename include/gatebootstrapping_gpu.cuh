@@ -51,54 +51,6 @@ __device__ inline void RotatedTestVector(typename P::T* tlwe,
     __syncthreads();
 }
 
-template<class P>
-__device__ inline void PolynomialMulByXaiMinusOneAndDecompositionTRLWE(
-    FFP* const dectrlwe, const typename P::T* const trlwe,
-    const uint32_t a_bar)
-{
-    const uint32_t tid = ThisThreadRankInBlock();
-    const uint32_t bdim = ThisBlockSize();
-    constexpr uint32_t decomp_mask = (1 << P::Bgbit) - 1;
-    constexpr int32_t decomp_half = 1 << (P::Bgbit - 1);
-    constexpr uint32_t decomp_offset = offsetgen<P>();
-    constexpr typename P::T roundoffset =
-        1ULL << (std::numeric_limits<typename P::T>::digits -
-                 P::l * P::Bgbit - 1);
-#pragma unroll
-    for (int i = tid; i < P::n; i += bdim) {
-#pragma unroll
-        for (int j = 0; j < P::k+1; j++) {
-            // PolynomialMulByXaiMinus
-            typename P::T temp =
-                trlwe[j * P::n + ((i - a_bar) & (P::n - 1))];
-            temp = ((i < (a_bar & (P::n - 1)) ^
-                     (a_bar >> P::nbit)))
-                       ? -temp
-                       : temp;
-            temp -= trlwe[j * P::n + i];
-            // decomp temp
-            temp += decomp_offset + roundoffset;
-#pragma unroll
-            for (int digit = 0; digit < P::l; digit += 1) {
-                // Extract digit value and subtract half to center around 0
-                // Result is in range [-decomp_half, decomp_half-1] (e.g., [-128, 127])
-                // CRITICAL: Cast to signed int32_t to properly handle negative values
-                // when constructing FFP. Without this, negative values like -128 become
-                // 0xFFFFFF80 (uint32_t wrap) instead of P - 128 (correct modular value).
-                int32_t digit_val = static_cast<int32_t>(
-                    ((temp >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * P::Bgbit)) &
-                     decomp_mask) -
-                    decomp_half);
-                dectrlwe[j * P::l * P::n +
-                         digit * P::n + i] = FFP(digit_val);
-            }
-        }
-    }
-    __syncthreads();  // must
-}
-
 /**
  * Sequential NTT Accumulate function (HEonGPU-style)
  * Uses 512 threads, processes NTTs one at a time for maximum efficiency
@@ -107,10 +59,7 @@ __device__ inline void PolynomialMulByXaiMinusOneAndDecompositionTRLWE(
  * - sh_acc_ntt[0..N-1]: Working buffer for NTT operations
  * - sh_acc_ntt[N..(k+2)*N-1]: Accumulated products in NTT domain
  *
- * This function automatically adapts to either:
- * - Large modulus (~2^60, FFP type) - exact integer arithmetic
- * - Small modulus (~2^29, uint32_t) - with Torus discretization switching
- * Based on USE_SMALL_NTT_MODULUS macro
+ * Uses small modulus (~2^31, uint32_t) with Torus discretization switching
  */
 template<class P>
 __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue* const sh_acc_ntt,
@@ -130,13 +79,8 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
     // Initialize accumulated results to zero
     if (tid < NUM_THREADS) {
         for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-#ifdef USE_SMALL_NTT_MODULUS
             sh_accum[k_idx * N + tid] = 0;
             sh_accum[k_idx * N + tid + NUM_THREADS] = 0;
-#else
-            sh_accum[k_idx * N + tid] = FFP(static_cast<Data64>(0));
-            sh_accum[k_idx * N + tid + NUM_THREADS] = FFP(static_cast<Data64>(0));
-#endif
         }
     }
     __syncthreads();
@@ -182,7 +126,6 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
             __syncthreads();
 
             // Step 2: Forward NTT on decomposed polynomial
-#ifdef USE_SMALL_NTT_MODULUS
             if (tid < NUM_THREADS) {
                 if constexpr (N == 1024) {
                     SmallForwardNTT32_1024(sh_work, ntt.forward_root_, tid);
@@ -190,18 +133,6 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
             } else {
                 for (int s = 0; s < 5; s++) __syncthreads();
             }
-#else
-            if (tid < NUM_THREADS) {
-                if constexpr (N == 1024) {
-                    SmallForwardNTT_1024(reinterpret_cast<Data64*>(sh_work), ntt.forward_root_, tid);
-                } else if constexpr (N == 512) {
-                    SmallForwardNTT_512(reinterpret_cast<Data64*>(sh_work), ntt.forward_root_, tid);
-                }
-            } else {
-                constexpr int sync_count = (N == 1024) ? 5 : 9;
-                for (int s = 0; s < sync_count; s++) __syncthreads();
-            }
-#endif
 
             // Step 3: Multiply with BK and accumulate into sh_accum
             int digit_linear = j * P::targetP::l + digit;
@@ -233,7 +164,6 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
         __syncthreads();
 
         // Inverse NTT
-#ifdef USE_SMALL_NTT_MODULUS
         if (tid < NUM_THREADS) {
             if constexpr (N == 1024) {
                 SmallInverseNTT32_1024(sh_work, ntt.inverse_root_, ntt.n_inverse_, tid);
@@ -254,32 +184,6 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
                 trlwe[k_idx * N + i] += ntt_mod_to_torus32(signed_val);
             }
         }
-#else
-        constexpr Data64 half_mod = GPUNTT_DEFAULT_MODULUS / 2;
-        if (tid < NUM_THREADS) {
-            if constexpr (N == 1024) {
-                SmallInverseNTT_1024(reinterpret_cast<Data64*>(sh_work), ntt.inverse_root_, ntt.n_inverse_, tid);
-            } else if constexpr (N == 512) {
-                SmallInverseNTT_512(reinterpret_cast<Data64*>(sh_work), ntt.inverse_root_, ntt.n_inverse_, tid);
-            }
-        } else {
-            constexpr int sync_count = (N == 1024) ? 6 : 10;
-            for (int s = 0; s < sync_count; s++) __syncthreads();
-        }
-
-        // Convert (no modswitch) and add to trlwe
-        if (tid < NUM_THREADS) {
-            #pragma unroll
-            for (int e = 0; e < 2; e++) {
-                int i = tid + e * NUM_THREADS;
-                Data64 val = sh_work[i].val();
-                typename P::targetP::T conv = (val > half_mod)
-                    ? static_cast<typename P::targetP::T>(static_cast<int64_t>(val) - static_cast<int64_t>(GPUNTT_DEFAULT_MODULUS))
-                    : static_cast<typename P::targetP::T>(val);
-                trlwe[k_idx * N + i] += conv;
-            }
-        }
-#endif
         __syncthreads();
     }
 }
