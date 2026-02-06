@@ -527,4 +527,15 @@ public:
 template <uint32_t length = TFHEpp::lvl1param::n>
 using CuNTTHandler = CuSmallNTTHandler<length>;
 
+// NTT value type: 32-bit for small modulus
+using NTTValue = uint32_t;
+
+// Shared memory size per gate: (k+2) * N * sizeof(uint32_t)
+template<class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(uint32_t);
+
+// Number of threads for NTT (N/2 = 512 for N=1024)
+template<class P = TFHEpp::lvl1param>
+constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
+
 }  // namespace cufhe

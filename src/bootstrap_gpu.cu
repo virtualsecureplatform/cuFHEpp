@@ -27,7 +27,8 @@
 #include <include/cufhe_gpu.cuh>
 #include <include/details/error_gpu.cuh>
 #include <include/details/utils_gpu.cuh>
-#include <include/ntt_gpu/ntt.cuh>
+#include <include/ntt_gpu/ntt_gpuntt.cuh>
+#include <include/ntt_gpu/ntt_small_modulus.cuh>
 #include <limits>
 #include <vector>
 #include <algorithm>
@@ -201,7 +202,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
                            (digit + 1) * lvl1param::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = intToNTT(digit_val);
+                    sh_work[i] = (digit_val < 0) ? (small_ntt::P + digit_val) : static_cast<uint32_t>(digit_val);
                 }
             }
             __syncthreads();
@@ -223,7 +224,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
                     #pragma unroll
                     for (int out_k = 0; out_k <= lvl1param::k; out_k++) {
                         NTTValue bk_val = tgsw_ntt[(((lvl1param::k + 1) * digit_linear + out_k) << lvl1param::nbit) + i];
-                        sh_accum[out_k * N + i] = nttAdd(sh_accum[out_k * N + i], nttMult(ntt_val, bk_val));
+                        sh_accum[out_k * N + i] = small_mod_add(sh_accum[out_k * N + i], small_mod_mult(ntt_val, bk_val));
                     }
                 }
             }

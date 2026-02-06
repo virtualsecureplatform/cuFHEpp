@@ -3,7 +3,8 @@
 #include <include/cufhe_gpu.cuh>
 #include <include/details/error_gpu.cuh>
 #include <include/details/utils_gpu.cuh>
-#include <include/ntt_gpu/ntt.cuh>
+#include <include/ntt_gpu/ntt_gpuntt.cuh>
+#include <include/ntt_gpu/ntt_small_modulus.cuh>
 
 namespace cufhe{
 
@@ -120,7 +121,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
                            (digit + 1) * P::targetP::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = intToNTT(digit_val);
+                    sh_work[i] = (digit_val < 0) ? (small_ntt::P + digit_val) : static_cast<uint32_t>(digit_val);
                 }
             }
             __syncthreads();
@@ -146,7 +147,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
                     #pragma unroll
                     for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
                         NTTValue bk_val = tgsw_ntt[(((P::targetP::k + 1) * digit_linear + out_k) << P::targetP::nbit) + i];
-                        sh_accum[out_k * N + i] = nttAdd(sh_accum[out_k * N + i], nttMult(ntt_val, bk_val));
+                        sh_accum[out_k * N + i] = small_mod_add(sh_accum[out_k * N + i], small_mod_mult(ntt_val, bk_val));
                     }
                 }
             }
