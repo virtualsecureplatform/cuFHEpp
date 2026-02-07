@@ -51,6 +51,154 @@ __device__ inline void RotatedTestVector(typename P::T* tlwe,
     __syncthreads();
 }
 
+#ifdef USE_FFT
+/**
+ * FFT-based Accumulate function (tfhe-rs style)
+ * Uses 512 threads total, 256 active during FFT, all 512 during decomposition/multiply
+ *
+ * Shared memory layout (N=1024, k=1):
+ *   sh_fft[0..N/2-1]:              FFT working buffer       = 512 × double2 = 8 KB
+ *   sh_accum[0..(k+1)*N/2-1]:     Accumulated FFT results  = 1024 × double2 = 16 KB
+ *   Total: 24 KB
+ *
+ * BSK indexing: bk_fft[digit_linear * (k+1) * (N/2) + out_k * (N/2) + complex_idx]
+ */
+template<class P>
+__device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue* const sh_acc_ntt,
+                                  const uint32_t a_bar,
+                                  const NTTValue* const tgsw_fft,
+                                  const CuNTTHandler<> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t HALF_N = N >> 1;       // 512
+    constexpr uint32_t NUM_THREADS = N >> 1;  // 512 threads total
+    constexpr uint32_t FFT_THREADS = HALF_N / (Degree<N>::opt / 2);  // 256 for N=1024
+
+    // Shared memory layout:
+    // sh_fft[0..HALF_N-1]: FFT working buffer (N/2 complex = 8KB)
+    // sh_accum[0..(k+1)*HALF_N-1]: accumulated results ((k+1)*N/2 complex = 16KB for k=1)
+    double2* const sh_fft = &sh_acc_ntt[0];
+    double2* const sh_accum = &sh_acc_ntt[HALF_N];
+
+    // Initialize accumulated results to zero
+    for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
+        sh_accum[i] = {0.0, 0.0};
+    }
+    __syncthreads();
+
+    // Decomposition constants
+    constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
+    constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
+    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T roundoffset =
+        1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
+                 P::targetP::l * P::targetP::Bgbit - 1);
+
+    // Process each TRLWE component and decomposition level
+    for (int j = 0; j <= P::targetP::k; j++) {
+        for (int digit = 0; digit < P::targetP::l; digit++) {
+            // Step 1: DECOMPOSE + PACK into N/2 complex values
+            // Half-size FFT packing: Complex[i] = {Poly[i], Poly[i + N/2]}
+            // Thread tid handles coefficient tid (first half -> real) and
+            // tid + N/2 (second half -> imaginary)
+            if (tid < HALF_N) {
+                // First-half coefficient (index tid)
+                const uint32_t idx_re = tid;
+                typename P::targetP::T temp_re =
+                    trlwe[j * N + ((idx_re - a_bar) & (N - 1))];
+                temp_re = ((idx_re < (a_bar & (N - 1)) ^
+                             (a_bar >> P::targetP::nbit)))
+                               ? -temp_re
+                               : temp_re;
+                temp_re -= trlwe[j * N + idx_re];
+                temp_re += decomp_offset + roundoffset;
+                int32_t digit_re = static_cast<int32_t>(
+                    ((temp_re >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                // Second-half coefficient (index tid + N/2)
+                const uint32_t idx_im = tid + HALF_N;
+                typename P::targetP::T temp_im =
+                    trlwe[j * N + ((idx_im - a_bar) & (N - 1))];
+                temp_im = ((idx_im < (a_bar & (N - 1)) ^
+                             (a_bar >> P::targetP::nbit)))
+                               ? -temp_im
+                               : temp_im;
+                temp_im -= trlwe[j * N + idx_im];
+                temp_im += decomp_offset + roundoffset;
+                int32_t digit_im = static_cast<int32_t>(
+                    ((temp_im >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                // Pack: real = first-half coeff, imag = second-half coeff
+                sh_fft[tid] = {static_cast<double>(digit_re),
+                               static_cast<double>(digit_im)};
+            }
+            __syncthreads();
+
+            // Step 2: Forward FFT (only first FFT_THREADS threads active)
+            if (tid < FFT_THREADS) {
+                NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
+            } else {
+                // Non-FFT threads must match the syncthreads inside NSMFFT_direct
+                // For HalfDegree<Degree<1024>>: log2_degree=9, levels 8..5 need __syncthreads
+                // That's 4 iterations × 2 syncthreads each = 8, plus entry/exit = 10 total
+                // Entry sync + (9-1 down to 5) = 4 levels × 2 syncs = 8 + final store 2 = 10+2
+                // Count from NSMFFT_direct: 1 (entry) + 2*(9-1-5+1)=2*4=8 + 1 (pre-store) + 1 (post-store) = 11
+                // Let's just count: __syncthreads at entry, then for l=8,7,6,5: 2 each=8, then store: 2 = 11 total
+                for (int s = 0; s < 11; s++) __syncthreads();
+            }
+
+            // Step 3: Multiply-accumulate with BSK in Fourier domain
+            // All 512 threads participate, each handles one complex element
+            int digit_linear = j * P::targetP::l + digit;
+            if (tid < HALF_N) {
+                double2 fft_val = sh_fft[tid];
+                #pragma unroll
+                for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
+                    double2 bk_val = __ldg(&tgsw_fft[
+                        ((P::targetP::k + 1) * digit_linear + out_k) * HALF_N + tid]);
+                    // Complex multiply-accumulate
+                    sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    // Step 4: Inverse FFT on accumulated results and add to trlwe
+    for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
+        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+
+        // Inverse FFT (only first FFT_THREADS threads active)
+        if (tid < FFT_THREADS) {
+            NSMFFT_inverse<HalfDegree<Degree<N>>>(sh_inv);
+        } else {
+            // Match syncthreads: 1 (entry) + for l=5..8: 2*4=8 + 1 (pre-store) + 1 (post-store) = 11
+            for (int s = 0; s < 11; s++) __syncthreads();
+        }
+
+        // Step 5: Unpack complex -> real coefficients, add to trlwe
+        // Half-size FFT unpacking: Poly[i] = Complex[i].real, Poly[i+N/2] = Complex[i].imag
+        // Multiply by 2^32 to undo the BSK normalization (BSK was divided by 2^32 in __TRGSW2FFT__)
+        constexpr double denorm = 4294967296.0;  // 2^32
+        if (tid < HALF_N) {
+            double2 val = sh_inv[tid];
+            trlwe[k_idx * N + tid]          += static_cast<uint32_t>(static_cast<int64_t>(llrint(val.x * denorm)));
+            trlwe[k_idx * N + tid + HALF_N] += static_cast<uint32_t>(static_cast<int64_t>(llrint(val.y * denorm)));
+        }
+        __syncthreads();
+    }
+}
+#else  // !USE_FFT
 /**
  * Sequential NTT Accumulate function (HEonGPU-style)
  * Uses 512 threads, processes NTTs one at a time for maximum efficiency
@@ -181,6 +329,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
         __syncthreads();
     }
 }
+#endif  // USE_FFT
 
 template<class P>
 __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
@@ -206,12 +355,20 @@ __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
                 1ULL << (std::numeric_limits<typename P::domainP::T>::digits - 2 -
                         P::targetP::nbit);
         const uint32_t bar = modSwitchFromTorus<P>(in[i]+roundoffset);
+#ifdef USE_FFT
+        // FFT BSK stride: each TRGSW has (k+1)*l * (k+1) * (N/2) complex elements
+        constexpr size_t trgsw_fft_size = (P::targetP::k+1) * P::targetP::l *
+                                           (P::targetP::k+1) * (P::targetP::n / 2);
+        Accumulate<P>(out, sh_acc_ntt, bar,
+                   bk + i * trgsw_fft_size, ntt);
+#else
         Accumulate<P>(out, sh_acc_ntt, bar,
                    bk + (i << P::targetP::nbit) * (P::targetP::k+1) * (P::targetP::k+1) * P::targetP::l, ntt);
+#endif
     }
 }
 
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) && !defined(USE_FFT)
 /**
  * Key-bundle ExternalProduct accumulator
  *
@@ -472,8 +629,15 @@ __device__ inline void __BlindRotatePreAdd__(typename P::targetP::T* const out,
                         P::targetP::nbit);
         const uint32_t bar = modSwitchFromTorus<P>(0 + casign * in0[i] +
                                                            cbsign * in1[i] + roundoffset);
+#ifdef USE_FFT
+        constexpr size_t trgsw_fft_size = (P::targetP::k+1) * P::targetP::l *
+                                           (P::targetP::k+1) * (P::targetP::n / 2);
+        Accumulate<P>(out, sh_acc_ntt, bar,
+                   bk + i * trgsw_fft_size, ntt);
+#else
         Accumulate<P>(out, sh_acc_ntt, bar,
                    bk + (i << P::targetP::nbit) * (P::targetP::k+1) * (P::targetP::k+1) * P::targetP::l, ntt);
+#endif
     }
 }
 }

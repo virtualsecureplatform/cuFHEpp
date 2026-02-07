@@ -24,6 +24,10 @@
 #include <params.hpp>
 #include <include/utils_gpu.cuh>
 
+#ifdef USE_FFT
+#include <include/fft_negacyclic.cuh>
+#endif
+
 namespace cufhe {
 
 //=============================================================================
@@ -534,6 +538,62 @@ public:
 #endif // __CUDACC__
 };
 
+#ifdef USE_FFT
+
+//=============================================================================
+// FFT mode: Use negacyclic FFT over double2 (tfhe-rs style)
+// (fft_negacyclic.cuh included above, outside namespace cufhe)
+//=============================================================================
+
+// NTT value type: double2 complex for FFT
+using NTTValue = double2;
+
+// Thread configuration: still N/2 = 512 threads per block
+// (FFT uses 256 active threads, decomposition uses all 512)
+constexpr uint32_t NTT_THREAD_UNITBIT = 1;
+
+// Shared memory size per gate:
+// sh_fft[N/2] = 512 × double2 = 8 KB (FFT working buffer)
+// sh_accum[(k+1) × N/2] = (k+1) × 512 × double2 = 16 KB (for k=1)
+// Total: 24 KB for k=1
+template<class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE =
+    ((P::n / 2) + (P::k + 1) * (P::n / 2)) * sizeof(double2);
+
+// Number of threads for homomorphic gate (N/2 = 512 for N=1024)
+template<class P = TFHEpp::lvl1param>
+constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
+
+/**
+ * CuFFTHandler - replacement for CuNTTHandler when using negacyclic FFT
+ *
+ * The twiddle factors are stored in device memory (__device__ negtwiddles[])
+ * rather than in handler-specific allocations, so the handler is mostly a
+ * no-op placeholder to maintain API compatibility.
+ */
+template <uint32_t length = TFHEpp::lvl1param::n>
+class CuFFTHandler {
+public:
+    static constexpr uint32_t kLength = length;
+
+    __host__ __device__ CuFFTHandler() {}
+    __host__ __device__ ~CuFFTHandler() {}
+
+    __host__ static void Create() {}
+    __host__ static void CreateConstant() {}
+    __host__ static void Destroy() {}
+    __host__ void SetDevicePointers(int device_id) {}
+};
+
+template <uint32_t length = TFHEpp::lvl1param::n>
+using CuNTTHandler = CuFFTHandler<length>;
+
+#else  // !USE_FFT
+
+//=============================================================================
+// NTT mode: Use small modulus NTT (existing implementation)
+//=============================================================================
+
 // Thread configuration for NTT
 // N/2 threads, each handles 2 elements (e.g., 512 threads for N=1024)
 constexpr uint32_t NTT_THREAD_UNITBIT = 1;
@@ -551,6 +611,8 @@ constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(uint32_t);
 // Number of threads for NTT (N/2 = 512 for N=1024)
 template<class P = TFHEpp::lvl1param>
 constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
+
+#endif  // USE_FFT
 
 #ifdef USE_KEY_BUNDLE
 extern std::vector<NTTValue*> xai_ntt_devs;

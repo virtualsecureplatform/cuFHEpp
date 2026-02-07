@@ -1,11 +1,15 @@
 # Uses small modulus NTT with GPU-NTT library for NTT primitives
-add_library(cufhe_gpu
+set(CUFHE_GPU_SOURCES
     bootstrap_gpu.cu
     cufhe_gates_gpu.cu
     cufhe_gpu.cu
     keyswitch_gpu.cu
     ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
-    )
+)
+if(USE_FFT)
+    list(APPEND CUFHE_GPU_SOURCES fft_negacyclic.cu)  # Negacyclic FFT twiddle factors
+endif()
+add_library(cufhe_gpu ${CUFHE_GPU_SOURCES})
 
 target_link_libraries(cufhe_gpu PUBLIC ntt)  # GPU-NTT library
 target_link_libraries(cufhe_gpu INTERFACE tfhe++)

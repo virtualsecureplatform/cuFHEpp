@@ -40,6 +40,172 @@ using namespace TFHEpp;
 vector<NTTValue*> bk_ntts;
 vector<CuNTTHandler<>*> ntt_handlers;
 
+#ifdef USE_FFT
+
+// ============================================================================
+// FFT mode: BSK conversion to Fourier domain
+// ============================================================================
+
+/**
+ * __TRGSW2FFT__: Convert one BSK polynomial from Torus32 to Fourier domain
+ *
+ * Each block handles one polynomial of N coefficients:
+ *   1. Load N Torus32 coefficients, pack into N/2 complex values
+ *      (even coefficients -> real, odd coefficients -> imaginary)
+ *   2. Forward negacyclic FFT
+ *   3. Store N/2 double2 values to BSK FFT device array
+ *
+ * Grid: (1, (k+1)*l*(k+1), n_lwe) where n_lwe = number of LWE dimensions
+ * Block: N/2 threads (512 for N=1024)
+ *
+ * BSK input layout (per LWE dim z):
+ *   bk[z * (k+1)*l*(k+1) * N + y * (k+1) * N + x * N + coeff]
+ *   where y = row in TRGSW matrix, x = column polynomial
+ *
+ * BSK output layout (per LWE dim z):
+ *   bk_fft[z * (k+1)*l*(k+1) * (N/2) + y * (k+1) * (N/2) + x * (N/2) + complex_idx]
+ */
+template<class P = TFHEpp::lvl1param>
+__global__ void __TRGSW2FFT__(NTTValue* const bk_fft, const typename P::T* const bk,
+                              CuNTTHandler<> ntt)
+{
+    constexpr uint32_t N = P::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N / (Degree<N>::opt / 2);
+
+    __shared__ double2 sh_fft[HALF_N];
+
+    // Compute input index in Torus domain (N elements per polynomial)
+    // blockIdx.x is always 0 (single polynomial per z,y pair)
+    // blockIdx.y indexes the (k+1)*l*(k+1) rows×columns of TRGSW
+    // blockIdx.z indexes the LWE dimension
+    const int in_index = blockIdx.z * ((P::k+1) * P::l * (P::k+1) * N) +
+                         blockIdx.y * N;
+    // Output index in Fourier domain (N/2 elements per polynomial)
+    const int out_index = blockIdx.z * ((P::k+1) * P::l * (P::k+1) * HALF_N) +
+                          blockIdx.y * HALF_N;
+
+    const uint32_t tid = threadIdx.x;
+
+    // Step 1: Load and pack N Torus32 coefficients into N/2 complex values
+    // Half-size FFT packing: Complex[i] = {Poly[i], Poly[i + N/2]}
+    // Normalize by dividing by 2^32 to keep values in [-0.5, 0.5) range,
+    // preventing double-precision overflow during FFT multiply-accumulate.
+    // The Accumulate function will multiply back by 2^32 after IFFT.
+    constexpr double norm = 1.0 / 4294967296.0;  // 1 / 2^32
+    if (tid < HALF_N) {
+        sh_fft[tid] = {static_cast<double>(static_cast<int32_t>(bk[in_index + tid])) * norm,
+                       static_cast<double>(static_cast<int32_t>(bk[in_index + tid + HALF_N])) * norm};
+    }
+    __syncthreads();
+
+    // Step 2: Forward FFT (only first FFT_THREADS threads participate)
+    if (tid < FFT_THREADS) {
+        NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
+    } else {
+        // Match syncthreads inside NSMFFT_direct
+        for (int s = 0; s < 11; s++) __syncthreads();
+    }
+
+    // Step 3: Store N/2 complex values to global memory
+    if (tid < HALF_N) {
+        bk_fft[out_index + tid] = sh_fft[tid];
+    }
+}
+
+void TRGSW2NTT(cuFHETRGSWNTTlvl1& trgswntt,
+               const TFHEpp::TRGSW<TFHEpp::lvl1param>& trgsw, Stream& st)
+{
+    cudaSetDevice(st.device_id());
+    TFHEpp::lvl1param::T* d_trgsw;
+    cudaMalloc((void**)&d_trgsw, sizeof(trgsw));
+    cudaMemcpyAsync(d_trgsw, trgsw.data(), sizeof(trgsw),
+                    cudaMemcpyHostToDevice, st.st());
+
+    constexpr uint32_t num_threads = lvl1param::n >> 1;  // N/2
+    // Grid: 1 x ((k+1)*l*(k+1)) x 1  (single TRGSW, not batched over LWE dims)
+    dim3 grid(1, (lvl1param::k+1) * lvl1param::l * (lvl1param::k+1), 1);
+    dim3 block(num_threads);
+    __TRGSW2FFT__<<<grid, block, 0, st.st()>>>(
+        trgswntt.trgswdevices[st.device_id()], d_trgsw,
+        *ntt_handlers[st.device_id()]);
+    CuCheckError();
+    // Copy FFT results back to host (NTTValue = double2)
+    cudaMemcpyAsync(
+        trgswntt.trgswhost.data(), trgswntt.trgswdevices[st.device_id()],
+        cuFHETRGSWNTTlvl1::kNumElements * sizeof(NTTValue),
+        cudaMemcpyDeviceToHost, st.st());
+    cudaFree(d_trgsw);
+}
+
+void InitializeNTThandlers(const int gpuNum)
+{
+    // FFT mode: twiddles are in __device__ memory, no per-GPU initialization needed
+    // Just create placeholder handlers
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        ntt_handlers.push_back(new CuNTTHandler<>());
+        cudaDeviceSynchronize();
+        CuCheckError();
+    }
+}
+
+template<class P>
+void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk,
+                           const int gpuNum)
+{
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t HALF_N = N >> 1;
+
+    bk_ntts.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+
+        // FFT BSK: n_lwe * (k+1)*l * (k+1) * (N/2) double2 elements
+        size_t fft_elems = static_cast<size_t>(P::domainP::n) *
+                           (P::targetP::k+1) * P::targetP::l *
+                           (P::targetP::k+1) * HALF_N;
+        cudaMalloc((void**)&bk_ntts[i], sizeof(NTTValue) * fft_elems);
+
+        typename P::targetP::T* d_bk;
+        cudaMalloc((void**)&d_bk, sizeof(bk));
+        cudaMemcpy(d_bk, bk.data(), sizeof(bk), cudaMemcpyHostToDevice);
+
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        // Grid: 1 x ((k+1)*l*(k+1)) x n_lwe
+        dim3 grid(1, (P::targetP::k+1) * P::targetP::l * (P::targetP::k+1), P::domainP::n);
+        dim3 block(N >> NTT_THREAD_UNITBIT);
+        __TRGSW2FFT__<<<grid, block>>>(bk_ntts[i], d_bk, *ntt_handlers[i]);
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_bk);
+    }
+}
+#define INST(P)                                                \
+template void BootstrappingKeyToNTT<P>(const BootstrappingKey<P>& bk, \
+                           const int gpuNum)
+INST(TFHEpp::lvl01param);
+#undef INST
+
+void DeleteBootstrappingKeyNTT(const int gpuNum)
+{
+    for (size_t i = 0; i < bk_ntts.size(); i++) {
+        cudaSetDevice(i);
+        cudaFree(bk_ntts[i]);
+        delete ntt_handlers[i];
+    }
+    ntt_handlers.clear();
+}
+
+#else  // !USE_FFT
+
+// ============================================================================
+// NTT mode: BSK conversion to NTT domain (existing implementation)
+// ============================================================================
+
 template<class P = TFHEpp::lvl1param>
 __global__ void __TRGSW2NTT__(NTTValue* const bk_ntt, const typename P::T* const bk,
                               CuNTTHandler<> ntt)
@@ -184,7 +350,7 @@ INST(TFHEpp::lvl01param);
 
 void DeleteBootstrappingKeyNTT(const int gpuNum)
 {
-    for (int i = 0; i < bk_ntts.size(); i++) {
+    for (size_t i = 0; i < bk_ntts.size(); i++) {
         cudaSetDevice(i);
         cudaFree(bk_ntts[i]);
 
@@ -194,10 +360,115 @@ void DeleteBootstrappingKeyNTT(const int gpuNum)
     ntt_handlers.clear();
 }
 
+#endif  // USE_FFT
+
 // ============================================================================
-// CMUX operation - small modulus sequential NTT approach
-// Same pattern as Accumulate in gatebootstrapping_gpu.cuh
+// CMUX operation
 // ============================================================================
+
+#ifdef USE_FFT
+
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
+    TFHEpp::lvl1param::T* out, const NTTValue* const tgsw_fft,
+    const TFHEpp::lvl1param::T* const trlwe1,
+    const TFHEpp::lvl1param::T* const trlwe0, const CuNTTHandler<> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+
+    constexpr uint32_t N = lvl1param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N / (Degree<N>::opt / 2);
+
+    extern __shared__ NTTValue sh_cmux[];
+    double2* const sh_fft = &sh_cmux[0];
+    double2* const sh_accum = &sh_cmux[HALF_N];
+
+    // Initialize accumulated results to zero
+    for (int i = tid; i < (lvl1param::k + 1) * HALF_N; i += NUM_THREADS) {
+        sh_accum[i] = {0.0, 0.0};
+    }
+    __syncthreads();
+
+    constexpr uint32_t decomp_mask = (1 << lvl1param::Bgbit) - 1;
+    constexpr int32_t decomp_half = 1 << (lvl1param::Bgbit - 1);
+    constexpr uint32_t decomp_offset = offsetgen<lvl1param>();
+    constexpr typename lvl1param::T roundoffset =
+        1ULL << (std::numeric_limits<typename lvl1param::T>::digits -
+                 lvl1param::l * lvl1param::Bgbit - 1);
+
+    for (int j = 0; j <= lvl1param::k; j++) {
+        for (int digit = 0; digit < lvl1param::l; digit++) {
+            // Half-size FFT packing: Complex[i] = {Poly[i], Poly[i + N/2]}
+            if (tid < HALF_N) {
+                typename lvl1param::T temp_re = trlwe1[j * N + tid] -
+                                                 trlwe0[j * N + tid] +
+                                                 decomp_offset + roundoffset;
+                int32_t digit_re = static_cast<int32_t>(
+                    ((temp_re >>
+                      (std::numeric_limits<typename lvl1param::T>::digits -
+                       (digit + 1) * lvl1param::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                typename lvl1param::T temp_im = trlwe1[j * N + tid + HALF_N] -
+                                                 trlwe0[j * N + tid + HALF_N] +
+                                                 decomp_offset + roundoffset;
+                int32_t digit_im = static_cast<int32_t>(
+                    ((temp_im >>
+                      (std::numeric_limits<typename lvl1param::T>::digits -
+                       (digit + 1) * lvl1param::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                sh_fft[tid] = {static_cast<double>(digit_re),
+                               static_cast<double>(digit_im)};
+            }
+            __syncthreads();
+
+            if (tid < FFT_THREADS) {
+                NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
+            } else {
+                for (int s = 0; s < 11; s++) __syncthreads();
+            }
+
+            int digit_linear = j * lvl1param::l + digit;
+            if (tid < HALF_N) {
+                double2 fft_val = sh_fft[tid];
+                #pragma unroll
+                for (int out_k = 0; out_k <= lvl1param::k; out_k++) {
+                    double2 bk_val = __ldg(&tgsw_fft[
+                        ((lvl1param::k + 1) * digit_linear + out_k) * HALF_N + tid]);
+                    sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    for (int k_idx = 0; k_idx <= lvl1param::k; k_idx++) {
+        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+        if (tid < FFT_THREADS) {
+            NSMFFT_inverse<HalfDegree<Degree<N>>>(sh_inv);
+        } else {
+            for (int s = 0; s < 11; s++) __syncthreads();
+        }
+
+        // Half-size FFT unpacking: Poly[i] = Complex[i].real, Poly[i+N/2] = Complex[i].imag
+        // Multiply by 2^32 to undo BSK normalization
+        constexpr double denorm = 4294967296.0;  // 2^32
+        if (tid < HALF_N) {
+            double2 val = sh_inv[tid];
+            out[k_idx * N + tid]          = trlwe0[k_idx * N + tid] +
+                static_cast<uint32_t>(static_cast<int64_t>(llrint(val.x * denorm)));
+            out[k_idx * N + tid + HALF_N] = trlwe0[k_idx * N + tid + HALF_N] +
+                static_cast<uint32_t>(static_cast<int64_t>(llrint(val.y * denorm)));
+        }
+        __syncthreads();
+    }
+}
+
+#else  // !USE_FFT
 
 __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
     TFHEpp::lvl1param::T* out, const NTTValue* const tgsw_ntt,
@@ -304,6 +575,8 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
     }
 }
 
+#endif  // USE_FFT
+
 template <class brP, class iksP>
 __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __Bootstrap__(
     typename iksP::targetP::T* const out, const typename brP::domainP::T* const in,
@@ -345,16 +618,31 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __SEIan
     const CuNTTHandler<> ntt)
 {
     extern __shared__ NTTValue sh[];
-    // Shared memory layout (all uint32_t):
+#ifdef USE_FFT
+    // Shared memory layout for FFT mode:
+    // Accumulate uses (N/2 + (k+1)*N/2) double2 = (k+2)*N/2 double2
+    // After that: tlwe needs (k+1)*N uint32_t, tlwelvl0 needs lvl0 TLWE uint32_t
+    // Convert byte offset: (k+2)*N/2 double2 = (k+2)*N/2 * 16 bytes
+    // In NTTValue (double2) units: (k+2)*N/2
+    constexpr size_t acc_ntt_elems = (lvl1param::k + 2) * (lvl1param::n / 2);
+    NTTValue* sh_acc_ntt = &sh[0];
+    TFHEpp::lvl1param::T* tlwe =
+        (TFHEpp::lvl1param::T*)&sh[acc_ntt_elems];
+    // tlwe occupies (k+1)*N uint32_t = (k+1)*N*4 bytes = (k+1)*N/4 double2 elements
+    constexpr size_t tlwe_in_nttval = ((lvl1param::k + 1) * lvl1param::n * sizeof(uint32_t) + sizeof(NTTValue) - 1) / sizeof(NTTValue);
+    lvl0param::T* tlwelvl0 =
+        (lvl0param::T*)&sh[acc_ntt_elems + tlwe_in_nttval];
+#else
+    // Shared memory layout for NTT mode (all uint32_t / NTTValue):
     // [0, (k+2)*N): sh_acc_ntt for Accumulate (working buf + accum)
     // [(k+2)*N, (2k+3)*N): tlwe (TRLWE with (k+1)*N elements)
     // [(2k+3)*N, ...): tlwelvl0 (lvl0 TLWE)
     NTTValue* sh_acc_ntt = &sh[0];
     TFHEpp::lvl1param::T* tlwe =
         (TFHEpp::lvl1param::T*)&sh[(lvl1param::k + 2) * lvl1param::n];
-
     lvl0param::T* tlwelvl0 =
         (lvl0param::T*)&sh[(lvl1param::k + 2 + lvl1param::k + 1) * lvl1param::n];
+#endif
 
     KeySwitch<lvl10param>(tlwelvl0, in, ksk);
     __syncthreads();
@@ -370,8 +658,15 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __SEIan
                 1ULL << (std::numeric_limits<typename TFHEpp::lvl0param::T>::digits - 2 -
                         TFHEpp::lvl1param::nbit);
         bar = modSwitchFromTorus<lvl01param>(tlwelvl0[i]+roundoffset);
+#ifdef USE_FFT
+        constexpr size_t trgsw_fft_size = (lvl1param::k+1) * lvl1param::l *
+                                           (lvl1param::k+1) * (lvl1param::n / 2);
+        Accumulate<lvl01param>(tlwe, sh_acc_ntt, bar,
+                   bk + i * trgsw_fft_size, ntt);
+#else
         Accumulate<lvl01param>(tlwe, sh_acc_ntt, bar,
                    bk + (i << lvl1param::nbit) * (lvl1param::k+1) * (lvl1param::k+1) * lvl1param::l, ntt);
+#endif
     }
     __syncthreads();
     for (int i = 0; i < (lvl1param::k+1) * lvl1param::n; i++) {

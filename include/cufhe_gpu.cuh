@@ -132,9 +132,16 @@ struct cuFHETRLWElvl1 {
 };
 
 struct cuFHETRGSWNTTlvl1 {
+#ifdef USE_FFT
+    // FFT mode: N/2 complex (double2) per polynomial instead of N uint32_t
+    static constexpr size_t kNumElements =
+        (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::l *
+        (TFHEpp::lvl1param::k+1) * (TFHEpp::lvl1param::n / 2);
+#else
     static constexpr size_t kNumElements =
         (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::l *
         (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::n;
+#endif
     TFHEpp::TRGSWNTT<TFHEpp::lvl1param> trgswhost;
     std::vector<NTTValue*> trgswdevices;
     cuFHETRGSWNTTlvl1();
