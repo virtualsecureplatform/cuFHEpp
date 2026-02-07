@@ -41,6 +41,11 @@ void InitializeNTThandlers(const int gpuNum);
 template<class P>
 void BootstrappingKeyToNTT(
     const TFHEpp::BootstrappingKey<P>& bk, const int gpuNum);
+#ifdef USE_KEY_BUNDLE
+template<class P>
+void BootstrappingKeyBundleToNTT(
+    const TFHEpp::BootstrappingKey<P>& bk, const int gpuNum);
+#endif
 void DeleteBootstrappingKeyNTT(const int gpuNum);
 
 void CMUXNTTkernel(TFHEpp::lvl1param::T* const res, const NTTValue* const cs,

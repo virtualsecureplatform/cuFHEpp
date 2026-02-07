@@ -42,7 +42,13 @@ void Initialize() { InitializeNTThandlers(_gpuNum); }
 void Initialize(const TFHEpp::EvalKey& ek)
 {
     InitializeNTThandlers(_gpuNum);
+#ifdef USE_KEY_BUNDLE
+    BootstrappingKeyBundleToNTT<TFHEpp::lvl01param>(ek.getbk<TFHEpp::lvl01param>(), _gpuNum);
+    InitializeXaiNTT(_gpuNum);
+    InitializeOneTRGSWNTT(_gpuNum);
+#else
     BootstrappingKeyToNTT<TFHEpp::lvl01param>(ek.getbk<TFHEpp::lvl01param>(), _gpuNum);
+#endif
     KeySwitchingKeyToDevice(ek.getiksk<TFHEpp::lvl10param>(), _gpuNum);
 }
 
@@ -50,6 +56,10 @@ void CleanUp()
 {
     DeleteBootstrappingKeyNTT(_gpuNum);
     DeleteKeySwitchingKey(_gpuNum);
+#ifdef USE_KEY_BUNDLE
+    DeleteXaiNTT();
+    DeleteOneTRGSWNTT();
+#endif
 }
 
 bool StreamQuery(Stream st)

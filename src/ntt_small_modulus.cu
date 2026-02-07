@@ -245,4 +245,205 @@ void CuSmallNTTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
 // Explicit template instantiation
 template class CuSmallNTTHandler<TFHEpp::lvl1param::n>;
 
+#ifdef USE_KEY_BUNDLE
+//=============================================================================
+// XaiNTT table: precomputed NTT(X^a) for a = 0..2N-1
+// Used for on-the-fly keybundle computation in key-bundle bootstrapping
+//=============================================================================
+
+std::vector<NTTValue*> xai_ntt_devs;
+std::vector<NTTValue*> one_trgsw_ntt_devs;
+
+// Host-side torus32 to NTT mod conversion (same formula as device version)
+static uint32_t torus32_to_ntt_mod_host(uint32_t torus_val) {
+    uint64_t prod = static_cast<uint64_t>(torus_val) * small_ntt::P;
+    uint32_t hi = static_cast<uint32_t>(prod >> 32);
+    uint32_t lo = static_cast<uint32_t>(prod);
+    hi += (lo >= 0x80000000u);
+    return hi;
+}
+
+// GPU kernel to NTT multiple polynomials
+__global__ void __NTTPolynomials__(
+    NTTValue* const out,
+    const uint32_t* const in,
+    const uint32_t* const forward_root)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;
+    __shared__ uint32_t sh_temp[N];
+
+    const uint32_t poly_idx = blockIdx.x;
+    const uint32_t tid = threadIdx.x;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+
+    // Load polynomial
+    if (tid < NUM_THREADS) {
+        sh_temp[tid] = in[poly_idx * N + tid];
+        sh_temp[tid + NUM_THREADS] = in[poly_idx * N + tid + NUM_THREADS];
+    }
+    __syncthreads();
+
+    // Forward NTT
+    if (tid < NUM_THREADS) {
+        SmallForwardNTT32_1024(sh_temp, forward_root, tid);
+    } else {
+        for (int s = 0; s < 5; s++) __syncthreads();
+    }
+
+    // Store
+    if (tid < NUM_THREADS) {
+        out[poly_idx * N + tid] = sh_temp[tid];
+        out[poly_idx * N + tid + NUM_THREADS] = sh_temp[tid + NUM_THREADS];
+    }
+}
+
+__global__ void __ComputeXaiNTT__(
+    NTTValue* const xai_ntt,
+    const uint32_t* const forward_root)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;  // 1024
+    __shared__ uint32_t poly[N];
+
+    const uint32_t a = blockIdx.x;  // 0..2N-1
+    const uint32_t tid = threadIdx.x;
+    constexpr uint32_t NUM_THREADS = N >> 1;  // 512
+
+    // Initialize polynomial: (X^a - 1) mod (X^N + 1) in Z_P
+    // Following TFHEpp's XaittGen: xai[0] = -1; if (a < N) xai[a] += 1; else xai[a-N] -= 1;
+    uint32_t a_mod = a & (N - 1);
+    bool negate = (a >= N);
+
+    // Set poly to zero
+    if (tid < NUM_THREADS) {
+        poly[tid] = 0;
+        poly[tid + NUM_THREADS] = 0;
+    }
+    __syncthreads();
+
+    // Set poly = (X^a - 1) mod (X^N + 1)
+    if (tid == 0) {
+        // Start with -1 at constant term
+        poly[0] = small_ntt::P - 1;  // -1 mod P
+        if (!negate) {
+            // a < N: add 1 to coefficient a_mod
+            poly[a_mod] = small_mod_add(poly[a_mod], 1);
+        } else {
+            // a >= N: subtract 1 from coefficient a_mod
+            poly[a_mod] = small_mod_add(poly[a_mod], small_ntt::P - 1);
+        }
+    }
+    __syncthreads();
+
+    // Forward NTT
+    if (tid < NUM_THREADS) {
+        SmallForwardNTT32_1024(poly, forward_root, tid);
+    } else {
+        for (int s = 0; s < 5; s++) __syncthreads();
+    }
+
+    // Store result to global memory
+    if (tid < NUM_THREADS) {
+        xai_ntt[a * N + tid] = poly[tid];
+        xai_ntt[a * N + tid + NUM_THREADS] = poly[tid + NUM_THREADS];
+    }
+}
+
+void InitializeXaiNTT(const int gpuNum)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;
+    constexpr uint32_t table_entries = 2 * N;  // a = 0..2N-1
+    constexpr size_t table_size = table_entries * N * sizeof(NTTValue);
+
+    xai_ntt_devs.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        CuSafeCall(cudaMalloc(&xai_ntt_devs[i], table_size));
+
+        dim3 grid(table_entries);  // 2N blocks
+        dim3 block(N >> 1);       // N/2 threads
+        __ComputeXaiNTT__<<<grid, block>>>(
+            xai_ntt_devs[i],
+            g_small_ntt_params[i].forward_root);
+        cudaDeviceSynchronize();
+        CuCheckError();
+    }
+}
+
+void DeleteXaiNTT()
+{
+    for (size_t i = 0; i < xai_ntt_devs.size(); i++) {
+        cudaSetDevice(i);
+        cudaFree(xai_ntt_devs[i]);
+    }
+    xai_ntt_devs.clear();
+}
+
+//=============================================================================
+// OneTRGSWNTT: Identity TRGSW in NTT form
+// Used as the "1" component in keybundle: kb = 1 + bk2*X^a1 + bk1*X^a0 + bk0*X^(a0+a1)
+//=============================================================================
+
+void InitializeOneTRGSWNTT(const int gpuNum)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;
+    constexpr uint32_t k = TFHEpp::lvl1param::k;
+    constexpr uint32_t l = TFHEpp::lvl1param::l;
+    constexpr uint32_t Bgbit = TFHEpp::lvl1param::Bgbit;
+    constexpr uint32_t num_polys = (k + 1) * l * (k + 1);
+    constexpr size_t total_size = num_polys * N * sizeof(NTTValue);
+
+    // Compute h values on host: h[i] = 1 << (32 - (i+1)*Bgbit)
+    // These are the diagonal elements of the identity TRGSW
+    std::vector<uint32_t> h(l);
+    for (uint32_t i = 0; i < l; i++) {
+        h[i] = static_cast<uint32_t>(1) << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
+    }
+
+    // Build the TRGSW identity as polynomials (pre-NTT) on host
+    // TRGSW layout: (k+1)*l rows, each row has (k+1) polynomials of N elements
+    // Identity TRGSW: row (j*l + digit), polynomial j gets constant h[digit]
+    // All other polynomials are zero
+    std::vector<uint32_t> host_polys(num_polys * N, 0);
+    for (uint32_t j = 0; j <= k; j++) {
+        for (uint32_t digit = 0; digit < l; digit++) {
+            uint32_t row = j * l + digit;
+            uint32_t poly_idx = row * (k + 1) + j;
+            // Constant polynomial: coefficient 0 is h[digit] (in torus)
+            host_polys[poly_idx * N + 0] = torus32_to_ntt_mod_host(h[digit]);
+        }
+    }
+
+    one_trgsw_ntt_devs.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        CuSafeCall(cudaMalloc(&one_trgsw_ntt_devs[i], total_size));
+
+        // Copy host polynomials to device
+        uint32_t* d_polys;
+        CuSafeCall(cudaMalloc(&d_polys, num_polys * N * sizeof(uint32_t)));
+        CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
+                              num_polys * N * sizeof(uint32_t), cudaMemcpyHostToDevice));
+
+        // NTT each polynomial
+        dim3 grid(num_polys);
+        dim3 block(N >> 1);
+        __NTTPolynomials__<<<grid, block>>>(one_trgsw_ntt_devs[i], d_polys,
+                                            g_small_ntt_params[i].forward_root);
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_polys);
+    }
+}
+
+void DeleteOneTRGSWNTT()
+{
+    for (size_t i = 0; i < one_trgsw_ntt_devs.size(); i++) {
+        cudaSetDevice(i);
+        cudaFree(one_trgsw_ntt_devs[i]);
+    }
+    one_trgsw_ntt_devs.clear();
+}
+#endif  // USE_KEY_BUNDLE
+
 }  // namespace cufhe

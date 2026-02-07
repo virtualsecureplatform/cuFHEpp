@@ -552,4 +552,14 @@ constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(uint32_t);
 template<class P = TFHEpp::lvl1param>
 constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 
+#ifdef USE_KEY_BUNDLE
+extern std::vector<NTTValue*> xai_ntt_devs;
+extern std::vector<NTTValue*> one_trgsw_ntt_devs;
+
+void InitializeXaiNTT(const int gpuNum);
+void InitializeOneTRGSWNTT(const int gpuNum);
+void DeleteXaiNTT();
+void DeleteOneTRGSWNTT();
+#endif
+
 }  // namespace cufhe

@@ -136,6 +136,52 @@ template void BootstrappingKeyToNTT<P>(const BootstrappingKey<P>& bk, \
 INST(TFHEpp::lvl01param);
 #undef INST
 
+#ifdef USE_KEY_BUNDLE
+template<class P>
+void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
+                                  const int gpuNum)
+{
+    constexpr uint32_t num_pairs = P::domainP::k * P::domainP::n / P::Addends;
+    constexpr uint32_t bk_elements_per_pair = (1 << P::Addends) - 1;  // 3 for Addends=2
+    constexpr uint32_t trgsw_polys = (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
+    constexpr size_t total_ntt_elems = num_pairs * bk_elements_per_pair *
+                                       trgsw_polys * P::targetP::n;
+
+    bk_ntts.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+
+        cudaMalloc((void**)&bk_ntts[i], sizeof(NTTValue) * total_ntt_elems);
+
+        // Upload BK data and NTT-transform it
+        // BK layout: bk[pair_idx][bk_elem] is a TRGSW
+        // Each TRGSW has (k+1)*l * (k+1) polynomials of N elements
+        typename P::targetP::T* d_bk;
+        size_t bk_byte_size = sizeof(bk);
+        cudaMalloc((void**)&d_bk, bk_byte_size);
+        cudaMemcpy(d_bk, bk.data(), bk_byte_size, cudaMemcpyHostToDevice);
+
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        // Grid: (k+1) x ((k+1)*l) x (num_pairs * bk_elements_per_pair)
+        dim3 grid(P::targetP::k + 1, (P::targetP::k + 1) * P::targetP::l,
+                  num_pairs * bk_elements_per_pair);
+        dim3 block(P::targetP::n >> NTT_THREAD_UNITBIT);
+        __TRGSW2NTT__<<<grid, block>>>(bk_ntts[i], d_bk, *ntt_handlers[i]);
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_bk);
+    }
+}
+#define INST(P)                                                \
+template void BootstrappingKeyBundleToNTT<P>(const BootstrappingKey<P>& bk, \
+                           const int gpuNum)
+INST(TFHEpp::lvl01param);
+#undef INST
+#endif  // USE_KEY_BUNDLE
+
 void DeleteBootstrappingKeyNTT(const int gpuNum)
 {
     for (int i = 0; i < bk_ntts.size(); i++) {
@@ -390,6 +436,52 @@ __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
     __threadfence();
 }
+
+#ifdef USE_KEY_BUNDLE
+// Key-bundle HomGate variants (IKS-BR order)
+template <class iksP, class brP, std::make_signed_t<typename brP::targetP::T> μ, int casign, int cbsign, std::make_signed_t<typename iksP::domainP::T> offset>
+__device__ inline void __HomGateKeyBundle__(typename brP::targetP::T* const out,
+                                   const typename iksP::domainP::T* const in0,
+                                   const typename iksP::domainP::T* const in1, const NTTValue* const bk,
+                                   const typename iksP::targetP::T* const ksk,
+                                   const NTTValue* const one_trgsw_ntt,
+                                   const NTTValue* const xai_ntt,
+                                   const CuNTTHandler<> ntt)
+{
+    __shared__ typename iksP::targetP::T tlwe[iksP::targetP::k*iksP::targetP::n+1];
+
+    IdentityKeySwitchPreAdd<iksP, casign, cbsign, offset>(tlwe, in0, in1, ksk);
+    __syncthreads();
+
+    __shared__ typename brP::targetP::T trlwe[(brP::targetP::k+1)*brP::targetP::n];
+
+    __BlindRotateKeyBundle__<brP>(trlwe, tlwe, μ, bk, one_trgsw_ntt, xai_ntt, ntt);
+    __SampleExtractIndex__<typename brP::targetP,0>(out,trlwe);
+    __threadfence();
+}
+
+// Key-bundle HomGate variants (BR-IKS order)
+template <class brP, std::make_signed_t<typename brP::targetP::T> μ, class iksP, int casign, int cbsign, std::make_signed_t<typename brP::domainP::T> offset>
+__device__ inline void __HomGateKeyBundle__(typename iksP::targetP::T* const out,
+                                   const typename brP::domainP::T* const in0,
+                                   const typename brP::domainP::T* const in1, const NTTValue* const bk,
+                                   const typename iksP::targetP::T* const ksk,
+                                   const NTTValue* const one_trgsw_ntt,
+                                   const NTTValue* const xai_ntt,
+                                   const CuNTTHandler<> ntt)
+{
+    __shared__ typename brP::targetP::T trlwe[(brP::targetP::k+1)*brP::targetP::n];
+
+    __BlindRotatePreAddKeyBundle__<brP, casign,cbsign,offset>(trlwe,in0,in1,bk,one_trgsw_ntt,xai_ntt,ntt);
+
+    __shared__ typename brP::targetP::T tlwe[brP::targetP::k*brP::targetP::n+1];
+    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe);
+    __syncthreads();
+
+    KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+    __threadfence();
+}
+#endif  // USE_KEY_BUNDLE
 
 // br iks ver.
 template<class brP = TFHEpp::lvl01param, typename brP::targetP::T μ = TFHEpp::lvl1param::μ, class iksP = TFHEpp::lvl10param>
@@ -649,6 +741,198 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __O
     __HomGate__<iksP, brP, μ, 1, -1, iksP::domainP::μ>(out, in0, in1, bk, ksk, ntt);
 }
 
+#ifdef USE_KEY_BUNDLE
+// Key-bundle gate kernels (BR-IKS order)
+#define DEFINE_KB_GATE_BRIKS(Name, casign_val, cbsign_val, offset_expr) \
+template<class brP = TFHEpp::lvl01param, typename brP::targetP::T μ = TFHEpp::lvl1param::μ, class iksP = TFHEpp::lvl10param> \
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __##Name##BootstrapKB__( \
+    typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0, \
+    const typename brP::domainP::T* const in1, NTTValue* bk, const typename iksP::targetP::T* const ksk, \
+    const NTTValue* const one_trgsw_ntt, const NTTValue* const xai_ntt, \
+    const CuNTTHandler<> ntt) \
+{ \
+    __HomGateKeyBundle__<brP, μ, iksP, casign_val, cbsign_val, offset_expr>(out, in0, in1, bk, ksk, one_trgsw_ntt, xai_ntt, ntt); \
+}
+
+DEFINE_KB_GATE_BRIKS(Nand, -1, -1, brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(Nor, -1, -1, -brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(Xnor, -2, -2, -2 * brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(And, 1, 1, -brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(Or, 1, 1, brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(Xor, 2, 2, 2 * brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(AndNY, -1, 1, -brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(AndYN, 1, -1, -brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(OrNY, -1, 1, brP::domainP::μ)
+DEFINE_KB_GATE_BRIKS(OrYN, 1, -1, brP::domainP::μ)
+#undef DEFINE_KB_GATE_BRIKS
+
+// Key-bundle gate kernels (IKS-BR order)
+#define DEFINE_KB_GATE_IKSBR(Name, casign_val, cbsign_val, offset_expr) \
+template<class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param, typename brP::targetP::T μ = TFHEpp::lvl1param::μ> \
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __##Name##BootstrapKB__( \
+    typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0, \
+    const typename iksP::domainP::T* const in1, NTTValue* bk, const typename iksP::targetP::T* const ksk, \
+    const NTTValue* const one_trgsw_ntt, const NTTValue* const xai_ntt, \
+    const CuNTTHandler<> ntt) \
+{ \
+    __HomGateKeyBundle__<iksP, brP, μ, casign_val, cbsign_val, offset_expr>(out, in0, in1, bk, ksk, one_trgsw_ntt, xai_ntt, ntt); \
+}
+
+DEFINE_KB_GATE_IKSBR(Nand, -1, -1, iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(Nor, -1, -1, -iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(Xnor, -2, -2, -2 * iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(And, 1, 1, -iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(Or, 1, 1, iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(Xor, 2, 2, 2 * iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(AndNY, -1, 1, -iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(AndYN, 1, -1, -iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(OrNY, -1, 1, iksP::domainP::μ)
+DEFINE_KB_GATE_IKSBR(OrYN, 1, -1, iksP::domainP::μ)
+#undef DEFINE_KB_GATE_IKSBR
+
+// Key-bundle Mux (BR-IKS order)
+template<class brP, typename brP::targetP::T μ, class iksP>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __MuxBootstrapKB__(
+    typename iksP::targetP::T* const out, const typename brP::domainP::T* const inc,
+    const typename brP::domainP::T* const in1, const typename brP::domainP::T* const in0, const NTTValue* const bk,
+    const typename iksP::targetP::T* const ksk, const NTTValue* const one_trgsw_ntt,
+    const NTTValue* const xai_ntt, const CuNTTHandler<> ntt)
+{
+    __shared__ typename brP::targetP::T trlwe1[(brP::targetP::k+1)*brP::targetP::n];
+    __shared__ typename brP::targetP::T trlwe0[(brP::targetP::k+1)*brP::targetP::n];
+
+    __BlindRotatePreAddKeyBundle__<brP, 1, 1, -brP::domainP::μ>(trlwe1,inc,in1,bk,one_trgsw_ntt,xai_ntt,ntt);
+    __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(trlwe0,inc,in0,bk,one_trgsw_ntt,xai_ntt,ntt);
+
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+    constexpr uint32_t trlwe_size = (brP::targetP::k+1)*brP::targetP::n;
+#pragma unroll
+    for (int i = tid; i < trlwe_size; i += bdim) {
+        trlwe1[i] += trlwe0[i];
+    }
+    if (tid == 0) {
+        trlwe1[brP::targetP::k*brP::targetP::n] += μ;
+    }
+    __syncthreads();
+
+    __shared__ typename brP::targetP::T tlwe[brP::targetP::k*brP::targetP::n+1];
+    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
+    __syncthreads();
+
+    KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+    __threadfence();
+}
+
+// Key-bundle NMux (BR-IKS order)
+template<class brP, typename brP::targetP::T μ, class iksP>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __NMuxBootstrapKB__(
+    typename iksP::targetP::T* const out, const typename brP::domainP::T* const inc,
+    const typename brP::domainP::T* const in1, const typename brP::domainP::T* const in0, const NTTValue* const bk,
+    const typename iksP::targetP::T* const ksk, const NTTValue* const one_trgsw_ntt,
+    const NTTValue* const xai_ntt, const CuNTTHandler<> ntt)
+{
+    __shared__ typename brP::targetP::T trlwe1[(brP::targetP::k+1)*brP::targetP::n];
+    __shared__ typename brP::targetP::T trlwe0[(brP::targetP::k+1)*brP::targetP::n];
+
+    __BlindRotatePreAddKeyBundle__<brP, 1, 1, -brP::domainP::μ>(trlwe1,inc,in1,bk,one_trgsw_ntt,xai_ntt,ntt);
+    __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(trlwe0,inc,in0,bk,one_trgsw_ntt,xai_ntt,ntt);
+
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+    constexpr uint32_t trlwe_size = (brP::targetP::k+1)*brP::targetP::n;
+#pragma unroll
+    for (int i = tid; i < trlwe_size; i += bdim) {
+        trlwe1[i] = -trlwe1[i] - trlwe0[i];
+    }
+    if (tid == 0) {
+        trlwe1[brP::targetP::k*brP::targetP::n] -= μ;
+    }
+    __syncthreads();
+
+    __shared__ typename brP::targetP::T tlwe[brP::targetP::k*brP::targetP::n+1];
+    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
+    __syncthreads();
+
+    KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+    __threadfence();
+}
+
+// Key-bundle Mux (IKS-BR order)
+template<class iksP, class brP, typename brP::targetP::T μ>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __MuxBootstrapKB__(
+    typename brP::targetP::T* const out, const typename iksP::domainP::T* const inc,
+    const typename iksP::domainP::T* const in1, const typename iksP::domainP::T* const in0, const NTTValue* const bk,
+    const typename iksP::targetP::T* const ksk, const NTTValue* const one_trgsw_ntt,
+    const NTTValue* const xai_ntt, const CuNTTHandler<> ntt)
+{
+    __shared__ typename iksP::targetP::T tlwelvl0[iksP::targetP::k*iksP::targetP::n+1];
+
+    IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1, ksk);
+    __syncthreads();
+    __shared__ typename brP::targetP::T tlwe1[(brP::targetP::k+1)*brP::targetP::n];
+    __BlindRotateKeyBundle__<brP>(tlwe1,tlwelvl0,μ,bk,one_trgsw_ntt,xai_ntt,ntt);
+    __SampleExtractIndex__<typename brP::targetP,0>(out, tlwe1);
+
+    IdentityKeySwitchPreAdd<iksP, -1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in0, ksk);
+    __syncthreads();
+    __shared__ typename brP::targetP::T tlwe0[(brP::targetP::k+1)*brP::targetP::n];
+    __BlindRotateKeyBundle__<brP>(tlwe0,tlwelvl0,μ,bk,one_trgsw_ntt,xai_ntt,ntt);
+    __SampleExtractIndex__<typename brP::targetP,0>(tlwe1, tlwe0);
+
+    __syncthreads();
+
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+    constexpr uint32_t tlwe_size = brP::targetP::k*brP::targetP::n + 1;
+#pragma unroll
+    for (int i = tid; i < tlwe_size; i += bdim) {
+        out[i] += tlwe1[i];
+    }
+    if (tid == 0) {
+        out[brP::targetP::k*brP::targetP::n] += μ;
+    }
+    __threadfence();
+}
+
+// Key-bundle NMux (IKS-BR order)
+template<class iksP, class brP, typename brP::targetP::T μ>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __NMuxBootstrapKB__(
+    typename brP::targetP::T* const out, const typename iksP::domainP::T* const inc,
+    const typename iksP::domainP::T* const in1, const typename iksP::domainP::T* const in0, const NTTValue* const bk,
+    const typename iksP::targetP::T* const ksk, const NTTValue* const one_trgsw_ntt,
+    const NTTValue* const xai_ntt, const CuNTTHandler<> ntt)
+{
+    __shared__ typename iksP::targetP::T tlwelvl0[iksP::targetP::k*iksP::targetP::n+1];
+
+    IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1, ksk);
+    __syncthreads();
+    __shared__ typename brP::targetP::T tlwe1[(brP::targetP::k+1)*brP::targetP::n];
+    __BlindRotateKeyBundle__<brP>(tlwe1,tlwelvl0,μ,bk,one_trgsw_ntt,xai_ntt,ntt);
+    __SampleExtractIndex__<typename brP::targetP,0>(out, tlwe1);
+
+    IdentityKeySwitchPreAdd<iksP, -1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in0, ksk);
+    __syncthreads();
+    __shared__ typename brP::targetP::T tlwe0[(brP::targetP::k+1)*brP::targetP::n];
+    __BlindRotateKeyBundle__<brP>(tlwe0,tlwelvl0,μ,bk,one_trgsw_ntt,xai_ntt,ntt);
+    __SampleExtractIndex__<typename brP::targetP,0>(tlwe1, tlwe0);
+
+    __syncthreads();
+
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+    constexpr uint32_t tlwe_size = brP::targetP::k*brP::targetP::n + 1;
+#pragma unroll
+    for (int i = tid; i < tlwe_size; i += bdim) {
+        out[i] = -out[i] - tlwe1[i];
+    }
+    if (tid == 0) {
+        out[brP::targetP::k*brP::targetP::n] -= μ;
+    }
+    __threadfence();
+}
+#endif  // USE_KEY_BUNDLE
+
 template<class P>
 __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CopyBootstrap__(
     typename P::T* const out, const typename P::T* const in)
@@ -806,12 +1090,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void NandBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__NandBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __NandBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__NandBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __NandBootstrap__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -823,12 +1117,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void NandBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__NandBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __NandBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__NandBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __NandBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -841,12 +1145,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void OrBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__OrBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __OrBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__OrBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __OrBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -858,12 +1172,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void OrBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__OrBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __OrBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__OrBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __OrBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -876,12 +1200,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void OrYNBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__OrYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __OrYNBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__OrYNBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __OrYNBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -893,12 +1227,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void OrYNBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__OrYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __OrYNBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__OrYNBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __OrYNBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -911,12 +1255,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void OrNYBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__OrNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __OrNYBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__OrNYBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __OrNYBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -928,12 +1282,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void OrNYBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__OrNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __OrNYBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__OrNYBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __OrNYBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -946,12 +1310,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void AndBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__AndBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __AndBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__AndBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __AndBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -963,12 +1337,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void AndBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__AndBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __AndBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__AndBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __AndBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -981,12 +1365,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void AndYNBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__AndYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __AndYNBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__AndYNBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __AndYNBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -998,12 +1392,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void AndYNBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__AndYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __AndYNBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__AndYNBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __AndYNBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -1016,12 +1420,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void AndNYBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__AndNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __AndNYBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__AndNYBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __AndNYBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -1033,12 +1447,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void AndNYBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__AndNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __AndNYBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__AndNYBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __AndNYBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -1051,12 +1475,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void NorBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__NorBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __NorBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__NorBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __NorBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -1068,12 +1502,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void NorBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__NorBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __NorBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__NorBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __NorBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -1086,12 +1530,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void XorBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__XorBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __XorBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__XorBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __XorBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -1103,12 +1557,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void XorBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__XorBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __XorBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__XorBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __XorBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -1121,12 +1585,22 @@ template<class brP, typename brP::targetP::T μ, class iksP>
 void XnorBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__XnorBootstrapKB__<brP, brP::targetP::μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __XnorBootstrapKB__<brP, μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__XnorBootstrap__<brP, brP::targetP::μ, iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __XnorBootstrap__<brP, brP::targetP::μ, iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -1138,12 +1612,22 @@ template<class iksP, class brP, typename brP::targetP::T μ>
 void XnorBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__XnorBootstrapKB__<iksP, brP, brP::targetP::μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4HOMGATE<typename brP::targetP>);
+    __XnorBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
+        out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+        *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__XnorBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          MEM4HOMGATE<typename brP::targetP>);
     __XnorBootstrap__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, MEM4HOMGATE<typename brP::targetP>, st>>>(
         out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
         *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -1185,6 +1669,16 @@ void MuxBootstrap(typename iksP::targetP::T* const out, const typename brP::doma
                   const typename brP::domainP::T* const in1, const typename brP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__MuxBootstrapKB__<brP,μ,iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
+    __MuxBootstrapKB__<brP,μ,iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
+                       ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
+                       st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
+                             ksk_devs[gpuNum], one_trgsw_ntt_devs[gpuNum],
+                             xai_ntt_devs[gpuNum], *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__MuxBootstrap__<brP,μ,iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
@@ -1192,6 +1686,7 @@ void MuxBootstrap(typename iksP::targetP::T* const out, const typename brP::doma
                        ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
                        st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
                              ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
@@ -1205,6 +1700,16 @@ void MuxBootstrap(typename brP::targetP::T* const out, const typename iksP::doma
                   const typename iksP::domainP::T* const in1, const typename iksP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__MuxBootstrapKB__<iksP,brP,μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
+    __MuxBootstrapKB__<iksP,brP,μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
+                       ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
+                       st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
+                             ksk_devs[gpuNum], one_trgsw_ntt_devs[gpuNum],
+                             xai_ntt_devs[gpuNum], *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__MuxBootstrap__<iksP,brP,μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
@@ -1212,6 +1717,7 @@ void MuxBootstrap(typename brP::targetP::T* const out, const typename iksP::doma
                        ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
                        st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
                              ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -1223,9 +1729,19 @@ INST(TFHEpp::lvl10param, TFHEpp::lvl01param, TFHEpp::lvl1param::μ);
 
 template<class iksP, class brP, typename brP::targetP::T μ>
 void NMuxBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const inc,
-                  const typename iksP::domainP::T* const in1, const typename iksP::domainP::T* const in0, 
+                  const typename iksP::domainP::T* const in1, const typename iksP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__NMuxBootstrapKB__<iksP,brP,μ>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
+    __NMuxBootstrapKB__<iksP, brP, μ><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
+                       ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
+                       st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
+                             ksk_devs[gpuNum], one_trgsw_ntt_devs[gpuNum],
+                             xai_ntt_devs[gpuNum], *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__NMuxBootstrap__<iksP,brP,μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
@@ -1233,6 +1749,7 @@ void NMuxBootstrap(typename brP::targetP::T* const out, const typename iksP::dom
                        ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
                        st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
                              ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(iksP, brP, μ)                                                \
@@ -1246,6 +1763,16 @@ void NMuxBootstrap(typename iksP::targetP::T* const out, const typename brP::dom
                   const typename brP::domainP::T* const in1, const typename brP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum)
 {
+#ifdef USE_KEY_BUNDLE
+    cudaFuncSetAttribute(__NMuxBootstrapKB__<brP,μ,iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
+    __NMuxBootstrapKB__<brP,μ,iksP><<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
+                       ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
+                       st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
+                             ksk_devs[gpuNum], one_trgsw_ntt_devs[gpuNum],
+                             xai_ntt_devs[gpuNum], *ntt_handlers[gpuNum]);
+#else
     cudaFuncSetAttribute(__NMuxBootstrap__<brP,μ,iksP>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                          ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue));
@@ -1253,6 +1780,7 @@ void NMuxBootstrap(typename iksP::targetP::T* const out, const typename brP::dom
                        ((brP::targetP::k+1) * brP::targetP::l + 3) * brP::targetP::n * sizeof(NTTValue),
                        st>>>(out, inc, in1, in0, bk_ntts[gpuNum],
                              ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
+#endif
     CuCheckError();
 }
 #define INST(brP, μ, iksP)                                                \
