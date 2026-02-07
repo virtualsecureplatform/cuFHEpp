@@ -7,7 +7,10 @@ set(CUFHE_GPU_SOURCES
     ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
 )
 if(USE_FFT)
-    list(APPEND CUFHE_GPU_SOURCES fft_negacyclic.cu)  # Negacyclic FFT twiddle factors
+    # Twiddle data from tfhe-rs (BSD 3-Clause Clear, ZAMA)
+    # Must be in same link unit for CUDA __device__ variable resolution
+    list(APPEND CUFHE_GPU_SOURCES
+        ${PROJECT_SOURCE_DIR}/thirdparties/tfhe-rs-fft/fft_negacyclic.cu)
 endif()
 add_library(cufhe_gpu ${CUFHE_GPU_SOURCES})
 
@@ -21,6 +24,10 @@ target_include_directories(cufhe_gpu
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/spqlios
     ${PROJECT_SOURCE_DIR}/thirdparties/GPU-NTT/src/include
     )
+if(USE_FFT)
+    target_include_directories(cufhe_gpu
+        PUBLIC ${PROJECT_SOURCE_DIR}/thirdparties/tfhe-rs-fft)
+endif()
 set_target_properties(cufhe_gpu PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 set_target_properties(cufhe_gpu PROPERTIES CUDA_ARCHITECTURES 80) #A100
 

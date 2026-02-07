@@ -25,7 +25,7 @@
 #include <include/utils_gpu.cuh>
 
 #ifdef USE_FFT
-#include <include/fft_negacyclic.cuh>
+#include <fft_negacyclic.cuh>
 #endif
 
 namespace cufhe {
