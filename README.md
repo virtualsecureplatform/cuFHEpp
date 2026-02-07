@@ -18,9 +18,11 @@ The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (
 
 By default, cuFHEpp uses a negacyclic FFT over double-precision complex numbers adapted from the [tfhe-rs](https://github.com/zama-ai/tfhe-rs) CUDA backend (BSD 3-Clause Clear License, ZAMA). The half-size FFT trick packs N real coefficients into N/2 complex values, eliminating modular reduction overhead and leveraging native FMA instructions. A small-modulus NTT path (using [GPU-NTT](https://github.com/Alisah-Ozcan/GPU-NTT)) is also available via `-DUSE_FFT=OFF`.
 
-| [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) | cuFHEpp (FFT) | cuFHEpp (NTT) |
-|---|---|---|
-| 10 ms | 14 ms | 18 ms |
+Key bundle bootstrapping (`-DUSE_KEY_BUNDLE=ON`, default) processes 2 LWE bits per blind rotation step, reducing the number of iterations by half at the cost of a slightly more complex per-step computation. This yields a ~10-17% throughput improvement over the standard 1-bit blind rotation.
+
+| [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) | cuFHEpp (FFT+KeyBundle) | cuFHEpp (FFT) | cuFHEpp (NTT) |
+|---|---|---|---|
+| 10 ms | 12 ms | 14 ms | 18 ms |
 
 ### System Requirements
 **The library has been tested on Ubuntu Desktop 24.04 & NVIDIA A100 only.**

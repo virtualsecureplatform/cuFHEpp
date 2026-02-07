@@ -368,9 +368,145 @@ __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
     }
 }
 
-#if defined(USE_KEY_BUNDLE) && !defined(USE_FFT)
+#ifdef USE_KEY_BUNDLE
+#ifdef USE_FFT
 /**
- * Key-bundle ExternalProduct accumulator
+ * FFT Key-bundle ExternalProduct accumulator
+ *
+ * Decomposes acc directly, FFTs decomposed polynomial, multiplies with
+ * on-the-fly keybundle in Fourier domain, IFFTs and REPLACEs acc.
+ *
+ * combined = one_fft + bk2_fft*xai_fft[a1] + bk1_fft*xai_fft[a0] + bk0_fft*xai_fft[a0+a1]
+ */
+template<class P>
+__device__ inline void AccumulateKeyBundle(
+    typename P::targetP::T* const trlwe,
+    NTTValue* const sh_acc_ntt,
+    const uint32_t bara0,
+    const uint32_t bara1,
+    const NTTValue* const bk0_fft,  // Enc(s0*s1)
+    const NTTValue* const bk1_fft,  // Enc(s0*(1-s1))
+    const NTTValue* const bk2_fft,  // Enc((1-s0)*s1)
+    const NTTValue* const one_trgsw_fft,
+    const NTTValue* const xai_fft,
+    const CuNTTHandler<> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N / (Degree<N>::opt / 2);
+
+    double2* const sh_fft = &sh_acc_ntt[0];
+    double2* const sh_accum = &sh_acc_ntt[HALF_N];
+
+    // Initialize accumulated results to zero
+    for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
+        sh_accum[i] = {0.0, 0.0};
+    }
+    __syncthreads();
+
+    // Decomposition constants
+    constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
+    constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
+    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T roundoffset =
+        1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
+                 P::targetP::l * P::targetP::Bgbit - 1);
+
+    // Precompute combined bara for bk0 (a0+a1 mod 2N)
+    const uint32_t bara01 = (bara0 + bara1) & (2 * N - 1);
+
+    for (int j = 0; j <= P::targetP::k; j++) {
+        for (int digit = 0; digit < P::targetP::l; digit++) {
+            // Step 1: Decompose trlwe[j] directly (no MulByXaiMinus) and pack
+            if (tid < HALF_N) {
+                // First-half coefficient (index tid)
+                typename P::targetP::T temp_re = trlwe[j * N + tid];
+                temp_re += decomp_offset + roundoffset;
+                int32_t digit_re = static_cast<int32_t>(
+                    ((temp_re >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                // Second-half coefficient (index tid + N/2)
+                typename P::targetP::T temp_im = trlwe[j * N + tid + HALF_N];
+                temp_im += decomp_offset + roundoffset;
+                int32_t digit_im = static_cast<int32_t>(
+                    ((temp_im >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                sh_fft[tid] = {static_cast<double>(digit_re),
+                               static_cast<double>(digit_im)};
+            }
+            __syncthreads();
+
+            // Step 2: Forward FFT
+            if (tid < FFT_THREADS) {
+                NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
+            } else {
+                for (int s = 0; s < 11; s++) __syncthreads();
+            }
+
+            // Step 3: Multiply with on-the-fly keybundle and accumulate
+            int digit_linear = j * P::targetP::l + digit;
+            if (tid < HALF_N) {
+                double2 fft_val = sh_fft[tid];
+
+                // Load xai FFT values
+                double2 xai0 = __ldg(&xai_fft[bara0 * HALF_N + tid]);
+                double2 xai1 = __ldg(&xai_fft[bara1 * HALF_N + tid]);
+                double2 xai01 = __ldg(&xai_fft[bara01 * HALF_N + tid]);
+
+                #pragma unroll
+                for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
+                    uint32_t bk_offset = ((P::targetP::k + 1) * digit_linear + out_k) * HALF_N + tid;
+
+                    double2 one_val = __ldg(&one_trgsw_fft[bk_offset]);
+                    double2 bk0_val = __ldg(&bk0_fft[bk_offset]);
+                    double2 bk1_val = __ldg(&bk1_fft[bk_offset]);
+                    double2 bk2_val = __ldg(&bk2_fft[bk_offset]);
+
+                    // combined = one + bk2*xai1 + bk1*xai0 + bk0*xai01
+                    double2 combined = one_val;
+                    combined += bk2_val * xai1;
+                    combined += bk1_val * xai0;
+                    combined += bk0_val * xai01;
+
+                    sh_accum[out_k * HALF_N + tid] += fft_val * combined;
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    // Step 4: Inverse FFT and REPLACE trlwe (not add)
+    constexpr double denorm = 4294967296.0;  // 2^32
+    for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
+        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+        if (tid < FFT_THREADS) {
+            NSMFFT_inverse<HalfDegree<Degree<N>>>(sh_inv);
+        } else {
+            for (int s = 0; s < 11; s++) __syncthreads();
+        }
+
+        if (tid < HALF_N) {
+            double2 val = sh_inv[tid];
+            trlwe[k_idx * N + tid]          = static_cast<uint32_t>(static_cast<int64_t>(llrint(val.x * denorm)));
+            trlwe[k_idx * N + tid + HALF_N] = static_cast<uint32_t>(static_cast<int64_t>(llrint(val.y * denorm)));
+        }
+        __syncthreads();
+    }
+}
+#else  // !USE_FFT
+/**
+ * NTT Key-bundle ExternalProduct accumulator
  *
  * Instead of computing (X^bar - 1) * acc and adding to acc (CMUX),
  * this decomposes acc directly and replaces it with the ExternalProduct result.
@@ -513,6 +649,7 @@ __device__ inline void AccumulateKeyBundle(
         __syncthreads();
     }
 }
+#endif  // USE_FFT
 
 template<class P>
 __device__ inline void __BlindRotateKeyBundle__(
@@ -538,7 +675,11 @@ __device__ inline void __BlindRotateKeyBundle__(
     // accumulate in pairs
     constexpr uint32_t n = P::domainP::k * P::domainP::n;
     constexpr uint32_t num_pairs = n / P::Addends;
+#ifdef USE_FFT
+    constexpr uint32_t trgsw_size = (P::targetP::k + 1) * (P::targetP::k + 1) * P::targetP::l * (P::targetP::n / 2);
+#else
     constexpr uint32_t trgsw_size = (P::targetP::k + 1) * (P::targetP::k + 1) * P::targetP::l * P::targetP::n;
+#endif
 
     for (uint32_t i = 0; i < num_pairs; i++) {
         constexpr typename P::domainP::T roundoffset =
@@ -582,7 +723,11 @@ __device__ inline void __BlindRotatePreAddKeyBundle__(
     // accumulate in pairs
     constexpr uint32_t n = P::domainP::k * P::domainP::n;
     constexpr uint32_t num_pairs = n / P::Addends;
+#ifdef USE_FFT
+    constexpr uint32_t trgsw_size = (P::targetP::k + 1) * (P::targetP::k + 1) * P::targetP::l * (P::targetP::n / 2);
+#else
     constexpr uint32_t trgsw_size = (P::targetP::k + 1) * (P::targetP::k + 1) * P::targetP::l * P::targetP::n;
+#endif
 
     for (uint32_t i = 0; i < num_pairs; i++) {
         constexpr typename P::domainP::T roundoffset =

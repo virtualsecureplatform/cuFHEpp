@@ -9,7 +9,7 @@ option(USE_RANDEN "Use randen as CSPRNG" OFF)
 option(USE_80BIT_SECURITY "Use 80bit security parameter(faster)" OFF)
 option(USE_CGGI19 "Use the parameter set proposed in CGGI19" OFF)
 option(USE_CONCRETE "Use the parameter set proposed in CONCRETE" OFF)
-option(USE_KEY_BUNDLE "Use key bundle algorithm (2-bit multi-bit bootstrapping)" OFF)
+option(USE_KEY_BUNDLE "Use key bundle algorithm (2-bit multi-bit bootstrapping)" ON)
 option(USE_FFT "Use negacyclic FFT instead of NTT (tfhe-rs style)" ON)
 
 
