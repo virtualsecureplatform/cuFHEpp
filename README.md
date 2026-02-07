@@ -14,11 +14,13 @@ We provide the BibTeX for citing this library, but since this is a forked versio
 
 
 ## What is cuFHEpp?
-The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (FHE) on CUDA-enabled GPUs. It implements the TFHE scheme [CGGI16][CGGI17] proposed by Chillotti et al. in CUDA C++. Compared to the [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp), which reports the fastest gate-by-gate bootstrapping performance on CPUs, the cuFHEpp library yields almost the same performance per SM. Since the GPU has many SMs (128 in the A100), cuFHEpp delivers better performance when there are enough parallelizable tasks. The cuFHEpp library benefits greatly from an improved CUDA implementation of the number-theoretic transform (NTT), [GPU-NTT](https://github.com/Alisah-Ozcan/GPU-NTT).
+The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (FHE) on CUDA-enabled GPUs. It implements the TFHE scheme [CGGI16][CGGI17] proposed by Chillotti et al. in CUDA C++. Compared to the [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp), which reports the fastest gate-by-gate bootstrapping performance on CPUs, the cuFHEpp library yields almost the same performance per SM. Since the GPU has many SMs (128 in the A100), cuFHEpp delivers better performance when there are enough parallelizable tasks.
 
-| [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) | cuFHE |
-|---|---|
-| 10 ms | 27 ms |
+By default, cuFHEpp uses a negacyclic FFT over double-precision complex numbers adapted from the [tfhe-rs](https://github.com/zama-ai/tfhe-rs) CUDA backend (BSD 3-Clause Clear License, ZAMA). The half-size FFT trick packs N real coefficients into N/2 complex values, eliminating modular reduction overhead and leveraging native FMA instructions. A small-modulus NTT path (using [GPU-NTT](https://github.com/Alisah-Ozcan/GPU-NTT)) is also available via `-DUSE_FFT=OFF`.
+
+| [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) | cuFHEpp (FFT) | cuFHEpp (NTT) |
+|---|---|---|
+| 10 ms | 14 ms | 18 ms |
 
 ### System Requirements
 **The library has been tested on Ubuntu Desktop 24.04 & NVIDIA A100 only.**
