@@ -27,42 +27,42 @@
 
 namespace cufhe {
 
-inline
-void CuSafeCall__(cudaError err, const char *file, const int line) {
-	if (cudaSuccess != err) {
-		fprintf( stderr, "CuSafeCall() failed at %s:%i : %s\n", file, line,
-				cudaGetErrorString(err));
-		exit(-1);
-	}
-	return;
+inline void CuSafeCall__(cudaError err, const char *file, const int line)
+{
+    if (cudaSuccess != err) {
+        fprintf(stderr, "CuSafeCall() failed at %s:%i : %s\n", file, line,
+                cudaGetErrorString(err));
+        exit(-1);
+    }
+    return;
 }
 
-inline
-void CuCheckError__(const char *file, const int line) {
-	cudaError err = cudaGetLastError();
-	if (cudaSuccess != err) {
-		fprintf(stderr, "CuCheckError() failed at %s:%i : %s\n", file, line,
-				cudaGetErrorString(err));
-		exit(-1);
-	}
-	// More careful checking. However, this will affect performance.
-	// Comment out if needed.
-	//#define safer
-	#ifdef SAFER
-	err = cudaDeviceSynchronize();
-	if (cudaSuccess != err) {
-		fprintf(stderr, "CuCheckError() with sync failed at %s:%i : %s\n", file,
-				line, cudaGetErrorString(err));
-		exit(-1);
-	}
-	#endif
-	return;
+inline void CuCheckError__(const char *file, const int line)
+{
+    cudaError err = cudaGetLastError();
+    if (cudaSuccess != err) {
+        fprintf(stderr, "CuCheckError() failed at %s:%i : %s\n", file, line,
+                cudaGetErrorString(err));
+        exit(-1);
+    }
+// More careful checking. However, this will affect performance.
+// Comment out if needed.
+// #define safer
+#ifdef SAFER
+    err = cudaDeviceSynchronize();
+    if (cudaSuccess != err) {
+        fprintf(stderr, "CuCheckError() with sync failed at %s:%i : %s\n", file,
+                line, cudaGetErrorString(err));
+        exit(-1);
+    }
+#endif
+    return;
 }
 
 // @brief Report error location and terminate, if "cudaError != SUCCESS".
-#define CuSafeCall(err)	CuSafeCall__(err, __FILE__, __LINE__)
+#define CuSafeCall(err) CuSafeCall__(err, __FILE__, __LINE__)
 
 // @brief Report error location and terminate, if last "cudaError != SUCCESS".
-#define CuCheckError()	CuCheckError__(__FILE__, __LINE__)
+#define CuCheckError() CuCheckError__(__FILE__, __LINE__)
 
-} // namespace cufhe
+}  // namespace cufhe

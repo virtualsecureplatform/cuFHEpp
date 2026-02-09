@@ -28,16 +28,16 @@ namespace cufhe {
 
 #ifdef __CUDACC__
 
-__device__ inline
-uint32_t ThisThreadRankInBlock() {
-  return threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
+__device__ inline uint32_t ThisThreadRankInBlock()
+{
+    return threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
 }
 
-__device__ inline
-uint32_t ThisBlockSize() {
-  return blockDim.x * blockDim.y * blockDim.z;
+__device__ inline uint32_t ThisBlockSize()
+{
+    return blockDim.x * blockDim.y * blockDim.z;
 }
 
-#endif // __CUDACC__
+#endif  // __CUDACC__
 
-} // namespace cufhe
+}  // namespace cufhe

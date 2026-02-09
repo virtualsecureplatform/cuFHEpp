@@ -2,7 +2,8 @@
  * Small Modulus NTT implementation for cuFHE
  *
  * This implements the RAINTT-style approach where:
- * - Torus discretization switches from 2^32 to NTT modulus before multiplication
+ * - Torus discretization switches from 2^32 to NTT modulus before
+ * multiplication
  * - After INTT, results are converted back to 2^32 discretization
  *
  * This is more efficient than the 64-bit modulus approach for certain use cases
@@ -19,17 +20,18 @@
 #pragma once
 
 #include <cuda_runtime.h>
+
 #include <cstdint>
-#include <vector>
-#include <params.hpp>
 #include <include/utils_gpu.cuh>
+#include <params.hpp>
+#include <vector>
 
 #ifdef USE_FFT
-  #ifdef USE_GPU_FFT
-    // GPU-FFT: no fft_negacyclic.cuh needed; tables stored in handler
-  #else
-    #include <fft_negacyclic.cuh>
-  #endif
+#ifdef USE_GPU_FFT
+// GPU-FFT: no fft_negacyclic.cuh needed; tables stored in handler
+#else
+#include <fft_negacyclic.cuh>
+#endif
 #endif
 
 namespace cufhe {
@@ -45,20 +47,23 @@ namespace small_ntt {
 // Largest NTT-friendly prime below 2^31 for overflow-free 32-bit add/sub
 constexpr uint32_t K = 1048571;
 constexpr uint32_t SHIFTAMOUNT = 11;
-constexpr uint32_t WORDBITS = 32;     // Using 32-bit arithmetic on GPU
+constexpr uint32_t WORDBITS = 32;  // Using 32-bit arithmetic on GPU
 
 // NTT modulus: P = K * 2^shiftamount + 1 = 2147473409
 constexpr uint32_t P = (K << SHIFTAMOUNT) + 1;  // 2147473409
 
 // Verify safety constraint at compile time: 2*P^2 < 2^64
-// P must be less than sqrt(2^63) ≈ 3.03 billion for safe 64-bit Montgomery reduction
-static_assert(P < 3037000500ULL, "Modulus too large for safe Montgomery reduction");
+// P must be less than sqrt(2^63) ≈ 3.03 billion for safe 64-bit Montgomery
+// reduction
+static_assert(P < 3037000500ULL,
+              "Modulus too large for safe Montgomery reduction");
 
 // Barrett reduction parameters for 32-bit modulus
 // k must be >= 2*ceil(log2(P)) = 62 for correct single-subtraction Barrett
 constexpr uint32_t MODULUS_BITS = 32;
 constexpr uint32_t BARRETT_K = 62;
-constexpr uint64_t BARRETT_MU = (1ULL << BARRETT_K) / P;  // Pre-computed for Barrett reduction
+constexpr uint64_t BARRETT_MU =
+    (1ULL << BARRETT_K) / P;  // Pre-computed for Barrett reduction
 
 // Montgomery constant: R = 2^32 mod P
 constexpr uint64_t R_TEMP = (1ULL << 32) % P;
@@ -85,26 +90,34 @@ constexpr uint64_t INV_MODSWITCH_MUL = (1ULL << 63) / P;
 //=============================================================================
 
 class FFP32 {
-private:
+   private:
     uint32_t val_;
 
-public:
+   public:
     __host__ __device__ inline FFP32() : val_(0) {}
     __host__ __device__ inline FFP32(uint32_t a) : val_(a % small_ntt::P) {}
-    __host__ __device__ inline FFP32(int32_t a) {
+    __host__ __device__ inline FFP32(int32_t a)
+    {
         if (a < 0) {
             val_ = small_ntt::P - (static_cast<uint32_t>(-a) % small_ntt::P);
             if (val_ == small_ntt::P) val_ = 0;
-        } else {
+        }
+        else {
             val_ = static_cast<uint32_t>(a) % small_ntt::P;
         }
     }
 
     __host__ __device__ inline uint32_t& val() { return val_; }
     __host__ __device__ inline const uint32_t& val() const { return val_; }
-    __host__ __device__ inline static constexpr uint32_t kModulus() { return small_ntt::P; }
+    __host__ __device__ inline static constexpr uint32_t kModulus()
+    {
+        return small_ntt::P;
+    }
 
-    __host__ __device__ inline explicit operator uint32_t() const { return val_; }
+    __host__ __device__ inline explicit operator uint32_t() const
+    {
+        return val_;
+    }
 };
 
 //=============================================================================
@@ -119,20 +132,23 @@ extern __constant__ uint32_t d_const_forward_root[1024];
 extern __constant__ uint32_t d_const_inverse_root[1024];
 
 // Modular addition: (a + b) mod P
-__device__ __forceinline__ uint32_t small_mod_add(uint32_t a, uint32_t b) {
+__device__ __forceinline__ uint32_t small_mod_add(uint32_t a, uint32_t b)
+{
     uint32_t sum = a + b;
     return (sum >= small_ntt::P) ? (sum - small_ntt::P) : sum;
 }
 
 // Modular subtraction: (a - b) mod P
-__device__ __forceinline__ uint32_t small_mod_sub(uint32_t a, uint32_t b) {
+__device__ __forceinline__ uint32_t small_mod_sub(uint32_t a, uint32_t b)
+{
     uint32_t diff = a + small_ntt::P - b;
     return (diff >= small_ntt::P) ? (diff - small_ntt::P) : diff;
 }
 
 // Modular multiplication: (a * b) mod P
 // Uses Barrett reduction with k=62 for correct single-subtraction guarantee
-__device__ __forceinline__ uint32_t small_mod_mult(uint32_t a, uint32_t b) {
+__device__ __forceinline__ uint32_t small_mod_mult(uint32_t a, uint32_t b)
+{
     constexpr uint32_t p = small_ntt::P;
     constexpr uint64_t mu = small_ntt::BARRETT_MU;  // floor(2^62 / P), ~31 bits
 
@@ -157,7 +173,8 @@ __device__ __forceinline__ uint32_t small_mod_mult(uint32_t a, uint32_t b) {
  *
  * This switches the discretization from Torus (mod 2^32) to NTT domain (mod P)
  */
-__device__ __forceinline__ uint32_t torus32_to_ntt_mod(uint32_t torus_val) {
+__device__ __forceinline__ uint32_t torus32_to_ntt_mod(uint32_t torus_val)
+{
     constexpr uint32_t P32 = small_ntt::P;
 
     // res = (a * P + 2^31) >> 32  (rounding)
@@ -178,12 +195,14 @@ __device__ __forceinline__ uint32_t torus32_to_ntt_mod(uint32_t torus_val) {
  *
  * This switches back from NTT domain (mod P) to Torus (mod 2^32)
  */
-__device__ __forceinline__ uint32_t ntt_mod_to_torus32(int32_t ntt_val) {
+__device__ __forceinline__ uint32_t ntt_mod_to_torus32(int32_t ntt_val)
+{
     constexpr uint32_t P = small_ntt::P;
 
     // Handle signed value: convert to [0, P) range
-    uint32_t a = (ntt_val < 0) ? static_cast<uint32_t>(ntt_val + static_cast<int32_t>(P))
-                               : static_cast<uint32_t>(ntt_val);
+    uint32_t a = (ntt_val < 0)
+                     ? static_cast<uint32_t>(ntt_val + static_cast<int32_t>(P))
+                     : static_cast<uint32_t>(ntt_val);
 
     // res = round((a * 2^32) / P) = (a * (2^63 / P) + 2^30) >> 31
     uint64_t temp = static_cast<uint64_t>(a) * small_ntt::INV_MODSWITCH_MUL;
@@ -192,7 +211,9 @@ __device__ __forceinline__ uint32_t ntt_mod_to_torus32(int32_t ntt_val) {
 }
 
 // Cooley-Tukey butterfly for forward NTT
-__device__ __forceinline__ void SmallCooleyTukeyUnit(uint32_t& U, uint32_t& V, uint32_t root) {
+__device__ __forceinline__ void SmallCooleyTukeyUnit(uint32_t& U, uint32_t& V,
+                                                     uint32_t root)
+{
     uint32_t u = U;
     uint32_t v = small_mod_mult(V, root);
     U = small_mod_add(u, v);
@@ -200,7 +221,10 @@ __device__ __forceinline__ void SmallCooleyTukeyUnit(uint32_t& U, uint32_t& V, u
 }
 
 // Gentleman-Sande butterfly for inverse NTT
-__device__ __forceinline__ void SmallGentlemanSandeUnit(uint32_t& U, uint32_t& V, uint32_t root) {
+__device__ __forceinline__ void SmallGentlemanSandeUnit(uint32_t& U,
+                                                        uint32_t& V,
+                                                        uint32_t root)
+{
     uint32_t u = U;
     uint32_t v = V;
     U = small_mod_add(u, v);
@@ -212,9 +236,7 @@ __device__ __forceinline__ void SmallGentlemanSandeUnit(uint32_t& U, uint32_t& V
  * Uses 512 threads, each handles 2 elements
  */
 __device__ __forceinline__ void SmallForwardNTT32_1024(
-    uint32_t* sh,
-    const uint32_t* root_table,
-    int tid)
+    uint32_t* sh, const uint32_t* root_table, int tid)
 {
     constexpr int N_power = 10;
 
@@ -226,9 +248,9 @@ __device__ __forceinline__ void SmallForwardNTT32_1024(
     int in_shared_address = ((tid >> t_) << t_) + tid;
     int current_root_index;
 
-    // First 4 stages need syncthreads
-    // Uses constant memory for root table (broadcast cache benefits stages 0-4)
-    #pragma unroll
+// First 4 stages need syncthreads
+// Uses constant memory for root table (broadcast cache benefits stages 0-4)
+#pragma unroll
     for (int lp = 0; lp < 4; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit(sh[in_shared_address], sh[in_shared_address + t],
@@ -242,9 +264,9 @@ __device__ __forceinline__ void SmallForwardNTT32_1024(
         __syncthreads();
     }
 
-    // Last 6 stages - warp-local
-    // Uses __ldg for root table (texture cache handles scattered accesses better)
-    #pragma unroll
+// Last 6 stages - warp-local
+// Uses __ldg for root table (texture cache handles scattered accesses better)
+#pragma unroll
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit(sh[in_shared_address], sh[in_shared_address + t],
@@ -264,10 +286,7 @@ __device__ __forceinline__ void SmallForwardNTT32_1024(
  * Uses 512 threads, each handles 2 elements
  */
 __device__ __forceinline__ void SmallInverseNTT32_1024(
-    uint32_t* sh,
-    const uint32_t* root_table,
-    uint32_t n_inverse,
-    int tid)
+    uint32_t* sh, const uint32_t* root_table, uint32_t n_inverse, int tid)
 {
     constexpr int N_power = 10;
 
@@ -279,12 +298,13 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
     int in_shared_address = ((tid >> t_) << t_) + tid;
     int current_root_index;
 
-    // First 6 stages - warp-local
-    // Uses __ldg for root table (texture cache handles scattered accesses better)
-    #pragma unroll
+// First 6 stages - warp-local
+// Uses __ldg for root table (texture cache handles scattered accesses better)
+#pragma unroll
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
-        SmallGentlemanSandeUnit(sh[in_shared_address], sh[in_shared_address + t],
+        SmallGentlemanSandeUnit(sh[in_shared_address],
+                                sh[in_shared_address + t],
                                 __ldg(&root_table[current_root_index]));
 
         t = t << 1;
@@ -295,12 +315,13 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
     }
     __syncthreads();
 
-    // Last 4 stages - need sync
-    // Uses constant memory for root table (broadcast cache benefits these stages)
-    #pragma unroll
+// Last 4 stages - need sync
+// Uses constant memory for root table (broadcast cache benefits these stages)
+#pragma unroll
     for (int lp = 0; lp < 4; lp++) {
         current_root_index = m + (tid >> t_2);
-        SmallGentlemanSandeUnit(sh[in_shared_address], sh[in_shared_address + t],
+        SmallGentlemanSandeUnit(sh[in_shared_address],
+                                sh[in_shared_address + t],
                                 d_const_inverse_root[current_root_index]);
 
         t = t << 1;
@@ -317,7 +338,7 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
     __syncthreads();
 }
 
-#endif // __CUDACC__
+#endif  // __CUDACC__
 
 //=============================================================================
 // Small Modulus NTT Handler
@@ -339,15 +360,19 @@ extern std::vector<SmallNTTParams> g_small_ntt_params;
  *
  * Key difference from large modulus approach:
  * - Before NTT: Convert Torus32 to NTT modulus via modulus switching
- * - After INTT: Convert NTT modulus back to Torus32 via inverse modulus switching
+ * - After INTT: Convert NTT modulus back to Torus32 via inverse modulus
+ * switching
  */
 template <uint32_t length = TFHEpp::lvl1param::n>
 class CuSmallNTTHandler {
-public:
+   public:
     static constexpr uint32_t kLength = length;
     static constexpr uint32_t kLogLength = []() constexpr {
         uint32_t n = length, log = 0;
-        while (n > 1) { n >>= 1; ++log; }
+        while (n > 1) {
+            n >>= 1;
+            ++log;
+        }
         return log;
     }();
 
@@ -355,11 +380,15 @@ public:
     uint32_t* inverse_root_;
     uint32_t n_inverse_;
 
-    __host__ __device__ CuSmallNTTHandler() : forward_root_(nullptr), inverse_root_(nullptr), n_inverse_(0) {}
+    __host__ __device__ CuSmallNTTHandler()
+        : forward_root_(nullptr), inverse_root_(nullptr), n_inverse_(0)
+    {
+    }
     __host__ __device__ ~CuSmallNTTHandler() {}
 
     __host__ static void Create();
-    __host__ static void CreateConstant() {} // No-op for small modulus (tables already set in Create())
+    __host__ static void CreateConstant() {
+    }  // No-op for small modulus (tables already set in Create())
     __host__ static void Destroy();
     __host__ void SetDevicePointers(int device_id);
 
@@ -371,11 +400,10 @@ public:
      * 1. Modulus switch: Convert input from 2^32 to P discretization
      * 2. Forward NTT in modulus P
      */
-    __device__ inline void NTTWithModSwitch(
-        uint32_t* const out,
-        const uint32_t* const in,
-        uint32_t* const sh_temp,
-        uint32_t leading_thread = 0) const
+    __device__ inline void NTTWithModSwitch(uint32_t* const out,
+                                            const uint32_t* const in,
+                                            uint32_t* const sh_temp,
+                                            uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
@@ -384,7 +412,8 @@ public:
         // Load and modulus switch: Torus32 -> NTT modulus
         if (tid < NUM_THREADS) {
             sh_temp[tid] = torus32_to_ntt_mod(in[tid]);
-            sh_temp[tid + NUM_THREADS] = torus32_to_ntt_mod(in[tid + NUM_THREADS]);
+            sh_temp[tid + NUM_THREADS] =
+                torus32_to_ntt_mod(in[tid + NUM_THREADS]);
         }
         __syncthreads();
 
@@ -393,7 +422,8 @@ public:
             if constexpr (N == 1024) {
                 SmallForwardNTT32_1024(sh_temp, forward_root_, tid);
             }
-        } else {
+        }
+        else {
             for (int i = 0; i < 5; i++) __syncthreads();
         }
 
@@ -410,11 +440,9 @@ public:
      *
      * Used for decomposed polynomials that are already integers
      */
-    __device__ inline void NTT(
-        uint32_t* const out,
-        const int32_t* const in,
-        uint32_t* const sh_temp,
-        uint32_t leading_thread = 0) const
+    __device__ inline void NTT(uint32_t* const out, const int32_t* const in,
+                               uint32_t* const sh_temp,
+                               uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
@@ -424,8 +452,10 @@ public:
         if (tid < NUM_THREADS) {
             int32_t v0 = in[tid];
             int32_t v1 = in[tid + NUM_THREADS];
-            sh_temp[tid] = (v0 < 0) ? (small_ntt::P + v0) : static_cast<uint32_t>(v0);
-            sh_temp[tid + NUM_THREADS] = (v1 < 0) ? (small_ntt::P + v1) : static_cast<uint32_t>(v1);
+            sh_temp[tid] =
+                (v0 < 0) ? (small_ntt::P + v0) : static_cast<uint32_t>(v0);
+            sh_temp[tid + NUM_THREADS] =
+                (v1 < 0) ? (small_ntt::P + v1) : static_cast<uint32_t>(v1);
         }
         __syncthreads();
 
@@ -434,7 +464,8 @@ public:
             if constexpr (N == 1024) {
                 SmallForwardNTT32_1024(sh_temp, forward_root_, tid);
             }
-        } else {
+        }
+        else {
             for (int i = 0; i < 5; i++) __syncthreads();
         }
 
@@ -454,9 +485,7 @@ public:
      * 2. Modulus switch: Convert from P to 2^32 discretization
      */
     __device__ inline void NTTInvWithModSwitch(
-        uint32_t* const out,
-        const uint32_t* const in,
-        uint32_t* const sh_temp,
+        uint32_t* const out, const uint32_t* const in, uint32_t* const sh_temp,
         uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
@@ -476,7 +505,8 @@ public:
             if constexpr (N == 1024) {
                 SmallInverseNTT32_1024(sh_temp, inverse_root_, n_inverse_, tid);
             }
-        } else {
+        }
+        else {
             for (int i = 0; i < 6; i++) __syncthreads();
         }
 
@@ -486,8 +516,12 @@ public:
             uint32_t val1 = sh_temp[tid + NUM_THREADS];
 
             // Centered reduction: convert [0, P) to [-P/2, P/2)
-            int32_t signed0 = (val0 > half_mod) ? static_cast<int32_t>(val0 - small_ntt::P) : static_cast<int32_t>(val0);
-            int32_t signed1 = (val1 > half_mod) ? static_cast<int32_t>(val1 - small_ntt::P) : static_cast<int32_t>(val1);
+            int32_t signed0 = (val0 > half_mod)
+                                  ? static_cast<int32_t>(val0 - small_ntt::P)
+                                  : static_cast<int32_t>(val0);
+            int32_t signed1 = (val1 > half_mod)
+                                  ? static_cast<int32_t>(val1 - small_ntt::P)
+                                  : static_cast<int32_t>(val1);
 
             // Modulus switch back to Torus32
             out[tid] = ntt_mod_to_torus32(signed0);
@@ -500,9 +534,7 @@ public:
      * Inverse NTT with modulus switching and addition
      */
     __device__ inline void NTTInvAddWithModSwitch(
-        uint32_t* const out,
-        const uint32_t* const in,
-        uint32_t* const sh_temp,
+        uint32_t* const out, const uint32_t* const in, uint32_t* const sh_temp,
         uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
@@ -522,7 +554,8 @@ public:
             if constexpr (N == 1024) {
                 SmallInverseNTT32_1024(sh_temp, inverse_root_, n_inverse_, tid);
             }
-        } else {
+        }
+        else {
             for (int i = 0; i < 6; i++) __syncthreads();
         }
 
@@ -531,15 +564,19 @@ public:
             uint32_t val0 = sh_temp[tid];
             uint32_t val1 = sh_temp[tid + NUM_THREADS];
 
-            int32_t signed0 = (val0 > half_mod) ? static_cast<int32_t>(val0 - small_ntt::P) : static_cast<int32_t>(val0);
-            int32_t signed1 = (val1 > half_mod) ? static_cast<int32_t>(val1 - small_ntt::P) : static_cast<int32_t>(val1);
+            int32_t signed0 = (val0 > half_mod)
+                                  ? static_cast<int32_t>(val0 - small_ntt::P)
+                                  : static_cast<int32_t>(val0);
+            int32_t signed1 = (val1 > half_mod)
+                                  ? static_cast<int32_t>(val1 - small_ntt::P)
+                                  : static_cast<int32_t>(val1);
 
             out[tid] += ntt_mod_to_torus32(signed0);
             out[tid + NUM_THREADS] += ntt_mod_to_torus32(signed1);
         }
         __syncthreads();
     }
-#endif // __CUDACC__
+#endif  // __CUDACC__
 };
 
 #ifdef USE_FFT
@@ -559,12 +596,12 @@ constexpr uint32_t NTT_THREAD_UNITBIT = 1;
 // sh_fft[N/2] = 512 × double2 = 8 KB (FFT working buffer)
 // sh_accum[(k+1) × N/2] = (k+1) × 512 × double2 = 16 KB (for k=1)
 // Total: 24 KB for k=1
-template<class P = TFHEpp::lvl1param>
+template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE =
     ((P::n / 2) + (P::k + 1) * (P::n / 2)) * sizeof(double2);
 
 // Number of threads for homomorphic gate (N/2 = 512 for N=1024)
-template<class P = TFHEpp::lvl1param>
+template <class P = TFHEpp::lvl1param>
 constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 
 #ifdef USE_GPU_FFT
@@ -575,35 +612,40 @@ constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 
 #ifdef __CUDACC__
 // double2 operator overloads for GPU-FFT path
-// (These match the tfhe-rs operators but are defined here when fft_negacyclic.cuh is excluded)
+// (These match the tfhe-rs operators but are defined here when
+// fft_negacyclic.cuh is excluded)
 
-__device__ inline double2 operator+(const double2 a, const double2 b) {
+__device__ inline double2 operator+(const double2 a, const double2 b)
+{
     return {__dadd_rn(a.x, b.x), __dadd_rn(a.y, b.y)};
 }
 
-__device__ inline double2 operator-(const double2 a, const double2 b) {
+__device__ inline double2 operator-(const double2 a, const double2 b)
+{
     return {__dsub_rn(a.x, b.x), __dsub_rn(a.y, b.y)};
 }
 
-__device__ inline void operator+=(double2 &lh, const double2 rh) {
+__device__ inline void operator+=(double2& lh, const double2 rh)
+{
     lh.x = __dadd_rn(lh.x, rh.x);
     lh.y = __dadd_rn(lh.y, rh.y);
 }
 
-__device__ inline double2 operator*(const double2 a, const double2 b) {
-    return {
-        __fma_rn(a.x, b.x, -__dmul_rn(a.y, b.y)),
-        __fma_rn(a.x, b.y, __dmul_rn(a.y, b.x))
-    };
+__device__ inline double2 operator*(const double2 a, const double2 b)
+{
+    return {__fma_rn(a.x, b.x, -__dmul_rn(a.y, b.y)),
+            __fma_rn(a.x, b.y, __dmul_rn(a.y, b.x))};
 }
 
-__device__ inline void operator*=(double2 &a, const double2 b) {
+__device__ inline void operator*=(double2& a, const double2 b)
+{
     double real = __fma_rn(a.x, b.x, -__dmul_rn(a.y, b.y));
     a.y = __fma_rn(a.x, b.y, __dmul_rn(a.y, b.x));
     a.x = real;
 }
 
-__device__ inline double2 operator*(const double2 a, double b) {
+__device__ inline double2 operator*(const double2 a, double b)
+{
     return {__dmul_rn(a.x, b), __dmul_rn(a.y, b)};
 }
 
@@ -614,12 +656,11 @@ __device__ inline double2 operator*(const double2 a, double b) {
  * Root table: bit-reversed forward roots from FFNT::ReverseRootTable_ffnt()
  * Root indexing: current_root_index = omega_address >> t_2
  *
- * Sync pattern: 4 stages with __syncthreads (stride >= 32) + 5 warp-local + final sync = 5 total syncs
+ * Sync pattern: 4 stages with __syncthreads (stride >= 32) + 5 warp-local +
+ * final sync = 5 total syncs
  */
 __device__ __forceinline__ void GPUFFTForward512(
-    double2* sh,
-    const double2* __restrict__ root_table,
-    int tid)
+    double2* sh, const double2* __restrict__ root_table, int tid)
 {
     constexpr int N_power = 9;  // log2(512) = 9
 
@@ -629,8 +670,8 @@ __device__ __forceinline__ void GPUFFTForward512(
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
 
-    // First 4 stages (stride >= 32): need __syncthreads
-    #pragma unroll
+// First 4 stages (stride >= 32): need __syncthreads
+#pragma unroll
     for (int lp = 0; lp < 4; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
@@ -646,8 +687,8 @@ __device__ __forceinline__ void GPUFFTForward512(
         __syncthreads();
     }
 
-    // Last 5 stages (stride <= 16): warp-local, no sync needed
-    #pragma unroll
+// Last 5 stages (stride <= 16): warp-local, no sync needed
+#pragma unroll
     for (int lp = 0; lp < 5; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
@@ -668,15 +709,15 @@ __device__ __forceinline__ void GPUFFTForward512(
  * GPU-FFT Inverse FFT for N/2=512 complex elements
  * Uses 256 threads, Gentleman-Sande butterfly, 9 stages
  *
- * Root table: bit-reversed inverse roots from FFNT::InverseReverseRootTable_ffnt()
- * Root indexing: current_root_index = m + (tid >> t_2)
+ * Root table: bit-reversed inverse roots from
+ * FFNT::InverseReverseRootTable_ffnt() Root indexing: current_root_index = m +
+ * (tid >> t_2)
  *
- * Sync pattern: 5 warp-local + sync + 4 stages with sync + n_inverse sync = 6 total syncs
+ * Sync pattern: 5 warp-local + sync + 4 stages with sync + n_inverse sync = 6
+ * total syncs
  */
 __device__ __forceinline__ void GPUFFTInverse512(
-    double2* sh,
-    const double2* __restrict__ root_table,
-    double n_inverse,
+    double2* sh, const double2* __restrict__ root_table, double n_inverse,
     int tid)
 {
     constexpr int N_power = 9;  // log2(512) = 9
@@ -687,8 +728,8 @@ __device__ __forceinline__ void GPUFFTInverse512(
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
 
-    // First 5 stages (stride <= 16): warp-local, no sync needed
-    #pragma unroll
+// First 5 stages (stride <= 16): warp-local, no sync needed
+#pragma unroll
     for (int lp = 0; lp < 5; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
@@ -704,8 +745,8 @@ __device__ __forceinline__ void GPUFFTInverse512(
     }
     __syncthreads();
 
-    // Last 4 stages (stride >= 32): need __syncthreads
-    #pragma unroll
+// Last 4 stages (stride >= 32): need __syncthreads
+#pragma unroll
     for (int lp = 0; lp < 4; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
@@ -727,7 +768,7 @@ __device__ __forceinline__ void GPUFFTInverse512(
     __syncthreads();
 }
 
-#endif // __CUDACC__
+#endif  // __CUDACC__
 
 /**
  * CuGPUFFTHandler - handler for GPU-FFT library FFT
@@ -737,19 +778,24 @@ __device__ __forceinline__ void GPUFFTInverse512(
  */
 template <uint32_t length = TFHEpp::lvl1param::n>
 class CuGPUFFTHandler {
-public:
+   public:
     static constexpr uint32_t kLength = length;
     static constexpr uint32_t kHalfLength = length >> 1;
 
-    double2* forward_root_;   // N/2 forward roots (bit-reversed)
-    double2* inverse_root_;   // N/2 inverse roots (bit-reversed)
-    double2* twist_;          // N/2 twist factors
-    double2* untwist_;        // N/2 untwist factors
-    double n_inverse_;        // 1.0 / (N/2) = 1.0 / 512
+    double2* forward_root_;  // N/2 forward roots (bit-reversed)
+    double2* inverse_root_;  // N/2 inverse roots (bit-reversed)
+    double2* twist_;         // N/2 twist factors
+    double2* untwist_;       // N/2 untwist factors
+    double n_inverse_;       // 1.0 / (N/2) = 1.0 / 512
 
     __host__ __device__ CuGPUFFTHandler()
-        : forward_root_(nullptr), inverse_root_(nullptr),
-          twist_(nullptr), untwist_(nullptr), n_inverse_(0) {}
+        : forward_root_(nullptr),
+          inverse_root_(nullptr),
+          twist_(nullptr),
+          untwist_(nullptr),
+          n_inverse_(0)
+    {
+    }
     __host__ __device__ ~CuGPUFFTHandler() {}
 
     __host__ static void Create();
@@ -777,7 +823,7 @@ using CuNTTHandler = CuGPUFFTHandler<length>;
  */
 template <uint32_t length = TFHEpp::lvl1param::n>
 class CuFFTHandler {
-public:
+   public:
     static constexpr uint32_t kLength = length;
 
     __host__ __device__ CuFFTHandler() {}
@@ -811,11 +857,11 @@ using CuNTTHandler = CuSmallNTTHandler<length>;
 using NTTValue = uint32_t;
 
 // Shared memory size per gate: (k+2) * N * sizeof(uint32_t)
-template<class P = TFHEpp::lvl1param>
+template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(uint32_t);
 
 // Number of threads for NTT (N/2 = 512 for N=1024)
-template<class P = TFHEpp::lvl1param>
+template <class P = TFHEpp::lvl1param>
 constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 
 #endif  // USE_FFT

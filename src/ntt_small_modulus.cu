@@ -6,11 +6,11 @@
  * P - 1 = 2^11 * 1048571 (prime factors: 2, 1048571)
  */
 
-#include <include/ntt_small_modulus.cuh>
-#include <include/error_gpu.cuh>
 #include <cmath>
-#include <vector>
+#include <include/error_gpu.cuh>
+#include <include/ntt_small_modulus.cuh>
 #include <stdexcept>
+#include <vector>
 
 #if defined(USE_FFT) && defined(USE_GPU_FFT)
 #include <gpufft/fft_cpu.cuh>
@@ -28,7 +28,8 @@ std::vector<SmallNTTParams> g_small_ntt_params;
 namespace {
 
 // Bit reversal helper
-int bitreverse(int index, int n_power) {
+int bitreverse(int index, int n_power)
+{
     int res = 0;
     for (int i = 0; i < n_power; i++) {
         res <<= 1;
@@ -39,7 +40,8 @@ int bitreverse(int index, int n_power) {
 }
 
 // Modular exponentiation for 32-bit values
-uint32_t mod_exp(uint64_t base, uint64_t exp, uint32_t mod) {
+uint32_t mod_exp(uint64_t base, uint64_t exp, uint32_t mod)
+{
     uint64_t result = 1;
     base = base % mod;
     while (exp > 0) {
@@ -53,13 +55,15 @@ uint32_t mod_exp(uint64_t base, uint64_t exp, uint32_t mod) {
 }
 
 // Modular inverse using extended Euclidean algorithm
-uint32_t mod_inv(uint32_t a, uint32_t mod) {
+uint32_t mod_inv(uint32_t a, uint32_t mod)
+{
     // Using Fermat's little theorem: a^(-1) = a^(p-2) mod p (for prime p)
     return mod_exp(a, mod - 2, mod);
 }
 
 // Modular multiplication for 32-bit values
-uint32_t mod_mult(uint32_t a, uint32_t b, uint32_t mod) {
+uint32_t mod_mult(uint32_t a, uint32_t b, uint32_t mod)
+{
     return static_cast<uint32_t>((static_cast<uint64_t>(a) * b) % mod);
 }
 
@@ -79,19 +83,21 @@ uint32_t mod_mult(uint32_t a, uint32_t b, uint32_t mod) {
  * g = generator of Z_P^*
  * Then psi_k = g^((P-1)/k) is a primitive k-th root of unity
  */
-uint32_t find_primitive_root(int log_n) {
-    constexpr uint32_t P = small_ntt::P;  // 2147473409
-    constexpr uint32_t P_minus_1 = P - 1; // 2147473408 = 2^11 * 1048571
+uint32_t find_primitive_root(int log_n)
+{
+    constexpr uint32_t P = small_ntt::P;   // 2147473409
+    constexpr uint32_t P_minus_1 = P - 1;  // 2147473408 = 2^11 * 1048571
 
     // For N = 2^log_n, we need primitive 2^(log_n+1)-th root of unity
     uint32_t two_n = 1U << (log_n + 1);
 
     // First, find a generator g of Z_P^*
-    // P - 1 = 2^11 * 1048571, so we need g where g^((P-1)/q) != 1 for each prime factor q
+    // P - 1 = 2^11 * 1048571, so we need g where g^((P-1)/q) != 1 for each
+    // prime factor q
     uint32_t g = 3;  // Common generator candidate
 
-    // Verify g is a generator by checking g^((P-1)/q) != 1 for prime divisors q of P-1
-    // Prime divisors of P-1: 2 and 1048571
+    // Verify g is a generator by checking g^((P-1)/q) != 1 for prime divisors q
+    // of P-1 Prime divisors of P-1: 2 and 1048571
     while (true) {
         bool is_generator = true;
 
@@ -107,7 +113,8 @@ uint32_t find_primitive_root(int log_n) {
         if (is_generator) break;
         g++;
         if (g > 1000) {
-            throw std::runtime_error("Could not find generator for small modulus");
+            throw std::runtime_error(
+                "Could not find generator for small modulus");
         }
     }
 
@@ -134,7 +141,8 @@ int g_small_log_n = 0;
 /**
  * Generate NTT root tables for small modulus
  */
-void GenerateSmallRootTables(int log_n) {
+void GenerateSmallRootTables(int log_n)
+{
     if (g_small_log_n == log_n && !g_small_forward_table.empty()) {
         return;  // Already generated
     }
@@ -149,19 +157,22 @@ void GenerateSmallRootTables(int log_n) {
     // Compute n^(-1) mod P
     g_small_n_inverse = mod_inv(static_cast<uint32_t>(n), P);
 
-    // Generate forward root table: psi^0, psi^1, ..., psi^(n-1) in bit-reversed order
-    // For Cooley-Tukey, we need powers of psi^2 (omega = psi^2 is the N-th root of unity)
+    // Generate forward root table: psi^0, psi^1, ..., psi^(n-1) in bit-reversed
+    // order For Cooley-Tukey, we need powers of psi^2 (omega = psi^2 is the
+    // N-th root of unity)
     g_small_forward_table.resize(n);
     g_small_forward_table[0] = 1;
     for (int i = 1; i < n; i++) {
-        g_small_forward_table[i] = mod_mult(g_small_forward_table[i - 1], psi, P);
+        g_small_forward_table[i] =
+            mod_mult(g_small_forward_table[i - 1], psi, P);
     }
 
     // Generate inverse root table: psi_inv^0, psi_inv^1, ...
     g_small_inverse_table.resize(n);
     g_small_inverse_table[0] = 1;
     for (int i = 1; i < n; i++) {
-        g_small_inverse_table[i] = mod_mult(g_small_inverse_table[i - 1], psi_inv, P);
+        g_small_inverse_table[i] =
+            mod_mult(g_small_inverse_table[i - 1], psi_inv, P);
     }
 
     // Convert to bit-reversed order for NTT algorithm
@@ -185,13 +196,15 @@ void GenerateSmallRootTables(int log_n) {
 //=============================================================================
 
 template <>
-void CuSmallNTTHandler<TFHEpp::lvl1param::n>::Create() {
+void CuSmallNTTHandler<TFHEpp::lvl1param::n>::Create()
+{
     constexpr int log_n = kLogLength;
     GenerateSmallRootTables(log_n);
 }
 
 template <>
-void CuSmallNTTHandler<TFHEpp::lvl1param::n>::Destroy() {
+void CuSmallNTTHandler<TFHEpp::lvl1param::n>::Destroy()
+{
     for (auto& params : g_small_ntt_params) {
         if (params.forward_root) {
             cudaFree(params.forward_root);
@@ -210,7 +223,8 @@ void CuSmallNTTHandler<TFHEpp::lvl1param::n>::Destroy() {
 }
 
 template <>
-void CuSmallNTTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
+void CuSmallNTTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id)
+{
     // Resize if needed
     if (g_small_ntt_params.size() <= static_cast<size_t>(device_id)) {
         g_small_ntt_params.resize(device_id + 1);
@@ -221,19 +235,25 @@ void CuSmallNTTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
     // Initialize if not already done
     if (!params.initialized) {
         // Allocate device memory for root tables
-        CuSafeCall(cudaMalloc(&params.forward_root, sizeof(uint32_t) * kLength));
-        CuSafeCall(cudaMalloc(&params.inverse_root, sizeof(uint32_t) * kLength));
+        CuSafeCall(
+            cudaMalloc(&params.forward_root, sizeof(uint32_t) * kLength));
+        CuSafeCall(
+            cudaMalloc(&params.inverse_root, sizeof(uint32_t) * kLength));
 
         // Copy root tables to device
         CuSafeCall(cudaMemcpy(params.forward_root, g_small_forward_table.data(),
-                              sizeof(uint32_t) * kLength, cudaMemcpyHostToDevice));
+                              sizeof(uint32_t) * kLength,
+                              cudaMemcpyHostToDevice));
         CuSafeCall(cudaMemcpy(params.inverse_root, g_small_inverse_table.data(),
-                              sizeof(uint32_t) * kLength, cudaMemcpyHostToDevice));
+                              sizeof(uint32_t) * kLength,
+                              cudaMemcpyHostToDevice));
 
         // Also copy root tables to constant memory for this device
-        CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root, g_small_forward_table.data(),
+        CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root,
+                                      g_small_forward_table.data(),
                                       sizeof(uint32_t) * kLength));
-        CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root, g_small_inverse_table.data(),
+        CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root,
+                                      g_small_inverse_table.data(),
                                       sizeof(uint32_t) * kLength));
 
         params.n_inverse = g_small_n_inverse;
@@ -276,43 +296,60 @@ std::vector<double2> g_gpufft_untwist;
 }  // anonymous namespace
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Create() {
+void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Create()
+{
     if (!g_gpufft_forward_root.empty()) return;  // Already generated
 
     constexpr uint32_t N = TFHEpp::lvl1param::n;  // 1024
-    constexpr uint32_t HALF_N = N >> 1;            // 512
+    constexpr uint32_t HALF_N = N >> 1;           // 512
 
     // Use GPU-FFT's FFNT class to generate tables
     gpufft::FFNT<Float64> ffnt(N);
 
     // Get tables from FFNT
-    auto forward_roots = ffnt.ReverseRootTable_ffnt();    // N/2 COMPLEX<Float64>
+    auto forward_roots = ffnt.ReverseRootTable_ffnt();  // N/2 COMPLEX<Float64>
     auto inverse_roots = ffnt.InverseReverseRootTable_ffnt();
     auto twist = ffnt.twist_table_ffnt();
     auto untwist = ffnt.untwist_table_ffnt();
 
     // Convert COMPLEX<Float64> to double2
-    // COMPLEX<Float64> wraps fp2<Float64> = double2, so the memory layout is identical
+    // COMPLEX<Float64> wraps fp2<Float64> = double2, so the memory layout is
+    // identical
     g_gpufft_forward_root.resize(HALF_N);
     g_gpufft_inverse_root.resize(HALF_N);
     g_gpufft_twist.resize(HALF_N);
     g_gpufft_untwist.resize(HALF_N);
 
     for (uint32_t i = 0; i < HALF_N; i++) {
-        g_gpufft_forward_root[i] = {forward_roots[i].real(), forward_roots[i].imag()};
-        g_gpufft_inverse_root[i] = {inverse_roots[i].real(), inverse_roots[i].imag()};
+        g_gpufft_forward_root[i] = {forward_roots[i].real(),
+                                    forward_roots[i].imag()};
+        g_gpufft_inverse_root[i] = {inverse_roots[i].real(),
+                                    inverse_roots[i].imag()};
         g_gpufft_twist[i] = {twist[i].real(), twist[i].imag()};
         g_gpufft_untwist[i] = {untwist[i].real(), untwist[i].imag()};
     }
 }
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Destroy() {
+void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Destroy()
+{
     for (auto& params : g_gpufft_params) {
-        if (params.forward_root) { cudaFree(params.forward_root); params.forward_root = nullptr; }
-        if (params.inverse_root) { cudaFree(params.inverse_root); params.inverse_root = nullptr; }
-        if (params.twist) { cudaFree(params.twist); params.twist = nullptr; }
-        if (params.untwist) { cudaFree(params.untwist); params.untwist = nullptr; }
+        if (params.forward_root) {
+            cudaFree(params.forward_root);
+            params.forward_root = nullptr;
+        }
+        if (params.inverse_root) {
+            cudaFree(params.inverse_root);
+            params.inverse_root = nullptr;
+        }
+        if (params.twist) {
+            cudaFree(params.twist);
+            params.twist = nullptr;
+        }
+        if (params.untwist) {
+            cudaFree(params.untwist);
+            params.untwist = nullptr;
+        }
         params.initialized = false;
     }
     g_gpufft_params.clear();
@@ -323,7 +360,8 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Destroy() {
 }
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
+void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id)
+{
     if (g_gpufft_params.size() <= static_cast<size_t>(device_id)) {
         g_gpufft_params.resize(device_id + 1);
     }
@@ -342,8 +380,8 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
                               table_bytes, cudaMemcpyHostToDevice));
         CuSafeCall(cudaMemcpy(params.inverse_root, g_gpufft_inverse_root.data(),
                               table_bytes, cudaMemcpyHostToDevice));
-        CuSafeCall(cudaMemcpy(params.twist, g_gpufft_twist.data(),
-                              table_bytes, cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.twist, g_gpufft_twist.data(), table_bytes,
+                              cudaMemcpyHostToDevice));
         CuSafeCall(cudaMemcpy(params.untwist, g_gpufft_untwist.data(),
                               table_bytes, cudaMemcpyHostToDevice));
 
@@ -379,8 +417,8 @@ std::vector<NTTValue*> one_trgsw_ntt_devs;
 // GPU kernel: compute GPU-FFT of (X^a - 1) mod (X^N+1) for a = 0..2N-1
 // Uses fold + twist + GPUFFTForward512
 __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft,
-                                   const double2* const twist_table,
-                                   const double2* const forward_root)
+                                  const double2* const twist_table,
+                                  const double2* const forward_root)
 {
     constexpr uint32_t N = TFHEpp::lvl1param::n;
     constexpr uint32_t HALF_N = N >> 1;
@@ -402,7 +440,8 @@ __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft,
         if (!negate) {
             if (tid == a_mod) re += 1.0;
             if (tid + HALF_N == a_mod) im += 1.0;
-        } else {
+        }
+        else {
             if (tid == a_mod) re -= 1.0;
             if (tid + HALF_N == a_mod) im -= 1.0;
         }
@@ -416,7 +455,8 @@ __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft,
 
     if (tid < FFT_THREADS) {
         GPUFFTForward512(sh_fft, forward_root, tid);
-    } else {
+    }
+    else {
         for (int s = 0; s < 5; s++) __syncthreads();
     }
 
@@ -439,10 +479,9 @@ void InitializeXaiNTT(const int gpuNum)
 
         dim3 grid(table_entries);
         dim3 block(HALF_N);
-        __ComputeXaiFFT__<<<grid, block>>>(
-            xai_ntt_devs[i],
-            g_gpufft_params[i].twist,
-            g_gpufft_params[i].forward_root);
+        __ComputeXaiFFT__<<<grid, block>>>(xai_ntt_devs[i],
+                                           g_gpufft_params[i].twist,
+                                           g_gpufft_params[i].forward_root);
         cudaDeviceSynchronize();
         CuCheckError();
     }
@@ -450,11 +489,10 @@ void InitializeXaiNTT(const int gpuNum)
 
 // GPU kernel: FFT Torus32 polynomials using GPU-FFT (for OneTRGSW identity)
 // Normalizes by 1/2^32, fold + twist + GPUFFTForward512
-__global__ void __FFTPolynomials__(
-    NTTValue* const out,
-    const uint32_t* const in,
-    const double2* const twist_table,
-    const double2* const forward_root)
+__global__ void __FFTPolynomials__(NTTValue* const out,
+                                   const uint32_t* const in,
+                                   const double2* const twist_table,
+                                   const double2* const forward_root)
 {
     constexpr uint32_t N = TFHEpp::lvl1param::n;
     constexpr uint32_t HALF_N = N >> 1;
@@ -467,8 +505,12 @@ __global__ void __FFTPolynomials__(
 
     constexpr double norm = 1.0 / 4294967296.0;  // 1/2^32
     if (tid < HALF_N) {
-        double re = static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid])) * norm;
-        double im = static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid + HALF_N])) * norm;
+        double re =
+            static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid])) *
+            norm;
+        double im = static_cast<double>(
+                        static_cast<int32_t>(in[poly_idx * N + tid + HALF_N])) *
+                    norm;
         // Fold + twist
         double2 folded = {re, im};
         double2 tw = __ldg(&twist_table[tid]);
@@ -478,7 +520,8 @@ __global__ void __FFTPolynomials__(
 
     if (tid < FFT_THREADS) {
         GPUFFTForward512(sh_fft, forward_root, tid);
-    } else {
+    }
+    else {
         for (int s = 0; s < 5; s++) __syncthreads();
     }
 
@@ -499,7 +542,8 @@ void InitializeOneTRGSWNTT(const int gpuNum)
 
     std::vector<uint32_t> h(l);
     for (uint32_t i = 0; i < l; i++) {
-        h[i] = static_cast<uint32_t>(1) << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
+        h[i] = static_cast<uint32_t>(1)
+               << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
     }
 
     std::vector<uint32_t> host_polys(num_polys * N, 0);
@@ -519,14 +563,14 @@ void InitializeOneTRGSWNTT(const int gpuNum)
         uint32_t* d_polys;
         CuSafeCall(cudaMalloc(&d_polys, num_polys * N * sizeof(uint32_t)));
         CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
-                              num_polys * N * sizeof(uint32_t), cudaMemcpyHostToDevice));
+                              num_polys * N * sizeof(uint32_t),
+                              cudaMemcpyHostToDevice));
 
         dim3 grid(num_polys);
         dim3 block(HALF_N);
-        __FFTPolynomials__<<<grid, block>>>(
-            one_trgsw_ntt_devs[i], d_polys,
-            g_gpufft_params[i].twist,
-            g_gpufft_params[i].forward_root);
+        __FFTPolynomials__<<<grid, block>>>(one_trgsw_ntt_devs[i], d_polys,
+                                            g_gpufft_params[i].twist,
+                                            g_gpufft_params[i].forward_root);
         cudaDeviceSynchronize();
         CuCheckError();
 
@@ -567,7 +611,8 @@ __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft)
         if (!negate) {
             if (tid == a_mod) re += 1.0;
             if (tid + HALF_N == a_mod) im += 1.0;
-        } else {
+        }
+        else {
             if (tid == a_mod) re -= 1.0;
             if (tid + HALF_N == a_mod) im -= 1.0;
         }
@@ -578,7 +623,8 @@ __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft)
 
     if (tid < FFT_THREADS) {
         NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
-    } else {
+    }
+    else {
         for (int s = 0; s < 11; s++) __syncthreads();
     }
 
@@ -609,9 +655,8 @@ void InitializeXaiNTT(const int gpuNum)
 
 // GPU kernel to FFT Torus32 polynomials (for OneTRGSW identity)
 // Normalizes by 1/2^32 (matching BSK normalization), packs into N/2 complex
-__global__ void __FFTPolynomials__(
-    NTTValue* const out,
-    const uint32_t* const in)
+__global__ void __FFTPolynomials__(NTTValue* const out,
+                                   const uint32_t* const in)
 {
     constexpr uint32_t N = TFHEpp::lvl1param::n;
     constexpr uint32_t HALF_N = N >> 1;
@@ -624,14 +669,19 @@ __global__ void __FFTPolynomials__(
 
     constexpr double norm = 1.0 / 4294967296.0;  // 1/2^32
     if (tid < HALF_N) {
-        sh_fft[tid] = {static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid])) * norm,
-                       static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid + HALF_N])) * norm};
+        sh_fft[tid] = {
+            static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid])) *
+                norm,
+            static_cast<double>(
+                static_cast<int32_t>(in[poly_idx * N + tid + HALF_N])) *
+                norm};
     }
     __syncthreads();
 
     if (tid < FFT_THREADS) {
         NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
-    } else {
+    }
+    else {
         for (int s = 0; s < 11; s++) __syncthreads();
     }
 
@@ -652,7 +702,8 @@ void InitializeOneTRGSWNTT(const int gpuNum)
 
     std::vector<uint32_t> h(l);
     for (uint32_t i = 0; i < l; i++) {
-        h[i] = static_cast<uint32_t>(1) << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
+        h[i] = static_cast<uint32_t>(1)
+               << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
     }
 
     // Build identity TRGSW as Torus32 polynomials on host
@@ -673,7 +724,8 @@ void InitializeOneTRGSWNTT(const int gpuNum)
         uint32_t* d_polys;
         CuSafeCall(cudaMalloc(&d_polys, num_polys * N * sizeof(uint32_t)));
         CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
-                              num_polys * N * sizeof(uint32_t), cudaMemcpyHostToDevice));
+                              num_polys * N * sizeof(uint32_t),
+                              cudaMemcpyHostToDevice));
 
         dim3 grid(num_polys);
         dim3 block(HALF_N);
@@ -693,7 +745,8 @@ void InitializeOneTRGSWNTT(const int gpuNum)
 //=============================================================================
 
 // Host-side torus32 to NTT mod conversion (same formula as device version)
-static uint32_t torus32_to_ntt_mod_host(uint32_t torus_val) {
+static uint32_t torus32_to_ntt_mod_host(uint32_t torus_val)
+{
     uint64_t prod = static_cast<uint64_t>(torus_val) * small_ntt::P;
     uint32_t hi = static_cast<uint32_t>(prod >> 32);
     uint32_t lo = static_cast<uint32_t>(prod);
@@ -702,10 +755,9 @@ static uint32_t torus32_to_ntt_mod_host(uint32_t torus_val) {
 }
 
 // GPU kernel to NTT multiple polynomials
-__global__ void __NTTPolynomials__(
-    NTTValue* const out,
-    const uint32_t* const in,
-    const uint32_t* const forward_root)
+__global__ void __NTTPolynomials__(NTTValue* const out,
+                                   const uint32_t* const in,
+                                   const uint32_t* const forward_root)
 {
     constexpr uint32_t N = TFHEpp::lvl1param::n;
     __shared__ uint32_t sh_temp[N];
@@ -724,7 +776,8 @@ __global__ void __NTTPolynomials__(
     // Forward NTT
     if (tid < NUM_THREADS) {
         SmallForwardNTT32_1024(sh_temp, forward_root, tid);
-    } else {
+    }
+    else {
         for (int s = 0; s < 5; s++) __syncthreads();
     }
 
@@ -735,9 +788,8 @@ __global__ void __NTTPolynomials__(
     }
 }
 
-__global__ void __ComputeXaiNTT__(
-    NTTValue* const xai_ntt,
-    const uint32_t* const forward_root)
+__global__ void __ComputeXaiNTT__(NTTValue* const xai_ntt,
+                                  const uint32_t* const forward_root)
 {
     constexpr uint32_t N = TFHEpp::lvl1param::n;  // 1024
     __shared__ uint32_t poly[N];
@@ -747,7 +799,8 @@ __global__ void __ComputeXaiNTT__(
     constexpr uint32_t NUM_THREADS = N >> 1;  // 512
 
     // Initialize polynomial: (X^a - 1) mod (X^N + 1) in Z_P
-    // Following TFHEpp's XaittGen: xai[0] = -1; if (a < N) xai[a] += 1; else xai[a-N] -= 1;
+    // Following TFHEpp's XaittGen: xai[0] = -1; if (a < N) xai[a] += 1; else
+    // xai[a-N] -= 1;
     uint32_t a_mod = a & (N - 1);
     bool negate = (a >= N);
 
@@ -765,7 +818,8 @@ __global__ void __ComputeXaiNTT__(
         if (!negate) {
             // a < N: add 1 to coefficient a_mod
             poly[a_mod] = small_mod_add(poly[a_mod], 1);
-        } else {
+        }
+        else {
             // a >= N: subtract 1 from coefficient a_mod
             poly[a_mod] = small_mod_add(poly[a_mod], small_ntt::P - 1);
         }
@@ -775,7 +829,8 @@ __global__ void __ComputeXaiNTT__(
     // Forward NTT
     if (tid < NUM_THREADS) {
         SmallForwardNTT32_1024(poly, forward_root, tid);
-    } else {
+    }
+    else {
         for (int s = 0; s < 5; s++) __syncthreads();
     }
 
@@ -798,10 +853,9 @@ void InitializeXaiNTT(const int gpuNum)
         CuSafeCall(cudaMalloc(&xai_ntt_devs[i], table_size));
 
         dim3 grid(table_entries);  // 2N blocks
-        dim3 block(N >> 1);       // N/2 threads
-        __ComputeXaiNTT__<<<grid, block>>>(
-            xai_ntt_devs[i],
-            g_small_ntt_params[i].forward_root);
+        dim3 block(N >> 1);        // N/2 threads
+        __ComputeXaiNTT__<<<grid, block>>>(xai_ntt_devs[i],
+                                           g_small_ntt_params[i].forward_root);
         cudaDeviceSynchronize();
         CuCheckError();
     }
@@ -820,7 +874,8 @@ void InitializeOneTRGSWNTT(const int gpuNum)
     // These are the diagonal elements of the identity TRGSW
     std::vector<uint32_t> h(l);
     for (uint32_t i = 0; i < l; i++) {
-        h[i] = static_cast<uint32_t>(1) << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
+        h[i] = static_cast<uint32_t>(1)
+               << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
     }
 
     // Build the TRGSW identity as polynomials (pre-NTT) on host
@@ -846,7 +901,8 @@ void InitializeOneTRGSWNTT(const int gpuNum)
         uint32_t* d_polys;
         CuSafeCall(cudaMalloc(&d_polys, num_polys * N * sizeof(uint32_t)));
         CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
-                              num_polys * N * sizeof(uint32_t), cudaMemcpyHostToDevice));
+                              num_polys * N * sizeof(uint32_t),
+                              cudaMemcpyHostToDevice));
 
         // NTT each polynomial
         dim3 grid(num_polys);

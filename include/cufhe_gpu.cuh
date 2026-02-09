@@ -32,10 +32,10 @@
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
 
-#include "bootstrap_gpu.cuh"
-
 #include <array>
 #include <cloudkey.hpp>
+
+#include "bootstrap_gpu.cuh"
 
 namespace cufhe {
 
@@ -72,18 +72,18 @@ inline void Synchronize()
 };
 
 template <typename dT, typename hT>
-void ctxtInitialize(hT &host, std::vector<dT *> &devices)
+void ctxtInitialize(hT& host, std::vector<dT*>& devices)
 {
     cudaHostRegister(host.data(), sizeof(host), cudaHostRegisterDefault);
     devices.resize(_gpuNum);
     for (int i = 0; i < _gpuNum; i++) {
         cudaSetDevice(i);
-        cudaMalloc((void **)&devices[i], sizeof(host));
+        cudaMalloc((void**)&devices[i], sizeof(host));
     }
 }
 
 template <typename dT, typename hT>
-void ctxtDelete(hT &host, std::vector<dT *> &devices)
+void ctxtDelete(hT& host, std::vector<dT*>& devices)
 {
     cudaHostUnregister(host.data());
     for (int i = 0; i < _gpuNum; i++) {
@@ -97,18 +97,16 @@ void ctxtDelete(hT &host, std::vector<dT *> &devices)
  *****************************/
 
 /** Ciphertext. */
-template<class P>
+template <class P>
 struct Ctxt {
     Ctxt()
     {
-        ctxtInitialize<typename P::T, TFHEpp::TLWE<P>>(
-            tlwehost, tlwedevices);
+        ctxtInitialize<typename P::T, TFHEpp::TLWE<P>>(tlwehost, tlwedevices);
     }
 
     ~Ctxt()
     {
-        ctxtDelete<typename P::T, TFHEpp::TLWE<P>>(
-            tlwehost, tlwedevices);
+        ctxtDelete<typename P::T, TFHEpp::TLWE<P>>(tlwehost, tlwedevices);
     }
     Ctxt(const Ctxt& that) = delete;
     Ctxt& operator=(const Ctxt& that) = delete;
@@ -135,12 +133,12 @@ struct cuFHETRGSWNTTlvl1 {
 #ifdef USE_FFT
     // FFT mode: N/2 complex (double2) per polynomial instead of N uint32_t
     static constexpr size_t kNumElements =
-        (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::l *
-        (TFHEpp::lvl1param::k+1) * (TFHEpp::lvl1param::n / 2);
+        (TFHEpp::lvl1param::k + 1) * TFHEpp::lvl1param::l *
+        (TFHEpp::lvl1param::k + 1) * (TFHEpp::lvl1param::n / 2);
 #else
     static constexpr size_t kNumElements =
-        (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::l *
-        (TFHEpp::lvl1param::k+1) * TFHEpp::lvl1param::n;
+        (TFHEpp::lvl1param::k + 1) * TFHEpp::lvl1param::l *
+        (TFHEpp::lvl1param::k + 1) * TFHEpp::lvl1param::n;
 #endif
     TFHEpp::TRGSWNTT<TFHEpp::lvl1param> trgswhost;
     std::vector<NTTValue*> trgswdevices;
@@ -198,7 +196,7 @@ class Stream {
 
 bool StreamQuery(Stream st);
 
-template<class P>
+template <class P>
 inline void CtxtCopyH2D(Ctxt<P>& c, Stream st)
 {
     cudaSetDevice(st.device_id());
@@ -206,7 +204,7 @@ inline void CtxtCopyH2D(Ctxt<P>& c, Stream st)
                     sizeof(c.tlwehost), cudaMemcpyHostToDevice, st.st());
 }
 
-template<class P>
+template <class P>
 inline void CtxtCopyD2H(Ctxt<P>& c, Stream st)
 {
     cudaSetDevice(st.device_id());
@@ -216,108 +214,115 @@ inline void CtxtCopyD2H(Ctxt<P>& c, Stream st)
 
 void TRGSW2NTT(cuFHETRGSWNTTlvl1& trgswntt,
                const TFHEpp::TRGSW<TFHEpp::lvl1param>& trgsw, Stream& st);
-void GateBootstrappingTLWE2TRLWElvl01NTT(cuFHETRLWElvl1& out, Ctxt<TFHEpp::lvl0param>& in,
+void GateBootstrappingTLWE2TRLWElvl01NTT(cuFHETRLWElvl1& out,
+                                         Ctxt<TFHEpp::lvl0param>& in,
                                          Stream st);
 void Refresh(cuFHETRLWElvl1& out, cuFHETRLWElvl1& in, Stream st);
-void SampleExtractAndKeySwitch(Ctxt<TFHEpp::lvl0param>& out, const cuFHETRLWElvl1& in, Stream st);
+void SampleExtractAndKeySwitch(Ctxt<TFHEpp::lvl0param>& out,
+                               const cuFHETRLWElvl1& in, Stream st);
 void CMUXNTT(cuFHETRLWElvl1& res, cuFHETRGSWNTTlvl1& cs, cuFHETRLWElvl1& c1,
              cuFHETRLWElvl1& c0, Stream st);
 
-template<class P>
+template <class P>
 void Not(Ctxt<P>& out, Ctxt<P>& in, Stream st)
 {
     cudaSetDevice(st.device_id());
     CtxtCopyH2D<P>(in, st);
     NotBootstrap<P>(out.tlwedevices[st.device_id()],
-                 in.tlwedevices[st.device_id()], st.st(), st.device_id());
+                    in.tlwedevices[st.device_id()], st.st(), st.device_id());
     CtxtCopyD2H<P>(out, st);
 }
 
-template<class P>
+template <class P>
 void gNot(Ctxt<P>& out, Ctxt<P>& in, Stream st)
 {
     cudaSetDevice(st.device_id());
     NotBootstrap<P>(out.tlwedevices[st.device_id()],
-                 in.tlwedevices[st.device_id()], st.st(), st.device_id());
+                    in.tlwedevices[st.device_id()], st.st(), st.device_id());
 }
 
-template<class P>
+template <class P>
 void Copy(Ctxt<P>& out, Ctxt<P>& in, Stream st)
 {
     cudaSetDevice(st.device_id());
     CtxtCopyH2D<P>(in, st);
     CopyBootstrap<P>(out.tlwedevices[st.device_id()],
-                  in.tlwedevices[st.device_id()], st.st(), st.device_id());
+                     in.tlwedevices[st.device_id()], st.st(), st.device_id());
     CtxtCopyD2H<P>(out, st);
 }
 
-template<class P>
+template <class P>
 void gCopy(Ctxt<P>& out, Ctxt<P>& in, Stream st)
 {
     cudaSetDevice(st.device_id());
     CopyBootstrap<P>(out.tlwedevices[st.device_id()],
-                  in.tlwedevices[st.device_id()], st.st(), st.device_id());
+                     in.tlwedevices[st.device_id()], st.st(), st.device_id());
 }
 
-template<class P>
-void CopyOnHost(Ctxt<P>& out, Ctxt<P>& in) { out.tlwehost = in.tlwehost; }
+template <class P>
+void CopyOnHost(Ctxt<P>& out, Ctxt<P>& in)
+{
+    out.tlwehost = in.tlwehost;
+}
 
-template<class P>
+template <class P>
 void And(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void AndYN(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void AndNY(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void Or(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void OrYN(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void OrNY(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void Nand(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void Nor(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void Xor(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void Xnor(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void Mux(Ctxt<P>& out, Ctxt<P>& inc, Ctxt<P>& in1, Ctxt<P>& in0, Stream st);
-template<class P>
+template <class P>
 void NMux(Ctxt<P>& out, Ctxt<P>& inc, Ctxt<P>& in1, Ctxt<P>& in0, Stream st);
 
-void gSampleExtractAndKeySwitch(Ctxt<TFHEpp::lvl0param>& out, const cuFHETRLWElvl1& in, Stream st);
-void gGateBootstrappingTLWE2TRLWElvl01NTT(cuFHETRLWElvl1& out, Ctxt<TFHEpp::lvl0param>& in,
+void gSampleExtractAndKeySwitch(Ctxt<TFHEpp::lvl0param>& out,
+                                const cuFHETRLWElvl1& in, Stream st);
+void gGateBootstrappingTLWE2TRLWElvl01NTT(cuFHETRLWElvl1& out,
+                                          Ctxt<TFHEpp::lvl0param>& in,
                                           Stream st);
 void gRefresh(cuFHETRLWElvl1& out, cuFHETRLWElvl1& in, Stream st);
-template<class P>
+template <class P>
 void gNand(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gOr(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gOrYN(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gOrNY(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gAnd(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gAndYN(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gAndNY(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gNor(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gXor(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gXnor(Ctxt<P>& out, Ctxt<P>& in0, Ctxt<P>& in1, Stream st);
-template<class P>
+template <class P>
 void gNot(Ctxt<P>& out, Ctxt<P>& in, Stream st);
-template<class P>
+template <class P>
 void gMux(Ctxt<P>& out, Ctxt<P>& inc, Ctxt<P>& in1, Ctxt<P>& in0, Stream st);
-template<class P>
+template <class P>
 void gNMux(Ctxt<P>& out, Ctxt<P>& inc, Ctxt<P>& in1, Ctxt<P>& in0, Stream st);
-template<class P>
+template <class P>
 void gCopy(Ctxt<P>& out, Ctxt<P>& in, Stream st);
 
 }  // namespace cufhe

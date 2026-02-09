@@ -76,8 +76,10 @@ int main()
     Test("ORYN", OrYN<Param>, OrYNCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test("ORNY", OrNY<Param>, OrNYCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test("AND", And<Param>, AndCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
-    Test("ANDYN", AndYN<Param>, AndYNCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
-    Test("ANDNY", AndNY<Param>, AndNYCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
+    Test("ANDYN", AndYN<Param>, AndYNCheck, pt, ct, st, kNumTests, kNumSMs,
+         *sk);
+    Test("ANDNY", AndNY<Param>, AndNYCheck, pt, ct, st, kNumTests, kNumSMs,
+         *sk);
     Test("XOR", Xor<Param>, XorCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test("XNOR", Xnor<Param>, XnorCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test("MUX", Mux<Param>, MuxCheck, pt, ct, st, kNumTests, kNumSMs, *sk);

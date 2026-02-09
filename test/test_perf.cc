@@ -37,8 +37,8 @@ int main()
     std::vector<uint8_t> p(kNumTests);
     for (int i = 0; i < kNumTests; i++) {
         p[i] = binary(engine) > 0;
-        TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(ct[i].tlwehost,
-            p[i] ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
+        TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
+            ct[i].tlwehost, p[i] ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
             sk->key.get<TFHEpp::lvl0param>());
     }
     Synchronize();
@@ -82,7 +82,8 @@ int main()
 
     for (int i = 0; i < kNumTests; i++)
         assert(p[i] == (TFHEpp::trlweSymDecrypt<TFHEpp::lvl1param>(
-                            trlweLv1Temp[i].trlwehost, sk->key.get<TFHEpp::lvl1param>())[0]
+                            trlweLv1Temp[i].trlwehost,
+                            sk->key.get<TFHEpp::lvl1param>())[0]
                             ? 1
                             : 0));
 

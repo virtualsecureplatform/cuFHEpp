@@ -4,16 +4,18 @@
 const size_t N = 20, M = 1000;
 
 // Helper to allocate 2D array of Ctxt on heap (Ctxt has deleted copy ctor)
-template<class P>
+template <class P>
 struct CtxtArray2D {
     std::unique_ptr<cufhe::Ctxt<P>[]> data;
     size_t cols;
 
-    CtxtArray2D(size_t rows, size_t cols) : cols(cols) {
+    CtxtArray2D(size_t rows, size_t cols) : cols(cols)
+    {
         data = std::make_unique<cufhe::Ctxt<P>[]>(rows * cols);
     }
 
-    cufhe::Ctxt<P>& operator()(size_t i, size_t j) {
+    cufhe::Ctxt<P>& operator()(size_t i, size_t j)
+    {
         return data[i * cols + j];
     }
 };
@@ -62,14 +64,14 @@ void testMux(TFHEpp::SecretKey& sk)
     pb = false;
     pc = true;
     bool expected = pa ? pb : pc;
-    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(ca.tlwehost,
-        pa ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
+    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
+        ca.tlwehost, pa ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
         sk.key.get<TFHEpp::lvl0param>());
-    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(cb.tlwehost,
-        pb ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
+    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
+        cb.tlwehost, pb ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
         sk.key.get<TFHEpp::lvl0param>());
-    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(cc.tlwehost,
-        pc ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
+    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
+        cc.tlwehost, pc ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
         sk.key.get<TFHEpp::lvl0param>());
 
     runAndVerify(
@@ -93,11 +95,11 @@ void testNand(TFHEpp::SecretKey& sk)
     pa = true;
     pb = false;
     bool expected = !(pa && pb);
-    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(ca.tlwehost,
-        pa ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
+    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
+        ca.tlwehost, pa ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
         sk.key.get<TFHEpp::lvl0param>());
-    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(cb.tlwehost,
-        pb ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
+    TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
+        cb.tlwehost, pb ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
         sk.key.get<TFHEpp::lvl0param>());
 
     runAndVerify(

@@ -1,1 +1,4 @@
 build*
+*.o
+test/test_accum[0-9]*
+test/test_fft_sm80

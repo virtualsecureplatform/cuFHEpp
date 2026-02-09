@@ -38,13 +38,13 @@ namespace cufhe {
 //=============================================================================
 
 void InitializeNTThandlers(const int gpuNum);
-template<class P>
-void BootstrappingKeyToNTT(
-    const TFHEpp::BootstrappingKey<P>& bk, const int gpuNum);
+template <class P>
+void BootstrappingKeyToNTT(const TFHEpp::BootstrappingKey<P>& bk,
+                           const int gpuNum);
 #ifdef USE_KEY_BUNDLE
-template<class P>
-void BootstrappingKeyBundleToNTT(
-    const TFHEpp::BootstrappingKey<P>& bk, const int gpuNum);
+template <class P>
+void BootstrappingKeyBundleToNTT(const TFHEpp::BootstrappingKey<P>& bk,
+                                 const int gpuNum);
 #endif
 void DeleteBootstrappingKeyNTT(const int gpuNum);
 
@@ -53,107 +53,160 @@ void CMUXNTTkernel(TFHEpp::lvl1param::T* const res, const NTTValue* const cs,
                    TFHEpp::lvl1param::T* const c0, cudaStream_t st,
                    const int gpuNum);
 
-void Bootstrap(TFHEpp::lvl0param::T* const out, const TFHEpp::lvl0param::T* const in,
-               const TFHEpp::lvl1param::T mu, const cudaStream_t st, const int gpuNum);
-void BootstrapTLWE2TRLWE(TFHEpp::lvl1param::T* const out, const TFHEpp::lvl0param::T* const in,
+void Bootstrap(TFHEpp::lvl0param::T* const out,
+               const TFHEpp::lvl0param::T* const in,
+               const TFHEpp::lvl1param::T mu, const cudaStream_t st,
+               const int gpuNum);
+void BootstrapTLWE2TRLWE(TFHEpp::lvl1param::T* const out,
+                         const TFHEpp::lvl0param::T* const in,
                          const TFHEpp::lvl1param::T mu, const cudaStream_t st,
                          const int gpuNum);
-void SEIandBootstrap2TRLWE(TFHEpp::lvl1param::T* const out, const TFHEpp::lvl1param::T* const in,
-                           const TFHEpp::lvl1param::T mu, const cudaStream_t st, const int gpuNum);
+void SEIandBootstrap2TRLWE(TFHEpp::lvl1param::T* const out,
+                           const TFHEpp::lvl1param::T* const in,
+                           const TFHEpp::lvl1param::T mu, const cudaStream_t st,
+                           const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void NandBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void NandBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void NandBootstrap(typename iksP::targetP::T* const out,
+                   const typename brP::domainP::T* const in0,
+                   const typename brP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void NandBootstrap(typename brP::targetP::T* const out,
+                   const typename iksP::domainP::T* const in0,
+                   const typename iksP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void OrBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void OrBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void OrBootstrap(typename iksP::targetP::T* const out,
+                 const typename brP::domainP::T* const in0,
+                 const typename brP::domainP::T* const in1,
+                 const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void OrBootstrap(typename brP::targetP::T* const out,
+                 const typename iksP::domainP::T* const in0,
+                 const typename iksP::domainP::T* const in1,
+                 const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void OrYNBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void OrYNBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void OrYNBootstrap(typename iksP::targetP::T* const out,
+                   const typename brP::domainP::T* const in0,
+                   const typename brP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void OrYNBootstrap(typename brP::targetP::T* const out,
+                   const typename iksP::domainP::T* const in0,
+                   const typename iksP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void OrNYBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void OrNYBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void OrNYBootstrap(typename iksP::targetP::T* const out,
+                   const typename brP::domainP::T* const in0,
+                   const typename brP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void OrNYBootstrap(typename brP::targetP::T* const out,
+                   const typename iksP::domainP::T* const in0,
+                   const typename iksP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void AndBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void AndBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void AndBootstrap(typename iksP::targetP::T* const out,
+                  const typename brP::domainP::T* const in0,
+                  const typename brP::domainP::T* const in1,
+                  const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void AndBootstrap(typename brP::targetP::T* const out,
+                  const typename iksP::domainP::T* const in0,
+                  const typename iksP::domainP::T* const in1,
+                  const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void AndYNBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void AndYNBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void AndYNBootstrap(typename iksP::targetP::T* const out,
+                    const typename brP::domainP::T* const in0,
+                    const typename brP::domainP::T* const in1,
+                    const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void AndYNBootstrap(typename brP::targetP::T* const out,
+                    const typename iksP::domainP::T* const in0,
+                    const typename iksP::domainP::T* const in1,
+                    const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void AndNYBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void AndNYBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void AndNYBootstrap(typename iksP::targetP::T* const out,
+                    const typename brP::domainP::T* const in0,
+                    const typename brP::domainP::T* const in1,
+                    const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void AndNYBootstrap(typename brP::targetP::T* const out,
+                    const typename iksP::domainP::T* const in0,
+                    const typename iksP::domainP::T* const in1,
+                    const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void NorBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void NorBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void NorBootstrap(typename iksP::targetP::T* const out,
+                  const typename brP::domainP::T* const in0,
+                  const typename brP::domainP::T* const in1,
+                  const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void NorBootstrap(typename brP::targetP::T* const out,
+                  const typename iksP::domainP::T* const in0,
+                  const typename iksP::domainP::T* const in1,
+                  const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void XorBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void XorBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void XorBootstrap(typename iksP::targetP::T* const out,
+                  const typename brP::domainP::T* const in0,
+                  const typename brP::domainP::T* const in1,
+                  const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void XorBootstrap(typename brP::targetP::T* const out,
+                  const typename iksP::domainP::T* const in0,
+                  const typename iksP::domainP::T* const in1,
+                  const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void XnorBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const in0,
-                   const typename brP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void XnorBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const in0,
-                   const typename iksP::domainP::T* const in1, const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void XnorBootstrap(typename iksP::targetP::T* const out,
+                   const typename brP::domainP::T* const in0,
+                   const typename brP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void XnorBootstrap(typename brP::targetP::T* const out,
+                   const typename iksP::domainP::T* const in0,
+                   const typename iksP::domainP::T* const in1,
+                   const cudaStream_t st, const int gpuNum);
 
-template<class P>
+template <class P>
 void CopyBootstrap(typename P::T* const out, const typename P::T* const in,
                    const cudaStream_t st, const int gpuNum);
-template<class P>
+template <class P>
 void NotBootstrap(typename P::T* const out, const typename P::T* const in,
                   const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void MuxBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const inc,
-                  const typename brP::domainP::T* const in1, const typename brP::domainP::T* const in0,
+template <class brP, typename brP::targetP::T μ, class iksP>
+void MuxBootstrap(typename iksP::targetP::T* const out,
+                  const typename brP::domainP::T* const inc,
+                  const typename brP::domainP::T* const in1,
+                  const typename brP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void MuxBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const inc,
-                  const typename iksP::domainP::T* const in1, const typename iksP::domainP::T* const in0,
+template <class iksP, class brP, typename brP::targetP::T μ>
+void MuxBootstrap(typename brP::targetP::T* const out,
+                  const typename iksP::domainP::T* const inc,
+                  const typename iksP::domainP::T* const in1,
+                  const typename iksP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum);
 
-template<class brP, typename brP::targetP::T μ, class iksP>
-void NMuxBootstrap(typename iksP::targetP::T* const out, const typename brP::domainP::T* const inc,
-                  const typename brP::domainP::T* const in1, const typename brP::domainP::T* const in0,
-                  const cudaStream_t st, const int gpuNum);
-template<class iksP, class brP, typename brP::targetP::T μ>
-void NMuxBootstrap(typename brP::targetP::T* const out, const typename iksP::domainP::T* const inc,
-                  const typename iksP::domainP::T* const in1, const typename iksP::domainP::T* const in0,
-                  const cudaStream_t st, const int gpuNum);
+template <class brP, typename brP::targetP::T μ, class iksP>
+void NMuxBootstrap(typename iksP::targetP::T* const out,
+                   const typename brP::domainP::T* const inc,
+                   const typename brP::domainP::T* const in1,
+                   const typename brP::domainP::T* const in0,
+                   const cudaStream_t st, const int gpuNum);
+template <class iksP, class brP, typename brP::targetP::T μ>
+void NMuxBootstrap(typename brP::targetP::T* const out,
+                   const typename iksP::domainP::T* const inc,
+                   const typename iksP::domainP::T* const in1,
+                   const typename iksP::domainP::T* const in0,
+                   const cudaStream_t st, const int gpuNum);
 
 }  // namespace cufhe

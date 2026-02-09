@@ -30,7 +30,6 @@ namespace cufhe {
 
 uint32_t cnt = 0;
 
-
 cuFHETRLWElvl1::cuFHETRLWElvl1()
 {
     ctxtInitialize<TFHEpp::lvl1param::T, TFHEpp::TRLWE<TFHEpp::lvl1param>>(
@@ -53,7 +52,8 @@ cuFHETRGSWNTTlvl1::cuFHETRGSWNTTlvl1()
         cudaMalloc((void**)&trgswdevices[i], dev_size);
     }
     // Pin host memory for async transfers
-    cudaHostRegister(trgswhost.data(), sizeof(trgswhost), cudaHostRegisterDefault);
+    cudaHostRegister(trgswhost.data(), sizeof(trgswhost),
+                     cudaHostRegisterDefault);
 }
 
 cuFHETRGSWNTTlvl1::~cuFHETRGSWNTTlvl1()
