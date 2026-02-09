@@ -12,6 +12,10 @@
 #include <vector>
 #include <stdexcept>
 
+#if defined(USE_FFT) && defined(USE_GPU_FFT)
+#include <gpufft/fft_cpu.cuh>
+#endif
+
 namespace cufhe {
 
 // Define constant memory for NTT root tables
@@ -245,6 +249,118 @@ void CuSmallNTTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
 // Explicit template instantiation
 template class CuSmallNTTHandler<TFHEpp::lvl1param::n>;
 
+//=============================================================================
+// GPU-FFT Handler implementation
+//=============================================================================
+#if defined(USE_FFT) && defined(USE_GPU_FFT)
+
+namespace {
+
+// Host-side storage for GPU-FFT tables
+struct GPUFFTParams {
+    double2* forward_root;
+    double2* inverse_root;
+    double2* twist;
+    double2* untwist;
+    bool initialized;
+};
+
+std::vector<GPUFFTParams> g_gpufft_params;
+
+// Host-side tables (generated once, copied to each GPU)
+std::vector<double2> g_gpufft_forward_root;
+std::vector<double2> g_gpufft_inverse_root;
+std::vector<double2> g_gpufft_twist;
+std::vector<double2> g_gpufft_untwist;
+
+}  // anonymous namespace
+
+template <>
+void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Create() {
+    if (!g_gpufft_forward_root.empty()) return;  // Already generated
+
+    constexpr uint32_t N = TFHEpp::lvl1param::n;  // 1024
+    constexpr uint32_t HALF_N = N >> 1;            // 512
+
+    // Use GPU-FFT's FFNT class to generate tables
+    gpufft::FFNT<Float64> ffnt(N);
+
+    // Get tables from FFNT
+    auto forward_roots = ffnt.ReverseRootTable_ffnt();    // N/2 COMPLEX<Float64>
+    auto inverse_roots = ffnt.InverseReverseRootTable_ffnt();
+    auto twist = ffnt.twist_table_ffnt();
+    auto untwist = ffnt.untwist_table_ffnt();
+
+    // Convert COMPLEX<Float64> to double2
+    // COMPLEX<Float64> wraps fp2<Float64> = double2, so the memory layout is identical
+    g_gpufft_forward_root.resize(HALF_N);
+    g_gpufft_inverse_root.resize(HALF_N);
+    g_gpufft_twist.resize(HALF_N);
+    g_gpufft_untwist.resize(HALF_N);
+
+    for (uint32_t i = 0; i < HALF_N; i++) {
+        g_gpufft_forward_root[i] = {forward_roots[i].real(), forward_roots[i].imag()};
+        g_gpufft_inverse_root[i] = {inverse_roots[i].real(), inverse_roots[i].imag()};
+        g_gpufft_twist[i] = {twist[i].real(), twist[i].imag()};
+        g_gpufft_untwist[i] = {untwist[i].real(), untwist[i].imag()};
+    }
+}
+
+template <>
+void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Destroy() {
+    for (auto& params : g_gpufft_params) {
+        if (params.forward_root) { cudaFree(params.forward_root); params.forward_root = nullptr; }
+        if (params.inverse_root) { cudaFree(params.inverse_root); params.inverse_root = nullptr; }
+        if (params.twist) { cudaFree(params.twist); params.twist = nullptr; }
+        if (params.untwist) { cudaFree(params.untwist); params.untwist = nullptr; }
+        params.initialized = false;
+    }
+    g_gpufft_params.clear();
+    g_gpufft_forward_root.clear();
+    g_gpufft_inverse_root.clear();
+    g_gpufft_twist.clear();
+    g_gpufft_untwist.clear();
+}
+
+template <>
+void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id) {
+    if (g_gpufft_params.size() <= static_cast<size_t>(device_id)) {
+        g_gpufft_params.resize(device_id + 1);
+    }
+
+    GPUFFTParams& params = g_gpufft_params[device_id];
+
+    if (!params.initialized) {
+        constexpr size_t table_bytes = kHalfLength * sizeof(double2);
+
+        CuSafeCall(cudaMalloc(&params.forward_root, table_bytes));
+        CuSafeCall(cudaMalloc(&params.inverse_root, table_bytes));
+        CuSafeCall(cudaMalloc(&params.twist, table_bytes));
+        CuSafeCall(cudaMalloc(&params.untwist, table_bytes));
+
+        CuSafeCall(cudaMemcpy(params.forward_root, g_gpufft_forward_root.data(),
+                              table_bytes, cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.inverse_root, g_gpufft_inverse_root.data(),
+                              table_bytes, cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.twist, g_gpufft_twist.data(),
+                              table_bytes, cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.untwist, g_gpufft_untwist.data(),
+                              table_bytes, cudaMemcpyHostToDevice));
+
+        params.initialized = true;
+    }
+
+    forward_root_ = params.forward_root;
+    inverse_root_ = params.inverse_root;
+    twist_ = params.twist;
+    untwist_ = params.untwist;
+    n_inverse_ = 1.0 / static_cast<double>(kHalfLength);
+}
+
+template class CuGPUFFTHandler<TFHEpp::lvl1param::n>;
+
+#endif  // USE_FFT && USE_GPU_FFT
+
 #ifdef USE_KEY_BUNDLE
 //=============================================================================
 // XaiNTT table: precomputed NTT(X^a) for a = 0..2N-1
@@ -255,8 +371,172 @@ std::vector<NTTValue*> xai_ntt_devs;
 std::vector<NTTValue*> one_trgsw_ntt_devs;
 
 #ifdef USE_FFT
+#ifdef USE_GPU_FFT
 //=============================================================================
-// FFT Key-bundle initialization (negacyclic FFT over double2)
+// GPU-FFT Key-bundle initialization
+//=============================================================================
+
+// GPU kernel: compute GPU-FFT of (X^a - 1) mod (X^N+1) for a = 0..2N-1
+// Uses fold + twist + GPUFFTForward512
+__global__ void __ComputeXaiFFT__(NTTValue* const xai_fft,
+                                   const double2* const twist_table,
+                                   const double2* const forward_root)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256
+
+    __shared__ double2 sh_fft[HALF_N];
+
+    const uint32_t a = blockIdx.x;
+    const uint32_t tid = threadIdx.x;
+
+    uint32_t a_mod = a & (N - 1);
+    bool negate = (a >= N);
+
+    // Build (X^a - 1) mod (X^N + 1) as integer polynomial, fold + twist
+    if (tid < HALF_N) {
+        double re = 0.0, im = 0.0;
+
+        if (tid == 0) re = -1.0;
+        if (!negate) {
+            if (tid == a_mod) re += 1.0;
+            if (tid + HALF_N == a_mod) im += 1.0;
+        } else {
+            if (tid == a_mod) re -= 1.0;
+            if (tid + HALF_N == a_mod) im -= 1.0;
+        }
+
+        // Fold + twist
+        double2 folded = {re, im};
+        double2 tw = __ldg(&twist_table[tid]);
+        sh_fft[tid] = folded * tw;
+    }
+    __syncthreads();
+
+    if (tid < FFT_THREADS) {
+        GPUFFTForward512(sh_fft, forward_root, tid);
+    } else {
+        for (int s = 0; s < 5; s++) __syncthreads();
+    }
+
+    if (tid < HALF_N) {
+        xai_fft[a * HALF_N + tid] = sh_fft[tid];
+    }
+}
+
+void InitializeXaiNTT(const int gpuNum)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t table_entries = 2 * N;
+    constexpr size_t table_size = table_entries * HALF_N * sizeof(NTTValue);
+
+    xai_ntt_devs.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        CuSafeCall(cudaMalloc(&xai_ntt_devs[i], table_size));
+
+        dim3 grid(table_entries);
+        dim3 block(HALF_N);
+        __ComputeXaiFFT__<<<grid, block>>>(
+            xai_ntt_devs[i],
+            g_gpufft_params[i].twist,
+            g_gpufft_params[i].forward_root);
+        cudaDeviceSynchronize();
+        CuCheckError();
+    }
+}
+
+// GPU kernel: FFT Torus32 polynomials using GPU-FFT (for OneTRGSW identity)
+// Normalizes by 1/2^32, fold + twist + GPUFFTForward512
+__global__ void __FFTPolynomials__(
+    NTTValue* const out,
+    const uint32_t* const in,
+    const double2* const twist_table,
+    const double2* const forward_root)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256
+
+    __shared__ double2 sh_fft[HALF_N];
+
+    const uint32_t poly_idx = blockIdx.x;
+    const uint32_t tid = threadIdx.x;
+
+    constexpr double norm = 1.0 / 4294967296.0;  // 1/2^32
+    if (tid < HALF_N) {
+        double re = static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid])) * norm;
+        double im = static_cast<double>(static_cast<int32_t>(in[poly_idx * N + tid + HALF_N])) * norm;
+        // Fold + twist
+        double2 folded = {re, im};
+        double2 tw = __ldg(&twist_table[tid]);
+        sh_fft[tid] = folded * tw;
+    }
+    __syncthreads();
+
+    if (tid < FFT_THREADS) {
+        GPUFFTForward512(sh_fft, forward_root, tid);
+    } else {
+        for (int s = 0; s < 5; s++) __syncthreads();
+    }
+
+    if (tid < HALF_N) {
+        out[poly_idx * HALF_N + tid] = sh_fft[tid];
+    }
+}
+
+void InitializeOneTRGSWNTT(const int gpuNum)
+{
+    constexpr uint32_t N = TFHEpp::lvl1param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t k = TFHEpp::lvl1param::k;
+    constexpr uint32_t l = TFHEpp::lvl1param::l;
+    constexpr uint32_t Bgbit = TFHEpp::lvl1param::Bgbit;
+    constexpr uint32_t num_polys = (k + 1) * l * (k + 1);
+    constexpr size_t total_size = num_polys * HALF_N * sizeof(NTTValue);
+
+    std::vector<uint32_t> h(l);
+    for (uint32_t i = 0; i < l; i++) {
+        h[i] = static_cast<uint32_t>(1) << (std::numeric_limits<uint32_t>::digits - (i + 1) * Bgbit);
+    }
+
+    std::vector<uint32_t> host_polys(num_polys * N, 0);
+    for (uint32_t j = 0; j <= k; j++) {
+        for (uint32_t digit = 0; digit < l; digit++) {
+            uint32_t row = j * l + digit;
+            uint32_t poly_idx = row * (k + 1) + j;
+            host_polys[poly_idx * N + 0] = h[digit];
+        }
+    }
+
+    one_trgsw_ntt_devs.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        CuSafeCall(cudaMalloc(&one_trgsw_ntt_devs[i], total_size));
+
+        uint32_t* d_polys;
+        CuSafeCall(cudaMalloc(&d_polys, num_polys * N * sizeof(uint32_t)));
+        CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
+                              num_polys * N * sizeof(uint32_t), cudaMemcpyHostToDevice));
+
+        dim3 grid(num_polys);
+        dim3 block(HALF_N);
+        __FFTPolynomials__<<<grid, block>>>(
+            one_trgsw_ntt_devs[i], d_polys,
+            g_gpufft_params[i].twist,
+            g_gpufft_params[i].forward_root);
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_polys);
+    }
+}
+
+#else  // !USE_GPU_FFT (tfhe-rs FFT)
+//=============================================================================
+// tfhe-rs FFT Key-bundle initialization (negacyclic FFT over double2)
 //=============================================================================
 
 // GPU kernel to compute FFT of (X^a - 1) mod (X^N+1) for a = 0..2N-1
@@ -404,6 +684,8 @@ void InitializeOneTRGSWNTT(const int gpuNum)
         cudaFree(d_polys);
     }
 }
+
+#endif  // USE_GPU_FFT
 
 #else  // !USE_FFT
 //=============================================================================

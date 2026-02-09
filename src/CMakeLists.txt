@@ -6,7 +6,7 @@ set(CUFHE_GPU_SOURCES
     keyswitch_gpu.cu
     ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
 )
-if(USE_FFT)
+if(USE_FFT AND NOT USE_GPU_FFT)
     # Twiddle data from tfhe-rs (BSD 3-Clause Clear, ZAMA)
     # Must be in same link unit for CUDA __device__ variable resolution
     list(APPEND CUFHE_GPU_SOURCES
@@ -24,9 +24,14 @@ target_include_directories(cufhe_gpu
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/spqlios
     ${PROJECT_SOURCE_DIR}/thirdparties/GPU-NTT/src/include
     )
-if(USE_FFT)
+if(USE_FFT AND NOT USE_GPU_FFT)
     target_include_directories(cufhe_gpu
         PUBLIC ${PROJECT_SOURCE_DIR}/thirdparties/tfhe-rs-fft)
+endif()
+if(USE_GPU_FFT)
+    target_link_libraries(cufhe_gpu PUBLIC GPUFFT::fft)
+    target_include_directories(cufhe_gpu
+        PUBLIC ${PROJECT_SOURCE_DIR}/thirdparties/GPU-FFT/src/include)
 endif()
 set_target_properties(cufhe_gpu PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 set_target_properties(cufhe_gpu PROPERTIES CUDA_ARCHITECTURES 80) #A100

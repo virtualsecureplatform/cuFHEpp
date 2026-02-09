@@ -25,7 +25,11 @@
 #include <include/utils_gpu.cuh>
 
 #ifdef USE_FFT
-#include <fft_negacyclic.cuh>
+  #ifdef USE_GPU_FFT
+    // GPU-FFT: no fft_negacyclic.cuh needed; tables stored in handler
+  #else
+    #include <fft_negacyclic.cuh>
+  #endif
 #endif
 
 namespace cufhe {
@@ -541,8 +545,7 @@ public:
 #ifdef USE_FFT
 
 //=============================================================================
-// FFT mode: Use negacyclic FFT over double2 (tfhe-rs style)
-// (fft_negacyclic.cuh included above, outside namespace cufhe)
+// FFT mode: Use negacyclic FFT over double2
 //=============================================================================
 
 // NTT value type: double2 complex for FFT
@@ -564,8 +567,209 @@ constexpr uint32_t MEM4HOMGATE =
 template<class P = TFHEpp::lvl1param>
 constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 
+#ifdef USE_GPU_FFT
+
+//=============================================================================
+// GPU-FFT mode: Custom shared-memory FFT using GPU-FFT's table generation
+//=============================================================================
+
+#ifdef __CUDACC__
+// double2 operator overloads for GPU-FFT path
+// (These match the tfhe-rs operators but are defined here when fft_negacyclic.cuh is excluded)
+
+__device__ inline double2 operator+(const double2 a, const double2 b) {
+    return {__dadd_rn(a.x, b.x), __dadd_rn(a.y, b.y)};
+}
+
+__device__ inline double2 operator-(const double2 a, const double2 b) {
+    return {__dsub_rn(a.x, b.x), __dsub_rn(a.y, b.y)};
+}
+
+__device__ inline void operator+=(double2 &lh, const double2 rh) {
+    lh.x = __dadd_rn(lh.x, rh.x);
+    lh.y = __dadd_rn(lh.y, rh.y);
+}
+
+__device__ inline double2 operator*(const double2 a, const double2 b) {
+    return {
+        __fma_rn(a.x, b.x, -__dmul_rn(a.y, b.y)),
+        __fma_rn(a.x, b.y, __dmul_rn(a.y, b.x))
+    };
+}
+
+__device__ inline void operator*=(double2 &a, const double2 b) {
+    double real = __fma_rn(a.x, b.x, -__dmul_rn(a.y, b.y));
+    a.y = __fma_rn(a.x, b.y, __dmul_rn(a.y, b.x));
+    a.x = real;
+}
+
+__device__ inline double2 operator*(const double2 a, double b) {
+    return {__dmul_rn(a.x, b), __dmul_rn(a.y, b)};
+}
+
 /**
- * CuFFTHandler - replacement for CuNTTHandler when using negacyclic FFT
+ * GPU-FFT Forward FFT for N/2=512 complex elements
+ * Uses 256 threads, Cooley-Tukey butterfly, 9 stages
+ *
+ * Root table: bit-reversed forward roots from FFNT::ReverseRootTable_ffnt()
+ * Root indexing: current_root_index = omega_address >> t_2
+ *
+ * Sync pattern: 4 stages with __syncthreads (stride >= 32) + 5 warp-local + final sync = 5 total syncs
+ */
+__device__ __forceinline__ void GPUFFTForward512(
+    double2* sh,
+    const double2* __restrict__ root_table,
+    int tid)
+{
+    constexpr int N_power = 9;  // log2(512) = 9
+
+    int t_2 = N_power - 1;  // 8
+    int t_ = 8;
+    int t = 1 << t_;  // 256
+
+    int in_shared_address = ((tid >> t_) << t_) + tid;
+
+    // First 4 stages (stride >= 32): need __syncthreads
+    #pragma unroll
+    for (int lp = 0; lp < 4; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 U = sh[in_shared_address];
+        double2 V = sh[in_shared_address + t] * root;
+        sh[in_shared_address] = U + V;
+        sh[in_shared_address + t] = U - V;
+
+        t = t >> 1;
+        t_2 -= 1;
+        t_ -= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+    // Last 5 stages (stride <= 16): warp-local, no sync needed
+    #pragma unroll
+    for (int lp = 0; lp < 5; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 U = sh[in_shared_address];
+        double2 V = sh[in_shared_address + t] * root;
+        sh[in_shared_address] = U + V;
+        sh[in_shared_address + t] = U - V;
+
+        t = t >> 1;
+        t_2 -= 1;
+        t_ -= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+    }
+    __syncthreads();
+}
+
+/**
+ * GPU-FFT Inverse FFT for N/2=512 complex elements
+ * Uses 256 threads, Gentleman-Sande butterfly, 9 stages
+ *
+ * Root table: bit-reversed inverse roots from FFNT::InverseReverseRootTable_ffnt()
+ * Root indexing: current_root_index = m + (tid >> t_2)
+ *
+ * Sync pattern: 5 warp-local + sync + 4 stages with sync + n_inverse sync = 6 total syncs
+ */
+__device__ __forceinline__ void GPUFFTInverse512(
+    double2* sh,
+    const double2* __restrict__ root_table,
+    double n_inverse,
+    int tid)
+{
+    constexpr int N_power = 9;  // log2(512) = 9
+
+    int t_2 = 0;
+    int t_ = 0;
+    int t = 1;
+
+    int in_shared_address = ((tid >> t_) << t_) + tid;
+
+    // First 5 stages (stride <= 16): warp-local, no sync needed
+    #pragma unroll
+    for (int lp = 0; lp < 5; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 u = sh[in_shared_address];
+        double2 v = sh[in_shared_address + t];
+        sh[in_shared_address] = u + v;
+        sh[in_shared_address + t] = (u - v) * root;
+
+        t = t << 1;
+        t_2 += 1;
+        t_ += 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+    }
+    __syncthreads();
+
+    // Last 4 stages (stride >= 32): need __syncthreads
+    #pragma unroll
+    for (int lp = 0; lp < 4; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 u = sh[in_shared_address];
+        double2 v = sh[in_shared_address + t];
+        sh[in_shared_address] = u + v;
+        sh[in_shared_address + t] = (u - v) * root;
+
+        t = t << 1;
+        t_2 += 1;
+        t_ += 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+    // Multiply by n^{-1} = 1/512
+    sh[tid] = sh[tid] * n_inverse;
+    sh[tid + 256] = sh[tid + 256] * n_inverse;
+    __syncthreads();
+}
+
+#endif // __CUDACC__
+
+/**
+ * CuGPUFFTHandler - handler for GPU-FFT library FFT
+ *
+ * Stores forward/inverse root tables and twist/untwist tables generated by
+ * gpufft::FFNT<Float64>. Each table has N/2 = 512 complex (double2) entries.
+ */
+template <uint32_t length = TFHEpp::lvl1param::n>
+class CuGPUFFTHandler {
+public:
+    static constexpr uint32_t kLength = length;
+    static constexpr uint32_t kHalfLength = length >> 1;
+
+    double2* forward_root_;   // N/2 forward roots (bit-reversed)
+    double2* inverse_root_;   // N/2 inverse roots (bit-reversed)
+    double2* twist_;          // N/2 twist factors
+    double2* untwist_;        // N/2 untwist factors
+    double n_inverse_;        // 1.0 / (N/2) = 1.0 / 512
+
+    __host__ __device__ CuGPUFFTHandler()
+        : forward_root_(nullptr), inverse_root_(nullptr),
+          twist_(nullptr), untwist_(nullptr), n_inverse_(0) {}
+    __host__ __device__ ~CuGPUFFTHandler() {}
+
+    __host__ static void Create();
+    __host__ static void CreateConstant() {}
+    __host__ static void Destroy();
+    __host__ void SetDevicePointers(int device_id);
+};
+
+template <uint32_t length = TFHEpp::lvl1param::n>
+using CuNTTHandler = CuGPUFFTHandler<length>;
+
+#else  // !USE_GPU_FFT (tfhe-rs FFT)
+
+//=============================================================================
+// tfhe-rs FFT mode
+// (fft_negacyclic.cuh included above, outside namespace cufhe)
+//=============================================================================
+
+/**
+ * CuFFTHandler - replacement for CuNTTHandler when using tfhe-rs negacyclic FFT
  *
  * The twiddle factors are stored in device memory (__device__ negtwiddles[])
  * rather than in handler-specific allocations, so the handler is mostly a
@@ -587,6 +791,8 @@ public:
 
 template <uint32_t length = TFHEpp::lvl1param::n>
 using CuNTTHandler = CuFFTHandler<length>;
+
+#endif  // USE_GPU_FFT
 
 #else  // !USE_FFT
 

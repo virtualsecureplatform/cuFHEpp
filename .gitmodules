@@ -4,3 +4,6 @@
 [submodule "thirdparties/GPU-NTT"]
 	path = thirdparties/GPU-NTT
 	url = https://github.com/Alisah-Ozcan/GPU-NTT.git
+[submodule "thirdparties/GPU-FFT"]
+	path = thirdparties/GPU-FFT
+	url = https://github.com/Alisah-Ozcan/GPU-FFT.git

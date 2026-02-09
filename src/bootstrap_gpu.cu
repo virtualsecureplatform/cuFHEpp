@@ -46,24 +46,56 @@ vector<CuNTTHandler<>*> ntt_handlers;
 // FFT mode: BSK conversion to Fourier domain
 // ============================================================================
 
+#ifdef USE_GPU_FFT
+
 /**
- * __TRGSW2FFT__: Convert one BSK polynomial from Torus32 to Fourier domain
- *
- * Each block handles one polynomial of N coefficients:
- *   1. Load N Torus32 coefficients, pack into N/2 complex values
- *      (even coefficients -> real, odd coefficients -> imaginary)
- *   2. Forward negacyclic FFT
- *   3. Store N/2 double2 values to BSK FFT device array
- *
- * Grid: (1, (k+1)*l*(k+1), n_lwe) where n_lwe = number of LWE dimensions
- * Block: N/2 threads (512 for N=1024)
- *
- * BSK input layout (per LWE dim z):
- *   bk[z * (k+1)*l*(k+1) * N + y * (k+1) * N + x * N + coeff]
- *   where y = row in TRGSW matrix, x = column polynomial
- *
- * BSK output layout (per LWE dim z):
- *   bk_fft[z * (k+1)*l*(k+1) * (N/2) + y * (k+1) * (N/2) + x * (N/2) + complex_idx]
+ * __TRGSW2FFT__ (GPU-FFT variant): Convert BSK polynomial to Fourier domain
+ * Uses fold + twist + GPUFFTForward512
+ */
+template<class P = TFHEpp::lvl1param>
+__global__ void __TRGSW2FFT__(NTTValue* const bk_fft, const typename P::T* const bk,
+                              CuNTTHandler<> ntt)
+{
+    constexpr uint32_t N = P::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256
+
+    __shared__ double2 sh_fft[HALF_N];
+
+    const int in_index = blockIdx.z * ((P::k+1) * P::l * (P::k+1) * N) +
+                         blockIdx.y * N;
+    const int out_index = blockIdx.z * ((P::k+1) * P::l * (P::k+1) * HALF_N) +
+                          blockIdx.y * HALF_N;
+
+    const uint32_t tid = threadIdx.x;
+
+    // Load + normalize + fold + twist
+    constexpr double norm = 1.0 / 4294967296.0;  // 1/2^32
+    if (tid < HALF_N) {
+        double re = static_cast<double>(static_cast<int32_t>(bk[in_index + tid])) * norm;
+        double im = static_cast<double>(static_cast<int32_t>(bk[in_index + tid + HALF_N])) * norm;
+        double2 folded = {re, im};
+        double2 tw = __ldg(&ntt.twist_[tid]);
+        sh_fft[tid] = folded * tw;
+    }
+    __syncthreads();
+
+    if (tid < FFT_THREADS) {
+        GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+    } else {
+        for (int s = 0; s < 5; s++) __syncthreads();
+    }
+
+    if (tid < HALF_N) {
+        bk_fft[out_index + tid] = sh_fft[tid];
+    }
+}
+
+#else  // !USE_GPU_FFT (tfhe-rs FFT)
+
+/**
+ * __TRGSW2FFT__ (tfhe-rs variant): Convert BSK polynomial to Fourier domain
+ * Uses simple pack + NSMFFT_direct
  */
 template<class P = TFHEpp::lvl1param>
 __global__ void __TRGSW2FFT__(NTTValue* const bk_fft, const typename P::T* const bk,
@@ -75,23 +107,13 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft, const typename P::T* const
 
     __shared__ double2 sh_fft[HALF_N];
 
-    // Compute input index in Torus domain (N elements per polynomial)
-    // blockIdx.x is always 0 (single polynomial per z,y pair)
-    // blockIdx.y indexes the (k+1)*l*(k+1) rows×columns of TRGSW
-    // blockIdx.z indexes the LWE dimension
     const int in_index = blockIdx.z * ((P::k+1) * P::l * (P::k+1) * N) +
                          blockIdx.y * N;
-    // Output index in Fourier domain (N/2 elements per polynomial)
     const int out_index = blockIdx.z * ((P::k+1) * P::l * (P::k+1) * HALF_N) +
                           blockIdx.y * HALF_N;
 
     const uint32_t tid = threadIdx.x;
 
-    // Step 1: Load and pack N Torus32 coefficients into N/2 complex values
-    // Half-size FFT packing: Complex[i] = {Poly[i], Poly[i + N/2]}
-    // Normalize by dividing by 2^32 to keep values in [-0.5, 0.5) range,
-    // preventing double-precision overflow during FFT multiply-accumulate.
-    // The Accumulate function will multiply back by 2^32 after IFFT.
     constexpr double norm = 1.0 / 4294967296.0;  // 1 / 2^32
     if (tid < HALF_N) {
         sh_fft[tid] = {static_cast<double>(static_cast<int32_t>(bk[in_index + tid])) * norm,
@@ -99,19 +121,18 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft, const typename P::T* const
     }
     __syncthreads();
 
-    // Step 2: Forward FFT (only first FFT_THREADS threads participate)
     if (tid < FFT_THREADS) {
         NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
     } else {
-        // Match syncthreads inside NSMFFT_direct
         for (int s = 0; s < 11; s++) __syncthreads();
     }
 
-    // Step 3: Store N/2 complex values to global memory
     if (tid < HALF_N) {
         bk_fft[out_index + tid] = sh_fft[tid];
     }
 }
+
+#endif  // USE_GPU_FFT
 
 void TRGSW2NTT(cuFHETRGSWNTTlvl1& trgswntt,
                const TFHEpp::TRGSW<TFHEpp::lvl1param>& trgsw, Stream& st)
@@ -123,14 +144,12 @@ void TRGSW2NTT(cuFHETRGSWNTTlvl1& trgswntt,
                     cudaMemcpyHostToDevice, st.st());
 
     constexpr uint32_t num_threads = lvl1param::n >> 1;  // N/2
-    // Grid: 1 x ((k+1)*l*(k+1)) x 1  (single TRGSW, not batched over LWE dims)
     dim3 grid(1, (lvl1param::k+1) * lvl1param::l * (lvl1param::k+1), 1);
     dim3 block(num_threads);
     __TRGSW2FFT__<<<grid, block, 0, st.st()>>>(
         trgswntt.trgswdevices[st.device_id()], d_trgsw,
         *ntt_handlers[st.device_id()]);
     CuCheckError();
-    // Copy FFT results back to host (NTTValue = double2)
     cudaMemcpyAsync(
         trgswntt.trgswhost.data(), trgswntt.trgswdevices[st.device_id()],
         cuFHETRGSWNTTlvl1::kNumElements * sizeof(NTTValue),
@@ -140,14 +159,25 @@ void TRGSW2NTT(cuFHETRGSWNTTlvl1& trgswntt,
 
 void InitializeNTThandlers(const int gpuNum)
 {
-    // FFT mode: twiddles are in __device__ memory, no per-GPU initialization needed
-    // Just create placeholder handlers
+#ifdef USE_GPU_FFT
+    // GPU-FFT mode: generate tables and allocate per-GPU device memory
+    CuNTTHandler<>::Create();
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        ntt_handlers.push_back(new CuNTTHandler<>());
+        ntt_handlers[i]->SetDevicePointers(i);
+        cudaDeviceSynchronize();
+        CuCheckError();
+    }
+#else
+    // tfhe-rs FFT mode: twiddles are in __device__ memory, no per-GPU initialization needed
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
         ntt_handlers.push_back(new CuNTTHandler<>());
         cudaDeviceSynchronize();
         CuCheckError();
     }
+#endif
 }
 
 template<class P>
@@ -411,6 +441,111 @@ void DeleteBootstrappingKeyNTT(const int gpuNum)
 
 #ifdef USE_FFT
 
+#ifdef USE_GPU_FFT
+
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
+    TFHEpp::lvl1param::T* out, const NTTValue* const tgsw_fft,
+    const TFHEpp::lvl1param::T* const trlwe1,
+    const TFHEpp::lvl1param::T* const trlwe0, const CuNTTHandler<> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+
+    constexpr uint32_t N = lvl1param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256
+
+    extern __shared__ NTTValue sh_cmux[];
+    double2* const sh_fft = &sh_cmux[0];
+    double2* const sh_accum = &sh_cmux[HALF_N];
+
+    for (int i = tid; i < (lvl1param::k + 1) * HALF_N; i += NUM_THREADS) {
+        sh_accum[i] = {0.0, 0.0};
+    }
+    __syncthreads();
+
+    constexpr uint32_t decomp_mask = (1 << lvl1param::Bgbit) - 1;
+    constexpr int32_t decomp_half = 1 << (lvl1param::Bgbit - 1);
+    constexpr uint32_t decomp_offset = offsetgen<lvl1param>();
+    constexpr typename lvl1param::T roundoffset =
+        1ULL << (std::numeric_limits<typename lvl1param::T>::digits -
+                 lvl1param::l * lvl1param::Bgbit - 1);
+
+    for (int j = 0; j <= lvl1param::k; j++) {
+        for (int digit = 0; digit < lvl1param::l; digit++) {
+            if (tid < HALF_N) {
+                typename lvl1param::T temp_re = trlwe1[j * N + tid] -
+                                                 trlwe0[j * N + tid] +
+                                                 decomp_offset + roundoffset;
+                int32_t digit_re = static_cast<int32_t>(
+                    ((temp_re >>
+                      (std::numeric_limits<typename lvl1param::T>::digits -
+                       (digit + 1) * lvl1param::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                typename lvl1param::T temp_im = trlwe1[j * N + tid + HALF_N] -
+                                                 trlwe0[j * N + tid + HALF_N] +
+                                                 decomp_offset + roundoffset;
+                int32_t digit_im = static_cast<int32_t>(
+                    ((temp_im >>
+                      (std::numeric_limits<typename lvl1param::T>::digits -
+                       (digit + 1) * lvl1param::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                // Fold + twist
+                double2 folded = {static_cast<double>(digit_re),
+                                  static_cast<double>(digit_im)};
+                double2 tw = __ldg(&ntt.twist_[tid]);
+                sh_fft[tid] = folded * tw;
+            }
+            __syncthreads();
+
+            if (tid < FFT_THREADS) {
+                GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+            } else {
+                for (int s = 0; s < 5; s++) __syncthreads();
+            }
+
+            int digit_linear = j * lvl1param::l + digit;
+            if (tid < HALF_N) {
+                double2 fft_val = sh_fft[tid];
+                #pragma unroll
+                for (int out_k = 0; out_k <= lvl1param::k; out_k++) {
+                    double2 bk_val = __ldg(&tgsw_fft[
+                        ((lvl1param::k + 1) * digit_linear + out_k) * HALF_N + tid]);
+                    sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    constexpr double denorm = 4294967296.0;  // 2^32
+    for (int k_idx = 0; k_idx <= lvl1param::k; k_idx++) {
+        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+        if (tid < FFT_THREADS) {
+            GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_, tid);
+        } else {
+            for (int s = 0; s < 6; s++) __syncthreads();
+        }
+
+        if (tid < HALF_N) {
+            double2 val = sh_inv[tid];
+            double2 utw = __ldg(&ntt.untwist_[tid]);
+            val = val * utw;
+            out[k_idx * N + tid]          = trlwe0[k_idx * N + tid] +
+                static_cast<uint32_t>(static_cast<int64_t>(llrint(val.x * denorm)));
+            out[k_idx * N + tid + HALF_N] = trlwe0[k_idx * N + tid + HALF_N] +
+                static_cast<uint32_t>(static_cast<int64_t>(llrint(val.y * denorm)));
+        }
+        __syncthreads();
+    }
+}
+
+#else  // !USE_GPU_FFT (tfhe-rs FFT CMUX)
+
 __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
     TFHEpp::lvl1param::T* out, const NTTValue* const tgsw_fft,
     const TFHEpp::lvl1param::T* const trlwe1,
@@ -427,7 +562,6 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
     double2* const sh_fft = &sh_cmux[0];
     double2* const sh_accum = &sh_cmux[HALF_N];
 
-    // Initialize accumulated results to zero
     for (int i = tid; i < (lvl1param::k + 1) * HALF_N; i += NUM_THREADS) {
         sh_accum[i] = {0.0, 0.0};
     }
@@ -442,7 +576,6 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
 
     for (int j = 0; j <= lvl1param::k; j++) {
         for (int digit = 0; digit < lvl1param::l; digit++) {
-            // Half-size FFT packing: Complex[i] = {Poly[i], Poly[i + N/2]}
             if (tid < HALF_N) {
                 typename lvl1param::T temp_re = trlwe1[j * N + tid] -
                                                  trlwe0[j * N + tid] +
@@ -489,6 +622,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
         }
     }
 
+    constexpr double denorm = 4294967296.0;  // 2^32
     for (int k_idx = 0; k_idx <= lvl1param::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
         if (tid < FFT_THREADS) {
@@ -497,9 +631,6 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
             for (int s = 0; s < 11; s++) __syncthreads();
         }
 
-        // Half-size FFT unpacking: Poly[i] = Complex[i].real, Poly[i+N/2] = Complex[i].imag
-        // Multiply by 2^32 to undo BSK normalization
-        constexpr double denorm = 4294967296.0;  // 2^32
         if (tid < HALF_N) {
             double2 val = sh_inv[tid];
             out[k_idx * N + tid]          = trlwe0[k_idx * N + tid] +
@@ -510,6 +641,8 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXN
         __syncthreads();
     }
 }
+
+#endif  // USE_GPU_FFT
 
 #else  // !USE_FFT
 

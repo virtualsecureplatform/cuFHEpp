@@ -52,6 +52,138 @@ __device__ inline void RotatedTestVector(typename P::T* tlwe,
 }
 
 #ifdef USE_FFT
+#ifdef USE_GPU_FFT
+/**
+ * GPU-FFT Accumulate function
+ * Uses 512 threads total, 256 active during FFT, all 512 during decomposition/multiply
+ *
+ * Differs from tfhe-rs version:
+ *   - Decompose + fold + twist (instead of simple packing)
+ *   - Forward FFT via GPUFFTForward512 (5 syncs instead of 11)
+ *   - Inverse FFT via GPUFFTInverse512 (5 syncs instead of 11)
+ *   - Untwist + unfold (instead of simple unpacking)
+ */
+template<class P>
+__device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue* const sh_acc_ntt,
+                                  const uint32_t a_bar,
+                                  const NTTValue* const tgsw_fft,
+                                  const CuNTTHandler<> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t HALF_N = N >> 1;       // 512
+    constexpr uint32_t NUM_THREADS = N >> 1;  // 512 threads total
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256 for GPU-FFT
+
+    double2* const sh_fft = &sh_acc_ntt[0];
+    double2* const sh_accum = &sh_acc_ntt[HALF_N];
+
+    // Initialize accumulated results to zero
+    for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
+        sh_accum[i] = {0.0, 0.0};
+    }
+    __syncthreads();
+
+    // Decomposition constants
+    constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
+    constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
+    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T roundoffset =
+        1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
+                 P::targetP::l * P::targetP::Bgbit - 1);
+
+    for (int j = 0; j <= P::targetP::k; j++) {
+        for (int digit = 0; digit < P::targetP::l; digit++) {
+            // Step 1: DECOMPOSE + FOLD + TWIST
+            // Fold: Complex[i] = {Poly[i], Poly[i + N/2]}
+            // Twist: Complex[i] *= twist[i]
+            if (tid < HALF_N) {
+                const uint32_t idx_re = tid;
+                typename P::targetP::T temp_re =
+                    trlwe[j * N + ((idx_re - a_bar) & (N - 1))];
+                temp_re = ((idx_re < (a_bar & (N - 1)) ^
+                             (a_bar >> P::targetP::nbit)))
+                               ? -temp_re
+                               : temp_re;
+                temp_re -= trlwe[j * N + idx_re];
+                temp_re += decomp_offset + roundoffset;
+                int32_t digit_re = static_cast<int32_t>(
+                    ((temp_re >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                const uint32_t idx_im = tid + HALF_N;
+                typename P::targetP::T temp_im =
+                    trlwe[j * N + ((idx_im - a_bar) & (N - 1))];
+                temp_im = ((idx_im < (a_bar & (N - 1)) ^
+                             (a_bar >> P::targetP::nbit)))
+                               ? -temp_im
+                               : temp_im;
+                temp_im -= trlwe[j * N + idx_im];
+                temp_im += decomp_offset + roundoffset;
+                int32_t digit_im = static_cast<int32_t>(
+                    ((temp_im >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                // Fold + twist
+                double2 folded = {static_cast<double>(digit_re),
+                                  static_cast<double>(digit_im)};
+                double2 tw = __ldg(&ntt.twist_[tid]);
+                sh_fft[tid] = folded * tw;
+            }
+            __syncthreads();
+
+            // Step 2: Forward FFT (GPU-FFT: 256 threads, 5 syncs)
+            if (tid < FFT_THREADS) {
+                GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+            } else {
+                for (int s = 0; s < 5; s++) __syncthreads();
+            }
+
+            // Step 3: Multiply-accumulate with BSK
+            int digit_linear = j * P::targetP::l + digit;
+            if (tid < HALF_N) {
+                double2 fft_val = sh_fft[tid];
+                #pragma unroll
+                for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
+                    double2 bk_val = __ldg(&tgsw_fft[
+                        ((P::targetP::k + 1) * digit_linear + out_k) * HALF_N + tid]);
+                    sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    // Step 4: Inverse FFT + untwist + unfold + add to trlwe
+    for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
+        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+
+        if (tid < FFT_THREADS) {
+            GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_, tid);
+        } else {
+            for (int s = 0; s < 6; s++) __syncthreads();
+        }
+
+        // Untwist + unfold + denormalize
+        constexpr double denorm = 4294967296.0;  // 2^32
+        if (tid < HALF_N) {
+            double2 val = sh_inv[tid];
+            double2 utw = __ldg(&ntt.untwist_[tid]);
+            val = val * utw;
+            trlwe[k_idx * N + tid]          += static_cast<uint32_t>(static_cast<int64_t>(llrint(val.x * denorm)));
+            trlwe[k_idx * N + tid + HALF_N] += static_cast<uint32_t>(static_cast<int64_t>(llrint(val.y * denorm)));
+        }
+        __syncthreads();
+    }
+}
+#else  // !USE_GPU_FFT (tfhe-rs FFT)
 /**
  * FFT-based Accumulate function (tfhe-rs style)
  * Uses 512 threads total, 256 active during FFT, all 512 during decomposition/multiply
@@ -149,11 +281,6 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
                 NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
             } else {
                 // Non-FFT threads must match the syncthreads inside NSMFFT_direct
-                // For HalfDegree<Degree<1024>>: log2_degree=9, levels 8..5 need __syncthreads
-                // That's 4 iterations × 2 syncthreads each = 8, plus entry/exit = 10 total
-                // Entry sync + (9-1 down to 5) = 4 levels × 2 syncs = 8 + final store 2 = 10+2
-                // Count from NSMFFT_direct: 1 (entry) + 2*(9-1-5+1)=2*4=8 + 1 (pre-store) + 1 (post-store) = 11
-                // Let's just count: __syncthreads at entry, then for l=8,7,6,5: 2 each=8, then store: 2 = 11 total
                 for (int s = 0; s < 11; s++) __syncthreads();
             }
 
@@ -198,6 +325,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe, NTTValue*
         __syncthreads();
     }
 }
+#endif  // USE_GPU_FFT
 #else  // !USE_FFT
 /**
  * Sequential NTT Accumulate function (HEonGPU-style)
@@ -370,8 +498,138 @@ __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
 
 #ifdef USE_KEY_BUNDLE
 #ifdef USE_FFT
+#ifdef USE_GPU_FFT
 /**
- * FFT Key-bundle ExternalProduct accumulator
+ * GPU-FFT Key-bundle ExternalProduct accumulator
+ *
+ * Same as tfhe-rs version but uses fold+twist, GPU-FFT forward/inverse, untwist+unfold
+ */
+template<class P>
+__device__ inline void AccumulateKeyBundle(
+    typename P::targetP::T* const trlwe,
+    NTTValue* const sh_acc_ntt,
+    const uint32_t bara0,
+    const uint32_t bara1,
+    const NTTValue* const bk0_fft,
+    const NTTValue* const bk1_fft,
+    const NTTValue* const bk2_fft,
+    const NTTValue* const one_trgsw_fft,
+    const NTTValue* const xai_fft,
+    const CuNTTHandler<> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256
+
+    double2* const sh_fft = &sh_acc_ntt[0];
+    double2* const sh_accum = &sh_acc_ntt[HALF_N];
+
+    for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
+        sh_accum[i] = {0.0, 0.0};
+    }
+    __syncthreads();
+
+    constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
+    constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
+    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T roundoffset =
+        1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
+                 P::targetP::l * P::targetP::Bgbit - 1);
+
+    const uint32_t bara01 = (bara0 + bara1) & (2 * N - 1);
+
+    for (int j = 0; j <= P::targetP::k; j++) {
+        for (int digit = 0; digit < P::targetP::l; digit++) {
+            // Step 1: Decompose + fold + twist
+            if (tid < HALF_N) {
+                typename P::targetP::T temp_re = trlwe[j * N + tid];
+                temp_re += decomp_offset + roundoffset;
+                int32_t digit_re = static_cast<int32_t>(
+                    ((temp_re >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                typename P::targetP::T temp_im = trlwe[j * N + tid + HALF_N];
+                temp_im += decomp_offset + roundoffset;
+                int32_t digit_im = static_cast<int32_t>(
+                    ((temp_im >>
+                      (std::numeric_limits<typename P::targetP::T>::digits -
+                       (digit + 1) * P::targetP::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+
+                double2 folded = {static_cast<double>(digit_re),
+                                  static_cast<double>(digit_im)};
+                double2 tw = __ldg(&ntt.twist_[tid]);
+                sh_fft[tid] = folded * tw;
+            }
+            __syncthreads();
+
+            // Step 2: Forward FFT (GPU-FFT)
+            if (tid < FFT_THREADS) {
+                GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+            } else {
+                for (int s = 0; s < 5; s++) __syncthreads();
+            }
+
+            // Step 3: Multiply with on-the-fly keybundle and accumulate
+            int digit_linear = j * P::targetP::l + digit;
+            if (tid < HALF_N) {
+                double2 fft_val = sh_fft[tid];
+
+                double2 xai0 = __ldg(&xai_fft[bara0 * HALF_N + tid]);
+                double2 xai1 = __ldg(&xai_fft[bara1 * HALF_N + tid]);
+                double2 xai01 = __ldg(&xai_fft[bara01 * HALF_N + tid]);
+
+                #pragma unroll
+                for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
+                    uint32_t bk_offset = ((P::targetP::k + 1) * digit_linear + out_k) * HALF_N + tid;
+
+                    double2 one_val = __ldg(&one_trgsw_fft[bk_offset]);
+                    double2 bk0_val = __ldg(&bk0_fft[bk_offset]);
+                    double2 bk1_val = __ldg(&bk1_fft[bk_offset]);
+                    double2 bk2_val = __ldg(&bk2_fft[bk_offset]);
+
+                    double2 combined = one_val;
+                    combined += bk2_val * xai1;
+                    combined += bk1_val * xai0;
+                    combined += bk0_val * xai01;
+
+                    sh_accum[out_k * HALF_N + tid] += fft_val * combined;
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    // Step 4: Inverse FFT + untwist + unfold, REPLACE trlwe
+    constexpr double denorm = 4294967296.0;  // 2^32
+    for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
+        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+        if (tid < FFT_THREADS) {
+            GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_, tid);
+        } else {
+            for (int s = 0; s < 6; s++) __syncthreads();
+        }
+
+        if (tid < HALF_N) {
+            double2 val = sh_inv[tid];
+            double2 utw = __ldg(&ntt.untwist_[tid]);
+            val = val * utw;
+            trlwe[k_idx * N + tid]          = static_cast<uint32_t>(static_cast<int64_t>(llrint(val.x * denorm)));
+            trlwe[k_idx * N + tid + HALF_N] = static_cast<uint32_t>(static_cast<int64_t>(llrint(val.y * denorm)));
+        }
+        __syncthreads();
+    }
+}
+#else  // !USE_GPU_FFT (tfhe-rs FFT)
+/**
+ * FFT Key-bundle ExternalProduct accumulator (tfhe-rs style)
  *
  * Decomposes acc directly, FFTs decomposed polynomial, multiplies with
  * on-the-fly keybundle in Fourier domain, IFFTs and REPLACEs acc.
@@ -504,6 +762,7 @@ __device__ inline void AccumulateKeyBundle(
         __syncthreads();
     }
 }
+#endif  // USE_GPU_FFT
 #else  // !USE_FFT
 /**
  * NTT Key-bundle ExternalProduct accumulator
