@@ -1680,8 +1680,9 @@ __global__ __launch_bounds__(
     }
     __syncthreads();
 
-    __shared__
-        typename brP::targetP::T tlwe[brP::targetP::k * brP::targetP::n + 1];
+    // Reuse trlwe0 (dead after addition) as tlwe to reduce shared memory.
+    // trlwe0 has (k+1)*n elements >= k*n+1 elements needed for tlwe.
+    typename brP::targetP::T* tlwe = trlwe0;
     __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
     __syncthreads();
 
@@ -1732,8 +1733,8 @@ __global__ __launch_bounds__(
     }
     __syncthreads();
 
-    __shared__
-        typename brP::targetP::T tlwe[brP::targetP::k * brP::targetP::n + 1];
+    // Reuse trlwe0 (dead after addition) as tlwe to reduce shared memory.
+    typename brP::targetP::T* tlwe = trlwe0;
     __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
     __syncthreads();
 
