@@ -20,9 +20,52 @@ By default, cuFHEpp uses a negacyclic FFT over double-precision complex numbers 
 
 Key bundle bootstrapping (`-DUSE_KEY_BUNDLE=ON`, default) processes 2 LWE bits per blind rotation step, reducing the number of iterations by half at the cost of a slightly more complex per-step computation. This yields a ~10-17% throughput improvement over the standard 1-bit blind rotation.
 
-| [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) | cuFHEpp (FFT+KeyBundle) | cuFHEpp (FFT) | cuFHEpp (NTT) |
-|---|---|---|---|
-| 10 ms | 12 ms | 14 ms | 18 ms |
+## Performance
+
+Benchmarked on **NVIDIA A100-PCIE-40GB** (108 SMs) and **Intel Xeon Silver 4216 @ 2.10 GHz**.
+Each benchmark ran exclusively on the GPU — no concurrent workloads.
+
+- **Latency**: sequential time per gate on a single stream / thread
+- **Throughput**: total time ÷ total gates with all 108 SM streams active (cuFHEpp only; 3456 concurrent gates, 32 per SM)
+
+### NAND gate comparison
+
+| Library | Backend | N | Parameters | Latency | Throughput |
+|---|---|---|---|---|---|
+| [tfhe-rs](https://github.com/zama-ai/tfhe-rs) | CPU, `TFHE_LIB_PARAMETERS` | 1024 | n=630, k=1, l=3, Bg=128 | ~18 ms | — |
+| [tfhe-rs](https://github.com/zama-ai/tfhe-rs) | GPU, `PARAM_GPU_MULTI_BIT_GROUP_4`¹ | 2048 | n=920, k=1, l=1, Bgbit=22, group=4 | **4.3 ms** | — |
+| cuFHEpp | GPU, lvl1, FFT | 1024 | n=636, k=1, l=2, Bg=256 | 15.2 ms | 0.14 ms/gate |
+| cuFHEpp | GPU, lvl1, FFT + KeyBundle | 1024 | n=636, k=1, l=2, Bg=256, KB=2 | 12.1 ms | **0.11 ms/gate** |
+| cuFHEpp | GPU, lvl2, FFT | 2048 | n=636, k=1, l=4, Bg=1024 | 37–38 ms | 0.35 ms/gate |
+
+¹ `PARAM_GPU_MULTI_BIT_GROUP_4_MESSAGE_2_CARRY_2_KS_PBS_TUNIFORM_2M128`.
+NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) with no bootstrapping.
+
+**Note on methodology**: tfhe-rs GPU latency is single-stream (one gate at a time). cuFHEpp throughput exploits all 108 SMs simultaneously; its latency is measured on one stream out of 108.
+
+### All gates — cuFHEpp GPU, lvl1 (N=1024), FFT + KeyBundle
+
+| Gate | Latency | Throughput |
+|---|---|---|
+| Binary (NAND/AND/OR/XOR/…) | ~12 ms | ~0.11 ms/gate |
+| MUX / NMUX | ~22 ms | ~0.20 ms/gate |
+| NOT / COPY | ~1.1 ms | ~0.01 ms/gate |
+
+### All gates — cuFHEpp GPU, lvl1 (N=1024), FFT
+
+| Gate | Latency | Throughput |
+|---|---|---|
+| Binary (NAND/AND/OR/XOR/…) | ~15 ms | ~0.14 ms/gate |
+| MUX / NMUX | ~29–30 ms | ~0.27 ms/gate |
+| NOT / COPY | ~1.2 ms | ~0.01 ms/gate |
+
+### All gates — cuFHEpp GPU, lvl2 (N=2048), FFT
+
+| Gate | Latency | Throughput |
+|---|---|---|
+| Binary (NAND/AND/OR/XOR/…) | ~37 ms | ~0.34 ms/gate |
+| MUX / NMUX | ~68–69 ms | ~0.63 ms/gate |
+| NOT / COPY | ~1.1 ms | ~0.01 ms/gate |
 
 ### System Requirements
 **The library has been tested on Ubuntu Desktop 24.04 & NVIDIA A100 only.**
