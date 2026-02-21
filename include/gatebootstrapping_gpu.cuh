@@ -54,6 +54,33 @@ __device__ inline void RotatedTestVector(typename P::T* tlwe, const int32_t bar,
 
 #ifdef USE_FFT
 #ifdef USE_GPU_FFT
+
+/**
+ * Convert double to uint64_t with modular (wrapping) arithmetic.
+ * Equivalent to (uint64_t)(int64_t)round(d) but handles overflow correctly
+ * by extracting IEEE 754 mantissa/exponent bits and shifting, so that values
+ * larger than 2^63 naturally wrap mod 2^64.
+ * This mirrors SPQLIOS's bit-extraction trick for torus64 conversion.
+ */
+__device__ __forceinline__ uint64_t double_to_torus64(double d)
+{
+    uint64_t i = __double_as_longlong(d);
+    int expo = ((int)(i >> 52)) & 0x7FF;
+    if (expo == 0) return 0;  // ±0 or denormal
+    uint64_t m = (i & 0x000FFFFFFFFFFFFFull) | 0x0010000000000000ull;
+    int shift = expo - 1075;  // 1075 = 1023 (bias) + 52 (mantissa bits)
+    uint64_t val;
+    if (shift >= 64)
+        val = 0;
+    else if (shift >= 0)
+        val = m << shift;
+    else if (shift > -64)
+        val = m >> (-shift);
+    else
+        val = 0;
+    return (i >> 63) ? -val : val;
+}
+
 /**
  * GPU-FFT Accumulate function
  * Uses 512 threads total, 256 active during FFT, all 512 during
@@ -70,14 +97,14 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                                   NTTValue* const sh_acc_ntt,
                                   const uint32_t a_bar,
                                   const NTTValue* const tgsw_fft,
-                                  const CuNTTHandler<> ntt)
+                                  const CuNTTHandler<P::targetP::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
     constexpr uint32_t N = P::targetP::n;
-    constexpr uint32_t HALF_N = N >> 1;            // 512
-    constexpr uint32_t NUM_THREADS = N >> 1;       // 512 threads total
-    constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256 for GPU-FFT
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;
 
     double2* const sh_fft = &sh_acc_ntt[0];
     double2* const sh_accum = &sh_acc_ntt[HALF_N];
@@ -91,7 +118,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -142,12 +169,20 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
             }
             __syncthreads();
 
-            // Step 2: Forward FFT (GPU-FFT: 256 threads, 5 syncs)
+            // Step 2: Forward FFT
             if (tid < FFT_THREADS) {
-                GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+                if constexpr (N == 1024) {
+                    GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+                } else if constexpr (N == 2048) {
+                    GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
+                }
             }
             else {
-                for (int s = 0; s < 5; s++) __syncthreads();
+                if constexpr (N == 1024) {
+                    for (int s = 0; s < 5; s++) __syncthreads();
+                } else if constexpr (N == 2048) {
+                    for (int s = 0; s < 6; s++) __syncthreads();
+                }
             }
 
             // Step 3: Multiply-accumulate with BSK
@@ -168,26 +203,50 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     }
 
     // Step 4: Inverse FFT + untwist + unfold + add to trlwe
+    constexpr double denorm =
+        (sizeof(typename P::targetP::T) == 4) ? 4294967296.0
+                                               : 18446744073709551616.0;
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
 
         if (tid < FFT_THREADS) {
-            GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_, tid);
+            if constexpr (N == 1024) {
+                GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
+                                 tid);
+            } else if constexpr (N == 2048) {
+                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
+                                  tid);
+            }
         }
         else {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            if constexpr (N == 1024) {
+                for (int s = 0; s < 6; s++) __syncthreads();
+            } else if constexpr (N == 2048) {
+                for (int s = 0; s < 7; s++) __syncthreads();
+            }
         }
 
         // Untwist + unfold + denormalize
-        constexpr double denorm = 4294967296.0;  // 2^32
         if (tid < HALF_N) {
             double2 val = sh_inv[tid];
             double2 utw = __ldg(&ntt.untwist_[tid]);
             val = val * utw;
-            trlwe[k_idx * N + tid] += static_cast<uint32_t>(
-                static_cast<int64_t>(llrint(val.x * denorm)));
-            trlwe[k_idx * N + tid + HALF_N] += static_cast<uint32_t>(
-                static_cast<int64_t>(llrint(val.y * denorm)));
+            if constexpr (sizeof(typename P::targetP::T) == 4) {
+                trlwe[k_idx * N + tid] +=
+                    static_cast<typename P::targetP::T>(
+                        static_cast<int32_t>(llrint(val.x * denorm)));
+                trlwe[k_idx * N + tid + HALF_N] +=
+                    static_cast<typename P::targetP::T>(
+                        static_cast<int32_t>(llrint(val.y * denorm)));
+            }
+            else {
+                trlwe[k_idx * N + tid] +=
+                    static_cast<typename P::targetP::T>(
+                        double_to_torus64(val.x * denorm));
+                trlwe[k_idx * N + tid + HALF_N] +=
+                    static_cast<typename P::targetP::T>(
+                        double_to_torus64(val.y * denorm));
+            }
         }
         __syncthreads();
     }
@@ -211,7 +270,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                                   NTTValue* const sh_acc_ntt,
                                   const uint32_t a_bar,
                                   const NTTValue* const tgsw_fft,
-                                  const CuNTTHandler<> ntt)
+                                  const CuNTTHandler<P::targetP::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -237,7 +296,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -365,7 +424,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                                   NTTValue* const sh_acc_ntt,
                                   const uint32_t a_bar,
                                   const NTTValue* const tgsw_ntt,
-                                  const CuNTTHandler<> ntt)
+                                  const CuNTTHandler<P::targetP::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -389,7 +448,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -504,7 +563,7 @@ __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
                                        const typename P::domainP::T* const in,
                                        const typename P::targetP::T mu,
                                        const NTTValue* const bk,
-                                       CuNTTHandler<> ntt)
+                                       CuNTTHandler<P::targetP::n> ntt)
 {
     extern __shared__ NTTValue sh[];
     NTTValue* sh_acc_ntt = &sh[0];
@@ -555,7 +614,7 @@ __device__ inline void AccumulateKeyBundle(
     const uint32_t bara0, const uint32_t bara1, const NTTValue* const bk0_fft,
     const NTTValue* const bk1_fft, const NTTValue* const bk2_fft,
     const NTTValue* const one_trgsw_fft, const NTTValue* const xai_fft,
-    const CuNTTHandler<> ntt)
+    const CuNTTHandler<P::targetP::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -574,7 +633,7 @@ __device__ inline void AccumulateKeyBundle(
 
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -691,7 +750,7 @@ __device__ inline void AccumulateKeyBundle(
     const NTTValue* const bk1_fft,  // Enc(s0*(1-s1))
     const NTTValue* const bk2_fft,  // Enc((1-s0)*s1)
     const NTTValue* const one_trgsw_fft, const NTTValue* const xai_fft,
-    const CuNTTHandler<> ntt)
+    const CuNTTHandler<P::targetP::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -712,7 +771,7 @@ __device__ inline void AccumulateKeyBundle(
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -833,7 +892,7 @@ __device__ inline void AccumulateKeyBundle(
     const NTTValue* const bk1_ntt,  // Enc(s0*(1-s1))
     const NTTValue* const bk2_ntt,  // Enc((1-s0)*s1)
     const NTTValue* const one_trgsw_ntt, const NTTValue* const xai_ntt,
-    const CuNTTHandler<> ntt)
+    const CuNTTHandler<P::targetP::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -855,7 +914,7 @@ __device__ inline void AccumulateKeyBundle(
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr uint32_t decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -978,7 +1037,7 @@ __device__ inline void __BlindRotateKeyBundle__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in,
     const typename P::targetP::T mu, const NTTValue* const bk,
     const NTTValue* const one_trgsw_ntt, const NTTValue* const xai_ntt,
-    CuNTTHandler<> ntt)
+    CuNTTHandler<P::targetP::n> ntt)
 {
     extern __shared__ NTTValue sh[];
     NTTValue* sh_acc_ntt = &sh[0];
@@ -1026,7 +1085,7 @@ __device__ inline void __BlindRotatePreAddKeyBundle__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
     const typename P::domainP::T* const in1, const NTTValue* const bk,
     const NTTValue* const one_trgsw_ntt, const NTTValue* const xai_ntt,
-    CuNTTHandler<> ntt)
+    CuNTTHandler<P::targetP::n> ntt)
 {
     extern __shared__ NTTValue sh[];
     NTTValue* sh_acc_ntt = &sh[0];
@@ -1076,7 +1135,7 @@ template <class P, int casign, int cbsign,
 __device__ inline void __BlindRotatePreAdd__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
     const typename P::domainP::T* const in1, const NTTValue* const bk,
-    CuNTTHandler<> ntt)
+    CuNTTHandler<P::targetP::n> ntt)
 {
     extern __shared__ NTTValue sh[];
     NTTValue* sh_acc_ntt = &sh[0];
@@ -1092,8 +1151,7 @@ __device__ inline void __BlindRotatePreAdd__(
     }
 
     // accumulate
-    for (int i = 0; i < P::domainP::k * P::domainP::n;
-         i++) {  // lvl0param::n iterations
+    for (int i = 0; i < P::domainP::k * P::domainP::n; i++) {
         constexpr typename P::domainP::T roundoffset =
             1ULL << (std::numeric_limits<typename P::domainP::T>::digits - 2 -
                      P::targetP::nbit);

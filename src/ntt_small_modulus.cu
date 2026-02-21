@@ -397,6 +397,119 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id)
 
 template class CuGPUFFTHandler<TFHEpp::lvl1param::n>;
 
+// =========================================================================
+// CuGPUFFTHandler<2048> for lvl2param (N=2048, HALF_N=1024)
+// =========================================================================
+
+namespace {
+
+std::vector<GPUFFTParams> g_gpufft2048_params;
+std::vector<double2> g_gpufft2048_forward_root;
+std::vector<double2> g_gpufft2048_inverse_root;
+std::vector<double2> g_gpufft2048_twist;
+std::vector<double2> g_gpufft2048_untwist;
+
+}  // anonymous namespace
+
+template <>
+void CuGPUFFTHandler<TFHEpp::lvl2param::n>::Create()
+{
+    if (!g_gpufft2048_forward_root.empty()) return;
+
+    constexpr uint32_t N = TFHEpp::lvl2param::n;  // 2048
+    constexpr uint32_t HALF_N = N >> 1;            // 1024
+
+    gpufft::FFNT<Float64> ffnt(N);
+
+    auto forward_roots = ffnt.ReverseRootTable_ffnt();
+    auto inverse_roots = ffnt.InverseReverseRootTable_ffnt();
+    auto twist = ffnt.twist_table_ffnt();
+    auto untwist = ffnt.untwist_table_ffnt();
+
+    g_gpufft2048_forward_root.resize(HALF_N);
+    g_gpufft2048_inverse_root.resize(HALF_N);
+    g_gpufft2048_twist.resize(HALF_N);
+    g_gpufft2048_untwist.resize(HALF_N);
+
+    for (uint32_t i = 0; i < HALF_N; i++) {
+        g_gpufft2048_forward_root[i] = {forward_roots[i].real(),
+                                         forward_roots[i].imag()};
+        g_gpufft2048_inverse_root[i] = {inverse_roots[i].real(),
+                                         inverse_roots[i].imag()};
+        g_gpufft2048_twist[i] = {twist[i].real(), twist[i].imag()};
+        g_gpufft2048_untwist[i] = {untwist[i].real(), untwist[i].imag()};
+    }
+}
+
+template <>
+void CuGPUFFTHandler<TFHEpp::lvl2param::n>::Destroy()
+{
+    for (auto& params : g_gpufft2048_params) {
+        if (params.forward_root) {
+            cudaFree(params.forward_root);
+            params.forward_root = nullptr;
+        }
+        if (params.inverse_root) {
+            cudaFree(params.inverse_root);
+            params.inverse_root = nullptr;
+        }
+        if (params.twist) {
+            cudaFree(params.twist);
+            params.twist = nullptr;
+        }
+        if (params.untwist) {
+            cudaFree(params.untwist);
+            params.untwist = nullptr;
+        }
+        params.initialized = false;
+    }
+    g_gpufft2048_params.clear();
+    g_gpufft2048_forward_root.clear();
+    g_gpufft2048_inverse_root.clear();
+    g_gpufft2048_twist.clear();
+    g_gpufft2048_untwist.clear();
+}
+
+template <>
+void CuGPUFFTHandler<TFHEpp::lvl2param::n>::SetDevicePointers(int device_id)
+{
+    if (g_gpufft2048_params.size() <= static_cast<size_t>(device_id)) {
+        g_gpufft2048_params.resize(device_id + 1);
+    }
+
+    GPUFFTParams& params = g_gpufft2048_params[device_id];
+
+    if (!params.initialized) {
+        constexpr size_t table_bytes = kHalfLength * sizeof(double2);
+
+        CuSafeCall(cudaMalloc(&params.forward_root, table_bytes));
+        CuSafeCall(cudaMalloc(&params.inverse_root, table_bytes));
+        CuSafeCall(cudaMalloc(&params.twist, table_bytes));
+        CuSafeCall(cudaMalloc(&params.untwist, table_bytes));
+
+        CuSafeCall(cudaMemcpy(params.forward_root,
+                              g_gpufft2048_forward_root.data(), table_bytes,
+                              cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.inverse_root,
+                              g_gpufft2048_inverse_root.data(), table_bytes,
+                              cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.twist, g_gpufft2048_twist.data(),
+                              table_bytes, cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.untwist, g_gpufft2048_untwist.data(),
+                              table_bytes, cudaMemcpyHostToDevice));
+
+        params.initialized = true;
+    }
+
+    forward_root_ = params.forward_root;
+    inverse_root_ = params.inverse_root;
+    twist_ = params.twist;
+    untwist_ = params.untwist;
+    n_inverse_ = 1.0 / static_cast<double>(kHalfLength);
+}
+
+template class CuGPUFFTHandler<TFHEpp::lvl2param::n>;
+
 #endif  // USE_FFT && USE_GPU_FFT
 
 #ifdef USE_KEY_BUNDLE

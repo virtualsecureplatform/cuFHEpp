@@ -600,6 +600,18 @@ template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE =
     ((P::n / 2) + (P::k + 1) * (P::n / 2)) * sizeof(double2);
 
+// Dynamic shared memory size for regular gates:
+// FFT workspace + one TRLWE array placed after it
+template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE_DYN =
+    MEM4HOMGATE<P> + (P::k + 1) * P::n * sizeof(typename P::T);
+
+// Dynamic shared memory size for Mux/NMux gates:
+// FFT workspace + two TRLWE arrays placed after it
+template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4MUXGATE_DYN =
+    MEM4HOMGATE<P> + 2 * (P::k + 1) * P::n * sizeof(typename P::T);
+
 // Number of threads for homomorphic gate (N/2 = 512 for N=1024)
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
@@ -768,6 +780,118 @@ __device__ __forceinline__ void GPUFFTInverse512(
     __syncthreads();
 }
 
+/**
+ * GPU-FFT Forward FFT for N/2=1024 complex elements
+ * Uses 512 threads, Cooley-Tukey butterfly, 10 stages (log2(1024)=10)
+ *
+ * Sync pattern: 5 stages with __syncthreads (stride >= 32) + 5 warp-local +
+ * final sync = 6 total syncs
+ */
+__device__ __forceinline__ void GPUFFTForward1024(
+    double2* sh, const double2* __restrict__ root_table, int tid)
+{
+    constexpr int N_power = 10;  // log2(1024) = 10
+
+    int t_2 = N_power - 1;  // 9
+    int t_ = 9;
+    int t = 1 << t_;  // 512
+
+    int in_shared_address = ((tid >> t_) << t_) + tid;
+
+// First 5 stages (stride >= 32): need __syncthreads
+#pragma unroll
+    for (int lp = 0; lp < 5; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 U = sh[in_shared_address];
+        double2 V = sh[in_shared_address + t] * root;
+        sh[in_shared_address] = U + V;
+        sh[in_shared_address + t] = U - V;
+
+        t = t >> 1;
+        t_2 -= 1;
+        t_ -= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+// Last 5 stages (stride <= 16): warp-local, no sync needed
+#pragma unroll
+    for (int lp = 0; lp < 5; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 U = sh[in_shared_address];
+        double2 V = sh[in_shared_address + t] * root;
+        sh[in_shared_address] = U + V;
+        sh[in_shared_address + t] = U - V;
+
+        t = t >> 1;
+        t_2 -= 1;
+        t_ -= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+    }
+    __syncthreads();
+}
+
+/**
+ * GPU-FFT Inverse FFT for N/2=1024 complex elements
+ * Uses 512 threads, Gentleman-Sande butterfly, 10 stages
+ *
+ * Sync pattern: 5 warp-local + sync + 5 stages with sync + n_inverse sync = 7
+ * total syncs
+ */
+__device__ __forceinline__ void GPUFFTInverse1024(
+    double2* sh, const double2* __restrict__ root_table, double n_inverse,
+    int tid)
+{
+    constexpr int N_power = 10;  // log2(1024) = 10
+
+    int t_2 = 0;
+    int t_ = 0;
+    int t = 1;
+
+    int in_shared_address = ((tid >> t_) << t_) + tid;
+
+// First 5 stages (stride <= 16): warp-local, no sync needed
+#pragma unroll
+    for (int lp = 0; lp < 5; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 u = sh[in_shared_address];
+        double2 v = sh[in_shared_address + t];
+        sh[in_shared_address] = u + v;
+        sh[in_shared_address + t] = (u - v) * root;
+
+        t = t << 1;
+        t_2 += 1;
+        t_ += 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+    }
+    __syncthreads();
+
+// Last 5 stages (stride >= 32): need __syncthreads
+#pragma unroll
+    for (int lp = 0; lp < 5; lp++) {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 u = sh[in_shared_address];
+        double2 v = sh[in_shared_address + t];
+        sh[in_shared_address] = u + v;
+        sh[in_shared_address + t] = (u - v) * root;
+
+        t = t << 1;
+        t_2 += 1;
+        t_ += 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+    // Multiply by n^{-1} = 1/1024
+    sh[tid] = sh[tid] * n_inverse;
+    sh[tid + 512] = sh[tid + 512] * n_inverse;
+    __syncthreads();
+}
+
 #endif  // __CUDACC__
 
 /**
@@ -859,6 +983,18 @@ using NTTValue = uint32_t;
 // Shared memory size per gate: (k+2) * N * sizeof(uint32_t)
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(uint32_t);
+
+// Dynamic shared memory size for regular gates:
+// NTT workspace + one TRLWE array placed after it
+template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE_DYN =
+    MEM4HOMGATE<P> + (P::k + 1) * P::n * sizeof(typename P::T);
+
+// Dynamic shared memory size for Mux/NMux gates:
+// NTT workspace + two TRLWE arrays placed after it
+template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4MUXGATE_DYN =
+    MEM4HOMGATE<P> + 2 * (P::k + 1) * P::n * sizeof(typename P::T);
 
 // Number of threads for NTT (N/2 = 512 for N=1024)
 template <class P = TFHEpp::lvl1param>

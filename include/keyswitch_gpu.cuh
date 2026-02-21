@@ -7,6 +7,7 @@
 namespace cufhe {
 
 extern std::vector<TFHEpp::lvl0param::T*> ksk_devs;
+extern std::vector<TFHEpp::lvl0param::T*> ksk_devs_lvl20;
 
 template <class P>
 __device__ constexpr typename P::domainP::T iksoffsetgen()
@@ -228,6 +229,11 @@ void KeySwitchingKeyToDevice(
     const TFHEpp::KeySwitchingKey<TFHEpp::lvl10param>& ksk, const int gpuNum);
 
 void DeleteKeySwitchingKey(const int gpuNum);
+
+void KeySwitchingKeyToDevice_lvl20(
+    const TFHEpp::KeySwitchingKey<TFHEpp::lvl20param>& ksk, const int gpuNum);
+
+void DeleteKeySwitchingKey_lvl20(const int gpuNum);
 
 void SEIandKS(TFHEpp::lvl0param::T* const out,
               const TFHEpp::lvl1param::T* const in, const cudaStream_t& st,

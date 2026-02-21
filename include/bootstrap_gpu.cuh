@@ -38,6 +38,7 @@ namespace cufhe {
 //=============================================================================
 
 void InitializeNTThandlers(const int gpuNum);
+void InitializeNTThandlers_lvl02(const int gpuNum);
 template <class P>
 void BootstrappingKeyToNTT(const TFHEpp::BootstrappingKey<P>& bk,
                            const int gpuNum);
@@ -47,6 +48,10 @@ void BootstrappingKeyBundleToNTT(const TFHEpp::BootstrappingKey<P>& bk,
                                  const int gpuNum);
 #endif
 void DeleteBootstrappingKeyNTT(const int gpuNum);
+void DeleteBootstrappingKeyNTT_lvl02(const int gpuNum);
+void BootstrappingKeyFlatToNTT_lvl02(
+    const TFHEpp::TRGSW<TFHEpp::lvl2param>* flat_bk,
+    const uint32_t num_elements, const int gpuNum);
 
 void CMUXNTTkernel(TFHEpp::lvl1param::T* const res, const NTTValue* const cs,
                    TFHEpp::lvl1param::T* const c1,

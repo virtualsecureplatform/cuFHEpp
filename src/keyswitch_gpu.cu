@@ -2,6 +2,7 @@
 namespace cufhe {
 
 std::vector<TFHEpp::lvl0param::T*> ksk_devs;
+std::vector<TFHEpp::lvl0param::T*> ksk_devs_lvl20;
 
 void KeySwitchingKeyToDevice(
     const TFHEpp::KeySwitchingKey<TFHEpp::lvl10param>& ksk, const int gpuNum)
@@ -20,6 +21,26 @@ void DeleteKeySwitchingKey(const int gpuNum)
     for (int i = 0; i < ksk_devs.size(); i++) {
         cudaSetDevice(i);
         cudaFree(ksk_devs[i]);
+    }
+}
+
+void KeySwitchingKeyToDevice_lvl20(
+    const TFHEpp::KeySwitchingKey<TFHEpp::lvl20param>& ksk, const int gpuNum)
+{
+    ksk_devs_lvl20.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        cudaMalloc((void**)&ksk_devs_lvl20[i], sizeof(ksk));
+        CuSafeCall(cudaMemcpy(ksk_devs_lvl20[i], ksk.data(), sizeof(ksk),
+                              cudaMemcpyHostToDevice));
+    }
+}
+
+void DeleteKeySwitchingKey_lvl20(const int gpuNum)
+{
+    for (int i = 0; i < ksk_devs_lvl20.size(); i++) {
+        cudaSetDevice(i);
+        cudaFree(ksk_devs_lvl20[i]);
     }
 }
 

@@ -56,8 +56,12 @@ void Initialize();
 
 void Initialize(const TFHEpp::EvalKey& ek);
 
+void Initialize_lvl02(const TFHEpp::EvalKey& ek, const TFHEpp::SecretKey& sk);
+
 /** Remove everything created in Initialize(). */
 void CleanUp();
+
+void CleanUp_lvl02();
 
 /**
  * \brief Synchronize device.
@@ -324,5 +328,33 @@ template <class P>
 void gNMux(Ctxt<P>& out, Ctxt<P>& inc, Ctxt<P>& in1, Ctxt<P>& in0, Stream st);
 template <class P>
 void gCopy(Ctxt<P>& out, Ctxt<P>& in, Stream st);
+
+// lvl02 gate functions — same Ctxt<lvl0param> I/O, uses lvl02param bootstrapping
+void Nand_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+                Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void Or_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+              Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void OrYN_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+                Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void OrNY_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+                Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void And_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+               Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void AndYN_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+                 Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void AndNY_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+                 Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void Nor_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+               Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void Xor_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+               Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void Xnor_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& in0,
+                Ctxt<TFHEpp::lvl0param>& in1, Stream st);
+void Mux_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& inc,
+               Ctxt<TFHEpp::lvl0param>& in1, Ctxt<TFHEpp::lvl0param>& in0,
+               Stream st);
+void NMux_lvl02(Ctxt<TFHEpp::lvl0param>& out, Ctxt<TFHEpp::lvl0param>& inc,
+                Ctxt<TFHEpp::lvl0param>& in1, Ctxt<TFHEpp::lvl0param>& in0,
+                Stream st);
 
 }  // namespace cufhe
