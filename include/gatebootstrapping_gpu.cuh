@@ -671,10 +671,18 @@ __device__ inline void AccumulateKeyBundle(
 
             // Step 2: Forward FFT (GPU-FFT)
             if (tid < FFT_THREADS) {
-                GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+                if constexpr (N == 1024) {
+                    GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+                } else if constexpr (N == 2048) {
+                    GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
+                }
             }
             else {
-                for (int s = 0; s < 5; s++) __syncthreads();
+                if constexpr (N == 1024) {
+                    for (int s = 0; s < 5; s++) __syncthreads();
+                } else if constexpr (N == 2048) {
+                    for (int s = 0; s < 6; s++) __syncthreads();
+                }
             }
 
             // Step 3: Multiply with on-the-fly keybundle and accumulate
@@ -710,24 +718,46 @@ __device__ inline void AccumulateKeyBundle(
     }
 
     // Step 4: Inverse FFT + untwist + unfold, REPLACE trlwe
-    constexpr double denorm = 4294967296.0;  // 2^32
+    constexpr double denorm =
+        (sizeof(typename P::targetP::T) == 4) ? 4294967296.0
+                                               : 18446744073709551616.0;
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
         if (tid < FFT_THREADS) {
-            GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_, tid);
+            if constexpr (N == 1024) {
+                GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
+                                 tid);
+            } else if constexpr (N == 2048) {
+                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
+                                  tid);
+            }
         }
         else {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            if constexpr (N == 1024) {
+                for (int s = 0; s < 6; s++) __syncthreads();
+            } else if constexpr (N == 2048) {
+                for (int s = 0; s < 7; s++) __syncthreads();
+            }
         }
 
         if (tid < HALF_N) {
             double2 val = sh_inv[tid];
             double2 utw = __ldg(&ntt.untwist_[tid]);
             val = val * utw;
-            trlwe[k_idx * N + tid] = static_cast<uint32_t>(
-                static_cast<int64_t>(llrint(val.x * denorm)));
-            trlwe[k_idx * N + tid + HALF_N] = static_cast<uint32_t>(
-                static_cast<int64_t>(llrint(val.y * denorm)));
+            if constexpr (sizeof(typename P::targetP::T) == 4) {
+                trlwe[k_idx * N + tid] = static_cast<typename P::targetP::T>(
+                    static_cast<int32_t>(llrint(val.x * denorm)));
+                trlwe[k_idx * N + tid + HALF_N] =
+                    static_cast<typename P::targetP::T>(
+                        static_cast<int32_t>(llrint(val.y * denorm)));
+            }
+            else {
+                trlwe[k_idx * N + tid] = static_cast<typename P::targetP::T>(
+                    double_to_torus64(val.x * denorm));
+                trlwe[k_idx * N + tid + HALF_N] =
+                    static_cast<typename P::targetP::T>(
+                        double_to_torus64(val.y * denorm));
+            }
         }
         __syncthreads();
     }

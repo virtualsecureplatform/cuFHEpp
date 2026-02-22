@@ -271,7 +271,8 @@ template <class P>
 void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                                  const int gpuNum)
 {
-    constexpr uint32_t HALF_N = P::targetP::n >> 1;
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t num_pairs = P::domainP::k * P::domainP::n / P::Addends;
     constexpr uint32_t bk_elements_per_pair = (1 << P::Addends) - 1;  // 3
     constexpr uint32_t trgsw_polys =
@@ -280,11 +281,20 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                                        bk_elements_per_pair * trgsw_polys *
                                        HALF_N;
 
-    bk_ntts.resize(gpuNum);
+    // Dispatch storage based on target parameter ring size
+    auto& bk_storage = []() -> vector<NTTValue*>& {
+        if constexpr (N == TFHEpp::lvl2param::n) {
+            return bk_ntts_lvl02;
+        } else {
+            return bk_ntts;
+        }
+    }();
+
+    bk_storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
 
-        cudaMalloc((void**)&bk_ntts[i], sizeof(NTTValue) * total_fft_elems);
+        cudaMalloc((void**)&bk_storage[i], sizeof(NTTValue) * total_fft_elems);
 
         typename P::targetP::T* d_bk;
         size_t bk_byte_size = sizeof(bk);
@@ -297,7 +307,13 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
         // Grid: 1 x trgsw_polys x (num_pairs * bk_elements_per_pair)
         dim3 grid(1, trgsw_polys, num_pairs * bk_elements_per_pair);
         dim3 block(HALF_N);
-        __TRGSW2FFT__<<<grid, block>>>(bk_ntts[i], d_bk, *ntt_handlers[i]);
+        if constexpr (N == TFHEpp::lvl2param::n) {
+            __TRGSW2FFT__<typename P::targetP><<<grid, block>>>(
+                bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
+        } else {
+            __TRGSW2FFT__<<<grid, block>>>(bk_storage[i], d_bk,
+                                          *ntt_handlers[i]);
+        }
         cudaDeviceSynchronize();
         CuCheckError();
 
@@ -308,6 +324,7 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
     template void BootstrappingKeyBundleToNTT<P>( \
         const BootstrappingKey<P>& bk, const int gpuNum)
 INST(TFHEpp::lvl01param);
+INST(TFHEpp::lvl02param);
 #undef INST
 #endif  // USE_KEY_BUNDLE
 
@@ -2201,13 +2218,14 @@ void NandBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__NandBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__NandBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __NandBootstrap__<brP, μ, iksP>
+        __NandBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__NandBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2257,13 +2275,14 @@ void NandBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__NandBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__NandBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __NandBootstrap__<iksP, brP, μ>
+        __NandBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__NandBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2314,13 +2333,14 @@ void OrBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__OrBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__OrBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __OrBootstrap__<brP, μ, iksP>
+        __OrBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__OrBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2370,13 +2390,14 @@ void OrBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__OrBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__OrBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __OrBootstrap__<iksP, brP, μ>
+        __OrBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__OrBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2427,13 +2448,14 @@ void OrYNBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__OrYNBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__OrYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __OrYNBootstrap__<brP, μ, iksP>
+        __OrYNBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__OrYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2483,13 +2505,14 @@ void OrYNBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__OrYNBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__OrYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __OrYNBootstrap__<iksP, brP, μ>
+        __OrYNBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__OrYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2540,13 +2563,14 @@ void OrNYBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__OrNYBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__OrNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __OrNYBootstrap__<brP, μ, iksP>
+        __OrNYBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__OrNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2596,13 +2620,14 @@ void OrNYBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__OrNYBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__OrNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __OrNYBootstrap__<iksP, brP, μ>
+        __OrNYBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__OrNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2653,13 +2678,14 @@ void AndBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__AndBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__AndBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __AndBootstrap__<brP, μ, iksP>
+        __AndBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__AndBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2709,13 +2735,14 @@ void AndBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__AndBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__AndBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __AndBootstrap__<iksP, brP, μ>
+        __AndBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__AndBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2766,13 +2793,14 @@ void AndYNBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__AndYNBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__AndYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __AndYNBootstrap__<brP, μ, iksP>
+        __AndYNBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__AndYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2822,13 +2850,14 @@ void AndYNBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__AndYNBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__AndYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __AndYNBootstrap__<iksP, brP, μ>
+        __AndYNBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__AndYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2879,13 +2908,14 @@ void AndNYBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__AndNYBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__AndNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __AndNYBootstrap__<brP, μ, iksP>
+        __AndNYBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__AndNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2935,13 +2965,14 @@ void AndNYBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__AndNYBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__AndNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __AndNYBootstrap__<iksP, brP, μ>
+        __AndNYBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__AndNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2992,13 +3023,14 @@ void NorBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__NorBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__NorBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __NorBootstrap__<brP, μ, iksP>
+        __NorBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__NorBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -3048,13 +3080,14 @@ void NorBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__NorBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__NorBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __NorBootstrap__<iksP, brP, μ>
+        __NorBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__NorBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -3105,13 +3138,14 @@ void XorBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__XorBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__XorBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __XorBootstrap__<brP, μ, iksP>
+        __XorBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__XorBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -3161,13 +3195,14 @@ void XorBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__XorBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__XorBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __XorBootstrap__<iksP, brP, μ>
+        __XorBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__XorBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -3218,13 +3253,14 @@ void XnorBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__XnorBootstrap__<brP, brP::targetP::μ, iksP>,
+        cudaFuncSetAttribute(__XnorBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __XnorBootstrap__<brP, μ, iksP>
+        __XnorBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__XnorBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -3274,13 +3310,14 @@ void XnorBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__XnorBootstrap__<iksP, brP, brP::targetP::μ>,
+        cudaFuncSetAttribute(__XnorBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
-        __XnorBootstrap__<iksP, brP, μ>
+        __XnorBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__XnorBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -3366,13 +3403,14 @@ void MuxBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__MuxBootstrap__<brP, μ, iksP>,
+        cudaFuncSetAttribute(__MuxBootstrapKB__<brP, μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
-        __MuxBootstrap__<brP, μ, iksP>
+        __MuxBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4MUXGATE_DYN<typename brP::targetP>,
                st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                      *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__MuxBootstrapKB__<brP, μ, iksP>,
@@ -3424,13 +3462,14 @@ void MuxBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__MuxBootstrap__<iksP, brP, μ>,
+        cudaFuncSetAttribute(__MuxBootstrapKB__<iksP, brP, μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
-        __MuxBootstrap__<iksP, brP, μ>
+        __MuxBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4MUXGATE_DYN<typename brP::targetP>,
                st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                      *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__MuxBootstrapKB__<iksP, brP, μ>,
@@ -3483,13 +3522,14 @@ void NMuxBootstrap(typename brP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__NMuxBootstrap__<iksP, brP, μ>,
+        cudaFuncSetAttribute(__NMuxBootstrapKB__<iksP, brP, μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
-        __NMuxBootstrap__<iksP, brP, μ>
+        __NMuxBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4MUXGATE_DYN<typename brP::targetP>,
                st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                      *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__NMuxBootstrapKB__<iksP, brP, μ>,
@@ -3541,13 +3581,14 @@ void NMuxBootstrap(typename iksP::targetP::T* const out,
 {
 #ifdef USE_KEY_BUNDLE
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
-        cudaFuncSetAttribute(__NMuxBootstrap__<brP, μ, iksP>,
+        cudaFuncSetAttribute(__NMuxBootstrapKB__<brP, μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
-        __NMuxBootstrap__<brP, μ, iksP>
+        __NMuxBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4MUXGATE_DYN<typename brP::targetP>,
                st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                      *ntt_handlers_lvl02[gpuNum]);
     } else {
         cudaFuncSetAttribute(__NMuxBootstrapKB__<brP, μ, iksP>,

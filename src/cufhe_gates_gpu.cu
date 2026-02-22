@@ -68,21 +68,10 @@ void Initialize_lvl02(const TFHEpp::EvalKey& ek, const TFHEpp::SecretKey& sk)
 {
     InitializeNTThandlers_lvl02(_gpuNum);
 #ifdef USE_KEY_BUNDLE
-    // Key bundles encode products of key bit pairs, not individual bits.
-    // Generate per-bit TRGSWs from the secret key for non-key-bundle blind
-    // rotation.
-    using brP = TFHEpp::lvl02param;
-    using tgtP = TFHEpp::lvl2param;
-    using domP = TFHEpp::lvl0param;
-    constexpr uint32_t n = domP::k * domP::n;
-    std::vector<TFHEpp::TRGSW<tgtP>> flat_bk(n);
-    TFHEpp::Polynomial<tgtP> plainpoly = {};
-    for (uint32_t i = 0; i < n; i++) {
-        plainpoly[0] = sk.key.get<domP>()[i];
-        TFHEpp::trgswSymEncrypt<tgtP>(flat_bk[i], plainpoly,
-                                       sk.key.get<tgtP>());
-    }
-    BootstrappingKeyFlatToNTT_lvl02(flat_bk.data(), n, _gpuNum);
+    BootstrappingKeyBundleToNTT<TFHEpp::lvl02param>(
+        ek.getbk<TFHEpp::lvl02param>(), _gpuNum);
+    InitializeXaiNTT_lvl02(_gpuNum);
+    InitializeOneTRGSWNTT_lvl02(_gpuNum);
 #else
     BootstrappingKeyToNTT<TFHEpp::lvl02param>(ek.getbk<TFHEpp::lvl02param>(),
                                                _gpuNum);
@@ -94,6 +83,10 @@ void CleanUp_lvl02()
 {
     DeleteBootstrappingKeyNTT_lvl02(_gpuNum);
     DeleteKeySwitchingKey_lvl20(_gpuNum);
+#ifdef USE_KEY_BUNDLE
+    DeleteXaiNTT_lvl02();
+    DeleteOneTRGSWNTT_lvl02();
+#endif
 }
 
 bool StreamQuery(Stream st)

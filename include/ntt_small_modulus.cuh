@@ -1010,6 +1010,15 @@ void InitializeXaiNTT(const int gpuNum);
 void InitializeOneTRGSWNTT(const int gpuNum);
 void DeleteXaiNTT();
 void DeleteOneTRGSWNTT();
+
+// lvl02 (N=2048) key-bundle tables
+extern std::vector<NTTValue*> xai_ntt_devs_lvl02;
+extern std::vector<NTTValue*> one_trgsw_ntt_devs_lvl02;
+
+void InitializeXaiNTT_lvl02(const int gpuNum);
+void InitializeOneTRGSWNTT_lvl02(const int gpuNum);
+void DeleteXaiNTT_lvl02();
+void DeleteOneTRGSWNTT_lvl02();
 #endif
 
 }  // namespace cufhe

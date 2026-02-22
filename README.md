@@ -37,6 +37,7 @@ Each benchmark ran exclusively on the GPU — no concurrent workloads.
 | cuFHEpp | GPU, lvl1, FFT | 1024 | n=636, k=1, l=2, Bg=256 | 15.2 ms | 0.14 ms/gate |
 | cuFHEpp | GPU, lvl1, FFT + KeyBundle | 1024 | n=636, k=1, l=2, Bg=256, KB=2 | 12.1 ms | **0.11 ms/gate** |
 | cuFHEpp | GPU, lvl2, FFT | 2048 | n=636, k=1, l=4, Bg=1024 | 37–38 ms | 0.35 ms/gate |
+| cuFHEpp | GPU, lvl2, FFT + KeyBundle | 2048 | n=636, k=1, l=4, Bg=1024, KB=2 | 31–33 ms | 0.29 ms/gate |
 
 ¹ `PARAM_GPU_MULTI_BIT_GROUP_4_MESSAGE_2_CARRY_2_KS_PBS_TUNIFORM_2M128`.
 NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) with no bootstrapping.
@@ -58,6 +59,14 @@ NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) wi
 | Binary (NAND/AND/OR/XOR/…) | ~15 ms | ~0.14 ms/gate |
 | MUX / NMUX | ~29–30 ms | ~0.27 ms/gate |
 | NOT / COPY | ~1.2 ms | ~0.01 ms/gate |
+
+### All gates — cuFHEpp GPU, lvl2 (N=2048), FFT + KeyBundle
+
+| Gate | Latency | Throughput |
+|---|---|---|
+| Binary (NAND/AND/OR/XOR/…) | ~32 ms | ~0.29 ms/gate |
+| MUX / NMUX | ~59–60 ms | ~0.55 ms/gate |
+| NOT / COPY | ~1.0 ms | ~0.01 ms/gate |
 
 ### All gates — cuFHEpp GPU, lvl2 (N=2048), FFT
 
