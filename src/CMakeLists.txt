@@ -1,4 +1,3 @@
-# Uses small modulus NTT with GPU-NTT library for NTT primitives
 set(CUFHE_GPU_SOURCES
     bootstrap_gpu.cu
     cufhe_gates_gpu.cu
@@ -14,7 +13,6 @@ if(USE_FFT AND NOT USE_GPU_FFT)
 endif()
 add_library(cufhe_gpu ${CUFHE_GPU_SOURCES})
 
-target_link_libraries(cufhe_gpu PUBLIC ntt)  # GPU-NTT library
 target_link_libraries(cufhe_gpu INTERFACE tfhe++)
 target_include_directories(cufhe_gpu
     PUBLIC ${PROJECT_SOURCE_DIR}
@@ -22,7 +20,6 @@ target_include_directories(cufhe_gpu
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/cereal/include
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/randen
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/spqlios
-    ${PROJECT_SOURCE_DIR}/thirdparties/GPU-NTT/src/include
     )
 if(USE_FFT AND NOT USE_GPU_FFT)
     target_include_directories(cufhe_gpu
