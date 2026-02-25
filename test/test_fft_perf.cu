@@ -27,7 +27,7 @@ using namespace cufhe;
 
 // Forward FFT only (shared mem already loaded)
 template <uint32_t N>
-__global__ void __BenchForwardFFT__(
+__global__ void __launch_bounds__(1024) __BenchForwardFFT__(
     double2* __restrict__ out,
     const double2* __restrict__ in,
     CuGPUFFTHandler<N> ntt,
@@ -67,7 +67,7 @@ __global__ void __BenchForwardFFT__(
 
 // Inverse FFT only
 template <uint32_t N>
-__global__ void __BenchInverseFFT__(
+__global__ void __launch_bounds__(1024) __BenchInverseFFT__(
     double2* __restrict__ out,
     const double2* __restrict__ in,
     CuGPUFFTHandler<N> ntt,
