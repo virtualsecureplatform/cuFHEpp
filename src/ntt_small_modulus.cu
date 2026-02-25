@@ -7,14 +7,11 @@
  */
 
 #include <cmath>
+#include <complex>
 #include <include/error_gpu.cuh>
 #include <include/ntt_small_modulus.cuh>
 #include <stdexcept>
 #include <vector>
-
-#if defined(USE_FFT) && defined(USE_GPU_FFT)
-#include <gpufft/fft_cpu.cuh>
-#endif
 
 namespace cufhe {
 
@@ -189,6 +186,49 @@ void GenerateSmallRootTables(int log_n)
     g_small_log_n = log_n;
 }
 
+#if defined(USE_FFT) && defined(USE_GPU_FFT)
+// Generate the 4 FFNT tables for a ring of size N.
+// Replaces gpufft::FFNT<Float64>: same math, no external dependency.
+// - forward_root[i] = exp(2πi·bitrev(i,logH-1)/H),  H = N/2
+// - inverse_root[i] = conj(forward_root[i])
+// - twist[i]        = exp(2πi·i/(2N))
+// - untwist[i]      = conj(twist[i])
+static void GenerateFFNTTables(int N,
+    std::vector<double2>& forward_root,
+    std::vector<double2>& inverse_root,
+    std::vector<double2>& twist,
+    std::vector<double2>& untwist)
+{
+    const int half_n = N >> 1;
+    const int logH   = (int)std::log2((double)half_n);  // log2(N/2)
+
+    // Root table for N/2-point FFT: omega^k, omega = e^(2πi/(N/2))
+    const double root_angle = 2.0 * M_PI / half_n;
+    std::vector<std::complex<double>> roots_new(half_n);
+    for (int i = 0; i < half_n; i++)
+        roots_new[i] = std::exp(std::complex<double>(0.0, i * root_angle));
+
+    // Twist table: psi^k, psi = e^(2πi/(2N))
+    const double twist_angle = 2.0 * M_PI / (2 * N);
+    std::vector<std::complex<double>> roots_twist(half_n);
+    for (int i = 0; i < half_n; i++)
+        roots_twist[i] = std::exp(std::complex<double>(0.0, i * twist_angle));
+
+    forward_root.resize(half_n);
+    inverse_root.resize(half_n);
+    twist.resize(half_n);
+    untwist.resize(half_n);
+
+    for (int i = 0; i < half_n; i++) {
+        int br = bitreverse(i, logH - 1);
+        forward_root[i] = { roots_new[br].real(),  roots_new[br].imag() };
+        inverse_root[i] = { roots_new[br].real(), -roots_new[br].imag() };
+        twist[i]   = { roots_twist[i].real(),  roots_twist[i].imag() };
+        untwist[i] = { roots_twist[i].real(), -roots_twist[i].imag() };
+    }
+}
+#endif  // USE_FFT && USE_GPU_FFT
+
 }  // anonymous namespace
 
 //=============================================================================
@@ -301,33 +341,9 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Create()
     if (!g_gpufft_forward_root.empty()) return;  // Already generated
 
     constexpr uint32_t N = TFHEpp::lvl1param::n;  // 1024
-    constexpr uint32_t HALF_N = N >> 1;           // 512
-
-    // Use GPU-FFT's FFNT class to generate tables
-    gpufft::FFNT<Float64> ffnt(N);
-
-    // Get tables from FFNT
-    auto forward_roots = ffnt.ReverseRootTable_ffnt();  // N/2 COMPLEX<Float64>
-    auto inverse_roots = ffnt.InverseReverseRootTable_ffnt();
-    auto twist = ffnt.twist_table_ffnt();
-    auto untwist = ffnt.untwist_table_ffnt();
-
-    // Convert COMPLEX<Float64> to double2
-    // COMPLEX<Float64> wraps fp2<Float64> = double2, so the memory layout is
-    // identical
-    g_gpufft_forward_root.resize(HALF_N);
-    g_gpufft_inverse_root.resize(HALF_N);
-    g_gpufft_twist.resize(HALF_N);
-    g_gpufft_untwist.resize(HALF_N);
-
-    for (uint32_t i = 0; i < HALF_N; i++) {
-        g_gpufft_forward_root[i] = {forward_roots[i].real(),
-                                    forward_roots[i].imag()};
-        g_gpufft_inverse_root[i] = {inverse_roots[i].real(),
-                                    inverse_roots[i].imag()};
-        g_gpufft_twist[i] = {twist[i].real(), twist[i].imag()};
-        g_gpufft_untwist[i] = {untwist[i].real(), untwist[i].imag()};
-    }
+    GenerateFFNTTables(N,
+        g_gpufft_forward_root, g_gpufft_inverse_root,
+        g_gpufft_twist, g_gpufft_untwist);
 }
 
 template <>
@@ -417,28 +433,9 @@ void CuGPUFFTHandler<TFHEpp::lvl2param::n>::Create()
     if (!g_gpufft2048_forward_root.empty()) return;
 
     constexpr uint32_t N = TFHEpp::lvl2param::n;  // 2048
-    constexpr uint32_t HALF_N = N >> 1;            // 1024
-
-    gpufft::FFNT<Float64> ffnt(N);
-
-    auto forward_roots = ffnt.ReverseRootTable_ffnt();
-    auto inverse_roots = ffnt.InverseReverseRootTable_ffnt();
-    auto twist = ffnt.twist_table_ffnt();
-    auto untwist = ffnt.untwist_table_ffnt();
-
-    g_gpufft2048_forward_root.resize(HALF_N);
-    g_gpufft2048_inverse_root.resize(HALF_N);
-    g_gpufft2048_twist.resize(HALF_N);
-    g_gpufft2048_untwist.resize(HALF_N);
-
-    for (uint32_t i = 0; i < HALF_N; i++) {
-        g_gpufft2048_forward_root[i] = {forward_roots[i].real(),
-                                         forward_roots[i].imag()};
-        g_gpufft2048_inverse_root[i] = {inverse_roots[i].real(),
-                                         inverse_roots[i].imag()};
-        g_gpufft2048_twist[i] = {twist[i].real(), twist[i].imag()};
-        g_gpufft2048_untwist[i] = {untwist[i].real(), untwist[i].imag()};
-    }
+    GenerateFFNTTables(N,
+        g_gpufft2048_forward_root, g_gpufft2048_inverse_root,
+        g_gpufft2048_twist, g_gpufft2048_untwist);
 }
 
 template <>

@@ -28,11 +28,6 @@ if(USE_FFT AND NOT USE_GPU_FFT)
     target_include_directories(cufhe_gpu
         PUBLIC ${PROJECT_SOURCE_DIR}/thirdparties/tfhe-rs-fft)
 endif()
-if(USE_GPU_FFT)
-    target_link_libraries(cufhe_gpu PUBLIC GPUFFT::fft)
-    target_include_directories(cufhe_gpu
-        PUBLIC ${PROJECT_SOURCE_DIR}/thirdparties/GPU-FFT/src/include)
-endif()
 set_target_properties(cufhe_gpu PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 set_target_properties(cufhe_gpu PROPERTIES CUDA_ARCHITECTURES 80) #A100
 
