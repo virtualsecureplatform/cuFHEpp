@@ -725,15 +725,14 @@ __device__ __forceinline__ void GPUFFTForward512(
  * FFNT::InverseReverseRootTable_ffnt() Root indexing: current_root_index = m +
  * (tid >> t_2)
  *
- * Sync pattern: 5 warp-local + sync + 4 stages with sync + n_inverse sync = 6
- * total syncs
+ * n_inverse (1/512) is folded into the untwist table, so no separate scaling
+ * pass is needed here.
+ *
+ * Sync pattern: 5 warp-local + sync + 4 stages with sync = 5 total syncs
  */
 __device__ __forceinline__ void GPUFFTInverse512(
-    double2* sh, const double2* __restrict__ root_table, double n_inverse,
-    int tid)
+    double2* sh, const double2* __restrict__ root_table, int tid)
 {
-    constexpr int N_power = 9;  // log2(512) = 9
-
     int t_2 = 0;
     int t_ = 0;
     int t = 1;
@@ -773,11 +772,6 @@ __device__ __forceinline__ void GPUFFTInverse512(
         in_shared_address = ((tid >> t_) << t_) + tid;
         __syncthreads();
     }
-
-    // Multiply by n^{-1} = 1/512
-    sh[tid] = sh[tid] * n_inverse;
-    sh[tid + 256] = sh[tid + 256] * n_inverse;
-    __syncthreads();
 }
 
 /**
@@ -837,15 +831,13 @@ __device__ __forceinline__ void GPUFFTForward1024(
  * GPU-FFT Inverse FFT for N/2=1024 complex elements
  * Uses 512 threads, Gentleman-Sande butterfly, 10 stages
  *
- * Sync pattern: 5 warp-local + sync + 5 stages with sync + n_inverse sync = 7
- * total syncs
+ * n_inverse (1/1024) is folded into the untwist table.
+ *
+ * Sync pattern: 5 warp-local + sync + 5 stages with sync = 6 total syncs
  */
 __device__ __forceinline__ void GPUFFTInverse1024(
-    double2* sh, const double2* __restrict__ root_table, double n_inverse,
-    int tid)
+    double2* sh, const double2* __restrict__ root_table, int tid)
 {
-    constexpr int N_power = 10;  // log2(1024) = 10
-
     int t_2 = 0;
     int t_ = 0;
     int t = 1;
@@ -885,11 +877,6 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         in_shared_address = ((tid >> t_) << t_) + tid;
         __syncthreads();
     }
-
-    // Multiply by n^{-1} = 1/1024
-    sh[tid] = sh[tid] * n_inverse;
-    sh[tid + 512] = sh[tid + 512] * n_inverse;
-    __syncthreads();
 }
 
 #endif  // __CUDACC__
@@ -909,15 +896,13 @@ class CuGPUFFTHandler {
     double2* forward_root_;  // N/2 forward roots (bit-reversed)
     double2* inverse_root_;  // N/2 inverse roots (bit-reversed)
     double2* twist_;         // N/2 twist factors
-    double2* untwist_;       // N/2 untwist factors
-    double n_inverse_;       // 1.0 / (N/2) = 1.0 / 512
+    double2* untwist_;       // N/2 untwist factors (scaled by n_inverse)
 
     __host__ __device__ CuGPUFFTHandler()
         : forward_root_(nullptr),
           inverse_root_(nullptr),
           twist_(nullptr),
-          untwist_(nullptr),
-          n_inverse_(0)
+          untwist_(nullptr)
     {
     }
     __host__ __device__ ~CuGPUFFTHandler() {}

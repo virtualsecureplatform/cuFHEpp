@@ -58,16 +58,16 @@ __global__ void __FFTRoundtrip__(
     // Step 3: Inverse FFT
     if (tid < FFT_THREADS) {
         if constexpr (N == 1024) {
-            GPUFFTInverse512(sh_fft, ntt.inverse_root_, ntt.n_inverse_, tid);
+            GPUFFTInverse512(sh_fft, ntt.inverse_root_, tid);
         } else if constexpr (N == 2048) {
-            GPUFFTInverse1024(sh_fft, ntt.inverse_root_, ntt.n_inverse_, tid);
+            GPUFFTInverse1024(sh_fft, ntt.inverse_root_, tid);
         }
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < 5; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 7; s++) __syncthreads();
+            for (int s = 0; s < 6; s++) __syncthreads();
         }
     }
 
@@ -132,16 +132,16 @@ __global__ void __FFTNegacyclicSquare__(
     // Inverse FFT
     if (tid < FFT_THREADS) {
         if constexpr (N == 1024) {
-            GPUFFTInverse512(sh_fft, ntt.inverse_root_, ntt.n_inverse_, tid);
+            GPUFFTInverse512(sh_fft, ntt.inverse_root_, tid);
         } else if constexpr (N == 2048) {
-            GPUFFTInverse1024(sh_fft, ntt.inverse_root_, ntt.n_inverse_, tid);
+            GPUFFTInverse1024(sh_fft, ntt.inverse_root_, tid);
         }
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < 5; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 7; s++) __syncthreads();
+            for (int s = 0; s < 6; s++) __syncthreads();
         }
     }
 

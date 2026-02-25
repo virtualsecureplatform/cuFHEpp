@@ -211,22 +211,21 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
 
         if (tid < FFT_THREADS) {
             if constexpr (N == 1024) {
-                GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
-                                 tid);
+                GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
             } else if constexpr (N == 2048) {
-                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
-                                  tid);
+                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, tid);
             }
         }
         else {
             if constexpr (N == 1024) {
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
             } else if constexpr (N == 2048) {
-                for (int s = 0; s < 7; s++) __syncthreads();
+                for (int s = 0; s < 6; s++) __syncthreads();
             }
         }
 
         // Untwist + unfold + denormalize
+        // (n_inverse is folded into the untwist table)
         if (tid < HALF_N) {
             double2 val = sh_inv[tid];
             double2 utw = __ldg(&ntt.untwist_[tid]);
@@ -725,18 +724,16 @@ __device__ inline void AccumulateKeyBundle(
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
         if (tid < FFT_THREADS) {
             if constexpr (N == 1024) {
-                GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
-                                 tid);
+                GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
             } else if constexpr (N == 2048) {
-                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
-                                  tid);
+                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, tid);
             }
         }
         else {
             if constexpr (N == 1024) {
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
             } else if constexpr (N == 2048) {
-                for (int s = 0; s < 7; s++) __syncthreads();
+                for (int s = 0; s < 6; s++) __syncthreads();
             }
         }
 

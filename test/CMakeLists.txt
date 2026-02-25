@@ -52,3 +52,8 @@ target_include_directories(test_blind_rotate_compare PRIVATE ${CMAKE_CUDA_TOOLKI
 set_target_properties(test_blind_rotate_compare PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
 target_link_libraries(test_blind_rotate_compare cufhe_gpu ${CUDA_LIBRARIES})
 
+add_executable(test_fft_perf test_fft_perf.cu)
+target_include_directories(test_fft_perf PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+set_target_properties(test_fft_perf PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(test_fft_perf cufhe_gpu ${CUDA_LIBRARIES})
+

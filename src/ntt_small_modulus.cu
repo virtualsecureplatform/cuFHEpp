@@ -219,12 +219,17 @@ static void GenerateFFNTTables(int N,
     twist.resize(half_n);
     untwist.resize(half_n);
 
+    // n_inverse is folded into the untwist table so that the IFFT can skip
+    // the separate n_inverse multiply pass (saves one __syncthreads).
+    const double n_inv = 1.0 / half_n;
+
     for (int i = 0; i < half_n; i++) {
         int br = bitreverse(i, logH - 1);
         forward_root[i] = { roots_new[br].real(),  roots_new[br].imag() };
         inverse_root[i] = { roots_new[br].real(), -roots_new[br].imag() };
-        twist[i]   = { roots_twist[i].real(),  roots_twist[i].imag() };
-        untwist[i] = { roots_twist[i].real(), -roots_twist[i].imag() };
+        twist[i]   = {  roots_twist[i].real(),  roots_twist[i].imag() };
+        untwist[i] = {  roots_twist[i].real() * n_inv,
+                        -roots_twist[i].imag() * n_inv };
     }
 }
 #endif  // USE_FFT && USE_GPU_FFT
@@ -408,7 +413,6 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id)
     inverse_root_ = params.inverse_root;
     twist_ = params.twist;
     untwist_ = params.untwist;
-    n_inverse_ = 1.0 / static_cast<double>(kHalfLength);
 }
 
 template class CuGPUFFTHandler<TFHEpp::lvl1param::n>;
@@ -502,7 +506,6 @@ void CuGPUFFTHandler<TFHEpp::lvl2param::n>::SetDevicePointers(int device_id)
     inverse_root_ = params.inverse_root;
     twist_ = params.twist;
     untwist_ = params.untwist;
-    n_inverse_ = 1.0 / static_cast<double>(kHalfLength);
 }
 
 template class CuGPUFFTHandler<TFHEpp::lvl2param::n>;

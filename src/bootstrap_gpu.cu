@@ -663,10 +663,10 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
     for (int k_idx = 0; k_idx <= lvl1param::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
         if (tid < FFT_THREADS) {
-            GPUFFTInverse512(sh_inv, ntt.inverse_root_, ntt.n_inverse_, tid);
+            GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
         }
         else {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < 5; s++) __syncthreads();
         }
 
         if (tid < HALF_N) {
