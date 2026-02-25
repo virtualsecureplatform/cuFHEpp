@@ -103,9 +103,9 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 4; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         }
     }
 
@@ -640,7 +640,7 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
                 GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
             }
             else {
-                for (int s = 0; s < 4; s++) __syncthreads();
+                for (int s = 0; s < 3; s++) __syncthreads();
             }
 
             int digit_linear = j * lvl1param::l + digit;
@@ -666,7 +666,7 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
             GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
         }
         else {
-            for (int s = 0; s < 4; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         }
 
         if (tid < HALF_N) {

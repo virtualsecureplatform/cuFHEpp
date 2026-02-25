@@ -35,7 +35,7 @@ Each benchmark ran exclusively on the GPU — no concurrent workloads.
 | [tfhe-rs](https://github.com/zama-ai/tfhe-rs) | CPU, `TFHE_LIB_PARAMETERS` | 1024 | n=630, k=1, l=3, Bg=128 | ~18 ms | — |
 | [tfhe-rs](https://github.com/zama-ai/tfhe-rs) | GPU, `PARAM_GPU_MULTI_BIT_GROUP_4`¹ | 2048 | n=920, k=1, l=1, Bgbit=22, group=4 | **4.3 ms** | — |
 | cuFHEpp | GPU, lvl1, FFT | 1024 | n=636, k=1, l=2, Bg=256 | 15.2 ms | 0.14 ms/gate |
-| cuFHEpp | GPU, lvl1, FFT + KeyBundle | 1024 | n=636, k=1, l=2, Bg=256, KB=2 | 12.1 ms | **0.11 ms/gate** |
+| cuFHEpp | GPU, lvl1, FFT + KeyBundle | 1024 | n=636, k=1, l=2, Bg=256, KB=2 | 12.6 ms | **0.12 ms/gate** |
 | cuFHEpp | GPU, lvl2, FFT | 2048 | n=636, k=1, l=4, Bg=1024 | 37–38 ms | 0.35 ms/gate |
 | cuFHEpp | GPU, lvl2, FFT + KeyBundle | 2048 | n=636, k=1, l=4, Bg=1024, KB=2 | 31–33 ms | 0.29 ms/gate |
 
@@ -48,9 +48,9 @@ NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) wi
 
 | Gate | Latency | Throughput |
 |---|---|---|
-| Binary (NAND/AND/OR/XOR/…) | ~12 ms | ~0.11 ms/gate |
-| MUX / NMUX | ~22 ms | ~0.20 ms/gate |
-| NOT / COPY | ~1.1 ms | ~0.01 ms/gate |
+| Binary (NAND/AND/OR/XOR/…) | ~13 ms | ~0.12 ms/gate |
+| MUX / NMUX | ~25 ms | ~0.23 ms/gate |
+| NOT / COPY | ~1.2 ms | ~0.01 ms/gate |
 
 ### All gates — cuFHEpp GPU, lvl1 (N=1024), FFT
 

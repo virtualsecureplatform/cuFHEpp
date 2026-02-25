@@ -65,9 +65,9 @@ __global__ void __LocalTRGSW2FFT__(NTTValue* const bk_fft,
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         }
     }
 

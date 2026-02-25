@@ -684,60 +684,73 @@ __device__ __forceinline__ double2 shfl_xor_d2(double2 val, int mask)
  * Root table: bit-reversed forward roots from FFNT::ReverseRootTable_ffnt()
  * Root indexing: current_root_index = omega_address >> t_2
  *
- * Sync pattern: 3 synced stages + 1 boundary stage (no sync needed since
- * stride-16 reads are warp-local) + 5 warp-local + final sync = 4 total syncs
+ * Radix-4 optimization: stages 0+1 merged into a single radix-4 butterfly,
+ * eliminating one __syncthreads barrier.
+ *
+ * Sync pattern: 1 radix-4 (strides 256+128) + 1 radix-2 (stride 64) +
+ * boundary (no sync) + warp-local + final sync = 3 total syncs
  */
 __device__ __forceinline__ void GPUFFTForward512(
     double2* sh, const double2* __restrict__ root_table, int tid)
 {
-    constexpr int N_power = 9;  // log2(512) = 9
+    // Radix-4 merge of stages 0+1 (strides 256+128, CT DIT)
+    // 128 active threads, each handles 4 elements
+    if (tid < 128) {
+        double2 a = sh[tid];
+        double2 b = sh[tid + 128];
+        double2 c = sh[tid + 256];
+        double2 d = sh[tid + 384];
 
-    int t_2 = N_power - 1;  // 8
-    int t_ = 8;
-    int t = 1 << t_;  // 256
+        double2 w0 = __ldg(&root_table[0]);   // coarse (stride 256) + fine first pair
+        double2 w1b = __ldg(&root_table[1]);   // fine (stride 128), second pair
 
-    int in_shared_address = ((tid >> t_) << t_) + tid;
+        // Step 1: coarse stage (stride 256)
+        double2 cw = c * w0;
+        double2 dw = d * w0;
+        double2 a1 = a + cw;
+        double2 c1 = a - cw;
+        double2 b1 = b + dw;
+        double2 d1 = b - dw;
 
-// First 3 stages (stride 256, 128, 64): need __syncthreads after each
-#pragma unroll
-    for (int lp = 0; lp < 3; lp++) {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
-        double2 U = sh[in_shared_address];
-        double2 V = sh[in_shared_address + t] * root;
-        sh[in_shared_address] = U + V;
-        sh[in_shared_address + t] = U - V;
-
-        t = t >> 1;
-        t_2 -= 1;
-        t_ -= 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
-        __syncthreads();
+        // Step 2: fine stage (stride 128)
+        double2 b1w = b1 * w0;    // w1a = w0 = root_table[0]
+        double2 d1w = d1 * w1b;
+        sh[tid]       = a1 + b1w;
+        sh[tid + 128] = a1 - b1w;
+        sh[tid + 256] = c1 + d1w;
+        sh[tid + 384] = c1 - d1w;
     }
+    __syncthreads();
 
-    // Stage 3 (stride 32): the last cross-warp stage. No sync needed after
-    // because the next stage (stride 16) only reads data written by threads
-    // in the same warp.
+    // Stage 2 (stride 64): all 256 threads, normal radix-2
     {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
+        int in_shared_address = ((tid >> 6) << 6) + tid;
+        double2 root = __ldg(&root_table[tid >> 6]);
         double2 U = sh[in_shared_address];
-        double2 V = sh[in_shared_address + t] * root;
+        double2 V = sh[in_shared_address + 64] * root;
         sh[in_shared_address] = U + V;
-        sh[in_shared_address + t] = U - V;
+        sh[in_shared_address + 64] = U - V;
+    }
+    __syncthreads();
 
-        t = t >> 1;
-        t_2 -= 1;
-        t_ -= 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
+    // Boundary stage (stride 32): no sync needed after — stride-16 reads
+    // are warp-local
+    {
+        int in_shared_address = ((tid >> 5) << 5) + tid;
+        double2 root = __ldg(&root_table[tid >> 5]);
+        double2 U = sh[in_shared_address];
+        double2 V = sh[in_shared_address + 32] * root;
+        sh[in_shared_address] = U + V;
+        sh[in_shared_address + 32] = U - V;
     }
 
 // Warp-local stages (stride 16..1): register-based with warp shuffle.
-// Each thread holds its butterfly pair in registers. Exchanges between
-// threads use __shfl_xor_sync, avoiding shared memory bank conflicts.
     {
+        int t_2 = 4;
+        int in_shared_address = ((tid >> 4) << 4) + tid;
+
         double2 reg_u = sh[in_shared_address];
-        double2 reg_v = sh[in_shared_address + t];
+        double2 reg_v = sh[in_shared_address + 16];
 
         // Stride 16: butterfly pair already in registers
         {
@@ -782,18 +795,19 @@ __device__ __forceinline__ void GPUFFTForward512(
  * n_inverse (1/512) is folded into the untwist table, so no separate scaling
  * pass is needed here.
  *
- * Sync pattern: 5 warp-local + 1 boundary stage (no sync before — stride-32
- * reads are warp-local after stride-16 writes) + 3 synced stages = 4 total
- * syncs
+ * Radix-4 optimization: stages 7+8 (strides 128+256) merged into a single
+ * GS radix-4 butterfly, eliminating one __syncthreads barrier.
+ *
+ * Sync pattern: warp-local + boundary [sync] + stride-64 [sync] +
+ * radix-4 strides 128+256 [sync] = 3 total syncs
  */
 __device__ __forceinline__ void GPUFFTInverse512(
     double2* sh, const double2* __restrict__ root_table, int tid)
 {
     int t_2 = 0;
-    int t_ = 0;
     int t = 1;
 
-    int in_shared_address = ((tid >> t_) << t_) + tid;
+    int in_shared_address = ((tid >> 0) << 0) + tid;
 
 // Warp-local stages (stride 1..16): register-based with warp shuffle.
     {
@@ -832,102 +846,149 @@ __device__ __forceinline__ void GPUFFTInverse512(
         sh[wb_addr + 16] = reg_v;
     }
 
-    // Update loop variables for boundary stage
-    t = 32;
-    t_2 = 5;
-    t_ = 5;
-    in_shared_address = ((tid >> t_) << t_) + tid;
-
-    // Stage 5 (stride 32): first cross-warp stage. No sync needed before
-    // because stride-32 reads only access data written by same-warp threads
-    // in the preceding stride-16 stage.
+    // Stage 5 (stride 32): boundary stage. No sync needed before because
+    // stride-32 reads only access data written by same-warp threads.
     {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
+        int in_shared_address = ((tid >> 5) << 5) + tid;
+        double2 root = __ldg(&root_table[tid >> 5]);
         double2 u = sh[in_shared_address];
-        double2 v = sh[in_shared_address + t];
+        double2 v = sh[in_shared_address + 32];
         sh[in_shared_address] = u + v;
-        sh[in_shared_address + t] = (u - v) * root;
-
-        t = t << 1;
-        t_2 += 1;
-        t_ += 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
-        __syncthreads();
+        sh[in_shared_address + 32] = (u - v) * root;
     }
+    __syncthreads();
 
-// Last 3 stages (stride 64, 128, 256): need __syncthreads
-#pragma unroll
-    for (int lp = 0; lp < 3; lp++) {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
+    // Stage 6 (stride 64): all 256 threads, normal GS radix-2
+    {
+        int in_shared_address = ((tid >> 6) << 6) + tid;
+        double2 root = __ldg(&root_table[tid >> 6]);
         double2 u = sh[in_shared_address];
-        double2 v = sh[in_shared_address + t];
+        double2 v = sh[in_shared_address + 64];
         sh[in_shared_address] = u + v;
-        sh[in_shared_address + t] = (u - v) * root;
-
-        t = t << 1;
-        t_2 += 1;
-        t_ += 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
-        __syncthreads();
+        sh[in_shared_address + 64] = (u - v) * root;
     }
+    __syncthreads();
+
+    // Radix-4 merge of stages 7+8 (strides 128+256, GS DIF)
+    // 128 active threads, each handles 4 elements
+    if (tid < 128) {
+        double2 a = sh[tid];
+        double2 b = sh[tid + 128];
+        double2 c = sh[tid + 256];
+        double2 d = sh[tid + 384];
+
+        double2 w_s  = __ldg(&root_table[0]);   // stride 128, first pair + stride 256
+        double2 w_s2 = __ldg(&root_table[1]);   // stride 128, second pair
+
+        // Step 1: GS at stride 128
+        double2 t0 = a + b;
+        double2 t1 = (a - b) * w_s;     // w_s1 = root_table[0]
+        double2 t2 = c + d;
+        double2 t3 = (c - d) * w_s2;
+
+        // Step 2: GS at stride 256
+        sh[tid]       = t0 + t2;
+        sh[tid + 256] = (t0 - t2) * w_s;   // w_2s = root_table[0]
+        sh[tid + 128] = t1 + t3;
+        sh[tid + 384] = (t1 - t3) * w_s;   // w_2s = root_table[0]
+    }
+    __syncthreads();
 }
 
 /**
  * GPU-FFT Forward FFT for N/2=1024 complex elements
  * Uses 512 threads, Cooley-Tukey butterfly, 10 stages (log2(1024)=10)
  *
- * Sync pattern: 4 synced stages + 1 boundary stage (stride 32, no sync
- * needed after) + 5 warp-local + final sync = 5 total syncs
+ * Radix-4 optimization: stages 0+1 and 2+3 each merged into radix-4
+ * butterflies, eliminating two __syncthreads barriers.
+ *
+ * Sync pattern: 2 radix-4 stages + boundary (no sync) + warp-local +
+ * final sync = 3 total syncs
  */
 __device__ __forceinline__ void GPUFFTForward1024(
     double2* sh, const double2* __restrict__ root_table, int tid)
 {
-    constexpr int N_power = 10;  // log2(1024) = 10
+    // Radix-4 merge of stages 0+1 (strides 512+256, CT DIT)
+    // 256 active threads out of 512, each handles 4 elements
+    if (tid < 256) {
+        double2 a = sh[tid];
+        double2 b = sh[tid + 256];
+        double2 c = sh[tid + 512];
+        double2 d = sh[tid + 768];
 
-    int t_2 = N_power - 1;  // 9
-    int t_ = 9;
-    int t = 1 << t_;  // 512
+        double2 w0 = __ldg(&root_table[0]);   // coarse (stride 512) + fine first pair
+        double2 w1b = __ldg(&root_table[1]);   // fine (stride 256), second pair
 
-    int in_shared_address = ((tid >> t_) << t_) + tid;
+        // Step 1: coarse stage (stride 512)
+        double2 cw = c * w0;
+        double2 dw = d * w0;
+        double2 a1 = a + cw;
+        double2 c1 = a - cw;
+        double2 b1 = b + dw;
+        double2 d1 = b - dw;
 
-// First 4 stages (stride 512, 256, 128, 64): need __syncthreads after each
-#pragma unroll
-    for (int lp = 0; lp < 4; lp++) {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
-        double2 U = sh[in_shared_address];
-        double2 V = sh[in_shared_address + t] * root;
-        sh[in_shared_address] = U + V;
-        sh[in_shared_address + t] = U - V;
-
-        t = t >> 1;
-        t_2 -= 1;
-        t_ -= 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
-        __syncthreads();
+        // Step 2: fine stage (stride 256)
+        double2 b1w = b1 * w0;    // w1a = w0 = root_table[0]
+        double2 d1w = d1 * w1b;
+        sh[tid]       = a1 + b1w;
+        sh[tid + 256] = a1 - b1w;
+        sh[tid + 512] = c1 + d1w;
+        sh[tid + 768] = c1 - d1w;
     }
+    __syncthreads();
 
-    // Stage 4 (stride 32): no sync needed after — stride-16 reads are warp-local
+    // Radix-4 merge of stages 2+3 (strides 128+64, CT DIT)
+    // 256 active threads, each handles 4 elements in groups of 256
+    if (tid < 256) {
+        int group = tid >> 6;        // 0..3
+        int local = tid & 63;        // 0..63
+        int base = group * 256 + local;
+
+        double2 a = sh[base];
+        double2 b = sh[base + 64];
+        double2 c = sh[base + 128];
+        double2 d = sh[base + 192];
+
+        double2 w0  = __ldg(&root_table[group]);           // coarse (stride 128)
+        double2 w1a = __ldg(&root_table[2 * group]);       // fine (stride 64), first pair
+        double2 w1b = __ldg(&root_table[2 * group + 1]);   // fine (stride 64), second pair
+
+        // Step 1: coarse stage (stride 128)
+        double2 cw = c * w0;
+        double2 dw = d * w0;
+        double2 a1 = a + cw;
+        double2 c1 = a - cw;
+        double2 b1 = b + dw;
+        double2 d1 = b - dw;
+
+        // Step 2: fine stage (stride 64)
+        double2 b1w = b1 * w1a;
+        double2 d1w = d1 * w1b;
+        sh[base]       = a1 + b1w;
+        sh[base + 64]  = a1 - b1w;
+        sh[base + 128] = c1 + d1w;
+        sh[base + 192] = c1 - d1w;
+    }
+    __syncthreads();
+
+    // Boundary stage (stride 32): all 512 threads, no sync after —
+    // stride-16 reads are warp-local
     {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
+        int in_shared_address = ((tid >> 5) << 5) + tid;
+        double2 root = __ldg(&root_table[tid >> 5]);
         double2 U = sh[in_shared_address];
-        double2 V = sh[in_shared_address + t] * root;
+        double2 V = sh[in_shared_address + 32] * root;
         sh[in_shared_address] = U + V;
-        sh[in_shared_address + t] = U - V;
-
-        t = t >> 1;
-        t_2 -= 1;
-        t_ -= 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
+        sh[in_shared_address + 32] = U - V;
     }
 
 // Warp-local stages (stride 16..1): register-based with warp shuffle.
     {
+        int t_2 = 4;
+        int in_shared_address = ((tid >> 4) << 4) + tid;
+
         double2 reg_u = sh[in_shared_address];
-        double2 reg_v = sh[in_shared_address + t];
+        double2 reg_v = sh[in_shared_address + 16];
 
         // Stride 16: butterfly pair already in registers
         {
@@ -967,17 +1028,19 @@ __device__ __forceinline__ void GPUFFTForward1024(
  *
  * n_inverse (1/1024) is folded into the untwist table.
  *
- * Sync pattern: 5 warp-local + 1 boundary stage (no sync before) +
- * 4 synced stages = 5 total syncs
+ * Radix-4 optimization: stages 6+7 and 8+9 each merged into GS radix-4
+ * butterflies, eliminating two __syncthreads barriers.
+ *
+ * Sync pattern: warp-local + boundary [sync] + radix-4 strides 64+128
+ * [sync] + radix-4 strides 256+512 [sync] = 3 total syncs
  */
 __device__ __forceinline__ void GPUFFTInverse1024(
     double2* sh, const double2* __restrict__ root_table, int tid)
 {
     int t_2 = 0;
-    int t_ = 0;
     int t = 1;
 
-    int in_shared_address = ((tid >> t_) << t_) + tid;
+    int in_shared_address = ((tid >> 0) << 0) + tid;
 
 // Warp-local stages (stride 1..16): register-based with warp shuffle.
     {
@@ -1015,44 +1078,72 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         sh[wb_addr + 16] = reg_v;
     }
 
-    t = 32;
-    t_2 = 5;
-    t_ = 5;
-    in_shared_address = ((tid >> t_) << t_) + tid;
-
-    // Stage 5 (stride 32): no sync needed before — stride-32 reads only
-    // access data written by same-warp threads in the stride-16 stage.
+    // Stage 5 (stride 32): boundary stage. No sync needed before —
+    // stride-32 reads only access data written by same-warp threads.
     {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
+        int in_shared_address = ((tid >> 5) << 5) + tid;
+        double2 root = __ldg(&root_table[tid >> 5]);
         double2 u = sh[in_shared_address];
-        double2 v = sh[in_shared_address + t];
+        double2 v = sh[in_shared_address + 32];
         sh[in_shared_address] = u + v;
-        sh[in_shared_address + t] = (u - v) * root;
-
-        t = t << 1;
-        t_2 += 1;
-        t_ += 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
-        __syncthreads();
+        sh[in_shared_address + 32] = (u - v) * root;
     }
+    __syncthreads();
 
-// Last 4 stages (stride 64..512): need __syncthreads
-#pragma unroll
-    for (int lp = 0; lp < 4; lp++) {
-        int current_root_index = tid >> t_2;
-        double2 root = __ldg(&root_table[current_root_index]);
-        double2 u = sh[in_shared_address];
-        double2 v = sh[in_shared_address + t];
-        sh[in_shared_address] = u + v;
-        sh[in_shared_address + t] = (u - v) * root;
+    // Radix-4 merge of stages 6+7 (strides 64+128, GS DIF)
+    // 256 active threads out of 512, each handles 4 elements in groups of 256
+    if (tid < 256) {
+        int group = tid >> 6;        // 0..3
+        int local = tid & 63;        // 0..63
+        int base = group * 256 + local;
 
-        t = t << 1;
-        t_2 += 1;
-        t_ += 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
-        __syncthreads();
+        double2 a = sh[base];
+        double2 b = sh[base + 64];
+        double2 c = sh[base + 128];
+        double2 d = sh[base + 192];
+
+        double2 w_s1 = __ldg(&root_table[2 * group]);       // stride 64, first pair
+        double2 w_s2 = __ldg(&root_table[2 * group + 1]);   // stride 64, second pair
+        double2 w_2s = __ldg(&root_table[group]);            // stride 128
+
+        // Step 1: GS at stride 64
+        double2 t0 = a + b;
+        double2 t1 = (a - b) * w_s1;
+        double2 t2 = c + d;
+        double2 t3 = (c - d) * w_s2;
+
+        // Step 2: GS at stride 128
+        sh[base]       = t0 + t2;
+        sh[base + 128] = (t0 - t2) * w_2s;
+        sh[base + 64]  = t1 + t3;
+        sh[base + 192] = (t1 - t3) * w_2s;
     }
+    __syncthreads();
+
+    // Radix-4 merge of stages 8+9 (strides 256+512, GS DIF)
+    // 256 active threads, each handles 4 elements
+    if (tid < 256) {
+        double2 a = sh[tid];
+        double2 b = sh[tid + 256];
+        double2 c = sh[tid + 512];
+        double2 d = sh[tid + 768];
+
+        double2 w_s  = __ldg(&root_table[0]);   // stride 256, first pair + stride 512
+        double2 w_s2 = __ldg(&root_table[1]);   // stride 256, second pair
+
+        // Step 1: GS at stride 256
+        double2 t0 = a + b;
+        double2 t1 = (a - b) * w_s;     // w_s1 = root_table[0]
+        double2 t2 = c + d;
+        double2 t3 = (c - d) * w_s2;
+
+        // Step 2: GS at stride 512
+        sh[tid]       = t0 + t2;
+        sh[tid + 512] = (t0 - t2) * w_s;   // w_2s = root_table[0]
+        sh[tid + 256] = t1 + t3;
+        sh[tid + 768] = (t1 - t3) * w_s;   // w_2s = root_table[0]
+    }
+    __syncthreads();
 }
 
 #endif  // __CUDACC__

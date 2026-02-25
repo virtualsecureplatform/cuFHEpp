@@ -49,9 +49,9 @@ __global__ void __FFTRoundtrip__(
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 4; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         }
     }
 
@@ -65,9 +65,9 @@ __global__ void __FFTRoundtrip__(
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 4; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         }
     }
 
@@ -116,9 +116,9 @@ __global__ void __FFTNegacyclicSquare__(
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 4; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         }
     }
 
@@ -139,9 +139,9 @@ __global__ void __FFTNegacyclicSquare__(
     }
     else {
         if constexpr (N == 1024) {
-            for (int s = 0; s < 4; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         } else if constexpr (N == 2048) {
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 3; s++) __syncthreads();
         }
     }
 
