@@ -55,9 +55,9 @@ __global__ void __BenchForwardFFT__(
                 GPUFFTForward1024(sh, ntt.forward_root_, tid);
         } else {
             if constexpr (N == 1024)
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < 4; s++) __syncthreads();
             else if constexpr (N == 2048)
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
         }
     }
 
@@ -93,9 +93,9 @@ __global__ void __BenchInverseFFT__(
                 GPUFFTInverse1024(sh, ntt.inverse_root_, tid);
         } else {
             if constexpr (N == 1024)
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < 4; s++) __syncthreads();
             else if constexpr (N == 2048)
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
         }
     }
 
@@ -138,9 +138,9 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
                 GPUFFTForward1024(sh, ntt.forward_root_, tid);
         } else {
             if constexpr (N == 1024)
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < 4; s++) __syncthreads();
             else if constexpr (N == 2048)
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
         }
 
         // Step 3: Pointwise multiply (like multiply-accumulate in Accumulate)
@@ -157,9 +157,9 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
                 GPUFFTInverse1024(sh, ntt.inverse_root_, tid);
         } else {
             if constexpr (N == 1024)
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < 4; s++) __syncthreads();
             else if constexpr (N == 2048)
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
         }
 
         // Step 5: Untwist + unfold
@@ -369,9 +369,9 @@ __global__ void __VerifyRoundtrip__(
             GPUFFTForward1024(sh, ntt.forward_root_, tid);
     } else {
         if constexpr (N == 1024)
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 4; s++) __syncthreads();
         else if constexpr (N == 2048)
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < 5; s++) __syncthreads();
     }
 
     // Inverse
@@ -382,9 +382,9 @@ __global__ void __VerifyRoundtrip__(
             GPUFFTInverse1024(sh, ntt.inverse_root_, tid);
     } else {
         if constexpr (N == 1024)
-            for (int s = 0; s < 5; s++) __syncthreads();
+            for (int s = 0; s < 4; s++) __syncthreads();
         else if constexpr (N == 2048)
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < 5; s++) __syncthreads();
     }
 
     // Untwist + unfold

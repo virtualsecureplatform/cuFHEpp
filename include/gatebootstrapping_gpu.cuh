@@ -179,9 +179,9 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
             }
             else {
                 if constexpr (N == 1024) {
-                    for (int s = 0; s < 5; s++) __syncthreads();
+                    for (int s = 0; s < 4; s++) __syncthreads();
                 } else if constexpr (N == 2048) {
-                    for (int s = 0; s < 6; s++) __syncthreads();
+                    for (int s = 0; s < 5; s++) __syncthreads();
                 }
             }
 
@@ -218,9 +218,9 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
         }
         else {
             if constexpr (N == 1024) {
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < 4; s++) __syncthreads();
             } else if constexpr (N == 2048) {
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
             }
         }
 
@@ -678,9 +678,9 @@ __device__ inline void AccumulateKeyBundle(
             }
             else {
                 if constexpr (N == 1024) {
-                    for (int s = 0; s < 5; s++) __syncthreads();
+                    for (int s = 0; s < 4; s++) __syncthreads();
                 } else if constexpr (N == 2048) {
-                    for (int s = 0; s < 6; s++) __syncthreads();
+                    for (int s = 0; s < 5; s++) __syncthreads();
                 }
             }
 
@@ -731,9 +731,9 @@ __device__ inline void AccumulateKeyBundle(
         }
         else {
             if constexpr (N == 1024) {
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < 4; s++) __syncthreads();
             } else if constexpr (N == 2048) {
-                for (int s = 0; s < 6; s++) __syncthreads();
+                for (int s = 0; s < 5; s++) __syncthreads();
             }
         }
 

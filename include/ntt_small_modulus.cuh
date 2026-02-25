@@ -668,8 +668,8 @@ __device__ inline double2 operator*(const double2 a, double b)
  * Root table: bit-reversed forward roots from FFNT::ReverseRootTable_ffnt()
  * Root indexing: current_root_index = omega_address >> t_2
  *
- * Sync pattern: 4 stages with __syncthreads (stride >= 32) + 5 warp-local +
- * final sync = 5 total syncs
+ * Sync pattern: 3 synced stages + 1 boundary stage (no sync needed since
+ * stride-16 reads are warp-local) + 5 warp-local + final sync = 4 total syncs
  */
 __device__ __forceinline__ void GPUFFTForward512(
     double2* sh, const double2* __restrict__ root_table, int tid)
@@ -682,9 +682,9 @@ __device__ __forceinline__ void GPUFFTForward512(
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
 
-// First 4 stages (stride >= 32): need __syncthreads
+// First 3 stages (stride 256, 128, 64): need __syncthreads after each
 #pragma unroll
-    for (int lp = 0; lp < 4; lp++) {
+    for (int lp = 0; lp < 3; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
         double2 U = sh[in_shared_address];
@@ -697,6 +697,23 @@ __device__ __forceinline__ void GPUFFTForward512(
         t_ -= 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
         __syncthreads();
+    }
+
+    // Stage 3 (stride 32): the last cross-warp stage. No sync needed after
+    // because the next stage (stride 16) only reads data written by threads
+    // in the same warp.
+    {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 U = sh[in_shared_address];
+        double2 V = sh[in_shared_address + t] * root;
+        sh[in_shared_address] = U + V;
+        sh[in_shared_address + t] = U - V;
+
+        t = t >> 1;
+        t_2 -= 1;
+        t_ -= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
     }
 
 // Last 5 stages (stride <= 16): warp-local, no sync needed
@@ -728,7 +745,9 @@ __device__ __forceinline__ void GPUFFTForward512(
  * n_inverse (1/512) is folded into the untwist table, so no separate scaling
  * pass is needed here.
  *
- * Sync pattern: 5 warp-local + sync + 4 stages with sync = 5 total syncs
+ * Sync pattern: 5 warp-local + 1 boundary stage (no sync before — stride-32
+ * reads are warp-local after stride-16 writes) + 3 synced stages = 4 total
+ * syncs
  */
 __device__ __forceinline__ void GPUFFTInverse512(
     double2* sh, const double2* __restrict__ root_table, int tid)
@@ -739,7 +758,7 @@ __device__ __forceinline__ void GPUFFTInverse512(
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
 
-// First 5 stages (stride <= 16): warp-local, no sync needed
+// First 5 stages (stride 1..16): warp-local, no sync needed
 #pragma unroll
     for (int lp = 0; lp < 5; lp++) {
         int current_root_index = tid >> t_2;
@@ -754,11 +773,28 @@ __device__ __forceinline__ void GPUFFTInverse512(
         t_ += 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
     }
-    __syncthreads();
 
-// Last 4 stages (stride >= 32): need __syncthreads
+    // Stage 5 (stride 32): first cross-warp stage. No sync needed before
+    // because stride-32 reads only access data written by same-warp threads
+    // in the preceding stride-16 stage.
+    {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 u = sh[in_shared_address];
+        double2 v = sh[in_shared_address + t];
+        sh[in_shared_address] = u + v;
+        sh[in_shared_address + t] = (u - v) * root;
+
+        t = t << 1;
+        t_2 += 1;
+        t_ += 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+// Last 3 stages (stride 64, 128, 256): need __syncthreads
 #pragma unroll
-    for (int lp = 0; lp < 4; lp++) {
+    for (int lp = 0; lp < 3; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
         double2 u = sh[in_shared_address];
@@ -778,8 +814,8 @@ __device__ __forceinline__ void GPUFFTInverse512(
  * GPU-FFT Forward FFT for N/2=1024 complex elements
  * Uses 512 threads, Cooley-Tukey butterfly, 10 stages (log2(1024)=10)
  *
- * Sync pattern: 5 stages with __syncthreads (stride >= 32) + 5 warp-local +
- * final sync = 6 total syncs
+ * Sync pattern: 4 synced stages + 1 boundary stage (stride 32, no sync
+ * needed after) + 5 warp-local + final sync = 5 total syncs
  */
 __device__ __forceinline__ void GPUFFTForward1024(
     double2* sh, const double2* __restrict__ root_table, int tid)
@@ -792,9 +828,9 @@ __device__ __forceinline__ void GPUFFTForward1024(
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
 
-// First 5 stages (stride >= 32): need __syncthreads
+// First 4 stages (stride 512, 256, 128, 64): need __syncthreads after each
 #pragma unroll
-    for (int lp = 0; lp < 5; lp++) {
+    for (int lp = 0; lp < 4; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
         double2 U = sh[in_shared_address];
@@ -807,6 +843,21 @@ __device__ __forceinline__ void GPUFFTForward1024(
         t_ -= 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
         __syncthreads();
+    }
+
+    // Stage 4 (stride 32): no sync needed after — stride-16 reads are warp-local
+    {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 U = sh[in_shared_address];
+        double2 V = sh[in_shared_address + t] * root;
+        sh[in_shared_address] = U + V;
+        sh[in_shared_address + t] = U - V;
+
+        t = t >> 1;
+        t_2 -= 1;
+        t_ -= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
     }
 
 // Last 5 stages (stride <= 16): warp-local, no sync needed
@@ -833,7 +884,8 @@ __device__ __forceinline__ void GPUFFTForward1024(
  *
  * n_inverse (1/1024) is folded into the untwist table.
  *
- * Sync pattern: 5 warp-local + sync + 5 stages with sync = 6 total syncs
+ * Sync pattern: 5 warp-local + 1 boundary stage (no sync before) +
+ * 4 synced stages = 5 total syncs
  */
 __device__ __forceinline__ void GPUFFTInverse1024(
     double2* sh, const double2* __restrict__ root_table, int tid)
@@ -844,7 +896,7 @@ __device__ __forceinline__ void GPUFFTInverse1024(
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
 
-// First 5 stages (stride <= 16): warp-local, no sync needed
+// First 5 stages (stride 1..16): warp-local, no sync needed
 #pragma unroll
     for (int lp = 0; lp < 5; lp++) {
         int current_root_index = tid >> t_2;
@@ -859,11 +911,27 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         t_ += 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
     }
-    __syncthreads();
 
-// Last 5 stages (stride >= 32): need __syncthreads
+    // Stage 5 (stride 32): no sync needed before — stride-32 reads only
+    // access data written by same-warp threads in the stride-16 stage.
+    {
+        int current_root_index = tid >> t_2;
+        double2 root = __ldg(&root_table[current_root_index]);
+        double2 u = sh[in_shared_address];
+        double2 v = sh[in_shared_address + t];
+        sh[in_shared_address] = u + v;
+        sh[in_shared_address + t] = (u - v) * root;
+
+        t = t << 1;
+        t_2 += 1;
+        t_ += 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+// Last 4 stages (stride 64..512): need __syncthreads
 #pragma unroll
-    for (int lp = 0; lp < 5; lp++) {
+    for (int lp = 0; lp < 4; lp++) {
         int current_root_index = tid >> t_2;
         double2 root = __ldg(&root_table[current_root_index]);
         double2 u = sh[in_shared_address];
