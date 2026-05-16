@@ -28,6 +28,11 @@ target_include_directories(test_accumulate_diag PRIVATE ${CMAKE_CUDA_TOOLKIT_INC
 set_target_properties(test_accumulate_diag PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_accumulate_diag cufhe_gpu ${CUDA_LIBRARIES})
 
+add_executable(test_annihilate_gpu test_annihilate_gpu.cu)
+target_include_directories(test_annihilate_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+set_target_properties(test_annihilate_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+target_link_libraries(test_annihilate_gpu cufhe_gpu ${CUDA_LIBRARIES})
+
 add_executable(test_keyswitch_diag test_keyswitch_diag.cu)
 target_include_directories(test_keyswitch_diag PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 set_target_properties(test_keyswitch_diag PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -56,4 +61,3 @@ add_executable(test_fft_perf test_fft_perf.cu)
 target_include_directories(test_fft_perf PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 set_target_properties(test_fft_perf PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_fft_perf cufhe_gpu ${CUDA_LIBRARIES})
-
