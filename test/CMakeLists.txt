@@ -33,6 +33,11 @@ target_include_directories(test_annihilate_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCL
 set_target_properties(test_annihilate_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
 target_link_libraries(test_annihilate_gpu cufhe_gpu ${CUDA_LIBRARIES})
 
+add_executable(test_circuitbootstrapping_gpu test_circuitbootstrapping_gpu.cu)
+target_include_directories(test_circuitbootstrapping_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+set_target_properties(test_circuitbootstrapping_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+target_link_libraries(test_circuitbootstrapping_gpu cufhe_gpu ${CUDA_LIBRARIES})
+
 add_executable(test_keyswitch_diag test_keyswitch_diag.cu)
 target_include_directories(test_keyswitch_diag PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 set_target_properties(test_keyswitch_diag PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
