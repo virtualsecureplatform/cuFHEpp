@@ -960,9 +960,17 @@ __global__ __launch_bounds__(
                                                      T* const in,
                                                  const TFHEpp::lvl1param::T mu,
                                                  const NTTValue* const bk,
+#ifdef USE_KEY_BUNDLE
+                                                 const NTTValue* const one_trgsw_ntt,
+                                                 const NTTValue* const xai_ntt,
+#endif
                                                  const CuNTTHandler<P::targetP::n> ntt)
 {
+#ifdef USE_KEY_BUNDLE
+    __BlindRotateKeyBundle__<P>(out, in, mu, bk, one_trgsw_ntt, xai_ntt, ntt);
+#else
     __BlindRotate__<P>(out, in, mu, bk, ntt);
+#endif
 }
 
 __global__ __launch_bounds__(
@@ -977,6 +985,11 @@ __global__ __launch_bounds__(
                                                        const NTTValue* const bk,
                                                        const TFHEpp::lvl0param::
                                                            T* const ksk,
+#ifdef USE_KEY_BUNDLE
+                                                       const NTTValue* const
+                                                           one_trgsw_ntt,
+                                                       const NTTValue* const xai_ntt,
+#endif
                                                        const CuNTTHandler<> ntt)
 {
     extern __shared__ NTTValue sh[];
@@ -987,7 +1000,9 @@ __global__ __launch_bounds__(
     // uint32_t Convert byte offset: (k+2)*N/2 double2 = (k+2)*N/2 * 16 bytes In
     // NTTValue (double2) units: (k+2)*N/2
     constexpr size_t acc_ntt_elems = (lvl1param::k + 2) * (lvl1param::n / 2);
+#ifndef USE_KEY_BUNDLE
     NTTValue* sh_acc_ntt = &sh[0];
+#endif
     TFHEpp::lvl1param::T* tlwe = (TFHEpp::lvl1param::T*)&sh[acc_ntt_elems];
     // tlwe occupies (k+1)*N uint32_t = (k+1)*N*4 bytes = (k+1)*N/4 double2
     // elements
@@ -1001,7 +1016,9 @@ __global__ __launch_bounds__(
     // [0, (k+2)*N): sh_acc_ntt for Accumulate (working buf + accum)
     // [(k+2)*N, (2k+3)*N): tlwe (TRLWE with (k+1)*N elements)
     // [(2k+3)*N, ...): tlwelvl0 (lvl0 TLWE)
+#ifndef USE_KEY_BUNDLE
     NTTValue* sh_acc_ntt = &sh[0];
+#endif
     TFHEpp::lvl1param::T* tlwe =
         (TFHEpp::lvl1param::T*)&sh[(lvl1param::k + 2) * lvl1param::n];
     lvl0param::T* tlwelvl0 =
@@ -1012,9 +1029,13 @@ __global__ __launch_bounds__(
     KeySwitch<lvl10param>(tlwelvl0, in, ksk);
     __syncthreads();
 
+#ifdef USE_KEY_BUNDLE
+    __BlindRotateKeyBundle__<lvl01param>(tlwe, tlwelvl0, mu, bk, one_trgsw_ntt,
+                                         xai_ntt, ntt);
+#else
     // test vector
     // acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
-    register uint32_t bar =
+    uint32_t bar =
         2 * TFHEpp::lvl1param::n -
         (tlwelvl0[TFHEpp::lvl0param::k * TFHEpp::lvl0param::n] >>
          (std::numeric_limits<typename TFHEpp::lvl0param::T>::digits - 1 -
@@ -1042,6 +1063,7 @@ __global__ __launch_bounds__(
                                ntt);
 #endif
     }
+#endif
     __syncthreads();
     for (int i = 0; i < (lvl1param::k + 1) * lvl1param::n; i++) {
         out[i] = tlwe[i];
@@ -2184,6 +2206,10 @@ void BootstrapTLWE2TRLWE(TFHEpp::lvl1param::T* const out,
     __BlindRotateGlobal__<TFHEpp::lvl01param>
         <<<1, NUM_THREAD4HOMGATE<TFHEpp::lvl1param>,
            MEM4HOMGATE<TFHEpp::lvl1param>, st>>>(out, in, mu, bk_ntts[gpuNum],
+#ifdef USE_KEY_BUNDLE
+                                                 one_trgsw_ntt_devs[gpuNum],
+                                                 xai_ntt_devs[gpuNum],
+#endif
                                                  *ntt_handlers[gpuNum]);
     CuCheckError();
 }
@@ -2206,7 +2232,11 @@ void SEIandBootstrap2TRLWE(TFHEpp::lvl1param::T* const out,
                          shmem_size);
     __SEIandBootstrap2TRLWE__<<<1, NUM_THREAD4HOMGATE<TFHEpp::lvl1param>,
                                 shmem_size, st>>>(
-        out, in, mu, bk_ntts[gpuNum], ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
+        out, in, mu, bk_ntts[gpuNum], ksk_devs[gpuNum],
+#ifdef USE_KEY_BUNDLE
+        one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+#endif
+        *ntt_handlers[gpuNum]);
     CuCheckError();
 }
 

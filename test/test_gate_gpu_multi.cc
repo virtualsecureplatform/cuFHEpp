@@ -33,15 +33,20 @@ using namespace cufhe;
 #include <vector>
 using namespace std;
 
-const int gpuNum = 2;
-
 int main()
 {
+    int gpuNum = 0;
+    cudaGetDeviceCount(&gpuNum);
+    if (gpuNum <= 0) {
+        cerr << "No CUDA devices visible." << endl;
+        return 1;
+    }
     SetGPUNum(gpuNum);
     cudaSetDevice(0);
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, 0);
     const uint32_t kNumSMs = prop.multiProcessorCount * gpuNum;
+    cout << "Number of visible GPUs:\t" << gpuNum << endl;
     cout << "Number of streams per GPU:\t" << prop.multiProcessorCount << endl;
     const uint32_t kNumTests = kNumSMs * 32;  // * 8;
     constexpr uint32_t kNumLevels = 10;  // Gate Types, Mux is counted as 2.
@@ -68,7 +73,7 @@ int main()
     cout << "------ Initilizating Data on GPU(s) ------" << endl;
     Initialize(ek);  // essential for GPU computing
 
-    Stream* st = new Stream[kNumSMs * gpuNum];
+    Stream* st = new Stream[kNumSMs];
     for (int i = 0; i < kNumSMs; i++) st[i].Create();
 
     Test("NAND", Nand<Param>, NandCheck, pt, ct, st, kNumTests, kNumSMs, *sk);

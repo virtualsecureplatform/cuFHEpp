@@ -78,7 +78,8 @@ __global__ void __LocalTRGSW2FFT__(NTTValue* const bk_fft,
 
 // Test kernel: Run Accumulate with given a_bar
 template <class P>
-__global__ void __TestAccumulate__(
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename P::targetP>)
+void __TestAccumulate__(
     typename P::targetP::T* const trlwe_out,
     const typename P::targetP::T* const trlwe_in,
     const NTTValue* const tgsw_fft,

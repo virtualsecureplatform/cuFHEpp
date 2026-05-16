@@ -13,7 +13,7 @@ if(USE_FFT AND NOT USE_GPU_FFT)
 endif()
 add_library(cufhe_gpu ${CUFHE_GPU_SOURCES})
 
-target_link_libraries(cufhe_gpu INTERFACE tfhe++)
+target_link_libraries(cufhe_gpu PUBLIC tfhe++)
 target_include_directories(cufhe_gpu
     PUBLIC ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/include

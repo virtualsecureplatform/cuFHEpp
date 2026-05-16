@@ -15,7 +15,7 @@ int main()
     cudaSetDevice(0);
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, 0);
-    const uint32_t kNumSMs = 800;
+    const uint32_t kNumSMs = prop.multiProcessorCount;
     const uint32_t kNumTests = 4096;
 
     TFHEpp::SecretKey* sk = new TFHEpp::SecretKey();
@@ -58,6 +58,23 @@ int main()
     }
     Synchronize();
 
+    size_t bootstrap_errors = 0;
+    for (int i = 0; i < kNumTests; i++) {
+        const bool decrypted = TFHEpp::trlweSymDecrypt<TFHEpp::lvl1param>(
+            trlweLv1[i].trlwehost, sk->key.get<TFHEpp::lvl1param>())[0];
+        if (p[i] != (decrypted ? 1 : 0)) {
+            if (bootstrap_errors < 5)
+                cerr << "bootstrap mismatch at " << i << ": expected "
+                     << static_cast<int>(p[i]) << ", got " << decrypted << endl;
+            bootstrap_errors++;
+        }
+    }
+    if (bootstrap_errors != 0) {
+        cerr << "Bootstrap verification failed: " << bootstrap_errors << " / "
+             << kNumTests << endl;
+        return 1;
+    }
+
     cout << "Done." << endl;
     cout << "------ Starting Benchmark ------" << endl;
     float et;
@@ -80,12 +97,22 @@ int main()
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
-    for (int i = 0; i < kNumTests; i++)
-        assert(p[i] == (TFHEpp::trlweSymDecrypt<TFHEpp::lvl1param>(
-                            trlweLv1Temp[i].trlwehost,
-                            sk->key.get<TFHEpp::lvl1param>())[0]
-                            ? 1
-                            : 0));
+    size_t refresh_errors = 0;
+    for (int i = 0; i < kNumTests; i++) {
+        const bool decrypted = TFHEpp::trlweSymDecrypt<TFHEpp::lvl1param>(
+            trlweLv1Temp[i].trlwehost, sk->key.get<TFHEpp::lvl1param>())[0];
+        if (p[i] != (decrypted ? 1 : 0)) {
+            if (refresh_errors < 5)
+                cerr << "refresh mismatch at " << i << ": expected "
+                     << static_cast<int>(p[i]) << ", got " << decrypted << endl;
+            refresh_errors++;
+        }
+    }
+    if (refresh_errors != 0) {
+        cerr << "Refresh verification failed: " << refresh_errors << " / "
+             << kNumTests << endl;
+        return 1;
+    }
 
     for (int i = 0; i < kNumSMs; i++) st[i].Destroy();
     delete[] st;
