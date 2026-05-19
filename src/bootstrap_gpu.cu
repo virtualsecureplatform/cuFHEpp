@@ -264,6 +264,7 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
                                            const int gpuNum)
 INST(TFHEpp::lvl01param);
 INST(TFHEpp::lvl02param);
+INST(TFHEpp::lvlh2param);
 #undef INST
 
 #ifdef USE_KEY_BUNDLE
@@ -325,6 +326,7 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
         const BootstrappingKey<P>& bk, const int gpuNum)
 INST(TFHEpp::lvl01param);
 INST(TFHEpp::lvl02param);
+INST(TFHEpp::lvlh2param);
 #undef INST
 #endif  // USE_KEY_BUNDLE
 

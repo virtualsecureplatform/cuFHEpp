@@ -66,3 +66,20 @@ add_executable(test_fft_perf test_fft_perf.cu)
 target_include_directories(test_fft_perf PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 set_target_properties(test_fft_perf PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_fft_perf cufhe_gpu ${CUDA_LIBRARIES})
+
+add_executable(test_aes_decrypt_gpu
+    test_aes_decrypt_gpu.cu
+    ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/AES/src/AES.cpp)
+target_include_directories(test_aes_decrypt_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+set_target_properties(test_aes_decrypt_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+target_link_libraries(test_aes_decrypt_gpu cufhe_gpu ${CUDA_LIBRARIES})
+
+add_executable(test_ascon_xof_gpu
+    test_ascon_xof_gpu.cu
+    ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/ascon-c/crypto_hash/asconxof128/ref/hash.c)
+target_include_directories(test_ascon_xof_gpu
+    PRIVATE
+    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+    ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/ascon-c/tests)
+set_target_properties(test_ascon_xof_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+target_link_libraries(test_ascon_xof_gpu cufhe_gpu ${CUDA_LIBRARIES})

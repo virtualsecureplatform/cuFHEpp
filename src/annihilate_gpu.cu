@@ -361,6 +361,91 @@ void __EvalAutoKernel__(typename P::T* const out,
 }
 
 template <class P>
+__global__ void __CopyTRLWEBatch__(typename P::T* const out,
+                                   const size_t out_stride,
+                                   const typename P::T* const in,
+                                   const size_t in_stride,
+                                   const size_t batch_count)
+{
+    const size_t batch = blockIdx.x;
+    if (batch >= batch_count) return;
+
+    const uint32_t tid = ThisThreadRankInBlock();
+    constexpr uint32_t total = (P::k + 1) * P::n;
+    const uint32_t bdim = ThisBlockSize();
+    typename P::T* const batch_out = out + batch * out_stride;
+    const typename P::T* const batch_in = in + batch * in_stride;
+    for (uint32_t i = tid; i < total; i += bdim) batch_out[i] = batch_in[i];
+}
+
+template <class P>
+__global__ void __DivideTRLWEBy2Batch__(typename P::T* const trlwe,
+                                        const size_t stride,
+                                        const size_t batch_count)
+{
+    const size_t batch = blockIdx.x;
+    if (batch >= batch_count) return;
+
+    const uint32_t tid = ThisThreadRankInBlock();
+    constexpr uint32_t total = (P::k + 1) * P::n;
+    const uint32_t bdim = ThisBlockSize();
+    typename P::T* const batch_trlwe = trlwe + batch * stride;
+    for (uint32_t i = tid; i < total; i += bdim) batch_trlwe[i] >>= 1;
+}
+
+template <class P>
+__global__ void __TRLWEAddInPlaceBatch__(typename P::T* const out,
+                                         const size_t out_stride,
+                                         const typename P::T* const addend,
+                                         const size_t addend_stride,
+                                         const size_t batch_count)
+{
+    const size_t batch = blockIdx.x;
+    if (batch >= batch_count) return;
+
+    const uint32_t tid = ThisThreadRankInBlock();
+    constexpr uint32_t total = (P::k + 1) * P::n;
+    const uint32_t bdim = ThisBlockSize();
+    typename P::T* const batch_out = out + batch * out_stride;
+    const typename P::T* const batch_addend = addend + batch * addend_stride;
+    for (uint32_t i = tid; i < total; i += bdim)
+        batch_out[i] += batch_addend[i];
+}
+
+template <class P>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>)
+void __EvalAutoBatchKernel__(typename P::T* const out,
+                             const size_t out_stride,
+                             const typename P::T* const in,
+                             const size_t in_stride, const uint32_t d,
+                             const NTTValue* const evalautokey,
+                             const CuNTTHandler<P::n> ntt,
+                             const size_t batch_count)
+{
+    const size_t batch = blockIdx.x;
+    if (batch >= batch_count) return;
+
+    static_assert(P::k == 1,
+                  "CUDA EvalAuto currently supports GLWE dimension 1");
+    extern __shared__ char dyn_sh[];
+    constexpr size_t fft_bytes = MEM4HOMGATE<P>;
+    auto* sh_acc_ntt = reinterpret_cast<NTTValue*>(dyn_sh);
+    auto* auto_a = reinterpret_cast<typename P::T*>(dyn_sh + fft_bytes);
+    auto* auto_b = auto_a + P::n;
+
+    const typename P::T* const batch_in = in + batch * in_stride;
+    typename P::T* const batch_out = out + batch * out_stride;
+    __AutomorphismPolynomial__<P>(auto_a, batch_in, d);
+    __AutomorphismPolynomial__<P>(auto_b, batch_in + P::n, d);
+    __syncthreads();
+
+#if defined(USE_FFT)
+    __ExternalProductPolyHalfTRGSWFFT__<P>(
+        batch_out, auto_a, auto_b, evalautokey, sh_acc_ntt, ntt);
+#endif
+}
+
+template <class P>
 void AnnihilateKeyPolynomialGen(AnnihilateKeyPolynomial<P>& ahk,
                                 const TFHEpp::Key<P>& key)
 {
@@ -444,9 +529,9 @@ void DeleteAnnihilateKey(const int gpuNum)
 }
 
 template <class P>
-void AnnihilateKeySwitching(typename P::T* const out,
-                            const typename P::T* const in,
-                            const cudaStream_t st, const int gpuNum)
+void AnnihilateKeySwitchingWithWorkspace(
+    typename P::T* const out, const typename P::T* const in,
+    typename P::T* const evaledauto, const cudaStream_t st, const int gpuNum)
 {
     static_assert(P::k == 1,
                   "CUDA annihilate currently supports GLWE dimension 1");
@@ -456,16 +541,18 @@ void AnnihilateKeySwitching(typename P::T* const out,
     auto* const handler = AnnihilateHandler<P>(gpuNum);
 
     constexpr size_t trlwe_bytes = (P::k + 1) * P::n * sizeof(typename P::T);
-    typename P::T* evaledauto = nullptr;
-    CuSafeCall(cudaMalloc(&evaledauto, trlwe_bytes));
     CuSafeCall(cudaMemcpyAsync(out, in, trlwe_bytes, cudaMemcpyDeviceToDevice,
                                st));
 
     constexpr size_t evalauto_key_elems = EvalAutoKeyElements<P>();
     constexpr size_t shmem = MEM4HOMGATE<P> + 2 * P::n * sizeof(typename P::T);
-    CuSafeCall(cudaFuncSetAttribute(__EvalAutoKernel__<P>,
-                                    cudaFuncAttributeMaxDynamicSharedMemorySize,
-                                    shmem));
+    static bool evalauto_attribute_set = false;
+    if (!evalauto_attribute_set) {
+        CuSafeCall(cudaFuncSetAttribute(
+            __EvalAutoKernel__<P>,
+            cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        evalauto_attribute_set = true;
+    }
 
     for (uint32_t bit = 0; bit < P::nbit; bit++) {
         __DivideTRLWEBy2__<P><<<1, NUM_THREAD4HOMGATE<P>, 0, st>>>(out);
@@ -477,6 +564,63 @@ void AnnihilateKeySwitching(typename P::T* const out,
     }
 
     CuCheckError();
+}
+
+template <class P>
+void AnnihilateKeySwitchingBatchWithWorkspace(
+    typename P::T* const out, const size_t out_stride,
+    const typename P::T* const in, const size_t in_stride,
+    typename P::T* const evaledauto, const size_t evaledauto_stride,
+    const size_t batch_count, const cudaStream_t st, const int gpuNum)
+{
+    static_assert(P::k == 1,
+                  "CUDA annihilate currently supports GLWE dimension 1");
+    if (batch_count == 0) return;
+
+    cudaSetDevice(gpuNum);
+    auto& storage = AnnihilateKeyStorage<P>();
+    const NTTValue* const ahk = storage[gpuNum];
+    auto* const handler = AnnihilateHandler<P>(gpuNum);
+
+    constexpr size_t evalauto_key_elems = EvalAutoKeyElements<P>();
+    constexpr size_t shmem = MEM4HOMGATE<P> + 2 * P::n * sizeof(typename P::T);
+    static bool evalauto_batch_attribute_set = false;
+    if (!evalauto_batch_attribute_set) {
+        CuSafeCall(cudaFuncSetAttribute(
+            __EvalAutoBatchKernel__<P>,
+            cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        evalauto_batch_attribute_set = true;
+    }
+
+    __CopyTRLWEBatch__<P>
+        <<<batch_count, NUM_THREAD4HOMGATE<P>, 0, st>>>(
+            out, out_stride, in, in_stride, batch_count);
+    for (uint32_t bit = 0; bit < P::nbit; bit++) {
+        __DivideTRLWEBy2Batch__<P>
+            <<<batch_count, NUM_THREAD4HOMGATE<P>, 0, st>>>(
+                out, out_stride, batch_count);
+        const uint32_t d = (1U << (bit + 1)) + 1U;
+        __EvalAutoBatchKernel__<P>
+            <<<batch_count, NUM_THREAD4HOMGATE<P>, shmem, st>>>(
+                evaledauto, evaledauto_stride, out, out_stride, d,
+                ahk + bit * evalauto_key_elems, *handler, batch_count);
+        __TRLWEAddInPlaceBatch__<P>
+            <<<batch_count, NUM_THREAD4HOMGATE<P>, 0, st>>>(
+                out, out_stride, evaledauto, evaledauto_stride, batch_count);
+    }
+
+    CuCheckError();
+}
+
+template <class P>
+void AnnihilateKeySwitching(typename P::T* const out,
+                            const typename P::T* const in,
+                            const cudaStream_t st, const int gpuNum)
+{
+    constexpr size_t trlwe_bytes = (P::k + 1) * P::n * sizeof(typename P::T);
+    typename P::T* evaledauto = nullptr;
+    CuSafeCall(cudaMalloc(&evaledauto, trlwe_bytes));
+    AnnihilateKeySwitchingWithWorkspace<P>(out, in, evaledauto, st, gpuNum);
     CuSafeCall(cudaFree(evaledauto));
 }
 
@@ -488,6 +632,13 @@ void AnnihilateKeySwitching(typename P::T* const out,
     template void AnnihilateKeyPolynomialToDevice<P>(                        \
         const AnnihilateKeyPolynomial<P>&, const int);                       \
     template void DeleteAnnihilateKey<P>(const int);                         \
+    template void AnnihilateKeySwitchingWithWorkspace<P>(                    \
+        typename P::T* const, const typename P::T* const, typename P::T* const, \
+        const cudaStream_t, const int);                                       \
+    template void AnnihilateKeySwitchingBatchWithWorkspace<P>(               \
+        typename P::T* const, const size_t, const typename P::T* const,       \
+        const size_t, typename P::T* const, const size_t, const size_t,       \
+        const cudaStream_t, const int);                                      \
     template void AnnihilateKeySwitching<P>(                                 \
         typename P::T* const, const typename P::T* const, const cudaStream_t, \
         const int)
