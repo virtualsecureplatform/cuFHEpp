@@ -14,6 +14,10 @@ if(USE_FFT AND NOT USE_GPU_FFT)
         ${PROJECT_SOURCE_DIR}/thirdparties/tfhe-rs-fft/fft_negacyclic.cu)
 endif()
 add_library(cufhe_gpu ${CUFHE_GPU_SOURCES})
+if(USE_AVX512)
+    target_compile_options(cufhe_gpu PRIVATE
+        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-mavx512f>)
+endif()
 
 target_link_libraries(cufhe_gpu PUBLIC tfhe++)
 target_include_directories(cufhe_gpu
