@@ -1,8 +1,6 @@
 set(CUFHE_GPU_SOURCES
     bootstrap_gpu.cu
     annihilate_gpu.cu
-    aes_gpu.cu
-    ascon_gpu.cu
     circuitbootstrapping_gpu.cu
     cufhe_gates_gpu.cu
     cufhe_gpu.cu

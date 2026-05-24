@@ -12,6 +12,7 @@
 #include <include/error_gpu.cuh>
 #include <include/gatebootstrapping_gpu.cuh>
 #include <include/keyswitch_gpu.cuh>
+#include <include/ntt_small_modulus.cuh>
 #include <key.hpp>
 #include <trgsw.hpp>
 
@@ -85,6 +86,7 @@ NTTValue* BootstrappingKeyStorage(const int gpuNum)
         return bk_ntts[gpuNum];
 }
 
+#ifdef USE_KEY_BUNDLE
 template <class P>
 NTTValue* OneTRGSWStorage(const int gpuNum)
 {
@@ -102,6 +104,7 @@ NTTValue* XaiStorage(const int gpuNum)
     else
         return xai_ntt_devs[gpuNum];
 }
+#endif
 
 template <class iksP>
 typename iksP::targetP::T* KeySwitchingKeyStorage(const int gpuNum)
