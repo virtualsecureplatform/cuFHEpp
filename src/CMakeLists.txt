@@ -5,6 +5,8 @@ set(CUFHE_GPU_SOURCES
     cufhe_gates_gpu.cu
     cufhe_gpu.cu
     keyswitch_gpu.cu
+    aes_gpu.cu
+    ascon_gpu.cu
     ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
 )
 if(USE_FFT AND NOT USE_GPU_FFT)
@@ -32,7 +34,6 @@ if(USE_FFT AND NOT USE_GPU_FFT)
         PUBLIC ${PROJECT_SOURCE_DIR}/thirdparties/tfhe-rs-fft)
 endif()
 set_target_properties(cufhe_gpu PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-set_target_properties(cufhe_gpu PROPERTIES CUDA_ARCHITECTURES 80) #A100
 
 # Enable CUDA separable compilation for __device__ variable linking across TUs
 set_target_properties(cufhe_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

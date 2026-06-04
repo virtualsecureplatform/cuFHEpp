@@ -77,7 +77,7 @@ NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) wi
 | NOT / COPY | ~1.1 ms | ~0.01 ms/gate |
 
 ### System Requirements
-**The library has been tested on Ubuntu Desktop 24.04 & NVIDIA A100 only.**
+**The library has been tested on Ubuntu Desktop 24.04 with NVIDIA A100 and NVIDIA GeForce RTX 4070.**
 GPU support requires NVIDIA Driver and NVIDIA CUDA Toolkit.
 
 ### Installation (Linux)
@@ -88,6 +88,9 @@ cmake -B build -DENABLE_TEST=ON
 cd build
 make
 ```
+
+The default CUDA architecture list is `80;89`, covering A100 and RTX 4070.
+For an RTX 4070-only build, pass `-DCMAKE_CUDA_ARCHITECTURES=89`.
 
 ### User Manual
 See files in `test/` as examples. The library uses [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) types for key generation, encryption, and decryption. cuFHEpp handles the GPU-accelerated gate evaluation.

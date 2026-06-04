@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.18)
+
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES AND NOT DEFINED ENV{CUDAARCHS})
+  set(CMAKE_CUDA_ARCHITECTURES "80;89" CACHE STRING
+      "CUDA architectures to build for. 80 supports A100; 89 supports RTX 4070.")
+endif()
+
 project(cuFHE LANGUAGES CUDA CXX C)
 
 set(CMAKE_CXX_STANDARD 20)

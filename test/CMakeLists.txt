@@ -30,12 +30,12 @@ target_link_libraries(test_accumulate_diag cufhe_gpu ${CUDA_LIBRARIES})
 
 add_executable(test_annihilate_gpu test_annihilate_gpu.cu)
 target_include_directories(test_annihilate_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-set_target_properties(test_annihilate_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+set_target_properties(test_annihilate_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_annihilate_gpu cufhe_gpu ${CUDA_LIBRARIES})
 
 add_executable(test_circuitbootstrapping_gpu test_circuitbootstrapping_gpu.cu)
 target_include_directories(test_circuitbootstrapping_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-set_target_properties(test_circuitbootstrapping_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+set_target_properties(test_circuitbootstrapping_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_circuitbootstrapping_gpu cufhe_gpu ${CUDA_LIBRARIES})
 
 add_executable(test_keyswitch_diag test_keyswitch_diag.cu)
@@ -54,12 +54,12 @@ target_link_libraries(test_compare_cpu_gpu cufhe_gpu ${CUDA_LIBRARIES})
 
 add_executable(test_single_cmux test_single_cmux.cu)
 target_include_directories(test_single_cmux PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-set_target_properties(test_single_cmux PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+set_target_properties(test_single_cmux PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_single_cmux cufhe_gpu ${CUDA_LIBRARIES})
 
 add_executable(test_blind_rotate_compare test_blind_rotate_compare.cu)
 target_include_directories(test_blind_rotate_compare PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-set_target_properties(test_blind_rotate_compare PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+set_target_properties(test_blind_rotate_compare PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_blind_rotate_compare cufhe_gpu ${CUDA_LIBRARIES})
 
 add_executable(test_fft_perf test_fft_perf.cu)
@@ -71,7 +71,7 @@ add_executable(test_aes_decrypt_gpu
     test_aes_decrypt_gpu.cu
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/AES/src/AES.cpp)
 target_include_directories(test_aes_decrypt_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-set_target_properties(test_aes_decrypt_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+set_target_properties(test_aes_decrypt_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_aes_decrypt_gpu cufhe_gpu ${CUDA_LIBRARIES})
 
 add_executable(test_ascon_xof_gpu
@@ -81,5 +81,5 @@ target_include_directories(test_ascon_xof_gpu
     PRIVATE
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/ascon-c/tests)
-set_target_properties(test_ascon_xof_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 80)
+set_target_properties(test_ascon_xof_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(test_ascon_xof_gpu cufhe_gpu ${CUDA_LIBRARIES})
