@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 20)
 find_package(CUDAToolkit REQUIRED)
 set(CMAKE_CUDA_FLAGS "--ptxas-options=-v")
 
+option(USE_BLAKE3 "Use blake3 as CSPRNG" ON)
 option(USE_RANDEN "Use randen as CSPRNG" OFF)
 option(USE_80BIT_SECURITY "Use 80bit security parameter(faster)" OFF)
 option(USE_CGGI19 "Use the parameter set proposed in CGGI19" OFF)
@@ -18,8 +19,13 @@ option(USE_CONCRETE "Use the parameter set proposed in CONCRETE" OFF)
 option(USE_KEY_BUNDLE "Use key bundle algorithm (2-bit multi-bit bootstrapping)" ON)
 option(USE_FFT "Use negacyclic FFT instead of NTT (tfhe-rs style)" ON)
 
+if(USE_BLAKE3 AND USE_RANDEN)
+  message(FATAL_ERROR "USE_BLAKE3 and USE_RANDEN are mutually exclusive")
+endif()
 
-if(USE_RANDEN)
+if(USE_BLAKE3)
+  add_compile_definitions(USE_BLAKE3)
+elseif(USE_RANDEN)
   add_compile_definitions(USE_RANDEN)
 endif()
 
