@@ -1,9 +1,8 @@
 /**
- * Goldilocks-prime NTT implementation for cuFHE
- * Host-side initialization functions
+ * Small-modulus NTT host-side initialization functions.
  *
- * Modulus: P = 2^64 - 2^32 + 1
- * P - 1 is divisible by 2^32, so lvl1 and lvl2 have primitive 2N-th roots.
+ * lvl1 uses P = 2147473409. lvl02 uses Goldilocks
+ * P = 2^64 - 2^32 + 1.
  */
 
 #include <cmath>
@@ -14,6 +13,9 @@
 #include <vector>
 
 namespace cufhe {
+
+__constant__ uint32_t d_const_forward_root_31[TFHEpp::lvl1param::n];
+__constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
 
 // Host-side storage for NTT parameters per GPU
 std::vector<SmallNTTParams> g_small_ntt_params;
@@ -33,43 +35,80 @@ int bitreverse(int index, int n_power)
     return res;
 }
 
+template <uint32_t length>
 SmallNTTValue mod_exp(SmallNTTValue base, uint64_t exp)
 {
     SmallNTTValue result = 1;
-    base = small_mod_normalize(base);
+    base = small_mod_normalize<length>(base);
     while (exp > 0) {
         if (exp & 1) {
-            result = small_mod_mult(result, base);
+            result = small_mod_mult<length>(result, base);
         }
         exp >>= 1;
-        base = small_mod_mult(base, base);
+        base = small_mod_mult<length>(base, base);
     }
     return result;
 }
 
+template <uint32_t length>
 SmallNTTValue mod_inv(SmallNTTValue a)
 {
-    return mod_exp(a, small_ntt::P - 2);
+    return mod_exp<length>(a, SmallNTTModulus<length>::P - 2);
 }
 
 /**
  * Find a primitive 2N-th root of unity for negacyclic NTT
  */
-SmallNTTValue find_primitive_root(int log_n)
+template <uint32_t length>
+SmallNTTValue find_primitive_root()
 {
-    if (log_n < 1 || log_n + 1 > 32) {
-        throw std::runtime_error("Unsupported Goldilocks NTT length");
+    constexpr uint32_t log_n = SmallLog2<length>();
+
+    if constexpr (length == TFHEpp::lvl1param::n) {
+        constexpr uint32_t p_minus_1 = small_ntt31::P_MINUS_ONE;
+        constexpr uint32_t two_n = 1U << (log_n + 1);
+
+        uint32_t g = 3;
+        while (true) {
+            bool is_generator = true;
+            if (mod_exp<length>(g, p_minus_1 / 2) == 1) is_generator = false;
+            if (mod_exp<length>(g, p_minus_1 / small_ntt31::K) == 1)
+                is_generator = false;
+
+            if (is_generator) break;
+            g++;
+            if (g > 1000) {
+                throw std::runtime_error(
+                    "Could not find generator for lvl1 small modulus");
+            }
+        }
+
+        SmallNTTValue psi = mod_exp<length>(g, p_minus_1 / two_n);
+        SmallNTTValue psi_N = mod_exp<length>(psi, 1U << log_n);
+        if (psi_N != small_ntt31::P_MINUS_ONE) {
+            throw std::runtime_error(
+                "Computed lvl1 root does not satisfy psi^N = -1");
+        }
+        return psi;
     }
+    else {
+        static_assert(length == TFHEpp::lvl2param::n,
+                      "Unsupported small NTT length");
+        if (log_n < 1 || log_n + 1 > 32) {
+            throw std::runtime_error("Unsupported Goldilocks NTT length");
+        }
 
-    const uint64_t exponent = 1ULL << (32 - (log_n + 1));
-    SmallNTTValue psi = mod_exp(small_ntt::ROOT_2_32, exponent);
+        const uint64_t exponent = 1ULL << (32 - (log_n + 1));
+        SmallNTTValue psi = mod_exp<length>(small_ntt::ROOT_2_32, exponent);
 
-    SmallNTTValue psi_N = mod_exp(psi, 1ULL << log_n);
-    if (psi_N != small_ntt::P_MINUS_ONE) {
-        throw std::runtime_error("Computed root does not satisfy psi^N = -1");
+        SmallNTTValue psi_N = mod_exp<length>(psi, 1ULL << log_n);
+        if (psi_N != small_ntt::P_MINUS_ONE) {
+            throw std::runtime_error(
+                "Computed lvl2 root does not satisfy psi^N = -1");
+        }
+
+        return psi;
     }
-
-    return psi;
 }
 
 struct SmallRootTableState {
@@ -90,7 +129,7 @@ SmallRootTableState& RootTablesForLength()
     }
     else {
         static_assert(length == TFHEpp::lvl1param::n,
-                      "Unsupported Goldilocks NTT length");
+                      "Unsupported small NTT length");
         return g_small_tables_1024;
     }
 }
@@ -103,26 +142,28 @@ std::vector<SmallNTTParams>& ParamsForLength()
     }
     else {
         static_assert(length == TFHEpp::lvl1param::n,
-                      "Unsupported Goldilocks NTT length");
+                      "Unsupported small NTT length");
         return g_small_ntt_params;
     }
 }
 
 /**
- * Generate NTT root tables for the Goldilocks modulus.
+ * Generate NTT root tables for the selected modulus.
  */
-void GenerateSmallRootTables(int log_n, SmallRootTableState& state)
+template <uint32_t length>
+void GenerateSmallRootTables(SmallRootTableState& state)
 {
+    constexpr int log_n = SmallLog2<length>();
     if (state.log_n == log_n && !state.forward_table.empty()) {
         return;  // Already generated
     }
 
-    const int n = 1 << log_n;
+    constexpr int n = length;
 
-    SmallNTTValue psi = find_primitive_root(log_n);
-    SmallNTTValue psi_inv = mod_inv(psi);
+    SmallNTTValue psi = find_primitive_root<length>();
+    SmallNTTValue psi_inv = mod_inv<length>(psi);
 
-    state.n_inverse = mod_inv(static_cast<SmallNTTValue>(n));
+    state.n_inverse = mod_inv<length>(static_cast<SmallNTTValue>(n));
 
     // Generate forward root table: psi^0, psi^1, ..., psi^(n-1) in bit-reversed
     // order For Cooley-Tukey, we need powers of psi^2 (omega = psi^2 is the
@@ -130,7 +171,8 @@ void GenerateSmallRootTables(int log_n, SmallRootTableState& state)
     state.forward_table.resize(n);
     state.forward_table[0] = 1;
     for (int i = 1; i < n; i++) {
-        state.forward_table[i] = small_mod_mult(state.forward_table[i - 1], psi);
+        state.forward_table[i] =
+            small_mod_mult<length>(state.forward_table[i - 1], psi);
     }
 
     // Generate inverse root table: psi_inv^0, psi_inv^1, ...
@@ -138,7 +180,7 @@ void GenerateSmallRootTables(int log_n, SmallRootTableState& state)
     state.inverse_table[0] = 1;
     for (int i = 1; i < n; i++) {
         state.inverse_table[i] =
-            small_mod_mult(state.inverse_table[i - 1], psi_inv);
+            small_mod_mult<length>(state.inverse_table[i - 1], psi_inv);
     }
 
     // Convert to bit-reversed order for NTT algorithm
@@ -212,8 +254,7 @@ static void GenerateFFNTTables(int N,
 template <uint32_t length>
 void CuSmallNTTHandler<length>::Create()
 {
-    constexpr int log_n = kLogLength;
-    GenerateSmallRootTables(log_n, RootTablesForLength<length>());
+    GenerateSmallRootTables<length>(RootTablesForLength<length>());
 }
 
 template <uint32_t length>
@@ -268,6 +309,23 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
         CuSafeCall(cudaMemcpy(params.inverse_root, tables.inverse_table.data(),
                               sizeof(SmallNTTValue) * kLength,
                               cudaMemcpyHostToDevice));
+
+        if constexpr (length == TFHEpp::lvl1param::n) {
+            std::vector<uint32_t> forward_root_31(kLength);
+            std::vector<uint32_t> inverse_root_31(kLength);
+            for (uint32_t i = 0; i < kLength; i++) {
+                forward_root_31[i] =
+                    static_cast<uint32_t>(tables.forward_table[i]);
+                inverse_root_31[i] =
+                    static_cast<uint32_t>(tables.inverse_table[i]);
+            }
+            CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root_31,
+                                          forward_root_31.data(),
+                                          sizeof(uint32_t) * kLength));
+            CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root_31,
+                                          inverse_root_31.data(),
+                                          sizeof(uint32_t) * kLength));
+        }
 
         params.n_inverse = tables.n_inverse;
         params.initialized = true;
@@ -889,14 +947,15 @@ __global__ void __ComputeXaiNTT__(NTTValue* const xai_ntt,
     // Set poly = (X^a - 1) mod (X^N + 1)
     if (tid == 0) {
         // Start with -1 at constant term
-        poly[0] = small_ntt::P_MINUS_ONE;  // -1 mod P
+        poly[0] = SmallNTTModulus<N>::P_MINUS_ONE;  // -1 mod P
         if (!negate) {
             // a < N: add 1 to coefficient a_mod
-            poly[a_mod] = small_mod_add(poly[a_mod], 1);
+            poly[a_mod] = small_mod_add<N>(poly[a_mod], 1);
         }
         else {
             // a >= N: subtract 1 from coefficient a_mod
-            poly[a_mod] = small_mod_add(poly[a_mod], small_ntt::P_MINUS_ONE);
+            poly[a_mod] =
+                small_mod_add<N>(poly[a_mod], SmallNTTModulus<N>::P_MINUS_ONE);
         }
     }
     __syncthreads();
@@ -970,7 +1029,7 @@ void InitializeOneTRGSWNTTForLength(std::vector<NTTValue*>& storage,
         for (uint32_t digit = 0; digit < l; digit++) {
             uint32_t row = j * l + digit;
             uint32_t poly_idx = row * (k + 1) + j;
-            host_polys[poly_idx * N] = torus_to_ntt_mod(h[digit]);
+            host_polys[poly_idx * N] = torus_to_ntt_mod<N>(h[digit]);
         }
     }
 

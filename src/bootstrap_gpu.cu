@@ -422,7 +422,7 @@ __global__ void __TRGSW2NTT__(NTTValue* const bk_ntt,
     const uint32_t bdim = blockDim.x;
     // Load and convert each element: Torus -> NTT mod
     for (int i = tid; i < P::n; i += bdim) {
-        sh_temp[i] = torus_to_ntt_mod(bk[index + i]);
+        sh_temp[i] = torus_to_ntt_mod<P::n>(bk[index + i]);
     }
     __syncthreads();
 
@@ -947,7 +947,7 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
                            (digit + 1) * lvl1param::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = signed_int_to_ntt_mod(digit_val);
+                    sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
                 }
             }
             __syncthreads();
@@ -977,8 +977,8 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
                                        << lvl1param::nbit) +
                                       i]);
                         sh_accum[out_k * N + i] =
-                            small_mod_add(sh_accum[out_k * N + i],
-                                          small_mod_mult(ntt_val, bk_val));
+                            small_mod_add<N>(sh_accum[out_k * N + i],
+                                             small_mod_mult<N>(ntt_val, bk_val));
                     }
                 }
             }
@@ -1007,7 +1007,8 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
                 out[k_idx * N + i] =
-                    trlwe0[k_idx * N + i] + ntt_mod_to_torus32(sh_ntt_buf[i]);
+                    trlwe0[k_idx * N + i] +
+                    ntt_mod_to_torus32<N>(sh_ntt_buf[i]);
             }
         }
         __syncthreads();

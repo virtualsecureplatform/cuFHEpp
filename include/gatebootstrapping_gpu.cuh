@@ -455,7 +455,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                            (digit + 1) * P::targetP::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = signed_int_to_ntt_mod(digit_val);
+                    sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
                 }
             }
             __syncthreads();
@@ -487,8 +487,8 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                                        << P::targetP::nbit) +
                                       i]);
                         sh_accum[out_k * N + i] =
-                            small_mod_add(sh_accum[out_k * N + i],
-                                          small_mod_mult(ntt_val, bk_val));
+                            small_mod_add<N>(sh_accum[out_k * N + i],
+                                             small_mod_mult<N>(ntt_val, bk_val));
                     }
                 }
             }
@@ -519,12 +519,12 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                               64) {
                     trlwe[k_idx * N + i] +=
                         static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus64(sh_ntt_buf[i]));
+                            ntt_mod_to_torus64<N>(sh_ntt_buf[i]));
                 }
                 else {
                     trlwe[k_idx * N + i] +=
                         static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus32(sh_ntt_buf[i]));
+                            ntt_mod_to_torus32<N>(sh_ntt_buf[i]));
                 }
             }
         }
@@ -941,7 +941,7 @@ __device__ inline void AccumulateKeyBundle(
                            (digit + 1) * P::targetP::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = signed_int_to_ntt_mod(digit_val);
+                    sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
                 }
             }
             __syncthreads();
@@ -984,17 +984,18 @@ __device__ inline void AccumulateKeyBundle(
 
                         // combined = one + bk2*xai1 + bk1*xai0 + bk0*xai01
                         NTTValue combined = one_val;
-                        combined = small_mod_add(combined,
-                                                 small_mod_mult(bk2_val, xai1));
-                        combined = small_mod_add(combined,
-                                                 small_mod_mult(bk1_val, xai0));
-                        combined = small_mod_add(
-                            combined, small_mod_mult(bk0_val, xai01));
+                        combined = small_mod_add<N>(
+                            combined, small_mod_mult<N>(bk2_val, xai1));
+                        combined = small_mod_add<N>(
+                            combined, small_mod_mult<N>(bk1_val, xai0));
+                        combined = small_mod_add<N>(
+                            combined, small_mod_mult<N>(bk0_val, xai01));
 
                         // Accumulate: decomp_ntt * combined
                         sh_accum[out_k * N + i] =
-                            small_mod_add(sh_accum[out_k * N + i],
-                                          small_mod_mult(ntt_val, combined));
+                            small_mod_add<N>(
+                                sh_accum[out_k * N + i],
+                                small_mod_mult<N>(ntt_val, combined));
                     }
                 }
             }
@@ -1022,12 +1023,12 @@ __device__ inline void AccumulateKeyBundle(
                               64) {
                     trlwe[k_idx * N + i] =
                         static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus64(sh_ntt_buf[i]));
+                            ntt_mod_to_torus64<N>(sh_ntt_buf[i]));
                 }
                 else {
                     trlwe[k_idx * N + i] =
                         static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus32(sh_ntt_buf[i]));
+                            ntt_mod_to_torus32<N>(sh_ntt_buf[i]));
                 }
             }
         }
