@@ -44,7 +44,7 @@ cuFHETRLWElvl1::~cuFHETRLWElvl1()
 
 cuFHETRGSWNTTlvl1::cuFHETRGSWNTTlvl1()
 {
-    // Device stores NTTValue (uint32_t), not the host TRGSWNTT type
+    // Device stores NTTValue, not the host TRGSWNTT type.
     constexpr size_t dev_size = kNumElements * sizeof(NTTValue);
     trgswdevices.resize(_gpuNum);
     for (int i = 0; i < _gpuNum; i++) {

@@ -29,7 +29,6 @@
 #include <include/ntt_small_modulus.cuh>
 #include <include/utils_gpu.cuh>
 #include <limits>
-#include <stdexcept>
 #include <vector>
 
 namespace cufhe {
@@ -43,17 +42,6 @@ vector<CuNTTHandler<>*> ntt_handlers;
 // lvl02 storage (lvl0 -> lvl2 bootstrapping)
 vector<NTTValue*> bk_ntts_lvl02;
 vector<CuNTTHandler<TFHEpp::lvl2param::n>*> ntt_handlers_lvl02;
-
-namespace {
-
-[[noreturn]] void ThrowUnsupportedLvl02SmallNTT()
-{
-    throw std::runtime_error(
-        "lvl02 is unsupported by the small-modulus NTT backend; use an FFT "
-        "backend for the 2048-point lvl02 ring");
-}
-
-}  // namespace
 
 #ifdef USE_FFT
 
@@ -434,13 +422,13 @@ __global__ void __TRGSW2NTT__(NTTValue* const bk_ntt,
     const uint32_t bdim = blockDim.x;
     // Load and convert each element: Torus -> NTT mod
     for (int i = tid; i < P::n; i += bdim) {
-        sh_temp[i] = torus32_to_ntt_mod(bk[index + i]);
+        sh_temp[i] = torus_to_ntt_mod(bk[index + i]);
     }
     __syncthreads();
+
     // Forward NTT
-    if constexpr (P::n == 1024) {
-        SmallForwardNTT32_1024(sh_temp, ntt.forward_root_, tid);
-    }
+    SmallForwardNTT<P::nbit>(sh_temp, ntt.forward_root_, tid);
+
     // Store result
     for (int i = tid; i < P::n; i += bdim) {
         bk_ntt[index + i] = sh_temp[i];
@@ -489,38 +477,47 @@ void InitializeNTThandlers(const int gpuNum)
 template <class P>
 void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
 {
-    if constexpr (P::targetP::n != TFHEpp::lvl1param::n) {
-        (void)bk;
-        (void)gpuNum;
-        ThrowUnsupportedLvl02SmallNTT();
-    }
-    else {
-        bk_ntts.resize(gpuNum);
-        for (int i = 0; i < gpuNum; i++) {
-            cudaSetDevice(i);
+    constexpr uint32_t N = P::targetP::n;
 
-            cudaMalloc((void**)&bk_ntts[i],
-                       sizeof(NTTValue) * P::domainP::n *
-                           (P::targetP::k + 1) * P::targetP::l *
-                           (P::targetP::k + 1) * P::targetP::n);
-
-            typename P::targetP::T* d_bk;
-            cudaMalloc((void**)&d_bk, sizeof(bk));
-            cudaMemcpy(d_bk, bk.data(), sizeof(bk), cudaMemcpyHostToDevice);
-
-            cudaDeviceSynchronize();
-            CuCheckError();
-
-            dim3 grid(P::targetP::k + 1,
-                      (P::targetP::k + 1) * P::targetP::l, P::domainP::n);
-            dim3 block(P::targetP::n >> NTT_THREAD_UNITBIT);
-            __TRGSW2NTT__<<<grid, block>>>(bk_ntts[i], d_bk,
-                                           *ntt_handlers[i]);
-            cudaDeviceSynchronize();
-            CuCheckError();
-
-            cudaFree(d_bk);
+    auto& bk_storage = []() -> vector<NTTValue*>& {
+        if constexpr (N == TFHEpp::lvl2param::n) {
+            return bk_ntts_lvl02;
         }
+        else {
+            return bk_ntts;
+        }
+    }();
+
+    bk_storage.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+
+        cudaMalloc((void**)&bk_storage[i],
+                   sizeof(NTTValue) * P::domainP::n * (P::targetP::k + 1) *
+                       P::targetP::l * (P::targetP::k + 1) * N);
+
+        typename P::targetP::T* d_bk;
+        cudaMalloc((void**)&d_bk, sizeof(bk));
+        cudaMemcpy(d_bk, bk.data(), sizeof(bk), cudaMemcpyHostToDevice);
+
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        dim3 grid(P::targetP::k + 1, (P::targetP::k + 1) * P::targetP::l,
+                  P::domainP::n);
+        dim3 block(N >> NTT_THREAD_UNITBIT);
+        if constexpr (N == TFHEpp::lvl2param::n) {
+            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
+                bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
+        }
+        else {
+            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
+                bk_storage[i], d_bk, *ntt_handlers[i]);
+        }
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_bk);
     }
 }
 #define INST(P)                                                           \
@@ -535,51 +532,55 @@ template <class P>
 void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                                  const int gpuNum)
 {
-    if constexpr (P::targetP::n != TFHEpp::lvl1param::n) {
-        (void)bk;
-        (void)gpuNum;
-        ThrowUnsupportedLvl02SmallNTT();
-    }
-    else {
-        constexpr uint32_t num_pairs =
-            P::domainP::k * P::domainP::n / P::Addends;
-        constexpr uint32_t bk_elements_per_pair =
-            (1 << P::Addends) - 1;  // 3 for Addends=2
-        constexpr uint32_t trgsw_polys =
-            (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
-        constexpr size_t total_ntt_elems =
-            num_pairs * bk_elements_per_pair * trgsw_polys * P::targetP::n;
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t num_pairs =
+        P::domainP::k * P::domainP::n / P::Addends;
+    constexpr uint32_t bk_elements_per_pair =
+        (1 << P::Addends) - 1;  // 3 for Addends=2
+    constexpr uint32_t trgsw_polys =
+        (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
+    constexpr size_t total_ntt_elems =
+        static_cast<size_t>(num_pairs) * bk_elements_per_pair * trgsw_polys *
+        N;
 
-        bk_ntts.resize(gpuNum);
-        for (int i = 0; i < gpuNum; i++) {
-            cudaSetDevice(i);
-
-            cudaMalloc((void**)&bk_ntts[i],
-                       sizeof(NTTValue) * total_ntt_elems);
-
-            // Upload BK data and NTT-transform it
-            // BK layout: bk[pair_idx][bk_elem] is a TRGSW
-            // Each TRGSW has (k+1)*l * (k+1) polynomials of N elements
-            typename P::targetP::T* d_bk;
-            size_t bk_byte_size = sizeof(bk);
-            cudaMalloc((void**)&d_bk, bk_byte_size);
-            cudaMemcpy(d_bk, bk.data(), bk_byte_size, cudaMemcpyHostToDevice);
-
-            cudaDeviceSynchronize();
-            CuCheckError();
-
-            // Grid: (k+1) x ((k+1)*l) x (num_pairs * bk_elements_per_pair)
-            dim3 grid(P::targetP::k + 1,
-                      (P::targetP::k + 1) * P::targetP::l,
-                      num_pairs * bk_elements_per_pair);
-            dim3 block(P::targetP::n >> NTT_THREAD_UNITBIT);
-            __TRGSW2NTT__<<<grid, block>>>(bk_ntts[i], d_bk,
-                                           *ntt_handlers[i]);
-            cudaDeviceSynchronize();
-            CuCheckError();
-
-            cudaFree(d_bk);
+    auto& bk_storage = []() -> vector<NTTValue*>& {
+        if constexpr (N == TFHEpp::lvl2param::n) {
+            return bk_ntts_lvl02;
         }
+        else {
+            return bk_ntts;
+        }
+    }();
+
+    bk_storage.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+
+        cudaMalloc((void**)&bk_storage[i], sizeof(NTTValue) * total_ntt_elems);
+
+        typename P::targetP::T* d_bk;
+        size_t bk_byte_size = sizeof(bk);
+        cudaMalloc((void**)&d_bk, bk_byte_size);
+        cudaMemcpy(d_bk, bk.data(), bk_byte_size, cudaMemcpyHostToDevice);
+
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        dim3 grid(P::targetP::k + 1, (P::targetP::k + 1) * P::targetP::l,
+                  num_pairs * bk_elements_per_pair);
+        dim3 block(N >> NTT_THREAD_UNITBIT);
+        if constexpr (N == TFHEpp::lvl2param::n) {
+            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
+                bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
+        }
+        else {
+            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
+                bk_storage[i], d_bk, *ntt_handlers[i]);
+        }
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_bk);
     }
 }
 #define INST(P)                                   \
@@ -604,8 +605,15 @@ void DeleteBootstrappingKeyNTT(const int gpuNum)
 
 void InitializeNTThandlers_lvl02(const int gpuNum)
 {
-    (void)gpuNum;
-    ThrowUnsupportedLvl02SmallNTT();
+    CuNTTHandler<TFHEpp::lvl2param::n>::Create();
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        ntt_handlers_lvl02.push_back(
+            new CuNTTHandler<TFHEpp::lvl2param::n>());
+        ntt_handlers_lvl02[i]->SetDevicePointers(i);
+        cudaDeviceSynchronize();
+        CuCheckError();
+    }
 }
 
 void DeleteBootstrappingKeyNTT_lvl02(const int gpuNum)
@@ -621,16 +629,42 @@ void DeleteBootstrappingKeyNTT_lvl02(const int gpuNum)
         delete ntt_handlers_lvl02[i];
     }
     ntt_handlers_lvl02.clear();
+    CuNTTHandler<TFHEpp::lvl2param::n>::Destroy();
 }
 
 void BootstrappingKeyFlatToNTT_lvl02(
     const TFHEpp::TRGSW<TFHEpp::lvl2param>* flat_bk,
     const uint32_t num_elements, const int gpuNum)
 {
-    (void)flat_bk;
-    (void)num_elements;
-    (void)gpuNum;
-    ThrowUnsupportedLvl02SmallNTT();
+    using tgtP = TFHEpp::lvl2param;
+    constexpr uint32_t N = tgtP::n;
+    constexpr uint32_t trgsw_polys = (tgtP::k + 1) * tgtP::l * (tgtP::k + 1);
+
+    size_t ntt_elems = static_cast<size_t>(num_elements) * trgsw_polys * N;
+
+    bk_ntts_lvl02.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+
+        cudaMalloc((void**)&bk_ntts_lvl02[i], sizeof(NTTValue) * ntt_elems);
+
+        size_t bk_bytes =
+            static_cast<size_t>(num_elements) * sizeof(TFHEpp::TRGSW<tgtP>);
+        typename tgtP::T* d_bk;
+        cudaMalloc((void**)&d_bk, bk_bytes);
+        cudaMemcpy(d_bk, flat_bk, bk_bytes, cudaMemcpyHostToDevice);
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        dim3 grid(tgtP::k + 1, (tgtP::k + 1) * tgtP::l, num_elements);
+        dim3 block(N >> NTT_THREAD_UNITBIT);
+        __TRGSW2NTT__<tgtP><<<grid, block>>>(
+            bk_ntts_lvl02[i], d_bk, *ntt_handlers_lvl02[i]);
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_bk);
+    }
 }
 
 #endif  // USE_FFT
@@ -913,19 +947,19 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
                            (digit + 1) * lvl1param::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = (digit_val < 0)
-                                     ? (small_ntt::P + digit_val)
-                                     : static_cast<uint32_t>(digit_val);
+                    sh_work[i] = signed_int_to_ntt_mod(digit_val);
                 }
             }
             __syncthreads();
 
             // Step 2: Forward NTT on decomposed polynomial
             if (tid < NUM_THREADS) {
-                SmallForwardNTT32_1024(sh_work, ntt.forward_root_, tid);
+                SmallForwardNTT<lvl1param::nbit>(sh_work, ntt.forward_root_,
+                                                 tid);
             }
             else {
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+                    __syncthreads();
             }
 
             // Step 3: Multiply with TRGSW_NTT and accumulate
@@ -959,25 +993,21 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
 
         // Inverse NTT directly on accumulator buffer
         if (tid < NUM_THREADS) {
-            SmallInverseNTT32_1024(sh_ntt_buf, ntt.inverse_root_,
-                                   ntt.n_inverse_, tid);
+            SmallInverseNTT<lvl1param::nbit>(sh_ntt_buf, ntt.inverse_root_,
+                                             ntt.n_inverse_, tid);
         }
         else {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < SmallInverseNTTSyncCount<N>(); s++)
+                __syncthreads();
         }
 
         // Convert with modulus switching and add to trlwe0
-        constexpr uint32_t half_mod = small_ntt::P / 2;
         if (tid < NUM_THREADS) {
 #pragma unroll
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
-                uint32_t val = sh_ntt_buf[i];
-                int32_t signed_val =
-                    (val > half_mod) ? static_cast<int32_t>(val - small_ntt::P)
-                                     : static_cast<int32_t>(val);
                 out[k_idx * N + i] =
-                    trlwe0[k_idx * N + i] + ntt_mod_to_torus32(signed_val);
+                    trlwe0[k_idx * N + i] + ntt_mod_to_torus32(sh_ntt_buf[i]);
             }
         }
         __syncthreads();

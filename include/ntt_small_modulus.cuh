@@ -1,20 +1,16 @@
 /**
- * Small Modulus NTT implementation for cuFHE
+ * Goldilocks-prime NTT implementation for cuFHE
  *
  * This implements the RAINTT-style approach where:
- * - Torus discretization switches from 2^32 to NTT modulus before
+ * - Torus discretization switches to the NTT modulus before
  * multiplication
- * - After INTT, results are converted back to 2^32 discretization
+ * - After INTT, results are converted back to the torus discretization
  *
- * This is more efficient than the 64-bit modulus approach for certain use cases
- * as it allows working with smaller integers.
- *
- * Current modulus: P = 1048571 * 2^11 + 1 = 2147473409 (~31.0 bits)
- * - Chosen as the largest NTT-friendly prime below 2^31, giving maximum
- *   precision while keeping 32-bit modular add/sub overflow-free
- * - P < 2^31 ensures a + b < 2P < 2^32 for any a, b in [0, P)
- * - Has 2048th primitive root of unity (required for N=1024 NTT)
- * - Satisfies 2*P^2 < 2^64 for safe 64-bit Montgomery reduction
+ * Current modulus: P = 2^64 - 2^32 + 1
+ * - Close to 64 bits, matching lvl2 Torus64 precision much better than the
+ *   previous 31-bit modulus
+ * - P - 1 is divisible by 2^32, so both lvl1 (N=1024) and lvl2 (N=2048)
+ *   negacyclic NTTs have the required primitive 2N-th root of unity
  */
 
 #pragma once
@@ -23,7 +19,9 @@
 
 #include <cstdint>
 #include <include/utils_gpu.cuh>
+#include <limits>
 #include <params.hpp>
+#include <type_traits>
 #include <vector>
 
 #ifdef USE_FFT
@@ -37,224 +35,234 @@
 namespace cufhe {
 
 //=============================================================================
-// Small Modulus NTT Constants (RAINTT-style)
+// Goldilocks NTT Constants (RAINTT-style)
 //=============================================================================
 
 namespace small_ntt {
 
-// NTT parameters - optimized for GPU
-// P = K * 2^11 + 1 = 2147473409 (~31.0 bits)
-// Largest NTT-friendly prime below 2^31 for overflow-free 32-bit add/sub
-constexpr uint32_t K = 1048571;
-constexpr uint32_t SHIFTAMOUNT = 11;
-constexpr uint32_t WORDBITS = 32;  // Using 32-bit arithmetic on GPU
+using Value = uint64_t;
 
-// NTT modulus: P = K * 2^shiftamount + 1 = 2147473409
-constexpr uint32_t P = (K << SHIFTAMOUNT) + 1;  // 2147473409
+constexpr Value P = 0xFFFFFFFF00000001ULL;
+constexpr Value P_MINUS_ONE = P - 1;
+constexpr Value HALF_P = P / 2;
 
-// Verify safety constraint at compile time: 2*P^2 < 2^64
-// P must be less than sqrt(2^63) ≈ 3.03 billion for safe 64-bit Montgomery
-// reduction
-static_assert(P < 3037000500ULL,
-              "Modulus too large for safe Montgomery reduction");
+// Same primitive 2^32-th root used by TFHEpp's integer NTT.
+constexpr Value ROOT_2_32 = 12037493425763644479ULL;
+constexpr uint32_t WORDBITS = 64;
 
-// Barrett reduction parameters for 32-bit modulus
-// k must be >= 2*ceil(log2(P)) = 62 for correct single-subtraction Barrett
-constexpr uint32_t MODULUS_BITS = 32;
-constexpr uint32_t BARRETT_K = 62;
-constexpr uint64_t BARRETT_MU =
-    (1ULL << BARRETT_K) / P;  // Pre-computed for Barrett reduction
-
-// Montgomery constant: R = 2^32 mod P
-constexpr uint64_t R_TEMP = (1ULL << 32) % P;
-constexpr uint32_t R = static_cast<uint32_t>(R_TEMP);
-
-// R^2 mod P for Montgomery domain conversion
-constexpr uint64_t R2_TEMP = (static_cast<uint64_t>(R) * R) % P;
-constexpr uint32_t R2 = static_cast<uint32_t>(R2_TEMP);
-
-// N inverse for N=1024 (in Montgomery form)
-constexpr uint32_t N_1024 = 1024;
-
-// Modulus switching constants
-// For Torus32 -> NTT mod: res = round((a * P) / 2^32)
-// For NTT mod -> Torus32: res = round((a * 2^32) / P)
-
-// Pre-computed: 2^63 / P for inverse modswitch
-constexpr uint64_t INV_MODSWITCH_MUL = (1ULL << 63) / P;
+static_assert(P == 18446744069414584321ULL,
+              "Unexpected Goldilocks prime value");
 
 }  // namespace small_ntt
 
+using SmallNTTValue = small_ntt::Value;
+
+template <uint32_t N>
+__host__ __device__ constexpr uint32_t SmallLog2()
+{
+    uint32_t n = N;
+    uint32_t log = 0;
+    while (n > 1) {
+        n >>= 1;
+        ++log;
+    }
+    return log;
+}
+
 //=============================================================================
-// 32-bit Small Modulus Finite Field Element
+// 64-bit Goldilocks Finite Field Element
 //=============================================================================
 
-class FFP32 {
+class FFP64 {
    private:
-    uint32_t val_;
+    SmallNTTValue val_;
 
    public:
-    __host__ __device__ inline FFP32() : val_(0) {}
-    __host__ __device__ inline FFP32(uint32_t a) : val_(a % small_ntt::P) {}
-    __host__ __device__ inline FFP32(int32_t a)
+    __host__ __device__ inline FFP64() : val_(0) {}
+    __host__ __device__ inline FFP64(SmallNTTValue a)
+        : val_(a >= small_ntt::P ? a + static_cast<uint32_t>(-1) : a)
+    {
+    }
+    __host__ __device__ inline FFP64(int32_t a)
     {
         if (a < 0) {
-            val_ = small_ntt::P - (static_cast<uint32_t>(-a) % small_ntt::P);
+            val_ = small_ntt::P - static_cast<SmallNTTValue>(-a);
             if (val_ == small_ntt::P) val_ = 0;
         }
         else {
-            val_ = static_cast<uint32_t>(a) % small_ntt::P;
+            val_ = static_cast<SmallNTTValue>(a);
         }
     }
 
-    __host__ __device__ inline uint32_t& val() { return val_; }
-    __host__ __device__ inline const uint32_t& val() const { return val_; }
-    __host__ __device__ inline static constexpr uint32_t kModulus()
+    __host__ __device__ inline SmallNTTValue& val() { return val_; }
+    __host__ __device__ inline const SmallNTTValue& val() const { return val_; }
+    __host__ __device__ inline static constexpr SmallNTTValue kModulus()
     {
         return small_ntt::P;
     }
 
-    __host__ __device__ inline explicit operator uint32_t() const
+    __host__ __device__ inline explicit operator SmallNTTValue() const
     {
         return val_;
     }
 };
 
 //=============================================================================
-// Device-side Small Modulus Operations
+// Goldilocks Modulus Operations
 //=============================================================================
+
+__host__ __device__ __forceinline__ SmallNTTValue small_mod_normalize(
+    SmallNTTValue a)
+{
+    return a + static_cast<uint32_t>(-(a >= small_ntt::P));
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue small_mod_add(
+    SmallNTTValue a, SmallNTTValue b)
+{
+    SmallNTTValue tmp = a + b;
+    return tmp + static_cast<uint32_t>(-(tmp < b || tmp >= small_ntt::P));
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue small_mod_sub(
+    SmallNTTValue a, SmallNTTValue b)
+{
+    SmallNTTValue tmp = a - b;
+    return tmp - static_cast<uint32_t>(-(tmp > a));
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue small_mod_mult(
+    SmallNTTValue a, SmallNTTValue b)
+{
+    unsigned __int128 prod = static_cast<unsigned __int128>(a) * b;
+    const SmallNTTValue lo = static_cast<SmallNTTValue>(prod);
+
+    const uint32_t limb0 = static_cast<uint32_t>(prod);
+    prod >>= 32;
+    const uint32_t limb1 = static_cast<uint32_t>(prod);
+    prod >>= 32;
+    const uint32_t limb2 = static_cast<uint32_t>(prod);
+    prod >>= 32;
+    const uint32_t limb3 = static_cast<uint32_t>(prod);
+
+    SmallNTTValue res =
+        ((static_cast<SmallNTTValue>(limb1) + limb2) << 32) + limb0 - limb3 -
+        limb2;
+    res -= static_cast<uint32_t>(-((res > lo) && (limb2 == 0)));
+    res += static_cast<uint32_t>(-((res < lo) && (limb2 != 0)));
+    return small_mod_normalize(res);
+}
+
+template <typename TorusT>
+__host__ __device__ __forceinline__ SmallNTTValue torus_to_ntt_mod(
+    TorusT torus_val)
+{
+    using UnsignedT = std::make_unsigned_t<TorusT>;
+    constexpr int bits = std::numeric_limits<UnsignedT>::digits;
+    const auto a = static_cast<UnsignedT>(torus_val);
+    unsigned __int128 prod =
+        static_cast<unsigned __int128>(a) * small_ntt::P;
+    prod += static_cast<unsigned __int128>(1) << (bits - 1);
+    return static_cast<SmallNTTValue>(prod >> bits);
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue torus32_to_ntt_mod(
+    uint32_t torus_val)
+{
+    return torus_to_ntt_mod<uint32_t>(torus_val);
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue torus64_to_ntt_mod(
+    uint64_t torus_val)
+{
+    return torus_to_ntt_mod<uint64_t>(torus_val);
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue signed_int_to_ntt_mod(
+    int32_t val)
+{
+    if (val < 0) {
+        return small_mod_sub(
+            0, static_cast<SmallNTTValue>(-static_cast<int64_t>(val)));
+    }
+    return static_cast<SmallNTTValue>(val);
+}
+
+__host__ __device__ __forceinline__ uint64_t ntt_abs_to_torus64(
+    SmallNTTValue val)
+{
+    const unsigned __int128 mul = val;
+    return static_cast<uint64_t>(((mul << 64) + (mul << 32) - mul +
+                                  (static_cast<unsigned __int128>(1) << 63)) >>
+                                 64);
+}
+
+__host__ __device__ __forceinline__ uint64_t ntt_mod_to_torus64(
+    SmallNTTValue val)
+{
+    if (val > small_ntt::HALF_P) {
+        const uint64_t mag = ntt_abs_to_torus64(small_ntt::P - val);
+        return static_cast<uint64_t>(-mag);
+    }
+    return ntt_abs_to_torus64(val);
+}
+
+__host__ __device__ __forceinline__ uint32_t ntt_mod_to_torus32(
+    SmallNTTValue val)
+{
+    const bool neg = val > small_ntt::HALF_P;
+    const uint64_t torus64 =
+        ntt_abs_to_torus64(neg ? (small_ntt::P - val) : val);
+    uint32_t torus32 = static_cast<uint32_t>(torus64 >> 32);
+    torus32 += static_cast<uint32_t>((torus64 & 0xFFFFFFFFULL) >=
+                                     0x80000000ULL);
+    return neg ? static_cast<uint32_t>(-torus32) : torus32;
+}
 
 #ifdef __CUDACC__
 
-// Constant memory for NTT root tables (4KB each, well within 64KB limit)
-// Enables broadcast caching when multiple threads access the same root
-extern __constant__ uint32_t d_const_forward_root[1024];
-extern __constant__ uint32_t d_const_inverse_root[1024];
-
-// Modular addition: (a + b) mod P
-__device__ __forceinline__ uint32_t small_mod_add(uint32_t a, uint32_t b)
-{
-    uint32_t sum = a + b;
-    return (sum >= small_ntt::P) ? (sum - small_ntt::P) : sum;
-}
-
-// Modular subtraction: (a - b) mod P
-__device__ __forceinline__ uint32_t small_mod_sub(uint32_t a, uint32_t b)
-{
-    uint32_t diff = a + small_ntt::P - b;
-    return (diff >= small_ntt::P) ? (diff - small_ntt::P) : diff;
-}
-
-// Modular multiplication: (a * b) mod P
-// Uses Barrett reduction with k=62 for correct single-subtraction guarantee
-__device__ __forceinline__ uint32_t small_mod_mult(uint32_t a, uint32_t b)
-{
-    constexpr uint32_t p = small_ntt::P;
-    constexpr uint64_t mu = small_ntt::BARRETT_MU;  // floor(2^62 / P), ~31 bits
-
-    uint64_t z = static_cast<uint64_t>(a) * b;
-
-    // Barrett reduction: q = floor(z * mu / 2^62)
-    // z < P^2 < 2^62, mu < 2^32, so z*mu < 2^94 (needs 128-bit)
-    uint64_t hi = __umul64hi(z, mu);
-    uint64_t lo = z * mu;
-    uint64_t q = (hi << 2) | (lo >> 62);
-
-    uint32_t result = static_cast<uint32_t>(z - q * p);
-
-    // With k=62 >= 2*31, Barrett guarantees result < 2P
-    return (result >= p) ? (result - p) : result;
-}
-
-/**
- * Modulus switch: Torus32 (2^32 discretization) -> NTT modulus P
- *
- * Formula: res = round((a * P) / 2^32) = (a * P + 2^31) >> 32
- *
- * This switches the discretization from Torus (mod 2^32) to NTT domain (mod P)
- */
-__device__ __forceinline__ uint32_t torus32_to_ntt_mod(uint32_t torus_val)
-{
-    constexpr uint32_t P32 = small_ntt::P;
-
-    // res = (a * P + 2^31) >> 32  (rounding)
-    // Use __umulhi for the high 32 bits of 32x32 multiply (single instruction)
-    uint32_t hi = __umulhi(torus_val, P32);
-    uint32_t lo = torus_val * P32;
-    // Add rounding: carry from (lo + 0x80000000) into hi
-    hi += (lo >= 0x80000000u);
-    return hi;
-}
-
-/**
- * Modulus switch: NTT modulus P -> Torus32 (2^32 discretization)
- *
- * Formula: res = round((a * 2^32) / P)
- *
- * We use: res = (a * (2^63 / P) + 2^30) >> 31
- *
- * This switches back from NTT domain (mod P) to Torus (mod 2^32)
- */
-__device__ __forceinline__ uint32_t ntt_mod_to_torus32(int32_t ntt_val)
-{
-    constexpr uint32_t P = small_ntt::P;
-
-    // Handle signed value: convert to [0, P) range
-    uint32_t a = (ntt_val < 0)
-                     ? static_cast<uint32_t>(ntt_val + static_cast<int32_t>(P))
-                     : static_cast<uint32_t>(ntt_val);
-
-    // res = round((a * 2^32) / P) = (a * (2^63 / P) + 2^30) >> 31
-    uint64_t temp = static_cast<uint64_t>(a) * small_ntt::INV_MODSWITCH_MUL;
-    temp = (temp + (1ULL << 30)) >> 31;
-    return static_cast<uint32_t>(temp);
-}
-
 // Cooley-Tukey butterfly for forward NTT
-__device__ __forceinline__ void SmallCooleyTukeyUnit(uint32_t& U, uint32_t& V,
-                                                     uint32_t root)
+__device__ __forceinline__ void SmallCooleyTukeyUnit(SmallNTTValue& U,
+                                                     SmallNTTValue& V,
+                                                     SmallNTTValue root)
 {
-    uint32_t u = U;
-    uint32_t v = small_mod_mult(V, root);
+    SmallNTTValue u = U;
+    SmallNTTValue v = small_mod_mult(V, root);
     U = small_mod_add(u, v);
     V = small_mod_sub(u, v);
 }
 
 // Gentleman-Sande butterfly for inverse NTT
-__device__ __forceinline__ void SmallGentlemanSandeUnit(uint32_t& U,
-                                                        uint32_t& V,
-                                                        uint32_t root)
+__device__ __forceinline__ void SmallGentlemanSandeUnit(SmallNTTValue& U,
+                                                        SmallNTTValue& V,
+                                                        SmallNTTValue root)
 {
-    uint32_t u = U;
-    uint32_t v = V;
+    SmallNTTValue u = U;
+    SmallNTTValue v = V;
     U = small_mod_add(u, v);
     V = small_mod_mult(small_mod_sub(u, v), root);
 }
 
-/**
- * Small modulus Forward NTT for N=1024
- * Uses 512 threads, each handles 2 elements
- */
-__device__ __forceinline__ void SmallForwardNTT32_1024(
-    uint32_t* sh, const uint32_t* root_table, int tid)
+template <int N_POWER>
+__device__ __forceinline__ void SmallForwardNTT(SmallNTTValue* sh,
+                                                const SmallNTTValue* root_table,
+                                                int tid)
 {
-    constexpr int N_power = 10;
+    static_assert(N_POWER >= 6, "NTT length must be at least 64");
 
-    int t_2 = N_power - 1;
-    int t_ = 9;
+    int t_2 = N_POWER - 1;
+    int t_ = N_POWER - 1;
     int m = 1;
     int t = 1 << t_;
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
     int current_root_index;
 
-// First 4 stages need syncthreads
-// Uses constant memory for root table (broadcast cache benefits stages 0-4)
 #pragma unroll
-    for (int lp = 0; lp < 4; lp++) {
+    for (int lp = 0; lp < N_POWER - 6; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit(sh[in_shared_address], sh[in_shared_address + t],
-                             d_const_forward_root[current_root_index]);
+                             __ldg(&root_table[current_root_index]));
 
         t = t >> 1;
         t_2 -= 1;
@@ -264,8 +272,6 @@ __device__ __forceinline__ void SmallForwardNTT32_1024(
         __syncthreads();
     }
 
-// Last 6 stages - warp-local
-// Uses __ldg for root table (texture cache handles scattered accesses better)
 #pragma unroll
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
@@ -281,25 +287,22 @@ __device__ __forceinline__ void SmallForwardNTT32_1024(
     __syncthreads();
 }
 
-/**
- * Small modulus Inverse NTT for N=1024
- * Uses 512 threads, each handles 2 elements
- */
-__device__ __forceinline__ void SmallInverseNTT32_1024(
-    uint32_t* sh, const uint32_t* root_table, uint32_t n_inverse, int tid)
+template <int N_POWER>
+__device__ __forceinline__ void SmallInverseNTT(
+    SmallNTTValue* sh, const SmallNTTValue* root_table,
+    SmallNTTValue n_inverse, int tid)
 {
-    constexpr int N_power = 10;
+    static_assert(N_POWER >= 6, "NTT length must be at least 64");
+    constexpr int NUM_THREADS = 1 << (N_POWER - 1);
 
     int t_2 = 0;
     int t_ = 0;
-    int m = 1 << (N_power - 1);
+    int m = 1 << (N_POWER - 1);
     int t = 1;
 
     int in_shared_address = ((tid >> t_) << t_) + tid;
     int current_root_index;
 
-// First 6 stages - warp-local
-// Uses __ldg for root table (texture cache handles scattered accesses better)
 #pragma unroll
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
@@ -315,14 +318,12 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
     }
     __syncthreads();
 
-// Last 4 stages - need sync
-// Uses constant memory for root table (broadcast cache benefits these stages)
 #pragma unroll
-    for (int lp = 0; lp < 4; lp++) {
+    for (int lp = 0; lp < N_POWER - 6; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallGentlemanSandeUnit(sh[in_shared_address],
                                 sh[in_shared_address + t],
-                                d_const_inverse_root[current_root_index]);
+                                __ldg(&root_table[current_root_index]));
 
         t = t << 1;
         t_2 += 1;
@@ -332,10 +333,21 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
         __syncthreads();
     }
 
-    // Multiply by n^{-1}
     sh[tid] = small_mod_mult(sh[tid], n_inverse);
-    sh[tid + 512] = small_mod_mult(sh[tid + 512], n_inverse);
+    sh[tid + NUM_THREADS] = small_mod_mult(sh[tid + NUM_THREADS], n_inverse);
     __syncthreads();
+}
+
+template <uint32_t N>
+__host__ __device__ constexpr int SmallForwardNTTSyncCount()
+{
+    return static_cast<int>(SmallLog2<N>()) - 5;
+}
+
+template <uint32_t N>
+__host__ __device__ constexpr int SmallInverseNTTSyncCount()
+{
+    return static_cast<int>(SmallLog2<N>()) - 4;
 }
 
 #endif  // __CUDACC__
@@ -346,22 +358,20 @@ __device__ __forceinline__ void SmallInverseNTT32_1024(
 
 // Host-side storage for small NTT parameters
 struct SmallNTTParams {
-    uint32_t* forward_root;
-    uint32_t* inverse_root;
-    uint32_t n_inverse;
+    SmallNTTValue* forward_root;
+    SmallNTTValue* inverse_root;
+    SmallNTTValue n_inverse;
     bool initialized;
 };
 
 extern std::vector<SmallNTTParams> g_small_ntt_params;
+extern std::vector<SmallNTTParams> g_small_ntt_params_lvl02;
 
 /**
- * Small Modulus NTT Handler for cuFHE
- * Uses P = 2147473409 (~2^31.0) instead of ~2^60
+ * Goldilocks-prime NTT Handler for cuFHE
  *
- * Key difference from large modulus approach:
- * - Before NTT: Convert Torus32 to NTT modulus via modulus switching
- * - After INTT: Convert NTT modulus back to Torus32 via inverse modulus
- * switching
+ * Before NTT, coefficients are modulus-switched from the torus to P. After
+ * INTT, coefficients are centered and switched back to Torus32/Torus64.
  */
 template <uint32_t length = TFHEpp::lvl1param::n>
 class CuSmallNTTHandler {
@@ -376,9 +386,9 @@ class CuSmallNTTHandler {
         return log;
     }();
 
-    uint32_t* forward_root_;
-    uint32_t* inverse_root_;
-    uint32_t n_inverse_;
+    SmallNTTValue* forward_root_;
+    SmallNTTValue* inverse_root_;
+    SmallNTTValue n_inverse_;
 
     __host__ __device__ CuSmallNTTHandler()
         : forward_root_(nullptr), inverse_root_(nullptr), n_inverse_(0)
@@ -400,9 +410,10 @@ class CuSmallNTTHandler {
      * 1. Modulus switch: Convert input from 2^32 to P discretization
      * 2. Forward NTT in modulus P
      */
-    __device__ inline void NTTWithModSwitch(uint32_t* const out,
-                                            const uint32_t* const in,
-                                            uint32_t* const sh_temp,
+    template <typename TorusT>
+    __device__ inline void NTTWithModSwitch(SmallNTTValue* const out,
+                                            const TorusT* const in,
+                                            SmallNTTValue* const sh_temp,
                                             uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
@@ -411,20 +422,19 @@ class CuSmallNTTHandler {
 
         // Load and modulus switch: Torus32 -> NTT modulus
         if (tid < NUM_THREADS) {
-            sh_temp[tid] = torus32_to_ntt_mod(in[tid]);
+            sh_temp[tid] = torus_to_ntt_mod(in[tid]);
             sh_temp[tid + NUM_THREADS] =
-                torus32_to_ntt_mod(in[tid + NUM_THREADS]);
+                torus_to_ntt_mod(in[tid + NUM_THREADS]);
         }
         __syncthreads();
 
         // Forward NTT
         if (tid < NUM_THREADS) {
-            if constexpr (N == 1024) {
-                SmallForwardNTT32_1024(sh_temp, forward_root_, tid);
-            }
+            SmallForwardNTT<kLogLength>(sh_temp, forward_root_, tid);
         }
         else {
-            for (int i = 0; i < 5; i++) __syncthreads();
+            for (int i = 0; i < SmallForwardNTTSyncCount<N>(); i++)
+                __syncthreads();
         }
 
         // Copy to output
@@ -440,8 +450,8 @@ class CuSmallNTTHandler {
      *
      * Used for decomposed polynomials that are already integers
      */
-    __device__ inline void NTT(uint32_t* const out, const int32_t* const in,
-                               uint32_t* const sh_temp,
+    __device__ inline void NTT(SmallNTTValue* const out, const int32_t* const in,
+                               SmallNTTValue* const sh_temp,
                                uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
@@ -452,21 +462,18 @@ class CuSmallNTTHandler {
         if (tid < NUM_THREADS) {
             int32_t v0 = in[tid];
             int32_t v1 = in[tid + NUM_THREADS];
-            sh_temp[tid] =
-                (v0 < 0) ? (small_ntt::P + v0) : static_cast<uint32_t>(v0);
-            sh_temp[tid + NUM_THREADS] =
-                (v1 < 0) ? (small_ntt::P + v1) : static_cast<uint32_t>(v1);
+            sh_temp[tid] = signed_int_to_ntt_mod(v0);
+            sh_temp[tid + NUM_THREADS] = signed_int_to_ntt_mod(v1);
         }
         __syncthreads();
 
         // Forward NTT
         if (tid < NUM_THREADS) {
-            if constexpr (N == 1024) {
-                SmallForwardNTT32_1024(sh_temp, forward_root_, tid);
-            }
+            SmallForwardNTT<kLogLength>(sh_temp, forward_root_, tid);
         }
         else {
-            for (int i = 0; i < 5; i++) __syncthreads();
+            for (int i = 0; i < SmallForwardNTTSyncCount<N>(); i++)
+                __syncthreads();
         }
 
         // Copy to output
@@ -485,14 +492,13 @@ class CuSmallNTTHandler {
      * 2. Modulus switch: Convert from P to 2^32 discretization
      */
     __device__ inline void NTTInvWithModSwitch(
-        uint32_t* const out, const uint32_t* const in, uint32_t* const sh_temp,
+        uint32_t* const out, const SmallNTTValue* const in,
+        SmallNTTValue* const sh_temp,
         uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
         constexpr int NUM_THREADS = N >> 1;
-        constexpr uint32_t half_mod = small_ntt::P / 2;
-
         // Load to shared
         if (tid < NUM_THREADS) {
             sh_temp[tid] = in[tid];
@@ -502,30 +508,18 @@ class CuSmallNTTHandler {
 
         // Inverse NTT
         if (tid < NUM_THREADS) {
-            if constexpr (N == 1024) {
-                SmallInverseNTT32_1024(sh_temp, inverse_root_, n_inverse_, tid);
-            }
+            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_, tid);
         }
         else {
-            for (int i = 0; i < 6; i++) __syncthreads();
+            for (int i = 0; i < SmallInverseNTTSyncCount<N>(); i++)
+                __syncthreads();
         }
 
         // Convert to signed and apply inverse modulus switch
         if (tid < NUM_THREADS) {
-            uint32_t val0 = sh_temp[tid];
-            uint32_t val1 = sh_temp[tid + NUM_THREADS];
-
-            // Centered reduction: convert [0, P) to [-P/2, P/2)
-            int32_t signed0 = (val0 > half_mod)
-                                  ? static_cast<int32_t>(val0 - small_ntt::P)
-                                  : static_cast<int32_t>(val0);
-            int32_t signed1 = (val1 > half_mod)
-                                  ? static_cast<int32_t>(val1 - small_ntt::P)
-                                  : static_cast<int32_t>(val1);
-
-            // Modulus switch back to Torus32
-            out[tid] = ntt_mod_to_torus32(signed0);
-            out[tid + NUM_THREADS] = ntt_mod_to_torus32(signed1);
+            out[tid] = ntt_mod_to_torus32(sh_temp[tid]);
+            out[tid + NUM_THREADS] =
+                ntt_mod_to_torus32(sh_temp[tid + NUM_THREADS]);
         }
         __syncthreads();
     }
@@ -534,14 +528,13 @@ class CuSmallNTTHandler {
      * Inverse NTT with modulus switching and addition
      */
     __device__ inline void NTTInvAddWithModSwitch(
-        uint32_t* const out, const uint32_t* const in, uint32_t* const sh_temp,
+        uint32_t* const out, const SmallNTTValue* const in,
+        SmallNTTValue* const sh_temp,
         uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
         constexpr int NUM_THREADS = N >> 1;
-        constexpr uint32_t half_mod = small_ntt::P / 2;
-
         // Load to shared
         if (tid < NUM_THREADS) {
             sh_temp[tid] = in[tid];
@@ -551,28 +544,18 @@ class CuSmallNTTHandler {
 
         // Inverse NTT
         if (tid < NUM_THREADS) {
-            if constexpr (N == 1024) {
-                SmallInverseNTT32_1024(sh_temp, inverse_root_, n_inverse_, tid);
-            }
+            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_, tid);
         }
         else {
-            for (int i = 0; i < 6; i++) __syncthreads();
+            for (int i = 0; i < SmallInverseNTTSyncCount<N>(); i++)
+                __syncthreads();
         }
 
         // Convert and ADD to output
         if (tid < NUM_THREADS) {
-            uint32_t val0 = sh_temp[tid];
-            uint32_t val1 = sh_temp[tid + NUM_THREADS];
-
-            int32_t signed0 = (val0 > half_mod)
-                                  ? static_cast<int32_t>(val0 - small_ntt::P)
-                                  : static_cast<int32_t>(val0);
-            int32_t signed1 = (val1 > half_mod)
-                                  ? static_cast<int32_t>(val1 - small_ntt::P)
-                                  : static_cast<int32_t>(val1);
-
-            out[tid] += ntt_mod_to_torus32(signed0);
-            out[tid + NUM_THREADS] += ntt_mod_to_torus32(signed1);
+            out[tid] += ntt_mod_to_torus32(sh_temp[tid]);
+            out[tid + NUM_THREADS] +=
+                ntt_mod_to_torus32(sh_temp[tid + NUM_THREADS]);
         }
         __syncthreads();
     }
@@ -1225,7 +1208,7 @@ __host__ __device__ constexpr int TfheRsFFTSharedSyncCount()
 #else  // !USE_FFT
 
 //=============================================================================
-// NTT mode: Use small modulus NTT (existing implementation)
+// NTT mode: Use Goldilocks-prime NTT
 //=============================================================================
 
 // Thread configuration for NTT
@@ -1235,12 +1218,12 @@ constexpr uint32_t NTT_THREAD_UNITBIT = 1;
 template <uint32_t length = TFHEpp::lvl1param::n>
 using CuNTTHandler = CuSmallNTTHandler<length>;
 
-// NTT value type: 32-bit for small modulus
-using NTTValue = uint32_t;
+// NTT value type: 64-bit for the Goldilocks prime.
+using NTTValue = SmallNTTValue;
 
-// Shared memory size per gate: (k+2) * N * sizeof(uint32_t)
+// Shared memory size per gate: (k+2) * N * sizeof(NTTValue)
 template <class P = TFHEpp::lvl1param>
-constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(uint32_t);
+constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(NTTValue);
 
 // Dynamic shared memory size for regular gates:
 // NTT workspace + one TRLWE array placed after it

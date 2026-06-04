@@ -455,21 +455,19 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                            (digit + 1) * P::targetP::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = (digit_val < 0)
-                                     ? (small_ntt::P + digit_val)
-                                     : static_cast<uint32_t>(digit_val);
+                    sh_work[i] = signed_int_to_ntt_mod(digit_val);
                 }
             }
             __syncthreads();
 
             // Step 2: Forward NTT on decomposed polynomial
             if (tid < NUM_THREADS) {
-                if constexpr (N == 1024) {
-                    SmallForwardNTT32_1024(sh_work, ntt.forward_root_, tid);
-                }
+                SmallForwardNTT<P::targetP::nbit>(sh_work, ntt.forward_root_,
+                                                  tid);
             }
             else {
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+                    __syncthreads();
             }
 
             // Step 3: Multiply with BK and accumulate into sh_accum
@@ -504,26 +502,30 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
         // Inverse NTT directly on the accumulator buffer
         NTTValue* const sh_ntt_buf = &sh_accum[k_idx * N];
         if (tid < NUM_THREADS) {
-            if constexpr (N == 1024) {
-                SmallInverseNTT32_1024(sh_ntt_buf, ntt.inverse_root_,
-                                       ntt.n_inverse_, tid);
-            }
+            SmallInverseNTT<P::targetP::nbit>(sh_ntt_buf, ntt.inverse_root_,
+                                              ntt.n_inverse_, tid);
         }
         else {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < SmallInverseNTTSyncCount<N>(); s++)
+                __syncthreads();
         }
 
         // Convert with modulus switching and add to trlwe
-        constexpr uint32_t half_mod = small_ntt::P / 2;
         if (tid < NUM_THREADS) {
 #pragma unroll
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
-                uint32_t val = sh_ntt_buf[i];
-                int32_t signed_val =
-                    (val > half_mod) ? static_cast<int32_t>(val - small_ntt::P)
-                                     : static_cast<int32_t>(val);
-                trlwe[k_idx * N + i] += ntt_mod_to_torus32(signed_val);
+                if constexpr (std::numeric_limits<typename P::targetP::T>::digits ==
+                              64) {
+                    trlwe[k_idx * N + i] +=
+                        static_cast<typename P::targetP::T>(
+                            ntt_mod_to_torus64(sh_ntt_buf[i]));
+                }
+                else {
+                    trlwe[k_idx * N + i] +=
+                        static_cast<typename P::targetP::T>(
+                            ntt_mod_to_torus32(sh_ntt_buf[i]));
+                }
             }
         }
         __syncthreads();
@@ -939,21 +941,19 @@ __device__ inline void AccumulateKeyBundle(
                            (digit + 1) * P::targetP::Bgbit)) &
                          decomp_mask) -
                         decomp_half);
-                    sh_work[i] = (digit_val < 0)
-                                     ? (small_ntt::P + digit_val)
-                                     : static_cast<uint32_t>(digit_val);
+                    sh_work[i] = signed_int_to_ntt_mod(digit_val);
                 }
             }
             __syncthreads();
 
             // Step 2: Forward NTT on decomposed polynomial
             if (tid < NUM_THREADS) {
-                if constexpr (N == 1024) {
-                    SmallForwardNTT32_1024(sh_work, ntt.forward_root_, tid);
-                }
+                SmallForwardNTT<P::targetP::nbit>(sh_work, ntt.forward_root_,
+                                                  tid);
             }
             else {
-                for (int s = 0; s < 5; s++) __syncthreads();
+                for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+                    __syncthreads();
             }
 
             // Step 3: Multiply with on-the-fly keybundle and accumulate
@@ -1006,26 +1006,29 @@ __device__ inline void AccumulateKeyBundle(
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         NTTValue* const sh_ntt_buf = &sh_accum[k_idx * N];
         if (tid < NUM_THREADS) {
-            if constexpr (N == 1024) {
-                SmallInverseNTT32_1024(sh_ntt_buf, ntt.inverse_root_,
-                                       ntt.n_inverse_, tid);
-            }
+            SmallInverseNTT<P::targetP::nbit>(sh_ntt_buf, ntt.inverse_root_,
+                                              ntt.n_inverse_, tid);
         }
         else {
-            for (int s = 0; s < 6; s++) __syncthreads();
+            for (int s = 0; s < SmallInverseNTTSyncCount<N>(); s++)
+                __syncthreads();
         }
 
-        constexpr uint32_t half_mod = small_ntt::P / 2;
         if (tid < NUM_THREADS) {
 #pragma unroll
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
-                uint32_t val = sh_ntt_buf[i];
-                int32_t signed_val =
-                    (val > half_mod) ? static_cast<int32_t>(val - small_ntt::P)
-                                     : static_cast<int32_t>(val);
-                trlwe[k_idx * N + i] =
-                    ntt_mod_to_torus32(signed_val);  // REPLACE, not add
+                if constexpr (std::numeric_limits<typename P::targetP::T>::digits ==
+                              64) {
+                    trlwe[k_idx * N + i] =
+                        static_cast<typename P::targetP::T>(
+                            ntt_mod_to_torus64(sh_ntt_buf[i]));
+                }
+                else {
+                    trlwe[k_idx * N + i] =
+                        static_cast<typename P::targetP::T>(
+                            ntt_mod_to_torus32(sh_ntt_buf[i]));
+                }
             }
         }
         __syncthreads();
