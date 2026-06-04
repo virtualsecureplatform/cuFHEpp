@@ -56,32 +56,6 @@ __device__ inline void RotatedTestVector(typename P::T* tlwe, const int32_t bar,
 #ifdef USE_GPU_FFT
 
 /**
- * Convert double to uint64_t with modular (wrapping) arithmetic.
- * Equivalent to (uint64_t)(int64_t)round(d) but handles overflow correctly
- * by extracting IEEE 754 mantissa/exponent bits and shifting, so that values
- * larger than 2^63 naturally wrap mod 2^64.
- * This mirrors SPQLIOS's bit-extraction trick for torus64 conversion.
- */
-__device__ __forceinline__ uint64_t double_to_torus64(double d)
-{
-    uint64_t i = __double_as_longlong(d);
-    int expo = ((int)(i >> 52)) & 0x7FF;
-    if (expo == 0) return 0;  // ±0 or denormal
-    uint64_t m = (i & 0x000FFFFFFFFFFFFFull) | 0x0010000000000000ull;
-    int shift = expo - 1075;  // 1075 = 1023 (bias) + 52 (mantissa bits)
-    uint64_t val;
-    if (shift >= 64)
-        val = 0;
-    else if (shift >= 0)
-        val = m << shift;
-    else if (shift > -64)
-        val = m >> (-shift);
-    else
-        val = 0;
-    return (i >> 63) ? -val : val;
-}
-
-/**
  * GPU-FFT Accumulate function
  * Uses 512 threads total, 256 active during FFT, all 512 during
  * decomposition/multiply

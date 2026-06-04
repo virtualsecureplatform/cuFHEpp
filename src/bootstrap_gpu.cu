@@ -29,6 +29,7 @@
 #include <include/ntt_small_modulus.cuh>
 #include <include/utils_gpu.cuh>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace cufhe {
@@ -42,6 +43,17 @@ vector<CuNTTHandler<>*> ntt_handlers;
 // lvl02 storage (lvl0 -> lvl2 bootstrapping)
 vector<NTTValue*> bk_ntts_lvl02;
 vector<CuNTTHandler<TFHEpp::lvl2param::n>*> ntt_handlers_lvl02;
+
+namespace {
+
+[[noreturn]] void ThrowUnsupportedLvl02SmallNTT()
+{
+    throw std::runtime_error(
+        "lvl02 is unsupported by the small-modulus NTT backend; use an FFT "
+        "backend for the 2048-point lvl02 ring");
+}
+
+}  // namespace
 
 #ifdef USE_FFT
 
@@ -477,35 +489,45 @@ void InitializeNTThandlers(const int gpuNum)
 template <class P>
 void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
 {
-    bk_ntts.resize(gpuNum);
-    for (int i = 0; i < gpuNum; i++) {
-        cudaSetDevice(i);
+    if constexpr (P::targetP::n != TFHEpp::lvl1param::n) {
+        (void)bk;
+        (void)gpuNum;
+        ThrowUnsupportedLvl02SmallNTT();
+    }
+    else {
+        bk_ntts.resize(gpuNum);
+        for (int i = 0; i < gpuNum; i++) {
+            cudaSetDevice(i);
 
-        cudaMalloc((void**)&bk_ntts[i],
-                   sizeof(NTTValue) * P::domainP::n * (P::targetP::k + 1) *
-                       P::targetP::l * (P::targetP::k + 1) * P::targetP::n);
+            cudaMalloc((void**)&bk_ntts[i],
+                       sizeof(NTTValue) * P::domainP::n *
+                           (P::targetP::k + 1) * P::targetP::l *
+                           (P::targetP::k + 1) * P::targetP::n);
 
-        typename P::targetP::T* d_bk;
-        cudaMalloc((void**)&d_bk, sizeof(bk));
-        cudaMemcpy(d_bk, bk.data(), sizeof(bk), cudaMemcpyHostToDevice);
+            typename P::targetP::T* d_bk;
+            cudaMalloc((void**)&d_bk, sizeof(bk));
+            cudaMemcpy(d_bk, bk.data(), sizeof(bk), cudaMemcpyHostToDevice);
 
-        cudaDeviceSynchronize();
-        CuCheckError();
+            cudaDeviceSynchronize();
+            CuCheckError();
 
-        dim3 grid(P::targetP::k + 1, (P::targetP::k + 1) * P::targetP::l,
-                  P::domainP::n);
-        dim3 block(P::targetP::n >> NTT_THREAD_UNITBIT);
-        __TRGSW2NTT__<<<grid, block>>>(bk_ntts[i], d_bk, *ntt_handlers[i]);
-        cudaDeviceSynchronize();
-        CuCheckError();
+            dim3 grid(P::targetP::k + 1,
+                      (P::targetP::k + 1) * P::targetP::l, P::domainP::n);
+            dim3 block(P::targetP::n >> NTT_THREAD_UNITBIT);
+            __TRGSW2NTT__<<<grid, block>>>(bk_ntts[i], d_bk,
+                                           *ntt_handlers[i]);
+            cudaDeviceSynchronize();
+            CuCheckError();
 
-        cudaFree(d_bk);
+            cudaFree(d_bk);
+        }
     }
 }
 #define INST(P)                                                           \
     template void BootstrappingKeyToNTT<P>(const BootstrappingKey<P>& bk, \
                                            const int gpuNum)
 INST(TFHEpp::lvl01param);
+INST(TFHEpp::lvl02param);
 #undef INST
 
 #ifdef USE_KEY_BUNDLE
@@ -513,46 +535,58 @@ template <class P>
 void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                                  const int gpuNum)
 {
-    constexpr uint32_t num_pairs = P::domainP::k * P::domainP::n / P::Addends;
-    constexpr uint32_t bk_elements_per_pair =
-        (1 << P::Addends) - 1;  // 3 for Addends=2
-    constexpr uint32_t trgsw_polys =
-        (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
-    constexpr size_t total_ntt_elems =
-        num_pairs * bk_elements_per_pair * trgsw_polys * P::targetP::n;
+    if constexpr (P::targetP::n != TFHEpp::lvl1param::n) {
+        (void)bk;
+        (void)gpuNum;
+        ThrowUnsupportedLvl02SmallNTT();
+    }
+    else {
+        constexpr uint32_t num_pairs =
+            P::domainP::k * P::domainP::n / P::Addends;
+        constexpr uint32_t bk_elements_per_pair =
+            (1 << P::Addends) - 1;  // 3 for Addends=2
+        constexpr uint32_t trgsw_polys =
+            (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
+        constexpr size_t total_ntt_elems =
+            num_pairs * bk_elements_per_pair * trgsw_polys * P::targetP::n;
 
-    bk_ntts.resize(gpuNum);
-    for (int i = 0; i < gpuNum; i++) {
-        cudaSetDevice(i);
+        bk_ntts.resize(gpuNum);
+        for (int i = 0; i < gpuNum; i++) {
+            cudaSetDevice(i);
 
-        cudaMalloc((void**)&bk_ntts[i], sizeof(NTTValue) * total_ntt_elems);
+            cudaMalloc((void**)&bk_ntts[i],
+                       sizeof(NTTValue) * total_ntt_elems);
 
-        // Upload BK data and NTT-transform it
-        // BK layout: bk[pair_idx][bk_elem] is a TRGSW
-        // Each TRGSW has (k+1)*l * (k+1) polynomials of N elements
-        typename P::targetP::T* d_bk;
-        size_t bk_byte_size = sizeof(bk);
-        cudaMalloc((void**)&d_bk, bk_byte_size);
-        cudaMemcpy(d_bk, bk.data(), bk_byte_size, cudaMemcpyHostToDevice);
+            // Upload BK data and NTT-transform it
+            // BK layout: bk[pair_idx][bk_elem] is a TRGSW
+            // Each TRGSW has (k+1)*l * (k+1) polynomials of N elements
+            typename P::targetP::T* d_bk;
+            size_t bk_byte_size = sizeof(bk);
+            cudaMalloc((void**)&d_bk, bk_byte_size);
+            cudaMemcpy(d_bk, bk.data(), bk_byte_size, cudaMemcpyHostToDevice);
 
-        cudaDeviceSynchronize();
-        CuCheckError();
+            cudaDeviceSynchronize();
+            CuCheckError();
 
-        // Grid: (k+1) x ((k+1)*l) x (num_pairs * bk_elements_per_pair)
-        dim3 grid(P::targetP::k + 1, (P::targetP::k + 1) * P::targetP::l,
-                  num_pairs * bk_elements_per_pair);
-        dim3 block(P::targetP::n >> NTT_THREAD_UNITBIT);
-        __TRGSW2NTT__<<<grid, block>>>(bk_ntts[i], d_bk, *ntt_handlers[i]);
-        cudaDeviceSynchronize();
-        CuCheckError();
+            // Grid: (k+1) x ((k+1)*l) x (num_pairs * bk_elements_per_pair)
+            dim3 grid(P::targetP::k + 1,
+                      (P::targetP::k + 1) * P::targetP::l,
+                      num_pairs * bk_elements_per_pair);
+            dim3 block(P::targetP::n >> NTT_THREAD_UNITBIT);
+            __TRGSW2NTT__<<<grid, block>>>(bk_ntts[i], d_bk,
+                                           *ntt_handlers[i]);
+            cudaDeviceSynchronize();
+            CuCheckError();
 
-        cudaFree(d_bk);
+            cudaFree(d_bk);
+        }
     }
 }
 #define INST(P)                                   \
     template void BootstrappingKeyBundleToNTT<P>( \
         const BootstrappingKey<P>& bk, const int gpuNum)
 INST(TFHEpp::lvl01param);
+INST(TFHEpp::lvl02param);
 #undef INST
 #endif  // USE_KEY_BUNDLE
 
@@ -566,6 +600,37 @@ void DeleteBootstrappingKeyNTT(const int gpuNum)
         delete ntt_handlers[i];
     }
     ntt_handlers.clear();
+}
+
+void InitializeNTThandlers_lvl02(const int gpuNum)
+{
+    (void)gpuNum;
+    ThrowUnsupportedLvl02SmallNTT();
+}
+
+void DeleteBootstrappingKeyNTT_lvl02(const int gpuNum)
+{
+    (void)gpuNum;
+    for (size_t i = 0; i < bk_ntts_lvl02.size(); i++) {
+        cudaSetDevice(i);
+        cudaFree(bk_ntts_lvl02[i]);
+    }
+    bk_ntts_lvl02.clear();
+
+    for (size_t i = 0; i < ntt_handlers_lvl02.size(); i++) {
+        delete ntt_handlers_lvl02[i];
+    }
+    ntt_handlers_lvl02.clear();
+}
+
+void BootstrappingKeyFlatToNTT_lvl02(
+    const TFHEpp::TRGSW<TFHEpp::lvl2param>* flat_bk,
+    const uint32_t num_elements, const int gpuNum)
+{
+    (void)flat_bk;
+    (void)num_elements;
+    (void)gpuNum;
+    ThrowUnsupportedLvl02SmallNTT();
 }
 
 #endif  // USE_FFT

@@ -135,7 +135,8 @@ __global__ void __HalfTRGSWPolynomialToFFT__(NTTValue* const out,
 #ifdef USE_GPU_FFT
         for (int s = 0; s < 3; s++) __syncthreads();
 #else
-        for (int s = 0; s < Degree<N>::depth - 1; s++) __syncthreads();
+        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
+            __syncthreads();
 #endif
     }
 
@@ -273,7 +274,8 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
 #ifdef USE_GPU_FFT
             for (int s = 0; s < 3; s++) __syncthreads();
 #else
-            for (int s = 0; s < Degree<N>::depth - 1; s++) __syncthreads();
+            for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
 #endif
         }
 
@@ -309,7 +311,8 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
 #ifdef USE_GPU_FFT
             for (int s = 0; s < 3; s++) __syncthreads();
 #else
-            for (int s = 0; s < Degree<N>::depth - 1; s++) __syncthreads();
+            for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
 #endif
         }
 

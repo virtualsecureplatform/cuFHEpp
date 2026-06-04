@@ -1223,7 +1223,181 @@ void InitializeOneTRGSWNTT_lvl02(const int gpuNum)
     }
 }
 
+#else  // !USE_GPU_FFT
+
+// GPU kernel: tfhe-rs FFT of (X^a - 1) mod (X^N+1) for N=2048
+__global__ void __ComputeXaiFFT_lvl2__(NTTValue* const xai_fft)
+{
+    constexpr uint32_t N = TFHEpp::lvl2param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N / (Degree<N>::opt / 2);
+
+    __shared__ double2 sh_fft[HALF_N];
+
+    const uint32_t a = blockIdx.x;
+    const uint32_t tid = threadIdx.x;
+
+    uint32_t a_mod = a & (N - 1);
+    bool negate = (a >= N);
+
+    if (tid < HALF_N) {
+        double re = 0.0, im = 0.0;
+
+        if (tid == 0) re = -1.0;
+        if (!negate) {
+            if (tid == a_mod) re += 1.0;
+            if (tid + HALF_N == a_mod) im += 1.0;
+        }
+        else {
+            if (tid == a_mod) re -= 1.0;
+            if (tid + HALF_N == a_mod) im -= 1.0;
+        }
+
+        sh_fft[tid] = {re, im};
+    }
+    __syncthreads();
+
+    if (tid < FFT_THREADS) {
+        NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
+    }
+    else {
+        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
+            __syncthreads();
+    }
+
+    if (tid < HALF_N) xai_fft[a * HALF_N + tid] = sh_fft[tid];
+}
+
+void InitializeXaiNTT_lvl02(const int gpuNum)
+{
+    constexpr uint32_t N = TFHEpp::lvl2param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t table_entries = 2 * N;
+    constexpr size_t table_size = table_entries * HALF_N * sizeof(NTTValue);
+
+    xai_ntt_devs_lvl02.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        CuSafeCall(cudaMalloc(&xai_ntt_devs_lvl02[i], table_size));
+
+        dim3 grid(table_entries);
+        dim3 block(HALF_N);
+        __ComputeXaiFFT_lvl2__<<<grid, block>>>(xai_ntt_devs_lvl02[i]);
+        cudaDeviceSynchronize();
+        CuCheckError();
+    }
+}
+
+// GPU kernel: tfhe-rs FFT of lvl2 identity TRGSW Torus64 polynomials.
+__global__ void __FFTPolynomials_lvl2__(NTTValue* const out,
+                                        const uint64_t* const in)
+{
+    constexpr uint32_t N = TFHEpp::lvl2param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N / (Degree<N>::opt / 2);
+
+    __shared__ double2 sh_fft[HALF_N];
+
+    const uint32_t poly_idx = blockIdx.x;
+    const uint32_t tid = threadIdx.x;
+
+    constexpr double norm = 1.0 / 4294967296.0 / 4294967296.0;
+    if (tid < HALF_N) {
+        sh_fft[tid] = {
+            static_cast<double>(static_cast<int64_t>(in[poly_idx * N + tid])) *
+                norm,
+            static_cast<double>(
+                static_cast<int64_t>(in[poly_idx * N + tid + HALF_N])) *
+                norm};
+    }
+    __syncthreads();
+
+    if (tid < FFT_THREADS) {
+        NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
+    }
+    else {
+        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
+            __syncthreads();
+    }
+
+    if (tid < HALF_N) out[poly_idx * HALF_N + tid] = sh_fft[tid];
+}
+
+void InitializeOneTRGSWNTT_lvl02(const int gpuNum)
+{
+    constexpr uint32_t N = TFHEpp::lvl2param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t k = TFHEpp::lvl2param::k;
+    constexpr uint32_t l = TFHEpp::lvl2param::l;
+    constexpr uint32_t Bgbit = TFHEpp::lvl2param::Bgbit;
+    constexpr uint32_t num_polys = (k + 1) * l * (k + 1);
+    constexpr size_t total_size = num_polys * HALF_N * sizeof(NTTValue);
+
+    uint64_t h[l];
+    for (uint32_t i = 0; i < l; i++) {
+        h[i] = static_cast<uint64_t>(1)
+               << (std::numeric_limits<uint64_t>::digits - (i + 1) * Bgbit);
+    }
+
+    std::vector<uint64_t> host_polys(num_polys * N, 0);
+    for (uint32_t j = 0; j <= k; j++) {
+        for (uint32_t digit = 0; digit < l; digit++) {
+            uint32_t row = j * l + digit;
+            uint32_t poly_idx = row * (k + 1) + j;
+            host_polys[poly_idx * N + 0] = h[digit];
+        }
+    }
+
+    one_trgsw_ntt_devs_lvl02.resize(gpuNum);
+    for (int i = 0; i < gpuNum; i++) {
+        cudaSetDevice(i);
+        CuSafeCall(cudaMalloc(&one_trgsw_ntt_devs_lvl02[i], total_size));
+
+        uint64_t* d_polys;
+        CuSafeCall(
+            cudaMalloc(&d_polys, num_polys * N * sizeof(uint64_t)));
+        CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
+                              num_polys * N * sizeof(uint64_t),
+                              cudaMemcpyHostToDevice));
+
+        dim3 grid(num_polys);
+        dim3 block(HALF_N);
+        __FFTPolynomials_lvl2__<<<grid, block>>>(one_trgsw_ntt_devs_lvl02[i],
+                                                 d_polys);
+        cudaDeviceSynchronize();
+        CuCheckError();
+
+        cudaFree(d_polys);
+    }
+}
+
 #endif  // USE_GPU_FFT
+
+#else  // !USE_FFT
+
+namespace {
+
+[[noreturn]] void ThrowUnsupportedLvl02SmallNTTKeyBundle()
+{
+    throw std::runtime_error(
+        "lvl02 key-bundle tables are unsupported by the small-modulus NTT "
+        "backend; use an FFT backend for the 2048-point lvl02 ring");
+}
+
+}  // namespace
+
+void InitializeXaiNTT_lvl02(const int gpuNum)
+{
+    (void)gpuNum;
+    ThrowUnsupportedLvl02SmallNTTKeyBundle();
+}
+
+void InitializeOneTRGSWNTT_lvl02(const int gpuNum)
+{
+    (void)gpuNum;
+    ThrowUnsupportedLvl02SmallNTTKeyBundle();
+}
+
 #endif  // USE_FFT
 
 void DeleteXaiNTT_lvl02()

@@ -1214,6 +1214,12 @@ class CuFFTHandler {
 template <uint32_t length = TFHEpp::lvl1param::n>
 using CuNTTHandler = CuFFTHandler<length>;
 
+template <uint32_t N>
+__host__ __device__ constexpr int TfheRsFFTSharedSyncCount()
+{
+    return 2 * HalfDegree<Degree<N>>::log2_degree - 7;
+}
+
 #endif  // USE_GPU_FFT
 
 #else  // !USE_FFT

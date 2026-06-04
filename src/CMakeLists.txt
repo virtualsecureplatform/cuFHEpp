@@ -5,10 +5,13 @@ set(CUFHE_GPU_SOURCES
     cufhe_gates_gpu.cu
     cufhe_gpu.cu
     keyswitch_gpu.cu
-    aes_gpu.cu
-    ascon_gpu.cu
     ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
 )
+if(USE_FFT)
+    list(APPEND CUFHE_GPU_SOURCES
+        aes_gpu.cu
+        ascon_gpu.cu)
+endif()
 if(USE_FFT AND NOT USE_GPU_FFT)
     # Twiddle data from tfhe-rs (BSD 3-Clause Clear, ZAMA)
     # Must be in same link unit for CUDA __device__ variable resolution
