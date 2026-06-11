@@ -118,15 +118,23 @@ typename iksP::targetP::T* KeySwitchingKeyStorage(const int gpuNum)
 }
 
 template <class P>
+__host__ __device__
 constexpr uint32_t TRGSWRows()
 {
     return P::k * P::lₐ * P::l̅ₐ + P::l * P::l̅;
 }
 
 template <class P>
+__host__ __device__
 constexpr size_t TRGSWFFTElements()
 {
-    return static_cast<size_t>(TRGSWRows<P>()) * (P::k + 1) * (P::n / 2);
+#if defined(USE_FFT)
+    constexpr uint32_t transform_size = P::n / 2;
+#else
+    constexpr uint32_t transform_size = P::n;
+#endif
+    return static_cast<size_t>(TRGSWRows<P>()) * (P::k + 1) *
+           transform_size;
 }
 
 template <class P>
@@ -230,6 +238,45 @@ __global__ void __TRGSWPolynomialToFFT__(NTTValue* const out,
     }
 
     if (tid < half_n) out[out_index + tid] = sh_fft[tid];
+}
+#else
+template <class P>
+__global__ void __TRGSWPolynomialToNTT__(NTTValue* const out,
+                                        const typename P::T* const in,
+                                        CuNTTHandler<P::n> ntt)
+{
+    constexpr uint32_t N = P::n;
+    constexpr uint32_t num_threads = N / 2;
+    __shared__ NTTValue sh_ntt[N];
+
+    const uint32_t tid = ThisThreadRankInBlock();
+    const size_t row = blockIdx.x;
+    const size_t row_offset = row * N;
+
+    if (tid < num_threads) {
+#pragma unroll
+        for (int e = 0; e < 2; e++) {
+            const uint32_t i = tid + e * num_threads;
+            sh_ntt[i] = torus_to_ntt_mod<N>(in[row_offset + i]);
+        }
+    }
+    __syncthreads();
+
+    if (tid < num_threads) {
+        SmallForwardNTT<P::nbit>(sh_ntt, ntt.forward_root_, tid);
+    }
+    else {
+        for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+            __syncthreads();
+    }
+
+    if (tid < num_threads) {
+#pragma unroll
+        for (int e = 0; e < 2; e++) {
+            const uint32_t i = tid + e * num_threads;
+            out[row_offset + i] = sh_ntt[i];
+        }
+    }
 }
 #endif  // USE_FFT
 
@@ -335,8 +382,13 @@ void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
 #ifdef USE_KEY_BUNDLE
     constexpr uint32_t num_pairs =
         brP::domainP::k * brP::domainP::n / brP::Addends;
+#ifdef USE_FFT
     constexpr size_t trgsw_size =
         (targetP::k + 1) * (targetP::k + 1) * targetP::l * (targetP::n / 2);
+#else
+    constexpr size_t trgsw_size =
+        (targetP::k + 1) * (targetP::k + 1) * targetP::l * targetP::n;
+#endif
     for (uint32_t i = 0; i < num_pairs; i++) {
         const uint32_t bara0 =
             CBModSwitch<brP, num_out>(in[2 * i] + roundoffset);
@@ -349,8 +401,13 @@ void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
                                  one_trgsw_ntt, xai_ntt, ntt);
     }
 #else
+#ifdef USE_FFT
     constexpr size_t trgsw_size =
         (targetP::k + 1) * targetP::l * (targetP::k + 1) * (targetP::n / 2);
+#else
+    constexpr size_t trgsw_size =
+        (targetP::k + 1) * targetP::l * (targetP::k + 1) * targetP::n;
+#endif
     for (uint32_t i = 0; i < brP::domainP::k * brP::domainP::n; i++) {
         const uint32_t abar =
             CBModSwitch<brP, num_out>(in[i] + roundoffset);
@@ -431,8 +488,13 @@ void __BlindRotateCBBatchKernel__(typename brP::targetP::T* const out,
 #ifdef USE_KEY_BUNDLE
     constexpr uint32_t num_pairs =
         brP::domainP::k * brP::domainP::n / brP::Addends;
+#ifdef USE_FFT
     constexpr size_t trgsw_size =
         (targetP::k + 1) * (targetP::k + 1) * targetP::l * (targetP::n / 2);
+#else
+    constexpr size_t trgsw_size =
+        (targetP::k + 1) * (targetP::k + 1) * targetP::l * targetP::n;
+#endif
     for (uint32_t i = 0; i < num_pairs; i++) {
         const uint32_t bara0 =
             CBModSwitch<brP, num_out>(batch_in[2 * i] + roundoffset);
@@ -445,8 +507,13 @@ void __BlindRotateCBBatchKernel__(typename brP::targetP::T* const out,
                                  bk1, bk2, one_trgsw_ntt, xai_ntt, ntt);
     }
 #else
+#ifdef USE_FFT
     constexpr size_t trgsw_size =
         (targetP::k + 1) * targetP::l * (targetP::k + 1) * (targetP::n / 2);
+#else
+    constexpr size_t trgsw_size =
+        (targetP::k + 1) * targetP::l * (targetP::k + 1) * targetP::n;
+#endif
     for (uint32_t i = 0; i < brP::domainP::k * brP::domainP::n; i++) {
         const uint32_t abar =
             CBModSwitch<brP, num_out>(batch_in[i] + roundoffset);
@@ -563,7 +630,20 @@ __device__ inline typename P::T CBTorusFromDouble(const double value)
             double_to_torus64(value * 18446744073709551616.0));
     }
 }
+#else
+template <class P>
+__device__ inline typename P::T CBTorusFromNTT(const NTTValue value)
+{
+    if constexpr (sizeof(typename P::T) == 8) {
+        return static_cast<typename P::T>(ntt_mod_to_torus64<P::n>(value));
+    }
+    else {
+        return static_cast<typename P::T>(ntt_mod_to_torus32<P::n>(value));
+    }
+}
+#endif
 
+#if defined(USE_FFT)
 template <class P>
 __device__ inline void ExternalProductTRLWE_TRGSWFFT(
     typename P::T* const out, const typename P::T* const in,
@@ -704,6 +784,111 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT(
         __syncthreads();
     }
 }
+#else
+template <class P>
+__device__ inline void ExternalProductTRLWE_TRGSWNTT(
+    typename P::T* const out, const typename P::T* const in,
+    const NTTValue* const trgswntt, NTTValue* const sh_acc_ntt,
+    const CuNTTHandler<P::n> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+    constexpr uint32_t N = P::n;
+    constexpr uint32_t num_threads = N / 2;
+    NTTValue* const sh_work = &sh_acc_ntt[0];
+    NTTValue* const sh_accum = &sh_acc_ntt[N];
+
+    for (uint32_t i = tid; i < (P::k + 1) * N; i += num_threads)
+        sh_accum[i] = 0;
+    __syncthreads();
+
+    for (uint32_t part = 0; part <= P::k; part++) {
+        const bool nonce = part < P::k;
+        const uint32_t levels = nonce ? P::lₐ : P::l;
+        const uint32_t bgbit = nonce ? P::Bgₐbit : P::Bgbit;
+        const typename P::T offset =
+            nonce ? ExternalProductOffset<P, true>()
+                  : ExternalProductOffset<P, false>();
+        const int remaining_bits =
+            std::numeric_limits<typename P::T>::digits - levels * bgbit;
+        const typename P::T roundoffset =
+            remaining_bits > 0
+                ? (static_cast<typename P::T>(1) << (remaining_bits - 1))
+                : static_cast<typename P::T>(0);
+        const typename P::T decomp_mask =
+            (static_cast<typename P::T>(1) << bgbit) - 1;
+        const typename P::T decomp_half =
+            static_cast<typename P::T>(1) << (bgbit - 1);
+
+        for (uint32_t digit = 0; digit < levels; digit++) {
+            if (tid < num_threads) {
+#pragma unroll
+                for (int e = 0; e < 2; e++) {
+                    const uint32_t i = tid + e * num_threads;
+                    typename P::T temp =
+                        in[part * N + i] + offset + roundoffset;
+                    const int32_t digit_val = static_cast<int32_t>(
+                        ((temp >>
+                          (std::numeric_limits<typename P::T>::digits -
+                           (digit + 1) * bgbit)) &
+                         decomp_mask) -
+                        decomp_half);
+                    sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
+                }
+            }
+            __syncthreads();
+
+            if (tid < num_threads) {
+                SmallForwardNTT<P::nbit>(sh_work, ntt.forward_root_, tid);
+            }
+            else {
+                for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+                    __syncthreads();
+            }
+
+            if (tid < num_threads) {
+                const uint32_t row =
+                    nonce ? part * P::lₐ + digit : P::k * P::lₐ + digit;
+#pragma unroll
+                for (int e = 0; e < 2; e++) {
+                    const uint32_t i = tid + e * num_threads;
+                    const NTTValue ntt_val = sh_work[i];
+                    for (uint32_t out_k = 0; out_k <= P::k; out_k++) {
+                        const size_t key_offset =
+                            (static_cast<size_t>(row) * (P::k + 1) + out_k) *
+                                N +
+                            i;
+                        sh_accum[out_k * N + i] = small_mod_add<N>(
+                            sh_accum[out_k * N + i],
+                            small_mod_mult<N>(ntt_val,
+                                              __ldg(&trgswntt[key_offset])));
+                    }
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    for (uint32_t k_idx = 0; k_idx <= P::k; k_idx++) {
+        NTTValue* const sh_inv = &sh_accum[k_idx * N];
+        if (tid < num_threads) {
+            SmallInverseNTT<P::nbit>(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
+                                     tid);
+        }
+        else {
+            for (int s = 0; s < SmallInverseNTTSyncCount<N>(); s++)
+                __syncthreads();
+        }
+
+        if (tid < num_threads) {
+#pragma unroll
+            for (int e = 0; e < 2; e++) {
+                const uint32_t i = tid + e * num_threads;
+                out[k_idx * N + i] = CBTorusFromNTT<P>(sh_inv[i]);
+            }
+        }
+        __syncthreads();
+    }
+}
 #endif  // USE_FFT
 
 template <class P>
@@ -716,6 +901,8 @@ void __CBExternalProductKernel__(typename P::T* const out,
     extern __shared__ NTTValue sh_acc_ntt[];
 #if defined(USE_FFT)
     ExternalProductTRLWE_TRGSWFFT<P>(out, in, cbsk, sh_acc_ntt, ntt);
+#else
+    ExternalProductTRLWE_TRGSWNTT<P>(out, in, cbsk, sh_acc_ntt, ntt);
 #endif
 }
 
@@ -733,9 +920,7 @@ void __CBExternalProductBatchKernel__(typename P::T* const trgsw,
 
     constexpr size_t trlwe_elems = TRLWEElements<P>();
     constexpr uint32_t main_row_offset = P::k * target_l_a;
-    constexpr size_t cbsk_one_key_elems =
-        static_cast<size_t>(P::k * P::lₐ * P::l̅ₐ + P::l * P::l̅) *
-        (P::k + 1) * (P::n / 2);
+    constexpr size_t cbsk_one_key_elems = TRGSWFFTElements<P>();
     const uint32_t k = row / num_out;
     const uint32_t i = row % num_out;
     typename P::T* const batch_trgsw = trgsw + batch * trgsw_stride;
@@ -743,6 +928,13 @@ void __CBExternalProductBatchKernel__(typename P::T* const trgsw,
     extern __shared__ NTTValue sh_acc_ntt[];
 #if defined(USE_FFT)
     ExternalProductTRLWE_TRGSWFFT<P>(
+        batch_trgsw +
+            static_cast<size_t>(k * target_l_a + i) * trlwe_elems,
+        batch_trgsw +
+            static_cast<size_t>(main_row_offset + i) * trlwe_elems,
+        cbsk + static_cast<size_t>(k) * cbsk_one_key_elems, sh_acc_ntt, ntt);
+#else
+    ExternalProductTRLWE_TRGSWNTT<P>(
         batch_trgsw +
             static_cast<size_t>(k * target_l_a + i) * trlwe_elems,
         batch_trgsw +
@@ -819,6 +1011,9 @@ void CBswitchingKeyPolynomialToDevice(
                               cudaMemcpyHostToDevice));
 #if defined(USE_FFT)
         __TRGSWPolynomialToFFT__<P><<<rows, P::n / 2>>>(
+            storage[i], d_poly, *RingHandler<P>(i));
+#else
+        __TRGSWPolynomialToNTT__<P><<<rows, P::n / 2>>>(
             storage[i], d_poly, *RingHandler<P>(i));
 #endif
         CuCheckError();

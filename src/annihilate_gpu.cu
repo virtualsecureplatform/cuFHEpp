@@ -63,7 +63,13 @@ CuNTTHandler<P::n>* AnnihilateHandler(const int gpuNum)
 template <class P>
 constexpr size_t EvalAutoKeyElements()
 {
-    return static_cast<size_t>(P::k) * P::l * (P::k + 1) * (P::n / 2);
+#if defined(USE_FFT)
+    constexpr uint32_t transform_size = P::n / 2;
+#else
+    constexpr uint32_t transform_size = P::n;
+#endif
+    return static_cast<size_t>(P::k) * P::l * (P::k + 1) *
+           transform_size;
 }
 
 template <class P>
@@ -142,6 +148,45 @@ __global__ void __HalfTRGSWPolynomialToFFT__(NTTValue* const out,
 
     if (tid < half_n) out[out_index + tid] = sh_fft[tid];
 }
+#else
+template <class P>
+__global__ void __HalfTRGSWPolynomialToNTT__(NTTValue* const out,
+                                            const typename P::T* const in,
+                                            CuNTTHandler<P::n> ntt)
+{
+    constexpr uint32_t N = P::n;
+    constexpr uint32_t num_threads = N / 2;
+    __shared__ NTTValue sh_ntt[N];
+
+    const uint32_t tid = ThisThreadRankInBlock();
+    const size_t row = blockIdx.x;
+    const size_t row_offset = row * N;
+
+    if (tid < num_threads) {
+#pragma unroll
+        for (int e = 0; e < 2; e++) {
+            const uint32_t i = tid + e * num_threads;
+            sh_ntt[i] = torus_to_ntt_mod<N>(in[row_offset + i]);
+        }
+    }
+    __syncthreads();
+
+    if (tid < num_threads) {
+        SmallForwardNTT<P::nbit>(sh_ntt, ntt.forward_root_, tid);
+    }
+    else {
+        for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+            __syncthreads();
+    }
+
+    if (tid < num_threads) {
+#pragma unroll
+        for (int e = 0; e < 2; e++) {
+            const uint32_t i = tid + e * num_threads;
+            out[row_offset + i] = sh_ntt[i];
+        }
+    }
+}
 #endif  // USE_FFT
 
 template <class P>
@@ -194,7 +239,20 @@ __device__ inline typename P::T __TorusFromDouble__(const double value)
             double_to_torus64(value * 18446744073709551616.0));
     }
 }
+#else
+template <class P>
+__device__ inline typename P::T __TorusFromNTT__(const NTTValue value)
+{
+    if constexpr (sizeof(typename P::T) == 8) {
+        return static_cast<typename P::T>(ntt_mod_to_torus64<P::n>(value));
+    }
+    else {
+        return static_cast<typename P::T>(ntt_mod_to_torus32<P::n>(value));
+    }
+}
+#endif
 
+#if defined(USE_FFT)
 template <class P>
 __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
     typename P::T* const out, const typename P::T* const poly,
@@ -336,6 +394,104 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
         __syncthreads();
     }
 }
+#else
+template <class P>
+__device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
+    typename P::T* const out, const typename P::T* const poly,
+    const typename P::T* const auto_b, const NTTValue* const halftrgswntt,
+    NTTValue* const sh_acc_ntt, const CuNTTHandler<P::n> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+    constexpr uint32_t N = P::n;
+    constexpr uint32_t num_threads = N / 2;
+    NTTValue* const sh_work = &sh_acc_ntt[0];
+    NTTValue* const sh_accum = &sh_acc_ntt[N];
+
+    for (uint32_t i = tid; i < (P::k + 1) * N; i += num_threads)
+        sh_accum[i] = 0;
+    __syncthreads();
+
+    constexpr typename P::T decomp_offset = offsetgen<P>();
+    constexpr int remaining_bits =
+        std::numeric_limits<typename P::T>::digits - P::l * P::Bgbit;
+    constexpr typename P::T roundoffset =
+        remaining_bits > 0
+            ? (static_cast<typename P::T>(1) << (remaining_bits - 1))
+            : static_cast<typename P::T>(0);
+    constexpr typename P::T decomp_mask =
+        (static_cast<typename P::T>(1) << P::Bgbit) - 1;
+    constexpr typename P::T decomp_half =
+        static_cast<typename P::T>(1) << (P::Bgbit - 1);
+
+    for (uint32_t digit = 0; digit < P::l; digit++) {
+        if (tid < num_threads) {
+#pragma unroll
+            for (int e = 0; e < 2; e++) {
+                const uint32_t i = tid + e * num_threads;
+                typename P::T temp = poly[i] + decomp_offset + roundoffset;
+                const int32_t digit_val = static_cast<int32_t>(
+                    ((temp >>
+                      (std::numeric_limits<typename P::T>::digits -
+                       (digit + 1) * P::Bgbit)) &
+                     decomp_mask) -
+                    decomp_half);
+                sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
+            }
+        }
+        __syncthreads();
+
+        if (tid < num_threads) {
+            SmallForwardNTT<P::nbit>(sh_work, ntt.forward_root_, tid);
+        }
+        else {
+            for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+                __syncthreads();
+        }
+
+        if (tid < num_threads) {
+#pragma unroll
+            for (int e = 0; e < 2; e++) {
+                const uint32_t i = tid + e * num_threads;
+                const NTTValue ntt_val = sh_work[i];
+                for (uint32_t out_k = 0; out_k <= P::k; out_k++) {
+                    const size_t key_offset =
+                        (static_cast<size_t>(digit) * (P::k + 1) + out_k) * N +
+                        i;
+                    sh_accum[out_k * N + i] = small_mod_add<N>(
+                        sh_accum[out_k * N + i],
+                        small_mod_mult<N>(ntt_val,
+                                          __ldg(&halftrgswntt[key_offset])));
+                }
+            }
+        }
+        __syncthreads();
+    }
+
+    for (uint32_t k_idx = 0; k_idx <= P::k; k_idx++) {
+        NTTValue* const sh_inv = &sh_accum[k_idx * N];
+        if (tid < num_threads) {
+            SmallInverseNTT<P::nbit>(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
+                                     tid);
+        }
+        else {
+            for (int s = 0; s < SmallInverseNTTSyncCount<N>(); s++)
+                __syncthreads();
+        }
+
+        if (tid < num_threads) {
+#pragma unroll
+            for (int e = 0; e < 2; e++) {
+                const uint32_t i = tid + e * num_threads;
+                const typename P::T val = __TorusFromNTT__<P>(sh_inv[i]);
+                if (k_idx == P::k)
+                    out[k_idx * N + i] = auto_b[i] - val;
+                else
+                    out[k_idx * N + i] = -val;
+            }
+        }
+        __syncthreads();
+    }
+}
 #endif  // USE_FFT
 
 template <class P>
@@ -359,6 +515,9 @@ void __EvalAutoKernel__(typename P::T* const out,
 
 #if defined(USE_FFT)
     __ExternalProductPolyHalfTRGSWFFT__<P>(out, auto_a, auto_b, evalautokey,
+                                           sh_acc_ntt, ntt);
+#else
+    __ExternalProductPolyHalfTRGSWNTT__<P>(out, auto_a, auto_b, evalautokey,
                                            sh_acc_ntt, ntt);
 #endif
 }
@@ -445,6 +604,9 @@ void __EvalAutoBatchKernel__(typename P::T* const out,
 #if defined(USE_FFT)
     __ExternalProductPolyHalfTRGSWFFT__<P>(
         batch_out, auto_a, auto_b, evalautokey, sh_acc_ntt, ntt);
+#else
+    __ExternalProductPolyHalfTRGSWNTT__<P>(
+        batch_out, auto_a, auto_b, evalautokey, sh_acc_ntt, ntt);
 #endif
 }
 
@@ -513,6 +675,9 @@ void AnnihilateKeyPolynomialToDevice(const AnnihilateKeyPolynomial<P>& ahk,
                               cudaMemcpyHostToDevice));
 #if defined(USE_FFT)
         __HalfTRGSWPolynomialToFFT__<P><<<rows, P::n / 2>>>(
+            storage[i], d_poly, *AnnihilateHandler<P>(i));
+#else
+        __HalfTRGSWPolynomialToNTT__<P><<<rows, P::n / 2>>>(
             storage[i], d_poly, *AnnihilateHandler<P>(i));
 #endif
         CuCheckError();
