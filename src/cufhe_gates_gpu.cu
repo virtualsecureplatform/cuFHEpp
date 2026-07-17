@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 #include <array>
-#include <cloudkey.hpp>
+#include <tfhe/cloudkey.hpp>
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>
 #include <include/keyswitch_gpu.cuh>

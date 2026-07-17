@@ -12,9 +12,9 @@
 #include <vector>
 
 #include <params.hpp>
-#include <key.hpp>
-#include <trgsw.hpp>
-#include <detwfa.hpp>
+#include <tfhe/detwfa.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/trgsw.hpp>
 
 #include <include/ntt_small_modulus.cuh>
 #include <include/gatebootstrapping_gpu.cuh>

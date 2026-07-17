@@ -9,10 +9,10 @@
 #include <cmath>
 
 #include <params.hpp>
-#include <key.hpp>
-#include <tlwe.hpp>
-#include <gate.hpp>
-#include <cloudkey.hpp>
+#include <tfhe/cloudkey.hpp>
+#include <tfhe/gate.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/tlwe.hpp>
 
 #include <include/cufhe_gpu.cuh>
 #include <include/bootstrap_gpu.cuh>

@@ -13,8 +13,8 @@
 #include <include/gatebootstrapping_gpu.cuh>
 #include <include/keyswitch_gpu.cuh>
 #include <include/ntt_small_modulus.cuh>
-#include <key.hpp>
-#include <trgsw.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/trgsw.hpp>
 
 namespace cufhe {
 

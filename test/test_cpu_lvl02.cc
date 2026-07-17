@@ -8,10 +8,10 @@
 #include <array>
 
 #include <params.hpp>
-#include <key.hpp>
-#include <tlwe.hpp>
-#include <gate.hpp>
-#include <cloudkey.hpp>
+#include <tfhe/cloudkey.hpp>
+#include <tfhe/gate.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/tlwe.hpp>
 
 int main()
 {

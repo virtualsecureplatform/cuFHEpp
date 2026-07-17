@@ -2,17 +2,17 @@
 
 #include <span>
 
-#include <circuitbootstrapping.hpp>
-#include <cloudkey.hpp>
-#include <cmuxmem.hpp>
-#include <gate.hpp>
-#include <gatebootstrapping.hpp>
-#include <key.hpp>
-#include <keyswitch.hpp>
-#include <tlwe.hpp>
-#include <trgsw.hpp>
-#include <trlwe.hpp>
-#include <ascon.hpp>
+#include <tfhe/circuitbootstrapping.hpp>
+#include <tfhe/cloudkey.hpp>
+#include <tfhe/cmuxmem.hpp>
+#include <tfhe/gate.hpp>
+#include <tfhe/gatebootstrapping.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/keyswitch.hpp>
+#include <tfhe/tlwe.hpp>
+#include <tfhe/trgsw.hpp>
+#include <tfhe/trlwe.hpp>
+#include <tfhe/ascon.hpp>
 
 #include "cufhe_gpu.cuh"
 

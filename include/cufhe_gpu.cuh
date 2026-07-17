@@ -33,7 +33,7 @@
 #include <cuda_runtime.h>
 
 #include <array>
-#include <cloudkey.hpp>
+#include <tfhe/cloudkey.hpp>
 
 #include "bootstrap_gpu.cuh"
 

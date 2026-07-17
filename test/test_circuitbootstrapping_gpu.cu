@@ -11,13 +11,13 @@
 #include <type_traits>
 #include <vector>
 
-#include <circuitbootstrapping.hpp>
-#include <gatebootstrapping.hpp>
-#include <key.hpp>
-#include <keyswitch.hpp>
-#include <tlwe.hpp>
-#include <trgsw.hpp>
-#include <trlwe.hpp>
+#include <tfhe/circuitbootstrapping.hpp>
+#include <tfhe/gatebootstrapping.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/keyswitch.hpp>
+#include <tfhe/tlwe.hpp>
+#include <tfhe/trgsw.hpp>
+#include <tfhe/trlwe.hpp>
 
 #include <include/annihilate_gpu.cuh>
 #include <include/bootstrap_gpu.cuh>

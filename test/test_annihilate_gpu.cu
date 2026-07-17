@@ -4,10 +4,10 @@
 #include <memory>
 #include <random>
 
-#include <key.hpp>
-#include <keyswitch.hpp>
-#include <trgsw.hpp>
-#include <trlwe.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/keyswitch.hpp>
+#include <tfhe/trgsw.hpp>
+#include <tfhe/trlwe.hpp>
 
 #include <include/annihilate_gpu.cuh>
 #include <include/bootstrap_gpu.cuh>

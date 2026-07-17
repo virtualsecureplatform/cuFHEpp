@@ -8,8 +8,8 @@
 #include <include/annihilate_gpu.cuh>
 #include <include/error_gpu.cuh>
 #include <include/gatebootstrapping_gpu.cuh>
-#include <key.hpp>
-#include <trgsw.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/trgsw.hpp>
 #include <utils.hpp>
 
 namespace cufhe {

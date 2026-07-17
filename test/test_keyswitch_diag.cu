@@ -9,9 +9,9 @@
 #include <vector>
 
 #include <params.hpp>
-#include <key.hpp>
-#include <tlwe.hpp>
-#include <keyswitch.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/keyswitch.hpp>
+#include <tfhe/tlwe.hpp>
 
 #include <include/keyswitch_gpu.cuh>
 #include <include/cufhe_gpu.cuh>

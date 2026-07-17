@@ -18,11 +18,11 @@
 #include <array>
 
 #include <params.hpp>
-#include <key.hpp>
-#include <tlwe.hpp>
-#include <trgsw.hpp>
-#include <detwfa.hpp>
-#include <gatebootstrapping.hpp>
+#include <tfhe/detwfa.hpp>
+#include <tfhe/gatebootstrapping.hpp>
+#include <tfhe/key.hpp>
+#include <tfhe/tlwe.hpp>
+#include <tfhe/trgsw.hpp>
 
 #include <include/ntt_small_modulus.cuh>
 #include <include/gatebootstrapping_gpu.cuh>
