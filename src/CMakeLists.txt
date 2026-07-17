@@ -1,13 +1,16 @@
 set(CUFHE_GPU_SOURCES
     bootstrap_gpu.cu
-    annihilate_gpu.cu
-    circuitbootstrapping_gpu.cu
     cufhe_gates_gpu.cu
     cufhe_gpu.cu
     keyswitch_gpu.cu
     ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
 )
-if(USE_FFT)
+if(NOT USE_BLOCK_BINARY AND NOT USE_CONCRETE)
+    list(APPEND CUFHE_GPU_SOURCES
+        annihilate_gpu.cu
+        circuitbootstrapping_gpu.cu)
+endif()
+if(USE_FFT AND NOT USE_BLOCK_BINARY AND NOT USE_CONCRETE)
     list(APPEND CUFHE_GPU_SOURCES
         aes_gpu.cu
         ascon_gpu.cu)

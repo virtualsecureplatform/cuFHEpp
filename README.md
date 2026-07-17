@@ -16,9 +16,11 @@ We provide the BibTeX for citing this library, but since this is a forked versio
 ## What is cuFHEpp?
 The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (FHE) on CUDA-enabled GPUs. It implements the TFHE scheme [CGGI16][CGGI17] proposed by Chillotti et al. in CUDA C++. Compared to the [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp), which reports the fastest gate-by-gate bootstrapping performance on CPUs, the cuFHEpp library yields almost the same performance per SM. Since the GPU has many SMs (128 in the A100), cuFHEpp delivers better performance when there are enough parallelizable tasks.
 
-By default, cuFHEpp uses a negacyclic FFT over double-precision complex numbers (FFNT algorithm from [OS23]). The half-size FFT trick packs N real coefficients into N/2 complex values, eliminating modular reduction overhead and leveraging native FMA instructions. Root and twist tables are generated internally using standard C++ `<complex>` math, and the FFT itself runs as custom shared-memory Cooley-Tukey/Gentleman-Sande butterfly kernels optimized for N=1024 and N=2048. An alternative FFT backend adapted from the [tfhe-rs](https://github.com/zama-ai/tfhe-rs) CUDA backend is available via `-DUSE_GPU_FFT=OFF`. A custom small-modulus NTT path is also available via `-DUSE_FFT=OFF`.
+By default, cuFHEpp uses a negacyclic FFT over double-precision complex numbers (FFNT algorithm from [OS23]). The half-size FFT trick packs N real coefficients into N/2 complex values, eliminating modular reduction overhead and leveraging native FMA instructions. Root and twist tables are generated internally using standard C++ `<complex>` math, and the FFT itself runs as custom shared-memory Cooley-Tukey/Gentleman-Sande butterfly kernels optimized for N=512, N=1024, and N=2048. An alternative FFT backend adapted from the [tfhe-rs](https://github.com/zama-ai/tfhe-rs) CUDA backend is available via `-DUSE_GPU_FFT=OFF`. A custom small-modulus NTT path is also available via `-DUSE_FFT=OFF`.
 
 Key bundle bootstrapping (`-DUSE_KEY_BUNDLE=ON`, default) processes 2 LWE bits per blind rotation step, reducing the number of iterations by half at the cost of a slightly more complex per-step computation. This yields a ~10-17% throughput improvement over the standard 1-bit blind rotation.
+
+Block-binary keys are available with `-DUSE_BLOCK_BINARY=ON`. This selects TFHEpp's block-binary parameters, enables subset key switching, disables incompatible key bundling, and uses a fused block external product for Boolean gates at levels 0 and 1. This configuration currently requires the custom GPU FFT backend (`USE_FFT=ON`, `USE_GPU_FFT=ON`). Circuit bootstrapping, AES, and ASCON targets are not built with block-binary parameters because those CUDA paths currently require GLWE dimension 1.
 
 ## Performance
 
@@ -92,6 +94,13 @@ make
 The default CUDA architecture list is `80;89`, covering A100 and RTX 4070.
 For an RTX 4070-only build, pass `-DCMAKE_CUDA_ARCHITECTURES=89`.
 
+For a block-binary build:
+```
+cmake -B build-block -DENABLE_TEST=ON -DUSE_BLOCK_BINARY=ON
+cmake --build build-block
+./build-block/test/test_block_binary_gpu
+```
+
 ### User Manual
 See files in `test/` as examples. The library uses [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp) types for key generation, encryption, and decryption. cuFHEpp handles the GPU-accelerated gate evaluation.
 
@@ -131,6 +140,12 @@ uint8_t result = TFHEpp::tlweSymDecrypt<P>(ct_out.tlwehost, sk.key.get<P>());
 // --- Cleanup ---
 st.Destroy();
 CleanUp();
+```
+
+With `USE_BLOCK_BINARY=ON`, generate the subset key-switching key instead:
+```c++
+ek.emplacebk<brP>(sk);
+ek.emplacesubiksk<iksP>(sk);
 ```
 
 #### Multi-GPU

@@ -127,19 +127,14 @@ __global__ void __HalfTRGSWPolynomialToFFT__(NTTValue* const out,
 
     if (tid < fft_threads) {
 #ifdef USE_GPU_FFT
-        if constexpr (N == 1024) {
-            GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-        }
-        else if constexpr (N == 2048) {
-            GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-        }
+        GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
 #else
         NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
 #endif
     }
     else {
 #ifdef USE_GPU_FFT
-        for (int s = 0; s < 3; s++) __syncthreads();
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
 #else
         for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
             __syncthreads();
@@ -318,19 +313,15 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
 
         if (tid < fft_threads) {
 #ifdef USE_GPU_FFT
-            if constexpr (N == 1024) {
-                GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-            }
-            else if constexpr (N == 2048) {
-                GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-            }
+            GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
 #else
             NSMFFT_direct<HalfDegree<Degree<N>>>(sh_fft);
 #endif
         }
         else {
 #ifdef USE_GPU_FFT
-            for (int s = 0; s < 3; s++) __syncthreads();
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
 #else
             for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
                 __syncthreads();
@@ -355,19 +346,15 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
         NTTValue* const sh_inv = &sh_accum[k_idx * half_n];
         if (tid < fft_threads) {
 #ifdef USE_GPU_FFT
-            if constexpr (N == 1024) {
-                GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
-            }
-            else if constexpr (N == 2048) {
-                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, tid);
-            }
+            GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
 #else
             NSMFFT_inverse<HalfDegree<Degree<N>>>(sh_inv);
 #endif
         }
         else {
 #ifdef USE_GPU_FFT
-            for (int s = 0; s < 3; s++) __syncthreads();
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
 #else
             for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
                 __syncthreads();
@@ -812,9 +799,13 @@ void AnnihilateKeySwitching(typename P::T* const out,
         const int)
 
 INST(TFHEpp::lvl1param);
+#if !defined(USE_BLOCK_BINARY) && !defined(USE_CONCRETE)
 INST(TFHEpp::AHlvl1param);
+#endif
 INST(TFHEpp::lvl2param);
+#if !defined(USE_BLOCK_BINARY) && !defined(USE_CONCRETE)
 INST(TFHEpp::AHlvl2param);
+#endif
 
 #undef INST
 

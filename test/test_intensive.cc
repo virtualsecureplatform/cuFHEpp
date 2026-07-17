@@ -120,7 +120,11 @@ int main()
     TFHEpp::SecretKey* sk = new TFHEpp::SecretKey();
     TFHEpp::EvalKey ek(*sk);
     ek.emplacebk<TFHEpp::lvl01param>(*sk);
+#ifdef USE_SUBSET_KEY
+    ek.emplacesubiksk<TFHEpp::lvl10param>(*sk);
+#else
     ek.emplaceiksk<TFHEpp::lvl10param>(*sk);
+#endif
     cufhe::Initialize(ek);
 
     testNand(*sk);

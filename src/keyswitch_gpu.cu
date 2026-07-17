@@ -5,7 +5,12 @@ std::vector<TFHEpp::lvl0param::T*> ksk_devs;
 std::vector<TFHEpp::lvl0param::T*> ksk_devs_lvl20;
 
 void KeySwitchingKeyToDevice(
-    const TFHEpp::KeySwitchingKey<TFHEpp::lvl10param>& ksk, const int gpuNum)
+#ifdef USE_SUBSET_KEY
+    const TFHEpp::SubsetKeySwitchingKey<TFHEpp::lvl10param>& ksk,
+#else
+    const TFHEpp::KeySwitchingKey<TFHEpp::lvl10param>& ksk,
+#endif
+    const int gpuNum)
 {
     ksk_devs.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {

@@ -42,24 +42,32 @@ void Initialize() { InitializeNTThandlers(_gpuNum); }
 void Initialize(const TFHEpp::EvalKey& ek)
 {
     InitializeNTThandlers(_gpuNum);
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
+    InitializeXaiNTT(_gpuNum);
+#endif
 #ifdef USE_KEY_BUNDLE
     BootstrappingKeyBundleToNTT<TFHEpp::lvl01param>(
         ek.getbk<TFHEpp::lvl01param>(), _gpuNum);
-    InitializeXaiNTT(_gpuNum);
     InitializeOneTRGSWNTT(_gpuNum);
 #else
     BootstrappingKeyToNTT<TFHEpp::lvl01param>(ek.getbk<TFHEpp::lvl01param>(),
                                               _gpuNum);
 #endif
+#ifdef USE_SUBSET_KEY
+    KeySwitchingKeyToDevice(ek.getsubiksk<TFHEpp::lvl10param>(), _gpuNum);
+#else
     KeySwitchingKeyToDevice(ek.getiksk<TFHEpp::lvl10param>(), _gpuNum);
+#endif
 }
 
 void CleanUp()
 {
     DeleteBootstrappingKeyNTT(_gpuNum);
     DeleteKeySwitchingKey(_gpuNum);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
     DeleteXaiNTT();
+#endif
+#ifdef USE_KEY_BUNDLE
     DeleteOneTRGSWNTT();
 #endif
 }

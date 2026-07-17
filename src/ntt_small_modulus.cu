@@ -539,7 +539,7 @@ template class CuGPUFFTHandler<TFHEpp::lvl2param::n>;
 
 #endif  // USE_FFT && USE_GPU_FFT
 
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
 //=============================================================================
 // XaiNTT table: precomputed NTT(X^a) for a = 0..2N-1
 // Used for on-the-fly keybundle computation in key-bundle bootstrapping
@@ -547,6 +547,9 @@ template class CuGPUFFTHandler<TFHEpp::lvl2param::n>;
 
 std::vector<NTTValue*> xai_ntt_devs;
 std::vector<NTTValue*> one_trgsw_ntt_devs;
+#ifdef USE_BLOCK_BINARY
+__device__ NTTValue* block_xai_fft;
+#endif
 
 #ifdef USE_FFT
 #ifdef USE_GPU_FFT
@@ -555,7 +558,7 @@ std::vector<NTTValue*> one_trgsw_ntt_devs;
 //=============================================================================
 
 // GPU kernel: compute GPU-FFT of (X^a - 1) mod (X^N+1) for a = 0..2N-1
-// Uses fold + twist + GPUFFTForward512
+// Uses fold + twist + the configured lvl1 GPU FFT.
 __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft,
                                   const double2* const twist_table,
                                   const double2* const forward_root)
@@ -594,10 +597,10 @@ __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft,
     __syncthreads();
 
     if (tid < FFT_THREADS) {
-        GPUFFTForward512(sh_fft, forward_root, tid);
+        GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {
-        for (int s = 0; s < 5; s++) __syncthreads();
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < HALF_N) {
@@ -624,11 +627,16 @@ void InitializeXaiNTT(const int gpuNum)
                                            g_gpufft_params[i].forward_root);
         cudaDeviceSynchronize();
         CuCheckError();
+#ifdef USE_BLOCK_BINARY
+        NTTValue* const xai_ptr = xai_ntt_devs[i];
+        CuSafeCall(
+            cudaMemcpyToSymbol(block_xai_fft, &xai_ptr, sizeof(xai_ptr)));
+#endif
     }
 }
 
 // GPU kernel: FFT Torus32 polynomials using GPU-FFT (for OneTRGSW identity)
-// Normalizes by 1/2^32, fold + twist + GPUFFTForward512
+// Normalizes by 1/2^32, then applies fold, twist, and the lvl1 GPU FFT.
 __global__ void __FFTPolynomials__(NTTValue* const out,
                                    const uint32_t* const in,
                                    const double2* const twist_table,
@@ -659,10 +667,10 @@ __global__ void __FFTPolynomials__(NTTValue* const out,
     __syncthreads();
 
     if (tid < FFT_THREADS) {
-        GPUFFTForward512(sh_fft, forward_root, tid);
+        GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {
-        for (int s = 0; s < 5; s++) __syncthreads();
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < HALF_N) {
@@ -1082,7 +1090,7 @@ void DeleteOneTRGSWNTT()
 }
 
 //=============================================================================
-// lvl02 (N=2048) key-bundle tables: xai and one_trgsw for GPUFFTForward1024
+// lvl02 key-bundle tables: xai and one_trgsw for the configured lvl2 FFT.
 //=============================================================================
 
 std::vector<NTTValue*> xai_ntt_devs_lvl02;
@@ -1128,10 +1136,10 @@ __global__ void __ComputeXaiFFT_lvl2__(NTTValue* const xai_fft,
     __syncthreads();
 
     if (tid < FFT_THREADS) {
-        GPUFFTForward1024(sh_fft, forward_root, tid);
+        GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {
-        for (int s = 0; s < 6; s++) __syncthreads();
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < HALF_N) {
@@ -1162,7 +1170,7 @@ void InitializeXaiNTT_lvl02(const int gpuNum)
 }
 
 // GPU kernel: FFT of lvl2param identity TRGSW polynomials (uint64_t Torus)
-// Normalizes by 1/2^64 = 1/(2^32 * 2^32), uses fold+twist+GPUFFTForward1024
+// Normalizes by 1/2^64 = 1/(2^32 * 2^32), then applies fold, twist, and FFT.
 __global__ void __FFTPolynomials_lvl2__(NTTValue* const out,
                                         const uint64_t* const in,
                                         const double2* const twist_table,
@@ -1193,10 +1201,10 @@ __global__ void __FFTPolynomials_lvl2__(NTTValue* const out,
     __syncthreads();
 
     if (tid < FFT_THREADS) {
-        GPUFFTForward1024(sh_fft, forward_root, tid);
+        GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {
-        for (int s = 0; s < 6; s++) __syncthreads();
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < HALF_N) {

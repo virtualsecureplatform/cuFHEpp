@@ -54,18 +54,10 @@ __global__ void __TRGSW2FFT_Test__(NTTValue* const bk_fft,
     __syncthreads();
 
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024) {
-            GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-        } else if constexpr (N == 2048) {
-            GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-        }
+        GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
-        if constexpr (N == 1024) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        } else if constexpr (N == 2048) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        }
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < HALF_N) {

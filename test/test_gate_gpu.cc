@@ -50,7 +50,11 @@ int main()
     TFHEpp::SecretKey* sk = new TFHEpp::SecretKey();
     TFHEpp::EvalKey ek(*sk);
     ek.emplacebk<brP>(*sk);
+#ifdef USE_SUBSET_KEY
+    ek.emplacesubiksk<iksP>(*sk);
+#else
     ek.emplaceiksk<iksP>(*sk);
+#endif
 
     cout << "n:" << sk->params.lvl0.n << endl;
 

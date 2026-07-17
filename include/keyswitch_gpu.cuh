@@ -3,6 +3,7 @@
 #include <include/cufhe_gpu.cuh>
 #include <include/error_gpu.cuh>
 #include <include/utils_gpu.cuh>
+#include <type_traits>
 
 namespace cufhe {
 
@@ -22,14 +23,51 @@ __device__ constexpr typename P::domainP::T iksoffsetgen()
 }
 
 template <class P>
+inline constexpr bool use_subset_key_switch =
+#ifdef USE_SUBSET_KEY
+    std::is_same_v<P, TFHEpp::lvl10param>;
+#else
+    false;
+#endif
+
+template <class P>
+__device__ inline typename P::targetP::T KeySwitchTorusConvert(
+    const typename P::domainP::T value)
+{
+    constexpr uint32_t domain_digit =
+        std::numeric_limits<typename P::domainP::T>::digits;
+    constexpr uint32_t target_digit =
+        std::numeric_limits<typename P::targetP::T>::digits;
+    if constexpr (domain_digit == target_digit)
+        return value;
+    else if constexpr (domain_digit > target_digit)
+        return (value + (typename P::domainP::T{1}
+                         << (domain_digit - target_digit - 1))) >>
+               (domain_digit - target_digit);
+    else
+        return static_cast<typename P::targetP::T>(value)
+               << (target_digit - domain_digit);
+}
+
+template <class P>
+__device__ inline typename P::domainP::T SampleExtractCoefficient(
+    const typename P::domainP::T* const trlwe, const int index)
+{
+    constexpr int polynomial_size = P::domainP::n;
+    const int component = index / polynomial_size;
+    const int coefficient = index % polynomial_size;
+    return coefficient == 0
+               ? trlwe[component * polynomial_size]
+               : -trlwe[(component + 1) * polynomial_size - coefficient];
+}
+
+template <class P>
 __device__ inline void KeySwitch(typename P::targetP::T* const lwe,
                                  const typename P::domainP::T* const tlwe,
                                  const typename P::targetP::T* const ksk)
 {
     constexpr uint domain_digit =
         std::numeric_limits<typename P::domainP::T>::digits;
-    constexpr uint target_digit =
-        std::numeric_limits<typename P::targetP::T>::digits;
     constexpr typename P::domainP::T roundoffset =
         (P::basebit * P::t) < domain_digit
             ? 1ULL << (domain_digit - (1 + P::basebit * P::t))
@@ -42,23 +80,19 @@ __device__ inline void KeySwitch(typename P::targetP::T* const lwe,
     for (int i = tid; i <= P::targetP::k * P::targetP::n; i += bdim) {
         typename P::targetP::T res = 0;
         if (i == P::targetP::k * P::targetP::n) {
-            if constexpr (domain_digit == target_digit)
-                res = tlwe[P::domainP::k * P::domainP::n];
-            else if constexpr (domain_digit > target_digit)
-                res = (tlwe[P::domainP::k * P::domainP::n] +
-                       (1ULL << (domain_digit - target_digit - 1))) >>
-                      (domain_digit - target_digit);
-            else if constexpr (domain_digit < target_digit)
-                res = static_cast<typename P::targetP::T>(
-                          tlwe[P::domainP::k * P::domainP::n])
-                      << (target_digit - domain_digit);
+            res = KeySwitchTorusConvert<P>(tlwe[P::domainP::k * P::domainP::n]);
         }
-        for (int j = 0; j < P::domainP::k * P::domainP::n; j++) {
-            typename P::domainP::T tmp;
-            if (j == 0)
-                tmp = tlwe[0];
-            else
-                tmp = -tlwe[P::domainP::k * P::domainP::n - j];
+        else if constexpr (use_subset_key_switch<P>) {
+            res =
+                KeySwitchTorusConvert<P>(SampleExtractCoefficient<P>(tlwe, i));
+        }
+        constexpr int first_switched =
+            use_subset_key_switch<P> ? P::targetP::k * P::targetP::n : 0;
+        constexpr int switched_count =
+            P::domainP::k * P::domainP::n - first_switched;
+        for (int key_index = 0; key_index < switched_count; key_index++) {
+            const int j = first_switched + key_index;
+            typename P::domainP::T tmp = SampleExtractCoefficient<P>(tlwe, j);
             tmp += decompoffset + roundoffset;
             for (int k = 0; k < P::t; k++) {
                 const int32_t val =
@@ -69,14 +103,14 @@ __device__ inline void KeySwitch(typename P::targetP::T* const lwe,
                     halfbase;
                 constexpr int numbase = 1 << (P::basebit - 1);
                 if (val != 0) {
-                    const typename P::targetP::T kskelem =
-                        __ldg(&ksk[j * (P::t * numbase *
-                                        (P::targetP::k * P::targetP::n + 1)) +
-                                   k * (numbase *
-                                        (P::targetP::k * P::targetP::n + 1)) +
-                                   (abs(val) - 1) *
-                                       (P::targetP::k * P::targetP::n + 1) +
-                                   i]);
+                    const typename P::targetP::T kskelem = __ldg(
+                        &ksk[key_index * (P::t * numbase *
+                                          (P::targetP::k * P::targetP::n + 1)) +
+                             k * (numbase *
+                                  (P::targetP::k * P::targetP::n + 1)) +
+                             (abs(val) - 1) *
+                                 (P::targetP::k * P::targetP::n + 1) +
+                             i]);
                     if (val > 0)
                         res -= kskelem;
                     else if (val < 0)
@@ -98,8 +132,6 @@ __device__ inline void KeySwitchFromTLWE(
 {
     constexpr uint domain_digit =
         std::numeric_limits<typename P::domainP::T>::digits;
-    constexpr uint target_digit =
-        std::numeric_limits<typename P::targetP::T>::digits;
     constexpr typename P::domainP::T roundoffset =
         (P::basebit * P::t) < domain_digit
             ? 1ULL << (domain_digit - (1 + P::basebit * P::t))
@@ -112,20 +144,18 @@ __device__ inline void KeySwitchFromTLWE(
     for (int i = tid; i <= P::targetP::k * P::targetP::n; i += bdim) {
         typename P::targetP::T res = 0;
         if (i == P::targetP::k * P::targetP::n) {
-            if constexpr (domain_digit == target_digit)
-                res = tlwe[P::domainP::k * P::domainP::n];
-            else if constexpr (domain_digit > target_digit)
-                res = (tlwe[P::domainP::k * P::domainP::n] +
-                       (1ULL << (domain_digit - target_digit - 1))) >>
-                      (domain_digit - target_digit);
-            else if constexpr (domain_digit < target_digit)
-                res = static_cast<typename P::targetP::T>(
-                          tlwe[P::domainP::k * P::domainP::n])
-                      << (target_digit - domain_digit);
+            res = KeySwitchTorusConvert<P>(tlwe[P::domainP::k * P::domainP::n]);
         }
+        else if constexpr (use_subset_key_switch<P>)
+            res = KeySwitchTorusConvert<P>(tlwe[i]);
         // Direct access to already-extracted TLWE elements (no sample
         // extraction needed)
-        for (int j = 0; j < P::domainP::k * P::domainP::n; j++) {
+        constexpr int first_switched =
+            use_subset_key_switch<P> ? P::targetP::k * P::targetP::n : 0;
+        constexpr int switched_count =
+            P::domainP::k * P::domainP::n - first_switched;
+        for (int key_index = 0; key_index < switched_count; key_index++) {
+            const int j = first_switched + key_index;
             typename P::domainP::T tmp = tlwe[j];
             tmp += decompoffset + roundoffset;
             for (int k = 0; k < P::t; k++) {
@@ -137,14 +167,14 @@ __device__ inline void KeySwitchFromTLWE(
                     halfbase;
                 constexpr int numbase = 1 << (P::basebit - 1);
                 if (val != 0) {
-                    const typename P::targetP::T kskelem =
-                        __ldg(&ksk[j * (P::t * numbase *
-                                        (P::targetP::k * P::targetP::n + 1)) +
-                                   k * (numbase *
-                                        (P::targetP::k * P::targetP::n + 1)) +
-                                   (abs(val) - 1) *
-                                       (P::targetP::k * P::targetP::n + 1) +
-                                   i]);
+                    const typename P::targetP::T kskelem = __ldg(
+                        &ksk[key_index * (P::t * numbase *
+                                          (P::targetP::k * P::targetP::n + 1)) +
+                             k * (numbase *
+                                  (P::targetP::k * P::targetP::n + 1)) +
+                             (abs(val) - 1) *
+                                 (P::targetP::k * P::targetP::n + 1) +
+                             i]);
                     if (val > 0)
                         res -= kskelem;
                     else if (val < 0)
@@ -156,8 +186,7 @@ __device__ inline void KeySwitchFromTLWE(
     }
 }
 
-template <class P, int casign, int cbsign,
-          std::make_signed_t<typename P::domainP::T> offset>
+template <class P, int casign, int cbsign, auto offset>
 __device__ inline void IdentityKeySwitchPreAdd(
     typename P::targetP::T* const lwe, const typename P::domainP::T* const ina,
     const typename P::domainP::T* const inb,
@@ -165,8 +194,6 @@ __device__ inline void IdentityKeySwitchPreAdd(
 {
     constexpr uint domain_digit =
         std::numeric_limits<typename P::domainP::T>::digits;
-    constexpr uint target_digit =
-        std::numeric_limits<typename P::targetP::T>::digits;
     constexpr typename P::domainP::T roundoffset =
         (P::basebit * P::t) < domain_digit
             ? 1ULL << (domain_digit - (1 + P::basebit * P::t))
@@ -182,16 +209,19 @@ __device__ inline void IdentityKeySwitchPreAdd(
             const typename P::domainP::T added =
                 casign * ina[P::domainP::k * P::domainP::n] +
                 cbsign * inb[P::domainP::k * P::domainP::n] + offset;
-            if constexpr (domain_digit == target_digit)
-                res = added;
-            else if constexpr (domain_digit > target_digit)
-                res = (added + (1ULL << (domain_digit - target_digit - 1))) >>
-                      (domain_digit - target_digit);
-            else if constexpr (domain_digit < target_digit)
-                res = static_cast<typename P::targetP::T>(added)
-                      << (target_digit - domain_digit);
+            res = KeySwitchTorusConvert<P>(added);
         }
-        for (int j = 0; j < P::domainP::k * P::domainP::n; j++) {
+        else if constexpr (use_subset_key_switch<P>) {
+            const typename P::domainP::T added =
+                casign * ina[i] + cbsign * inb[i];
+            res = KeySwitchTorusConvert<P>(added);
+        }
+        constexpr int first_switched =
+            use_subset_key_switch<P> ? P::targetP::k * P::targetP::n : 0;
+        constexpr int switched_count =
+            P::domainP::k * P::domainP::n - first_switched;
+        for (int key_index = 0; key_index < switched_count; key_index++) {
+            const int j = first_switched + key_index;
             typename P::domainP::T tmp;
             tmp = casign * ina[j] + cbsign * inb[j] + 0 + decompoffset +
                   roundoffset;
@@ -205,16 +235,16 @@ __device__ inline void IdentityKeySwitchPreAdd(
                 constexpr int numbase = 1 << (P::basebit - 1);
                 if (val > 0)
                     res -= __ldg(
-                        &ksk[j * (P::t * numbase *
-                                  (P::targetP::k * P::targetP::n + 1)) +
+                        &ksk[key_index * (P::t * numbase *
+                                          (P::targetP::k * P::targetP::n + 1)) +
                              k * (numbase *
                                   (P::targetP::k * P::targetP::n + 1)) +
                              (val - 1) * (P::targetP::k * P::targetP::n + 1) +
                              i]);
                 else if (val < 0)
                     res += __ldg(
-                        &ksk[j * (P::t * numbase *
-                                  (P::targetP::k * P::targetP::n + 1)) +
+                        &ksk[key_index * (P::t * numbase *
+                                          (P::targetP::k * P::targetP::n + 1)) +
                              k * (numbase *
                                   (P::targetP::k * P::targetP::n + 1)) +
                              (-val - 1) * (P::targetP::k * P::targetP::n + 1) +
@@ -226,7 +256,12 @@ __device__ inline void IdentityKeySwitchPreAdd(
 }
 
 void KeySwitchingKeyToDevice(
-    const TFHEpp::KeySwitchingKey<TFHEpp::lvl10param>& ksk, const int gpuNum);
+#ifdef USE_SUBSET_KEY
+    const TFHEpp::SubsetKeySwitchingKey<TFHEpp::lvl10param>& ksk,
+#else
+    const TFHEpp::KeySwitchingKey<TFHEpp::lvl10param>& ksk,
+#endif
+    const int gpuNum);
 
 void DeleteKeySwitchingKey(const int gpuNum);
 

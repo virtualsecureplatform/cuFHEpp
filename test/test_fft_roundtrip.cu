@@ -41,34 +41,18 @@ __global__ void __FFTRoundtrip__(
 
     // Step 2: Forward FFT
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024) {
-            GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-        } else if constexpr (N == 2048) {
-            GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-        }
+        GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
-        if constexpr (N == 1024) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        } else if constexpr (N == 2048) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        }
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     // Step 3: Inverse FFT
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024) {
-            GPUFFTInverse512(sh_fft, ntt.inverse_root_, tid);
-        } else if constexpr (N == 2048) {
-            GPUFFTInverse1024(sh_fft, ntt.inverse_root_, tid);
-        }
+        GPUFFTInverse<N>(sh_fft, ntt.inverse_root_, tid);
     }
     else {
-        if constexpr (N == 1024) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        } else if constexpr (N == 2048) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        }
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     // Step 4: Untwist + unfold
@@ -108,18 +92,10 @@ __global__ void __FFTNegacyclicSquare__(
 
     // Forward FFT
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024) {
-            GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-        } else if constexpr (N == 2048) {
-            GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-        }
+        GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
-        if constexpr (N == 1024) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        } else if constexpr (N == 2048) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        }
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     // Pointwise square (complex multiply: z * z)
@@ -131,18 +107,10 @@ __global__ void __FFTNegacyclicSquare__(
 
     // Inverse FFT
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024) {
-            GPUFFTInverse512(sh_fft, ntt.inverse_root_, tid);
-        } else if constexpr (N == 2048) {
-            GPUFFTInverse1024(sh_fft, ntt.inverse_root_, tid);
-        }
+        GPUFFTInverse<N>(sh_fft, ntt.inverse_root_, tid);
     }
     else {
-        if constexpr (N == 1024) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        } else if constexpr (N == 2048) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        }
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     // Untwist + unfold
@@ -326,41 +294,29 @@ bool test_negacyclic_random(CuGPUFFTHandler<N>& handler)
     return pass;
 }
 
+template <uint32_t N>
+bool test_degree()
+{
+    printf("=== N=%u (%u-point FFT) ===\n", N, N / 2);
+    CuGPUFFTHandler<N>::Create();
+    CuGPUFFTHandler<N> handler;
+    handler.SetDevicePointers(0);
+    cudaDeviceSynchronize();
+
+    const bool pass = test_roundtrip<N>(handler) &&
+                      test_negacyclic_square<N>(handler) &&
+                      test_negacyclic_random<N>(handler);
+    CuGPUFFTHandler<N>::Destroy();
+    return pass;
+}
+
 int main()
 {
     cudaSetDevice(0);
 
-    bool all_pass = true;
-
-    // Test N=1024 (existing, known-working)
-    printf("=== N=1024 (512-point FFT) ===\n");
-    {
-        CuGPUFFTHandler<1024>::Create();
-        CuGPUFFTHandler<1024> handler;
-        handler.SetDevicePointers(0);
-        cudaDeviceSynchronize();
-
-        all_pass &= test_roundtrip<1024>(handler);
-        all_pass &= test_negacyclic_square<1024>(handler);
-        all_pass &= test_negacyclic_random<1024>(handler);
-
-        CuGPUFFTHandler<1024>::Destroy();
-    }
-
-    // Test N=2048 (new, under test)
-    printf("\n=== N=2048 (1024-point FFT) ===\n");
-    {
-        CuGPUFFTHandler<2048>::Create();
-        CuGPUFFTHandler<2048> handler;
-        handler.SetDevicePointers(0);
-        cudaDeviceSynchronize();
-
-        all_pass &= test_roundtrip<2048>(handler);
-        all_pass &= test_negacyclic_square<2048>(handler);
-        all_pass &= test_negacyclic_random<2048>(handler);
-
-        CuGPUFFTHandler<2048>::Destroy();
-    }
+    bool all_pass = test_degree<TFHEpp::lvl1param::n>();
+    printf("\n");
+    all_pass &= test_degree<TFHEpp::lvl2param::n>();
 
     printf("\n%s\n", all_pass ? "ALL TESTS PASSED" : "SOME TESTS FAILED");
     return all_pass ? 0 : 1;

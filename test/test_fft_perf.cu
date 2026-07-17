@@ -49,15 +49,10 @@ __global__ void __launch_bounds__(1024) __BenchForwardFFT__(
         __syncthreads();
 
         if (tid < FFT_THREADS) {
-            if constexpr (N == 1024)
-                GPUFFTForward512(sh, ntt.forward_root_, tid);
-            else if constexpr (N == 2048)
-                GPUFFTForward1024(sh, ntt.forward_root_, tid);
+            GPUFFTForward<N>(sh, ntt.forward_root_, tid);
         } else {
-            if constexpr (N == 1024)
-                for (int s = 0; s < 3; s++) __syncthreads();
-            else if constexpr (N == 2048)
-                for (int s = 0; s < 3; s++) __syncthreads();
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
         }
     }
 
@@ -87,15 +82,10 @@ __global__ void __launch_bounds__(1024) __BenchInverseFFT__(
         __syncthreads();
 
         if (tid < FFT_THREADS) {
-            if constexpr (N == 1024)
-                GPUFFTInverse512(sh, ntt.inverse_root_, tid);
-            else if constexpr (N == 2048)
-                GPUFFTInverse1024(sh, ntt.inverse_root_, tid);
+            GPUFFTInverse<N>(sh, ntt.inverse_root_, tid);
         } else {
-            if constexpr (N == 1024)
-                for (int s = 0; s < 3; s++) __syncthreads();
-            else if constexpr (N == 2048)
-                for (int s = 0; s < 3; s++) __syncthreads();
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
         }
     }
 
@@ -132,15 +122,10 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
 
         // Step 2: Forward FFT
         if (tid < FFT_THREADS) {
-            if constexpr (N == 1024)
-                GPUFFTForward512(sh, ntt.forward_root_, tid);
-            else if constexpr (N == 2048)
-                GPUFFTForward1024(sh, ntt.forward_root_, tid);
+            GPUFFTForward<N>(sh, ntt.forward_root_, tid);
         } else {
-            if constexpr (N == 1024)
-                for (int s = 0; s < 3; s++) __syncthreads();
-            else if constexpr (N == 2048)
-                for (int s = 0; s < 3; s++) __syncthreads();
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
         }
 
         // Step 3: Pointwise multiply (like multiply-accumulate in Accumulate)
@@ -151,15 +136,10 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
 
         // Step 4: Inverse FFT
         if (tid < FFT_THREADS) {
-            if constexpr (N == 1024)
-                GPUFFTInverse512(sh, ntt.inverse_root_, tid);
-            else if constexpr (N == 2048)
-                GPUFFTInverse1024(sh, ntt.inverse_root_, tid);
+            GPUFFTInverse<N>(sh, ntt.inverse_root_, tid);
         } else {
-            if constexpr (N == 1024)
-                for (int s = 0; s < 3; s++) __syncthreads();
-            else if constexpr (N == 2048)
-                for (int s = 0; s < 3; s++) __syncthreads();
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
         }
 
         // Step 5: Untwist + unfold
@@ -363,28 +343,16 @@ __global__ void __VerifyRoundtrip__(
 
     // Forward
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024)
-            GPUFFTForward512(sh, ntt.forward_root_, tid);
-        else if constexpr (N == 2048)
-            GPUFFTForward1024(sh, ntt.forward_root_, tid);
+        GPUFFTForward<N>(sh, ntt.forward_root_, tid);
     } else {
-        if constexpr (N == 1024)
-            for (int s = 0; s < 3; s++) __syncthreads();
-        else if constexpr (N == 2048)
-            for (int s = 0; s < 3; s++) __syncthreads();
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     // Inverse
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024)
-            GPUFFTInverse512(sh, ntt.inverse_root_, tid);
-        else if constexpr (N == 2048)
-            GPUFFTInverse1024(sh, ntt.inverse_root_, tid);
+        GPUFFTInverse<N>(sh, ntt.inverse_root_, tid);
     } else {
-        if constexpr (N == 1024)
-            for (int s = 0; s < 3; s++) __syncthreads();
-        else if constexpr (N == 2048)
-            for (int s = 0; s < 3; s++) __syncthreads();
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     // Untwist + unfold
@@ -440,6 +408,27 @@ bool verify_correctness(CuGPUFFTHandler<N>& handler)
 // Main
 // ---------------------------------------------------------------------------
 
+template <uint32_t N>
+void bench_degree(const int num_iters)
+{
+    printf("=== N=%u (%u-point complex FFT) ===\n", N, N / 2);
+    CuGPUFFTHandler<N>::Create();
+    CuGPUFFTHandler<N> handler;
+    handler.SetDevicePointers(0);
+    cudaDeviceSynchronize();
+
+    if (!verify_correctness<N>(handler)) {
+        printf("  Correctness failed, skipping benchmarks\n");
+    }
+    else {
+        bench_forward<N>(handler, num_iters);
+        bench_inverse<N>(handler, num_iters);
+        bench_full_roundtrip<N>(handler, num_iters);
+    }
+
+    CuGPUFFTHandler<N>::Destroy();
+}
+
 int main(int argc, char** argv)
 {
     int num_iters = 100000;
@@ -455,45 +444,9 @@ int main(int argc, char** argv)
            prop.multiProcessorCount);
     printf("Iterations: %d\n\n", num_iters);
 
-    // --- N=1024 (512-point FFT) ---
-    printf("=== N=1024 (512-point complex FFT) ===\n");
-    {
-        CuGPUFFTHandler<1024>::Create();
-        CuGPUFFTHandler<1024> handler;
-        handler.SetDevicePointers(0);
-        cudaDeviceSynchronize();
-
-        if (!verify_correctness<1024>(handler)) {
-            printf("  Correctness failed, skipping benchmarks\n");
-        } else {
-            bench_forward<1024>(handler, num_iters);
-            bench_inverse<1024>(handler, num_iters);
-            bench_full_roundtrip<1024>(handler, num_iters);
-        }
-
-        CuGPUFFTHandler<1024>::Destroy();
-    }
-
+    bench_degree<TFHEpp::lvl1param::n>(num_iters);
     printf("\n");
-
-    // --- N=2048 (1024-point FFT) ---
-    printf("=== N=2048 (1024-point complex FFT) ===\n");
-    {
-        CuGPUFFTHandler<2048>::Create();
-        CuGPUFFTHandler<2048> handler;
-        handler.SetDevicePointers(0);
-        cudaDeviceSynchronize();
-
-        if (!verify_correctness<2048>(handler)) {
-            printf("  Correctness failed, skipping benchmarks\n");
-        } else {
-            bench_forward<2048>(handler, num_iters);
-            bench_inverse<2048>(handler, num_iters);
-            bench_full_roundtrip<2048>(handler, num_iters);
-        }
-
-        CuGPUFFTHandler<2048>::Destroy();
-    }
+    bench_degree<TFHEpp::lvl2param::n>(num_iters);
 
     printf("\nDone.\n");
     return 0;

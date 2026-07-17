@@ -726,6 +726,10 @@ class CuSmallNTTHandler {
 // NTT value type: double2 complex for FFT
 using NTTValue = double2;
 
+template <class P>
+inline constexpr uint32_t BootstrappingTRGSWRows =
+    P::k * P::lₐ * P::l̅ₐ + P::l * P::l̅;
+
 // Thread configuration: still N/2 = 512 threads per block
 // (FFT uses 256 active threads, decomposition uses all 512)
 constexpr uint32_t NTT_THREAD_UNITBIT = 1;
@@ -813,6 +817,147 @@ __device__ __forceinline__ double shfl_xor_d(double val, int mask)
 __device__ __forceinline__ double2 shfl_xor_d2(double2 val, int mask)
 {
     return {shfl_xor_d(val.x, mask), shfl_xor_d(val.y, mask)};
+}
+
+/**
+ * GPU-FFT Forward FFT for N/2=256 complex elements.
+ * Uses 128 threads and a straightforward shared-memory Cooley-Tukey pass.
+ */
+__device__ __forceinline__ void GPUFFTForward256(
+    double2* sh, const double2* __restrict__ root_table, int tid)
+{
+    if (tid < 64) {
+        const double2 a = sh[tid];
+        const double2 b = sh[tid + 64];
+        const double2 c = sh[tid + 128];
+        const double2 d = sh[tid + 192];
+        const double2 w0 = __ldg(&root_table[0]);
+        const double2 w1 = __ldg(&root_table[1]);
+
+        const double2 cw = c * w0;
+        const double2 dw = d * w0;
+        const double2 a1 = a + cw;
+        const double2 c1 = a - cw;
+        const double2 b1 = b + dw;
+        const double2 d1 = b - dw;
+
+        const double2 b1w = b1 * w0;
+        const double2 d1w = d1 * w1;
+        sh[tid] = a1 + b1w;
+        sh[tid + 64] = a1 - b1w;
+        sh[tid + 128] = c1 + d1w;
+        sh[tid + 192] = c1 - d1w;
+    }
+    __syncthreads();
+
+    {
+        const int address = ((tid >> 5) << 5) + tid;
+        const double2 root = __ldg(&root_table[tid >> 5]);
+        const double2 u = sh[address];
+        const double2 v = sh[address + 32] * root;
+        sh[address] = u + v;
+        sh[address + 32] = u - v;
+    }
+
+    {
+        int root_shift = 4;
+        const int address = ((tid >> 4) << 4) + tid;
+        double2 reg_u = sh[address];
+        double2 reg_v = sh[address + 16];
+
+        double2 root = __ldg(&root_table[tid >> root_shift]);
+        double2 weighted = reg_v * root;
+        reg_v = reg_u - weighted;
+        reg_u = reg_u + weighted;
+
+#pragma unroll
+        for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
+            root_shift--;
+            const bool is_upper = (tid & xor_mask) != 0;
+            const double2 sent = is_upper ? reg_u : reg_v;
+            const double2 received = shfl_xor_d2(sent, xor_mask);
+            if (is_upper)
+                reg_u = received;
+            else
+                reg_v = received;
+
+            root = __ldg(&root_table[tid >> root_shift]);
+            weighted = reg_v * root;
+            reg_v = reg_u - weighted;
+            reg_u = reg_u + weighted;
+        }
+
+        sh[2 * tid] = reg_u;
+        sh[2 * tid + 1] = reg_v;
+    }
+    __syncthreads();
+}
+
+/**
+ * GPU-FFT Inverse FFT for N/2=256 complex elements.
+ * The inverse scaling is folded into the untwist table.
+ */
+__device__ __forceinline__ void GPUFFTInverse256(
+    double2* sh, const double2* __restrict__ root_table, int tid)
+{
+    double2 reg_u = sh[2 * tid];
+    double2 reg_v = sh[2 * tid + 1];
+    int root_shift = 0;
+    double2 root = __ldg(&root_table[tid >> root_shift]);
+    double2 sum = reg_u + reg_v;
+    reg_v = (reg_u - reg_v) * root;
+    reg_u = sum;
+
+#pragma unroll
+    for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
+        root_shift++;
+        const bool is_upper = (tid & xor_mask) != 0;
+        const double2 sent = is_upper ? reg_u : reg_v;
+        const double2 received = shfl_xor_d2(sent, xor_mask);
+        if (is_upper)
+            reg_u = received;
+        else
+            reg_v = received;
+
+        root = __ldg(&root_table[tid >> root_shift]);
+        sum = reg_u + reg_v;
+        reg_v = (reg_u - reg_v) * root;
+        reg_u = sum;
+    }
+
+    const int write_address = ((tid >> 4) << 4) + tid;
+    sh[write_address] = reg_u;
+    sh[write_address + 16] = reg_v;
+
+    {
+        const int address = ((tid >> 5) << 5) + tid;
+        root = __ldg(&root_table[tid >> 5]);
+        const double2 u = sh[address];
+        const double2 v = sh[address + 32];
+        sh[address] = u + v;
+        sh[address + 32] = (u - v) * root;
+    }
+    __syncthreads();
+
+    if (tid < 64) {
+        const double2 a = sh[tid];
+        const double2 b = sh[tid + 64];
+        const double2 c = sh[tid + 128];
+        const double2 d = sh[tid + 192];
+        const double2 w0 = __ldg(&root_table[0]);
+        const double2 w1 = __ldg(&root_table[1]);
+
+        const double2 t0 = a + b;
+        const double2 t1 = (a - b) * w0;
+        const double2 t2 = c + d;
+        const double2 t3 = (c - d) * w1;
+
+        sh[tid] = t0 + t2;
+        sh[tid + 128] = (t0 - t2) * w0;
+        sh[tid + 64] = t1 + t3;
+        sh[tid + 192] = (t1 - t3) * w0;
+    }
+    __syncthreads();
 }
 
 /**
@@ -1284,6 +1429,44 @@ __device__ __forceinline__ void GPUFFTInverse1024(
     __syncthreads();
 }
 
+template <uint32_t N>
+__host__ __device__ constexpr int GPUFFTSharedSyncCount()
+{
+    static_assert(N == 512 || N == 1024 || N == 2048,
+                  "Unsupported GPU-FFT polynomial degree");
+    return N == 512 ? 2 : 3;
+}
+
+template <uint32_t N>
+__device__ __forceinline__ void GPUFFTForward(
+    double2* sh, const double2* __restrict__ root_table, int tid)
+{
+    if constexpr (N == 512)
+        GPUFFTForward256(sh, root_table, tid);
+    else if constexpr (N == 1024)
+        GPUFFTForward512(sh, root_table, tid);
+    else if constexpr (N == 2048)
+        GPUFFTForward1024(sh, root_table, tid);
+    else
+        static_assert(N == 512 || N == 1024 || N == 2048,
+                      "Unsupported GPU-FFT polynomial degree");
+}
+
+template <uint32_t N>
+__device__ __forceinline__ void GPUFFTInverse(
+    double2* sh, const double2* __restrict__ root_table, int tid)
+{
+    if constexpr (N == 512)
+        GPUFFTInverse256(sh, root_table, tid);
+    else if constexpr (N == 1024)
+        GPUFFTInverse512(sh, root_table, tid);
+    else if constexpr (N == 2048)
+        GPUFFTInverse1024(sh, root_table, tid);
+    else
+        static_assert(N == 512 || N == 1024 || N == 2048,
+                      "Unsupported GPU-FFT polynomial degree");
+}
+
 #endif  // __CUDACC__
 
 /**
@@ -1398,9 +1581,12 @@ constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 
 #endif  // USE_FFT
 
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
 extern std::vector<NTTValue*> xai_ntt_devs;
 extern std::vector<NTTValue*> one_trgsw_ntt_devs;
+#ifdef USE_BLOCK_BINARY
+extern __device__ NTTValue* block_xai_fft;
+#endif
 
 void InitializeXaiNTT(const int gpuNum);
 void InitializeOneTRGSWNTT(const int gpuNum);

@@ -68,9 +68,10 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
     __shared__ double2 sh_fft[HALF_N];
 
     const int in_index =
-        blockIdx.z * ((P::k + 1) * P::l * (P::k + 1) * N) + blockIdx.y * N;
+        blockIdx.z * (BootstrappingTRGSWRows<P> * (P::k + 1) * N) +
+        blockIdx.y * N;
     const int out_index =
-        blockIdx.z * ((P::k + 1) * P::l * (P::k + 1) * HALF_N) +
+        blockIdx.z * (BootstrappingTRGSWRows<P> * (P::k + 1) * HALF_N) +
         blockIdx.y * HALF_N;
 
     const uint32_t tid = threadIdx.x;
@@ -95,18 +96,10 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
     __syncthreads();
 
     if (tid < FFT_THREADS) {
-        if constexpr (N == 1024) {
-            GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-        } else if constexpr (N == 2048) {
-            GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-        }
+        GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
-        if constexpr (N == 1024) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        } else if constexpr (N == 2048) {
-            for (int s = 0; s < 3; s++) __syncthreads();
-        }
+        for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < HALF_N) {
@@ -131,9 +124,10 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
     __shared__ double2 sh_fft[HALF_N];
 
     const int in_index =
-        blockIdx.z * ((P::k + 1) * P::l * (P::k + 1) * N) + blockIdx.y * N;
+        blockIdx.z * (BootstrappingTRGSWRows<P> * (P::k + 1) * N) +
+        blockIdx.y * N;
     const int out_index =
-        blockIdx.z * ((P::k + 1) * P::l * (P::k + 1) * HALF_N) +
+        blockIdx.z * (BootstrappingTRGSWRows<P> * (P::k + 1) * HALF_N) +
         blockIdx.y * HALF_N;
 
     const uint32_t tid = threadIdx.x;
@@ -231,7 +225,7 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
 
         // FFT BSK: n_lwe * (k+1)*l * (k+1) * (N/2) double2 elements
         size_t fft_elems = static_cast<size_t>(P::domainP::n) *
-                           (P::targetP::k + 1) * P::targetP::l *
+                           BootstrappingTRGSWRows<typename P::targetP> *
                            (P::targetP::k + 1) * HALF_N;
         cudaMalloc((void**)&bk_storage[i], sizeof(NTTValue) * fft_elems);
 
@@ -243,8 +237,10 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
         CuCheckError();
 
         // Grid: 1 x ((k+1)*l*(k+1)) x n_lwe
-        dim3 grid(1, (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1),
-                  P::domainP::n);
+        dim3 grid(
+            1,
+            BootstrappingTRGSWRows<typename P::targetP> * (P::targetP::k + 1),
+            P::domainP::n);
         dim3 block(N >> NTT_THREAD_UNITBIT);
         if constexpr (N == TFHEpp::lvl2param::n) {
             __TRGSW2FFT__<typename P::targetP><<<grid, block>>>(
@@ -277,7 +273,7 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
     constexpr uint32_t num_pairs = P::domainP::k * P::domainP::n / P::Addends;
     constexpr uint32_t bk_elements_per_pair = (1 << P::Addends) - 1;  // 3
     constexpr uint32_t trgsw_polys =
-        (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
+        BootstrappingTRGSWRows<typename P::targetP> * (P::targetP::k + 1);
     constexpr size_t total_fft_elems = static_cast<size_t>(num_pairs) *
                                        bk_elements_per_pair * trgsw_polys *
                                        HALF_N;
@@ -740,10 +736,11 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
             __syncthreads();
 
             if (tid < FFT_THREADS) {
-                GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
+                GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
             }
             else {
-                for (int s = 0; s < 3; s++) __syncthreads();
+                for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                    __syncthreads();
             }
 
             int digit_linear = j * lvl1param::l + digit;
@@ -766,10 +763,11 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
     for (int k_idx = 0; k_idx <= lvl1param::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
         if (tid < FFT_THREADS) {
-            GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
+            GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
         }
         else {
-            for (int s = 0; s < 3; s++) __syncthreads();
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
         }
 
         if (tid < HALF_N) {
@@ -1194,8 +1192,7 @@ __device__ inline void __SampleExtractIndex__(typename P::T* const res,
 }
 
 template <class iksP, class brP, std::make_signed_t<typename brP::targetP::T> μ,
-          int casign, int cbsign,
-          std::make_signed_t<typename iksP::domainP::T> offset>
+          int casign, int cbsign, auto offset>
 __device__ inline void __HomGate__(typename brP::targetP::T* const out,
                                    const typename iksP::domainP::T* const in0,
                                    const typename iksP::domainP::T* const in1,
@@ -1220,8 +1217,7 @@ __device__ inline void __HomGate__(typename brP::targetP::T* const out,
 }
 
 template <class brP, std::make_signed_t<typename brP::targetP::T> μ, class iksP,
-          int casign, int cbsign,
-          std::make_signed_t<typename brP::domainP::T> offset>
+          int casign, int cbsign, auto offset>
 __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
                                    const typename brP::domainP::T* const in0,
                                    const typename brP::domainP::T* const in1,
@@ -1250,8 +1246,7 @@ __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
 #ifdef USE_KEY_BUNDLE
 // Key-bundle HomGate variants (IKS-BR order)
 template <class iksP, class brP, std::make_signed_t<typename brP::targetP::T> μ,
-          int casign, int cbsign,
-          std::make_signed_t<typename iksP::domainP::T> offset>
+          int casign, int cbsign, auto offset>
 __device__ inline void __HomGateKeyBundle__(
     typename brP::targetP::T* const out,
     const typename iksP::domainP::T* const in0,
@@ -1279,8 +1274,7 @@ __device__ inline void __HomGateKeyBundle__(
 
 // Key-bundle HomGate variants (BR-IKS order)
 template <class brP, std::make_signed_t<typename brP::targetP::T> μ, class iksP,
-          int casign, int cbsign,
-          std::make_signed_t<typename brP::domainP::T> offset>
+          int casign, int cbsign, auto offset>
 __device__ inline void __HomGateKeyBundle__(
     typename iksP::targetP::T* const out,
     const typename brP::domainP::T* const in0,

@@ -145,18 +145,11 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
 
             // Step 2: Forward FFT
             if (tid < FFT_THREADS) {
-                if constexpr (N == 1024) {
-                    GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-                } else if constexpr (N == 2048) {
-                    GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-                }
+                GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
             }
             else {
-                if constexpr (N == 1024) {
-                    for (int s = 0; s < 3; s++) __syncthreads();
-                } else if constexpr (N == 2048) {
-                    for (int s = 0; s < 3; s++) __syncthreads();
-                }
+                for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                    __syncthreads();
             }
 
             // Step 3: Multiply-accumulate with BSK
@@ -184,18 +177,11 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
 
         if (tid < FFT_THREADS) {
-            if constexpr (N == 1024) {
-                GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
-            } else if constexpr (N == 2048) {
-                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, tid);
-            }
+            GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
         }
         else {
-            if constexpr (N == 1024) {
-                for (int s = 0; s < 3; s++) __syncthreads();
-            } else if constexpr (N == 2048) {
-                for (int s = 0; s < 3; s++) __syncthreads();
-            }
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
         }
 
         // Untwist + unfold + denormalize
@@ -224,6 +210,127 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
         __syncthreads();
     }
 }
+
+#ifdef USE_BLOCK_BINARY
+template <class P>
+__device__ inline void AccumulateBlockBinary(
+    typename P::targetP::T* const trlwe, NTTValue* const sh_acc_ntt,
+    const uint32_t block, const uint32_t* const bara, const NTTValue* const bk,
+    const CuNTTHandler<P::targetP::n> ntt)
+{
+    using targetP = typename P::targetP;
+    using T = typename targetP::T;
+    constexpr uint32_t N = targetP::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr uint32_t FFT_THREADS = HALF_N >> 1;
+    constexpr uint32_t ROWS = BootstrappingTRGSWRows<targetP>;
+    constexpr size_t TRGSW_SIZE = ROWS * (targetP::k + 1) * HALF_N;
+    static_assert(P::domainP::ell > 1);
+    static_assert(
+        targetP::l̅ == 1 && targetP::l̅ₐ == 1,
+        "Block-binary GPU bootstrapping requires single decomposition");
+
+    const uint32_t tid = ThisThreadRankInBlock();
+    double2* const sh_fft = &sh_acc_ntt[0];
+    double2* const sh_accum = &sh_acc_ntt[HALF_N];
+    for (int i = tid; i < (targetP::k + 1) * HALF_N; i += NUM_THREADS)
+        sh_accum[i] = {0.0, 0.0};
+    __syncthreads();
+
+    for (int component = 0; component <= targetP::k; component++) {
+        const bool nonce = component < targetP::k;
+        const uint32_t digits = nonce ? targetP::lₐ : targetP::l;
+        const uint32_t basebit = nonce ? targetP::Bgₐbit : targetP::Bgbit;
+        const uint32_t base = nonce ? targetP::Bgₐ : targetP::Bg;
+        const uint32_t mask = base - 1;
+        const int32_t halfbase = base >> 1;
+        T decomp_offset = 0;
+        for (uint32_t digit = 1; digit <= digits; digit++)
+            decomp_offset +=
+                halfbase << (std::numeric_limits<T>::digits - digit * basebit);
+        const T roundoffset =
+            static_cast<T>(1)
+            << (std::numeric_limits<T>::digits - digits * basebit - 1);
+
+        for (uint32_t digit = 0; digit < digits; digit++) {
+            if (tid < HALF_N) {
+                T re = trlwe[component * N + tid] + decomp_offset + roundoffset;
+                T im = trlwe[component * N + tid + HALF_N] + decomp_offset +
+                       roundoffset;
+                const int32_t digit_re =
+                    static_cast<int32_t>(
+                        (re >> (std::numeric_limits<T>::digits -
+                                (digit + 1) * basebit)) &
+                        mask) -
+                    halfbase;
+                const int32_t digit_im =
+                    static_cast<int32_t>(
+                        (im >> (std::numeric_limits<T>::digits -
+                                (digit + 1) * basebit)) &
+                        mask) -
+                    halfbase;
+                const double2 folded = {static_cast<double>(digit_re),
+                                        static_cast<double>(digit_im)};
+                sh_fft[tid] = folded * __ldg(&ntt.twist_[tid]);
+            }
+            __syncthreads();
+
+            if (tid < FFT_THREADS)
+                GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
+            else
+                for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                    __syncthreads();
+
+            const uint32_t row = nonce ? component * targetP::lₐ + digit
+                                       : targetP::k * targetP::lₐ + digit;
+            if (tid < HALF_N) {
+                for (int out_component = 0; out_component <= targetP::k;
+                     out_component++) {
+                    double2 block_product = {0.0, 0.0};
+#pragma unroll
+                    for (uint32_t offset = 0; offset < P::domainP::ell;
+                         offset++) {
+                        const size_t key_index =
+                            block * P::domainP::ell + offset;
+                        const size_t poly_index =
+                            (row * (targetP::k + 1) + out_component) * HALF_N +
+                            tid;
+                        const double2 bk_value =
+                            __ldg(&bk[key_index * TRGSW_SIZE + poly_index]);
+                        const double2 xai =
+                            __ldg(&block_xai_fft[bara[offset] * HALF_N + tid]);
+                        block_product += bk_value * xai;
+                    }
+                    sh_accum[out_component * HALF_N + tid] +=
+                        sh_fft[tid] * block_product;
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    constexpr double denorm =
+        sizeof(T) == 4 ? 4294967296.0 : 18446744073709551616.0;
+    for (int component = 0; component <= targetP::k; component++) {
+        double2* const sh_inverse = &sh_accum[component * HALF_N];
+        if (tid < FFT_THREADS)
+            GPUFFTInverse<N>(sh_inverse, ntt.inverse_root_, tid);
+        else
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
+
+        if (tid < HALF_N) {
+            double2 value = sh_inverse[tid] * __ldg(&ntt.untwist_[tid]);
+            trlwe[component * N + tid] +=
+                static_cast<T>(static_cast<int32_t>(llrint(value.x * denorm)));
+            trlwe[component * N + tid + HALF_N] +=
+                static_cast<T>(static_cast<int32_t>(llrint(value.y * denorm)));
+        }
+        __syncthreads();
+    }
+}
+#endif
 #else  // !USE_GPU_FFT (tfhe-rs FFT)
 /**
  * FFT-based Accumulate function (tfhe-rs style)
@@ -543,15 +650,58 @@ __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
     extern __shared__ NTTValue sh[];
     NTTValue* sh_acc_ntt = &sh[0];
 
-    // test vector: acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
+    // test vector: acc.a = 0; acc.b = vec(mu) * x ^ mod_switch(in.b)
     {
-        const uint32_t bar =
-            2 * P::targetP::n -
-            modSwitchFromTorus<P>(in[P::domainP::k * P::domainP::n]);
+        uint32_t bar;
+#ifdef USE_BLOCK_BINARY
+        __shared__ std::make_signed_t<typename P::domainP::T> correction;
+        if (ThisThreadRankInBlock() == 0) {
+            correction = 0;
+            constexpr uint32_t shift =
+                std::numeric_limits<typename P::domainP::T>::digits - 1 -
+                P::targetP::nbit;
+            constexpr typename P::domainP::T roundoffset =
+                static_cast<typename P::domainP::T>(1) << (shift - 1);
+            for (int i = 0; i < P::domainP::k * P::domainP::n; i++) {
+                const uint32_t moded =
+                    modSwitchFromTorus<P>(in[i] + roundoffset);
+                correction +=
+                    in[i] -
+                    (static_cast<typename P::domainP::T>(moded) << shift);
+            }
+        }
+        __syncthreads();
+        constexpr typename P::domainP::T roundoffset =
+            static_cast<typename P::domainP::T>(1)
+            << (std::numeric_limits<typename P::domainP::T>::digits - 2 -
+                P::targetP::nbit);
+        const typename P::domainP::T corrected =
+            in[P::domainP::k * P::domainP::n] - correction / 2 + roundoffset;
+        bar = 2 * P::targetP::n - modSwitchFromTorus<P>(corrected);
+#else
+        bar = 2 * P::targetP::n -
+              modSwitchFromTorus<P>(in[P::domainP::k * P::domainP::n]);
+#endif
         RotatedTestVector<typename P::targetP>(out, bar, mu);
     }
 
     // accumulate
+#ifdef USE_BLOCK_BINARY
+    constexpr uint32_t blocks = P::domainP::n / P::domainP::ell;
+    for (uint32_t block = 0; block < blocks; block++) {
+        uint32_t bara[P::domainP::ell];
+#pragma unroll
+        for (uint32_t offset = 0; offset < P::domainP::ell; offset++) {
+            constexpr typename P::domainP::T roundoffset =
+                static_cast<typename P::domainP::T>(1)
+                << (std::numeric_limits<typename P::domainP::T>::digits - 2 -
+                    P::targetP::nbit);
+            bara[offset] = modSwitchFromTorus<P>(
+                in[block * P::domainP::ell + offset] + roundoffset);
+        }
+        AccumulateBlockBinary<P>(out, sh_acc_ntt, block, bara, bk, ntt);
+    }
+#else
     for (int i = 0; i < P::domainP::k * P::domainP::n;
          i++) {  // lvl0param::n iterations
         constexpr typename P::domainP::T roundoffset =
@@ -561,9 +711,9 @@ __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
 #ifdef USE_FFT
         // FFT BSK stride: each TRGSW has (k+1)*l * (k+1) * (N/2) complex
         // elements
-        constexpr size_t trgsw_fft_size = (P::targetP::k + 1) * P::targetP::l *
-                                          (P::targetP::k + 1) *
-                                          (P::targetP::n / 2);
+        constexpr size_t trgsw_fft_size =
+            BootstrappingTRGSWRows<typename P::targetP> * (P::targetP::k + 1) *
+            (P::targetP::n / 2);
         Accumulate<P>(out, sh_acc_ntt, bar, bk + i * trgsw_fft_size, ntt);
 #else
         Accumulate<P>(out, sh_acc_ntt, bar,
@@ -572,6 +722,7 @@ __device__ inline void __BlindRotate__(typename P::targetP::T* const out,
                       ntt);
 #endif
     }
+#endif
 }
 
 #ifdef USE_KEY_BUNDLE
@@ -646,18 +797,11 @@ __device__ inline void AccumulateKeyBundle(
 
             // Step 2: Forward FFT (GPU-FFT)
             if (tid < FFT_THREADS) {
-                if constexpr (N == 1024) {
-                    GPUFFTForward512(sh_fft, ntt.forward_root_, tid);
-                } else if constexpr (N == 2048) {
-                    GPUFFTForward1024(sh_fft, ntt.forward_root_, tid);
-                }
+                GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
             }
             else {
-                if constexpr (N == 1024) {
-                    for (int s = 0; s < 3; s++) __syncthreads();
-                } else if constexpr (N == 2048) {
-                    for (int s = 0; s < 3; s++) __syncthreads();
-                }
+                for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                    __syncthreads();
             }
 
             // Step 3: Multiply with on-the-fly keybundle and accumulate
@@ -699,18 +843,11 @@ __device__ inline void AccumulateKeyBundle(
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
         if (tid < FFT_THREADS) {
-            if constexpr (N == 1024) {
-                GPUFFTInverse512(sh_inv, ntt.inverse_root_, tid);
-            } else if constexpr (N == 2048) {
-                GPUFFTInverse1024(sh_inv, ntt.inverse_root_, tid);
-            }
+            GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
         }
         else {
-            if constexpr (N == 1024) {
-                for (int s = 0; s < 3; s++) __syncthreads();
-            } else if constexpr (N == 2048) {
-                for (int s = 0; s < 3; s++) __syncthreads();
-            }
+            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
+                __syncthreads();
         }
 
         if (tid < HALF_N) {
@@ -1084,8 +1221,7 @@ __device__ inline void __BlindRotateKeyBundle__(
     }
 }
 
-template <class P, int casign, int cbsign,
-          std::make_signed_t<typename P::domainP::T> offset>
+template <class P, int casign, int cbsign, auto offset>
 __device__ inline void __BlindRotatePreAddKeyBundle__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
     const typename P::domainP::T* const in1, const NTTValue* const bk,
@@ -1135,8 +1271,7 @@ __device__ inline void __BlindRotatePreAddKeyBundle__(
 }
 #endif  // USE_KEY_BUNDLE
 
-template <class P, int casign, int cbsign,
-          std::make_signed_t<typename P::domainP::T> offset>
+template <class P, int casign, int cbsign, auto offset>
 __device__ inline void __BlindRotatePreAdd__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
     const typename P::domainP::T* const in1, const NTTValue* const bk,
@@ -1145,17 +1280,67 @@ __device__ inline void __BlindRotatePreAdd__(
     extern __shared__ NTTValue sh[];
     NTTValue* sh_acc_ntt = &sh[0];
 
-    // test vector: acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
+    // test vector: acc.a = 0; acc.b = vec(mu) * x ^ mod_switch(in.b)
     {
-        const uint32_t bar =
-            2 * P::targetP::n -
-            modSwitchFromTorus<P>(offset +
-                                  casign * in0[P::domainP::k * P::domainP::n] +
-                                  cbsign * in1[P::domainP::k * P::domainP::n]);
+        uint32_t bar;
+#ifdef USE_BLOCK_BINARY
+        __shared__ std::make_signed_t<typename P::domainP::T> correction;
+        if (ThisThreadRankInBlock() == 0) {
+            correction = 0;
+            constexpr uint32_t shift =
+                std::numeric_limits<typename P::domainP::T>::digits - 1 -
+                P::targetP::nbit;
+            constexpr typename P::domainP::T roundoffset =
+                static_cast<typename P::domainP::T>(1) << (shift - 1);
+            for (int i = 0; i < P::domainP::k * P::domainP::n; i++) {
+                const typename P::domainP::T phase =
+                    casign * in0[i] + cbsign * in1[i];
+                const uint32_t moded =
+                    modSwitchFromTorus<P>(phase + roundoffset);
+                correction +=
+                    phase -
+                    (static_cast<typename P::domainP::T>(moded) << shift);
+            }
+        }
+        __syncthreads();
+        constexpr typename P::domainP::T roundoffset =
+            static_cast<typename P::domainP::T>(1)
+            << (std::numeric_limits<typename P::domainP::T>::digits - 2 -
+                P::targetP::nbit);
+        const typename P::domainP::T body =
+            offset + casign * in0[P::domainP::k * P::domainP::n] +
+            cbsign * in1[P::domainP::k * P::domainP::n];
+        bar = 2 * P::targetP::n -
+              modSwitchFromTorus<P>(body - correction / 2 + roundoffset);
+#else
+        bar = 2 * P::targetP::n -
+              modSwitchFromTorus<P>(
+                  offset + casign * in0[P::domainP::k * P::domainP::n] +
+                  cbsign * in1[P::domainP::k * P::domainP::n]);
+#endif
         RotatedTestVector<typename P::targetP>(out, bar, P::targetP::μ);
     }
 
     // accumulate
+#ifdef USE_BLOCK_BINARY
+    constexpr uint32_t blocks = P::domainP::n / P::domainP::ell;
+    for (uint32_t block = 0; block < blocks; block++) {
+        uint32_t bara[P::domainP::ell];
+#pragma unroll
+        for (uint32_t block_offset = 0; block_offset < P::domainP::ell;
+             block_offset++) {
+            constexpr typename P::domainP::T roundoffset =
+                static_cast<typename P::domainP::T>(1)
+                << (std::numeric_limits<typename P::domainP::T>::digits - 2 -
+                    P::targetP::nbit);
+            const uint32_t index = block * P::domainP::ell + block_offset;
+            const typename P::domainP::T phase =
+                casign * in0[index] + cbsign * in1[index];
+            bara[block_offset] = modSwitchFromTorus<P>(phase + roundoffset);
+        }
+        AccumulateBlockBinary<P>(out, sh_acc_ntt, block, bara, bk, ntt);
+    }
+#else
     for (int i = 0; i < P::domainP::k * P::domainP::n; i++) {
         constexpr typename P::domainP::T roundoffset =
             1ULL << (std::numeric_limits<typename P::domainP::T>::digits - 2 -
@@ -1163,9 +1348,9 @@ __device__ inline void __BlindRotatePreAdd__(
         const uint32_t bar = modSwitchFromTorus<P>(
             0 + casign * in0[i] + cbsign * in1[i] + roundoffset);
 #ifdef USE_FFT
-        constexpr size_t trgsw_fft_size = (P::targetP::k + 1) * P::targetP::l *
-                                          (P::targetP::k + 1) *
-                                          (P::targetP::n / 2);
+        constexpr size_t trgsw_fft_size =
+            BootstrappingTRGSWRows<typename P::targetP> * (P::targetP::k + 1) *
+            (P::targetP::n / 2);
         Accumulate<P>(out, sh_acc_ntt, bar, bk + i * trgsw_fft_size, ntt);
 #else
         Accumulate<P>(out, sh_acc_ntt, bar,
@@ -1174,5 +1359,6 @@ __device__ inline void __BlindRotatePreAdd__(
                       ntt);
 #endif
     }
+#endif
 }
 }  // namespace cufhe
