@@ -5,12 +5,14 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <include/annihilate_gpu.cuh>
+#include <include/bootstrap_gpu.cuh>
+#include <include/circuitbootstrapping_gpu.cuh>
+#include <include/error_gpu.cuh>
+#include <include/ntt_small_modulus.cuh>
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <type_traits>
-#include <vector>
-
 #include <tfhe/circuitbootstrapping.hpp>
 #include <tfhe/gatebootstrapping.hpp>
 #include <tfhe/key.hpp>
@@ -18,12 +20,8 @@
 #include <tfhe/tlwe.hpp>
 #include <tfhe/trgsw.hpp>
 #include <tfhe/trlwe.hpp>
-
-#include <include/annihilate_gpu.cuh>
-#include <include/bootstrap_gpu.cuh>
-#include <include/circuitbootstrapping_gpu.cuh>
-#include <include/error_gpu.cuh>
-#include <include/ntt_small_modulus.cuh>
+#include <type_traits>
+#include <vector>
 
 namespace {
 
@@ -32,9 +30,49 @@ namespace {
 template <class P>
 constexpr uint32_t CBRows()
 {
-    static_assert(P::l == P::lₐ,
-                  "This test expects the standard CB row layout");
-    return (P::k + 1) * P::l;
+    return P::k * P::lₐ + P::l;
+}
+
+constexpr uint32_t BitsNeeded(uint32_t value)
+{
+    uint32_t bits = 0;
+    while (value != 0) {
+        bits++;
+        value >>= 1;
+    }
+    return bits;
+}
+
+template <class P, uint32_t num_out>
+constexpr typename P::T CBGadgetHalf(const uint32_t digit)
+{
+    if constexpr (num_out == P::l) {
+        return static_cast<typename P::T>(1)
+               << (std::numeric_limits<typename P::T>::digits -
+                   (digit + 1) * P::Bgbit - 1);
+    }
+    else {
+        if (digit < P::l)
+            return static_cast<typename P::T>(1)
+                   << (std::numeric_limits<typename P::T>::digits -
+                       (digit + 1) * P::Bgbit - 1);
+        if (digit < P::l + P::lₐ)
+            return static_cast<typename P::T>(1)
+                   << (std::numeric_limits<typename P::T>::digits -
+                       (digit - P::l + 1) * P::Bgₐbit - 1);
+        return 0;
+    }
+}
+
+template <class P, uint32_t num_out>
+constexpr TFHEpp::Polynomial<P> CBTestVector()
+{
+    TFHEpp::Polynomial<P> poly{};
+    constexpr uint32_t bitwidth = BitsNeeded(num_out - 1);
+    for (uint32_t i = 0; i < (P::n >> bitwidth); i++)
+        for (uint32_t j = 0; j < (1U << bitwidth); j++)
+            poly[(i << bitwidth) + j] = CBGadgetHalf<P, num_out>(j);
+    return poly;
 }
 
 template <class P>
@@ -55,15 +93,19 @@ void InitializeBR()
     using targetP = typename brP::targetP;
     if constexpr (targetP::n == TFHEpp::lvl1param::n) {
         cufhe::InitializeNTThandlers(1);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         cufhe::InitializeXaiNTT(1);
+#endif
+#ifdef USE_KEY_BUNDLE
         cufhe::InitializeOneTRGSWNTT(1);
 #endif
     }
     else {
         cufhe::InitializeNTThandlers_lvl02(1);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         cufhe::InitializeXaiNTT_lvl02(1);
+#endif
+#ifdef USE_KEY_BUNDLE
         cufhe::InitializeOneTRGSWNTT_lvl02(1);
 #endif
     }
@@ -74,15 +116,19 @@ void DeleteBR()
 {
     using targetP = typename brP::targetP;
     if constexpr (targetP::n == TFHEpp::lvl1param::n) {
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         cufhe::DeleteXaiNTT();
+#endif
+#ifdef USE_KEY_BUNDLE
         cufhe::DeleteOneTRGSWNTT();
 #endif
         cufhe::DeleteBootstrappingKeyNTT(1);
     }
     else {
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         cufhe::DeleteXaiNTT_lvl02();
+#endif
+#ifdef USE_KEY_BUNDLE
         cufhe::DeleteOneTRGSWNTT_lvl02();
 #endif
         cufhe::DeleteBootstrappingKeyNTT_lvl02(1);
@@ -90,25 +136,21 @@ void DeleteBR()
 }
 
 template <class brP>
-void BootstrappingKeyToCPUFFT(
-    TFHEpp::BootstrappingKeyFFT<brP>& out,
-    const TFHEpp::BootstrappingKey<brP>& in)
+void BootstrappingKeyToCPUFFT(TFHEpp::BootstrappingKeyFFT<brP>& out,
+                              const TFHEpp::BootstrappingKey<brP>& in)
 {
     for (uint32_t i = 0; i < in.size(); i++)
         for (uint32_t j = 0; j < in[i].size(); j++)
-            TFHEpp::ApplyFFT2trgsw<typename brP::targetP>(out[i][j],
-                                                          in[i][j]);
+            TFHEpp::ApplyFFT2trgsw<typename brP::targetP>(out[i][j], in[i][j]);
 }
 
 template <class P>
 void PolynomialAnnihilateKeyToCPUFFT(
-    TFHEpp::AnnihilateKey<P>& out,
-    const cufhe::AnnihilateKeyPolynomial<P>& in)
+    TFHEpp::AnnihilateKey<P>& out, const cufhe::AnnihilateKeyPolynomial<P>& in)
 {
     for (uint32_t bit = 0; bit < P::nbit; bit++)
         for (uint32_t key_idx = 0; key_idx < P::k; key_idx++)
-            TFHEpp::ApplyFFT2halftrgsw<P>(out[bit][key_idx],
-                                          in[bit][key_idx]);
+            TFHEpp::ApplyFFT2halftrgsw<P>(out[bit][key_idx], in[bit][key_idx]);
 }
 
 template <class P>
@@ -164,34 +206,74 @@ bool CompareCBPhase(const TFHEpp::TRGSW<P>& cpu, const TFHEpp::TRGSW<P>& gpu,
     return over_threshold == 0;
 }
 
+template <class P>
+bool ValidateCircuitBootstrap(const TFHEpp::TRGSW<P>& trgsw,
+                              const TFHEpp::Key<P>& key, const bool selector)
+{
+    std::array<uint8_t, P::n> plain{};
+    auto input = std::make_unique<TFHEpp::TRLWE<P>>();
+    for (uint32_t i = 0; i < P::n; i++) {
+        plain[i] = (i * 5 + 3) & 1U;
+        (*input)[P::k][i] = plain[i] ? P::μ : -P::μ;
+    }
+
+    auto trgswfft = std::make_unique<TFHEpp::TRGSWFFT<P>>();
+    TFHEpp::ApplyFFT2trgsw<P>(*trgswfft, trgsw);
+    auto output = std::make_unique<TFHEpp::TRLWE<P>>();
+    TFHEpp::ExternalProduct<P>(*output, *input, *trgswfft);
+    const auto phase = TFHEpp::trlwePhase<P>(*output, key);
+
+    uint32_t mismatches = 0;
+    for (uint32_t i = 0; i < P::n; i++) {
+        const typename P::T expected =
+            selector ? (*input)[P::k][i] : typename P::T{0};
+        if (AbsTorusDiff<typename P::T>(phase[i] - expected) > P::μ / 4)
+            mismatches++;
+    }
+    std::cout << "external-product mismatches=" << mismatches << std::endl;
+    return mismatches == 0;
+}
+
 template <class brP, class ahP>
-void CPUAnnihilateCB(
-    TFHEpp::TRGSW<typename brP::targetP>& out,
-    const TFHEpp::TLWE<typename brP::domainP>& in,
-    const TFHEpp::BootstrappingKeyFFT<brP>& bkfft,
-    const TFHEpp::AnnihilateKey<ahP>& ahk,
-    const TFHEpp::CBswitchingKey<ahP>& cbsk)
+void CPUAnnihilateCB(TFHEpp::TRGSW<typename brP::targetP>& out,
+                     const TFHEpp::TLWE<typename brP::domainP>& in,
+                     const TFHEpp::BootstrappingKeyFFT<brP>& bkfft,
+                     const TFHEpp::AnnihilateKey<ahP>& ahk,
+                     const TFHEpp::CBswitchingKey<ahP>& cbsk)
 {
     using targetP = typename brP::targetP;
-    std::array<TFHEpp::TLWE<targetP>, targetP::l> temp;
-    TFHEpp::GateBootstrappingManyLUT<brP, targetP::l>(
-        temp, in, bkfft, TFHEpp::CBtestvector<targetP, targetP>());
+    constexpr uint32_t num_out = cufhe::CircuitBootstrapLUTCount<targetP>;
+    std::array<TFHEpp::TLWE<targetP>, num_out> temp;
+    TFHEpp::GateBootstrappingManyLUT<brP, num_out>(
+        temp, in, bkfft, CBTestVector<targetP, num_out>());
+
+    constexpr uint32_t main_row_offset = targetP::k * targetP::lₐ;
+    if constexpr (!cufhe::CircuitBootstrapSharedGadget<targetP>) {
+        for (uint32_t i = 0; i < targetP::lₐ; i++) {
+            const uint32_t output = targetP::l + i;
+            temp[output][targetP::k * targetP::n] +=
+                CBGadgetHalf<targetP, num_out>(output);
+            TFHEpp::TRLWE<targetP> source;
+            TFHEpp::InvSampleExtractIndex<targetP>(source, temp[output], 0);
+            TFHEpp::AnnihilateKeySwitching<ahP>(source, source, ahk);
+            for (uint32_t k = 0; k < targetP::k; k++)
+                TFHEpp::ExternalProduct<ahP>(out[i + k * targetP::lₐ], source,
+                                             cbsk[k]);
+        }
+    }
 
     for (uint32_t i = 0; i < targetP::l; i++) {
-        temp[i][targetP::k * targetP::n] +=
-            static_cast<typename targetP::T>(1)
-            << (std::numeric_limits<typename targetP::T>::digits -
-                (i + 1) * targetP::Bgbit - 1);
+        temp[i][targetP::k * targetP::n] += CBGadgetHalf<targetP, num_out>(i);
 
         TFHEpp::TRLWE<targetP> temptrlwe;
         TFHEpp::InvSampleExtractIndex<targetP>(temptrlwe, temp[i], 0);
-        TFHEpp::AnnihilateKeySwitching<ahP>(
-            out[i + targetP::k * targetP::l], temptrlwe, ahk);
+        TFHEpp::AnnihilateKeySwitching<ahP>(out[i + main_row_offset], temptrlwe,
+                                            ahk);
 
-        for (uint32_t k = 0; k < targetP::k; k++)
-            TFHEpp::ExternalProduct<ahP>(
-                out[i + k * targetP::l],
-                out[i + targetP::k * targetP::l], cbsk[k]);
+        if constexpr (cufhe::CircuitBootstrapSharedGadget<targetP>)
+            for (uint32_t k = 0; k < targetP::k; k++)
+                TFHEpp::ExternalProduct<ahP>(out[i + k * targetP::lₐ],
+                                             out[i + main_row_offset], cbsk[k]);
     }
 }
 
@@ -227,12 +309,11 @@ bool RunDirectCBCase(const bool message)
     TFHEpp::TLWE<domainP> input;
     const typename domainP::T plain =
         message ? domainP::μ : static_cast<typename domainP::T>(-domainP::μ);
-    TFHEpp::tlweSymEncrypt<domainP>(input, plain, sk.key.get<domainP>());
+    TFHEpp::tlweSymEncrypt<domainP>(input, plain, 0.0, sk.key.get<domainP>());
 
-    TFHEpp::TRGSW<targetP> cpu_out;
+    auto cpu_out = std::make_unique<TFHEpp::TRGSW<targetP>>();
     const auto cpu_start = std::chrono::steady_clock::now();
-    CPUAnnihilateCB<brP, ahP>(cpu_out, input, *cpu_bkfft, *cpu_ahk,
-                              *cpu_cbsk);
+    CPUAnnihilateCB<brP, ahP>(*cpu_out, input, *cpu_bkfft, *cpu_ahk, *cpu_cbsk);
     const auto cpu_end = std::chrono::steady_clock::now();
     const double cpu_ms =
         std::chrono::duration<double, std::milli>(cpu_end - cpu_start).count();
@@ -250,8 +331,8 @@ bool RunDirectCBCase(const bool message)
     typename domainP::T* d_in = nullptr;
     typename targetP::T* d_out = nullptr;
     constexpr size_t input_bytes = sizeof(TFHEpp::TLWE<domainP>);
-    constexpr size_t output_bytes = CBElemCount<targetP>() *
-                                    sizeof(typename targetP::T);
+    constexpr size_t output_bytes =
+        CBElemCount<targetP>() * sizeof(typename targetP::T);
     CUDA_CHECK(cudaMalloc(&d_in, input_bytes));
     CUDA_CHECK(cudaMalloc(&d_out, output_bytes));
 
@@ -276,11 +357,18 @@ bool RunDirectCBCase(const bool message)
                                cudaMemcpyDeviceToHost, st));
     CUDA_CHECK(cudaStreamSynchronize(st));
 
-    TFHEpp::TRGSW<targetP> gpu_out;
-    FlatToTRGSW<targetP>(gpu_out, gpu_flat);
+    auto gpu_out = std::make_unique<TFHEpp::TRGSW<targetP>>();
+    FlatToTRGSW<targetP>(*gpu_out, gpu_flat);
 
-    const bool ok = CompareCBPhase<targetP>(cpu_out, gpu_out,
-                                            sk.key.get<targetP>());
+    bool ok =
+        CompareCBPhase<targetP>(*cpu_out, *gpu_out, sk.key.get<targetP>());
+    if constexpr (sizeof(typename targetP::T) == 8) {
+        const bool cpu_ok = ValidateCircuitBootstrap<targetP>(
+            *cpu_out, sk.key.get<targetP>(), message);
+        const bool gpu_ok = ValidateCircuitBootstrap<targetP>(
+            *gpu_out, sk.key.get<targetP>(), message);
+        ok = ok && cpu_ok && gpu_ok;
+    }
     std::cout << "CPU CB compute: " << cpu_ms << " ms" << std::endl;
     std::cout << "GPU CB compute: " << gpu_ms << " ms" << std::endl;
     if (gpu_ms > 0)
@@ -308,6 +396,12 @@ int main()
     bool ok = true;
     ok = RunDirectCBCase<TFHEpp::lvl01param, TFHEpp::AHlvl1param>(false) && ok;
     ok = RunDirectCBCase<TFHEpp::lvl01param, TFHEpp::AHlvl1param>(true) && ok;
+#if defined(USE_DIFFERENT_BR_PARAM) && defined(USE_DIFFERENT_AH_PARAM)
+    ok = RunDirectCBCase<TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>(false) &&
+         ok;
+    ok = RunDirectCBCase<TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>(true) &&
+         ok;
+#endif
     std::cout << (ok ? "ALL CIRCUIT BOOTSTRAPPING TESTS PASSED"
                      : "CIRCUIT BOOTSTRAPPING TESTS FAILED")
               << std::endl;

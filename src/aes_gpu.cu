@@ -1,12 +1,6 @@
-#include <include/aes_gpu.cuh>
-
 #include <algorithm>
 #include <cstdint>
-#include <limits>
-#include <memory>
-#include <type_traits>
-#include <vector>
-
+#include <include/aes_gpu.cuh>
 #include <include/annihilate_gpu.cuh>
 #include <include/bootstrap_gpu.cuh>
 #include <include/circuitbootstrapping_gpu.cuh>
@@ -15,6 +9,10 @@
 #include <include/keyswitch_gpu.cuh>
 #include <include/ntt_small_modulus.cuh>
 #include <include/utils_gpu.cuh>
+#include <limits>
+#include <memory>
+#include <type_traits>
+#include <vector>
 
 namespace cufhe {
 
@@ -24,24 +22,22 @@ extern std::vector<CuNTTHandler<TFHEpp::lvl2param::n>*> ntt_handlers_lvl02;
 namespace {
 
 __device__ __constant__ uint32_t kInvMixColumnMasks[32] = {
-    0x2161a1e0, 0x62a2e321, 0xc445c643, 0xa9eb2d67,
-    0x72b6fa2e, 0xe46cf45c, 0xc8d8e8b8, 0x90b0d070,
-    0x61a1e021, 0xa2e32162, 0x45c643c4, 0xeb2d67a9,
-    0xb6fa2e72, 0x6cf45ce4, 0xd8e8b8c8, 0xb0d07090,
-    0xa1e02161, 0xe32162a2, 0xc643c445, 0x2d67a9eb,
-    0xfa2e72b6, 0xf45ce46c, 0xe8b8c8d8, 0xd07090b0,
-    0xe02161a1, 0x2162a2e3, 0x43c445c6, 0x67a9eb2d,
-    0x2e72b6fa, 0x5ce46cf4, 0xb8c8d8e8, 0x7090b0d0};
+    0x2161a1e0, 0x62a2e321, 0xc445c643, 0xa9eb2d67, 0x72b6fa2e, 0xe46cf45c,
+    0xc8d8e8b8, 0x90b0d070, 0x61a1e021, 0xa2e32162, 0x45c643c4, 0xeb2d67a9,
+    0xb6fa2e72, 0x6cf45ce4, 0xd8e8b8c8, 0xb0d07090, 0xa1e02161, 0xe32162a2,
+    0xc643c445, 0x2d67a9eb, 0xfa2e72b6, 0xf45ce46c, 0xe8b8c8d8, 0xd07090b0,
+    0xe02161a1, 0x2162a2e3, 0x43c445c6, 0x67a9eb2d, 0x2e72b6fa, 0x5ce46cf4,
+    0xb8c8d8e8, 0x7090b0d0};
 
 template <class P>
-constexpr bool is_lvl1_ring_v = P::n == TFHEpp::lvl1param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl1param::T);
+constexpr bool is_lvl1_ring_v =
+    P::n == TFHEpp::lvl1param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl1param::T);
 
 template <class P>
-constexpr bool is_lvl2_ring_v = P::n == TFHEpp::lvl2param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl2param::T);
+constexpr bool is_lvl2_ring_v =
+    P::n == TFHEpp::lvl2param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl2param::T);
 
 template <class P>
 CuNTTHandler<P::n>* RingHandler(const int gpuNum)
@@ -109,13 +105,12 @@ template <class iksP>
 __global__ void __IdentityKeySwitchBatchLocalKernel__(
     typename iksP::targetP::T* const out, const size_t out_stride,
     const typename iksP::domainP::T* const in, const size_t in_stride,
-    const typename iksP::targetP::T* const ksk,
-    const size_t batch_count)
+    const typename iksP::targetP::T* const ksk, const size_t batch_count)
 {
     const size_t batch = blockIdx.x;
     if (batch >= batch_count) return;
-    KeySwitchFromTLWE<iksP>(out + batch * out_stride,
-                            in + batch * in_stride, ksk);
+    KeySwitchFromTLWE<iksP>(out + batch * out_stride, in + batch * in_stride,
+                            ksk);
 }
 
 template <class P>
@@ -125,6 +120,20 @@ __global__ void __NegateTLWEKernel__(typename P::T* const out,
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     for (uint32_t i = tid; i < TLWEElements<P>(); i += bdim) out[i] = -in[i];
+}
+
+template <class P, uint32_t address_bit, uint32_t width_bit>
+__global__ void __NegateUpperAddressBitsKernel__(typename P::T* const tlwe,
+                                                 const size_t stride,
+                                                 const size_t batch_count)
+{
+    const size_t batch = blockIdx.x;
+    if (batch >= batch_count || batch % address_bit < width_bit) return;
+    const uint32_t tid = ThisThreadRankInBlock();
+    const uint32_t bdim = ThisBlockSize();
+    typename P::T* const batch_tlwe = tlwe + batch * stride;
+    for (uint32_t i = tid; i < TLWEElements<P>(); i += bdim)
+        batch_tlwe[i] = -batch_tlwe[i];
 }
 
 #if defined(USE_FFT)
@@ -156,14 +165,14 @@ __global__ void __TRGSWToFFTKernel__(NTTValue* const out,
                      std::numeric_limits<typename P::T>::digits / 2));
 
     if (tid < half_n) {
-        const double re = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid])) *
-                          norm;
-        const double im = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid + half_n])) *
-                          norm;
+        const double re =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid])) *
+            norm;
+        const double im =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid + half_n])) *
+            norm;
         NTTValue folded = {re, im};
 #ifdef USE_GPU_FFT
         folded *= __ldg(&ntt.twist_[tid]);
@@ -183,8 +192,7 @@ __global__ void __TRGSWToFFTKernel__(NTTValue* const out,
 #ifdef USE_GPU_FFT
         for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
 #else
-        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
-            __syncthreads();
+        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++) __syncthreads();
 #endif
     }
 
@@ -214,8 +222,7 @@ __device__ constexpr typename P::T ExternalProductOffset()
     for (uint32_t i = 1; i <= levels; i++)
         offset += (bg / 2) *
                   (static_cast<typename P::T>(1)
-                   << (std::numeric_limits<typename P::T>::digits -
-                       i * bgbit));
+                   << (std::numeric_limits<typename P::T>::digits - i * bgbit));
     return offset;
 }
 
@@ -246,9 +253,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_AES(
         const bool nonce = part < P::k;
         const uint32_t levels = nonce ? P::lₐ : P::l;
         const uint32_t bgbit = nonce ? P::Bgₐbit : P::Bgbit;
-        const typename P::T offset =
-            nonce ? ExternalProductOffset<P, true>()
-                  : ExternalProductOffset<P, false>();
+        const typename P::T offset = nonce ? ExternalProductOffset<P, true>()
+                                           : ExternalProductOffset<P, false>();
         const int remaining_bits =
             std::numeric_limits<typename P::T>::digits - levels * bgbit;
         const typename P::T roundoffset =
@@ -257,8 +263,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_AES(
                 : static_cast<typename P::T>(0);
         const typename P::T decomp_mask =
             (static_cast<typename P::T>(1) << bgbit) - 1;
-        const typename P::T decomp_half =
-            static_cast<typename P::T>(1) << (bgbit - 1);
+        const typename P::T decomp_half = static_cast<typename P::T>(1)
+                                          << (bgbit - 1);
 
         for (uint32_t digit = 0; digit < levels; digit++) {
             if (tid < half_n) {
@@ -267,15 +273,13 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_AES(
                 typename P::T temp_im =
                     in[part * N + tid + half_n] + offset + roundoffset;
                 const int32_t digit_re = static_cast<int32_t>(
-                    ((temp_re >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * bgbit)) &
+                    ((temp_re >> (std::numeric_limits<typename P::T>::digits -
+                                  (digit + 1) * bgbit)) &
                      decomp_mask) -
                     decomp_half);
                 const int32_t digit_im = static_cast<int32_t>(
-                    ((temp_im >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * bgbit)) &
+                    ((temp_im >> (std::numeric_limits<typename P::T>::digits -
+                                  (digit + 1) * bgbit)) &
                      decomp_mask) -
                     decomp_half);
                 NTTValue folded = {static_cast<double>(digit_re),
@@ -353,11 +357,10 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_AES(
 }
 
 template <class P>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>)
-void __AESExternalProductKernel__(typename P::T* const out,
-                                  const typename P::T* const in,
-                                  const NTTValue* const trgswfft,
-                                  const CuNTTHandler<P::n> ntt)
+__global__
+__launch_bounds__(NUM_THREAD4HOMGATE<P>) void __AESExternalProductKernel__(
+    typename P::T* const out, const typename P::T* const in,
+    const NTTValue* const trgswfft, const CuNTTHandler<P::n> ntt)
 {
     extern __shared__ NTTValue sh_acc_ntt[];
     ExternalProductTRLWE_TRGSWFFT_AES<P>(out, in, trgswfft, sh_acc_ntt, ntt);
@@ -403,12 +406,24 @@ __global__ void __TRLWEAddKernel__(typename P::T* const out,
 }
 
 template <class P>
+__global__ void __TRLWESubKernel__(typename P::T* const out,
+                                   const typename P::T* const a,
+                                   const typename P::T* const b)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+    const uint32_t bdim = ThisBlockSize();
+    for (uint32_t i = tid; i < TRLWEElements<P>(); i += bdim)
+        out[i] = a[i] - b[i];
+}
+
+template <class P>
 __global__ void __TRLWEAddInPlaceKernel__(typename P::T* const out,
                                           const typename P::T* const addend)
 {
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
-    for (uint32_t i = tid; i < TRLWEElements<P>(); i += bdim) out[i] += addend[i];
+    for (uint32_t i = tid; i < TRLWEElements<P>(); i += bdim)
+        out[i] += addend[i];
 }
 
 template <class P>
@@ -438,8 +453,7 @@ __global__ void __SampleExtractManyKernel__(typename P::T* const out,
 
 template <class P>
 __global__ void __AddRoundKeyKernel__(
-    typename P::T* const state,
-    const typename P::T* const expandedkey_round)
+    typename P::T* const state, const typename P::T* const expandedkey_round)
 {
     const uint32_t bit = blockIdx.x;
     const uint32_t tid = ThisThreadRankInBlock();
@@ -517,29 +531,28 @@ void DeviceAddRoundKey(typename P::T* const state,
 }
 
 template <class P>
-void DeviceInvShiftRows(typename P::T* const state, typename P::T* const scratch,
-                        const cudaStream_t st)
+void DeviceInvShiftRows(typename P::T* const state,
+                        typename P::T* const scratch, const cudaStream_t st)
 {
     constexpr size_t bytes =
         static_cast<size_t>(128) * TLWEElements<P>() * sizeof(typename P::T);
     __InvShiftRowsKernel__<P><<<128, 256, 0, st>>>(scratch, state);
     CuCheckError();
-    CuSafeCall(cudaMemcpyAsync(state, scratch, bytes, cudaMemcpyDeviceToDevice,
-                               st));
+    CuSafeCall(
+        cudaMemcpyAsync(state, scratch, bytes, cudaMemcpyDeviceToDevice, st));
 }
 
 template <class P>
 void DeviceInvMixColumns(typename P::T* const state,
-                         typename P::T* const scratch,
-                         const cudaStream_t st)
+                         typename P::T* const scratch, const cudaStream_t st)
 {
     constexpr size_t bytes =
         static_cast<size_t>(128) * TLWEElements<P>() * sizeof(typename P::T);
     dim3 grid(4, 32);
     __InvMixColumnsKernel__<P><<<grid, 256, 0, st>>>(scratch, state);
     CuCheckError();
-    CuSafeCall(cudaMemcpyAsync(state, scratch, bytes, cudaMemcpyDeviceToDevice,
-                               st));
+    CuSafeCall(
+        cudaMemcpyAsync(state, scratch, bytes, cudaMemcpyDeviceToDevice, st));
 }
 
 template <class P, uint32_t address_bit, uint32_t width_bit, uint32_t num_tlwe>
@@ -548,12 +561,14 @@ void DeviceLROMUX(typename P::T* const out, const NTTValue* const address,
                   typename P::T* const temp, typename P::T* const product,
                   const cudaStream_t st, const int gpuNum)
 {
-    static_assert(address_bit == width_bit,
-                  "CUDA AES LROMUX currently supports one TRLWE ROM tables");
+    static_assert(address_bit >= width_bit);
+    static_assert(address_bit - width_bit <= 1,
+                  "CUDA AES LROMUX supports up to two TRLWE ROM tables");
     static_assert(num_tlwe <= (1U << (P::nbit - width_bit)));
     constexpr uint32_t threads = NUM_THREAD4HOMGATE<P>;
     constexpr size_t shmem = MEM4HOMGATE<P>;
     constexpr size_t trgswfft_elems = TRGSWFFTElements<P>();
+    constexpr size_t trlwe_elems = TRLWEElements<P>();
 
     static bool external_product_attribute_set = false;
     if (!external_product_attribute_set) {
@@ -563,16 +578,28 @@ void DeviceLROMUX(typename P::T* const out, const NTTValue* const address,
         external_product_attribute_set = true;
     }
 
-    __PolynomialMulByXaiMinusOneTRLWEKernel__<P><<<1, threads, 0, st>>>(
-        temp, data, 2 * P::n - (P::n >> 1));
+    const typename P::T* selected = data;
+    if constexpr (address_bit != width_bit) {
+        __TRLWESubKernel__<P>
+            <<<1, threads, 0, st>>>(temp, data, data + trlwe_elems);
+        __AESExternalProductKernel__<P><<<1, threads, shmem, st>>>(
+            product, temp, address + (address_bit - 1) * trgswfft_elems,
+            *RingHandler<P>(gpuNum));
+        __TRLWEAddKernel__<P>
+            <<<1, threads, 0, st>>>(acc, product, data + trlwe_elems);
+        selected = acc;
+    }
+
+    __PolynomialMulByXaiMinusOneTRLWEKernel__<P>
+        <<<1, threads, 0, st>>>(temp, selected, 2 * P::n - (P::n >> 1));
     __AESExternalProductKernel__<P><<<1, threads, shmem, st>>>(
         product, temp, address + (width_bit - 1) * trgswfft_elems,
         *RingHandler<P>(gpuNum));
-    __TRLWEAddKernel__<P><<<1, threads, 0, st>>>(acc, product, data);
+    __TRLWEAddKernel__<P><<<1, threads, 0, st>>>(acc, product, selected);
 
     for (uint32_t bit = 2; bit <= width_bit; bit++) {
-        __PolynomialMulByXaiMinusOneTRLWEKernel__<P><<<1, threads, 0, st>>>(
-            temp, acc, 2 * P::n - (P::n >> bit));
+        __PolynomialMulByXaiMinusOneTRLWEKernel__<P>
+            <<<1, threads, 0, st>>>(temp, acc, 2 * P::n - (P::n >> bit));
         __AESExternalProductKernel__<P><<<1, threads, shmem, st>>>(
             product, temp, address + (width_bit - bit) * trgswfft_elems,
             *RingHandler<P>(gpuNum));
@@ -585,28 +612,29 @@ void DeviceLROMUX(typename P::T* const out, const NTTValue* const address,
 }
 
 template <class iksP, class brP, class ahP>
-void DeviceAESInvSboxROM(
-    typename brP::targetP::T* const out,
-    const typename iksP::domainP::T* const in,
-    const typename iksP::targetP::T* const ksk,
-    const typename brP::targetP::T* const rom,
-    typename brP::targetP::T* const address_poly,
-    NTTValue* const address_fft, typename brP::targetP::T* const acc,
-    typename brP::targetP::T* const temp,
-    typename brP::targetP::T* const product,
-    typename brP::domainP::T* const domain_tlwe,
-    typename iksP::domainP::T* const shifted,
-    typename brP::targetP::T* const cb_acc,
-    typename brP::targetP::T* const cb_temptrlwe, const cudaStream_t st,
-    const int gpuNum)
+void DeviceAESInvSboxROM(typename brP::targetP::T* const out,
+                         const typename iksP::domainP::T* const in,
+                         const typename iksP::targetP::T* const ksk,
+                         const typename brP::targetP::T* const rom,
+                         typename brP::targetP::T* const address_poly,
+                         NTTValue* const address_fft,
+                         typename brP::targetP::T* const acc,
+                         typename brP::targetP::T* const temp,
+                         typename brP::targetP::T* const product,
+                         typename brP::domainP::T* const domain_tlwe,
+                         typename iksP::domainP::T* const shifted,
+                         typename brP::targetP::T* const cb_acc,
+                         typename brP::targetP::T* const cb_temptrlwe,
+                         const cudaStream_t st, const int gpuNum)
 {
     using targetP = typename brP::targetP;
     using domainP = typename brP::domainP;
     using inputP = typename iksP::domainP;
     static_assert(std::is_same_v<typename iksP::targetP, domainP>,
                   "iksP target must match blind-rotation domain");
-    static_assert(std::is_same_v<inputP, targetP>,
-                  "AES state ciphertexts must be in brP::targetP");
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                      sizeof(typename inputP::T) == sizeof(typename targetP::T),
+                  "AES state and blind-rotation target rings must match");
     static_assert(targetP::k == ahP::k && targetP::n == ahP::n &&
                       sizeof(typename targetP::T) == sizeof(typename ahP::T),
                   "ahP must share the brP::targetP torus ring");
@@ -614,8 +642,8 @@ void DeviceAESInvSboxROM(
     constexpr uint32_t address_bit = 8;
     constexpr uint32_t words_bit = 3;
     constexpr uint32_t width_bit = targetP::nbit - words_bit;
-    static_assert(address_bit == width_bit,
-                  "CUDA AES currently supports target rings with nbit == 11");
+    static_assert(address_bit >= width_bit && address_bit - width_bit <= 1,
+                  "CUDA AES supports one or two TRLWE ROM tables");
 
     constexpr uint32_t input_tlwe_elems = TLWEElements<inputP>();
     constexpr uint32_t domain_tlwe_elems = TLWEElements<domainP>();
@@ -626,19 +654,19 @@ void DeviceAESInvSboxROM(
         const typename inputP::T* bit_in = in + bit * input_tlwe_elems;
         if constexpr (width_bit < address_bit) {
             if (bit >= width_bit) {
-                __NegateTLWEKernel__<inputP><<<1, 256, 0, st>>>(shifted, bit_in);
+                __NegateTLWEKernel__<inputP>
+                    <<<1, 256, 0, st>>>(shifted, bit_in);
                 bit_in = shifted;
             }
         }
 
-        const uint32_t ks_threads =
-            std::min<uint32_t>(1024, domain_tlwe_elems);
+        const uint32_t ks_threads = std::min<uint32_t>(1024, domain_tlwe_elems);
         __IdentityKeySwitchLocalKernel__<iksP>
             <<<1, ks_threads, 0, st>>>(domain_tlwe, bit_in, ksk);
 
         AnnihilateCircuitBootstrappingWithWorkspace<brP, ahP>(
-            address_poly + static_cast<size_t>(bit) * trgsw_elems,
-            domain_tlwe, cb_acc, cb_temptrlwe, st, gpuNum);
+            address_poly + static_cast<size_t>(bit) * trgsw_elems, domain_tlwe,
+            cb_acc, cb_temptrlwe, st, gpuNum);
     }
 
     __TRGSWToFFTKernel__<targetP>
@@ -646,8 +674,8 @@ void DeviceAESInvSboxROM(
             address_fft, address_poly, *RingHandler<targetP>(gpuNum));
     CuCheckError();
 
-    DeviceLROMUX<targetP, address_bit, width_bit, 8>(
-        out, address_fft, rom, acc, temp, product, st, gpuNum);
+    DeviceLROMUX<targetP, address_bit, width_bit, 8>(out, address_fft, rom, acc,
+                                                     temp, product, st, gpuNum);
 }
 
 template <class iksP, class brP, class ahP>
@@ -656,8 +684,7 @@ void DeviceAESInvSubBytesParallel(
     const typename iksP::targetP::T* const ksk,
     const typename brP::targetP::T* const rom,
     typename brP::targetP::T* const address_poly, NTTValue* const address_fft,
-    typename brP::targetP::T* const acc,
-    typename brP::targetP::T* const temp,
+    typename brP::targetP::T* const acc, typename brP::targetP::T* const temp,
     typename brP::targetP::T* const product,
     typename brP::domainP::T* const domain_tlwe,
     typename iksP::domainP::T* const shifted,
@@ -680,7 +707,7 @@ void DeviceAESInvSubBytesParallel(
     constexpr size_t domain_tlwe_elems = TLWEElements<domainP>();
     constexpr size_t input_tlwe_elems = TLWEElements<inputP>();
     constexpr size_t cb_temptrlwe_elems =
-        static_cast<size_t>(targetP::l) * trlwe_elems;
+        static_cast<size_t>(CircuitBootstrapLUTCount<targetP>) * trlwe_elems;
 
     CuSafeCall(cudaEventRecord(ready_event, main_stream));
     for (uint32_t byte = 0; byte < aes_bytes; byte++) {
@@ -689,7 +716,8 @@ void DeviceAESInvSubBytesParallel(
         DeviceAESInvSboxROM<iksP, brP, ahP>(
             state + static_cast<size_t>(byte) * 8 * tlwe_elems,
             state + static_cast<size_t>(byte) * 8 * tlwe_elems, ksk, rom,
-            address_poly + static_cast<size_t>(byte) * address_bit * trgsw_elems,
+            address_poly +
+                static_cast<size_t>(byte) * address_bit * trgsw_elems,
             address_fft +
                 static_cast<size_t>(byte) * address_bit * trgswfft_elems,
             acc + static_cast<size_t>(byte) * trlwe_elems,
@@ -712,8 +740,7 @@ void DeviceAESInvSubBytesBatched(
     const typename iksP::targetP::T* const ksk,
     const typename brP::targetP::T* const rom,
     typename brP::targetP::T* const address_poly, NTTValue* const address_fft,
-    typename brP::targetP::T* const acc,
-    typename brP::targetP::T* const temp,
+    typename brP::targetP::T* const acc, typename brP::targetP::T* const temp,
     typename brP::targetP::T* const product,
     typename brP::domainP::T* const domain_tlwe,
     typename brP::targetP::T* const cb_acc,
@@ -728,8 +755,9 @@ void DeviceAESInvSubBytesBatched(
     using inputP = typename iksP::domainP;
     static_assert(std::is_same_v<typename iksP::targetP, domainP>,
                   "iksP target must match blind-rotation domain");
-    static_assert(std::is_same_v<inputP, targetP>,
-                  "AES state ciphertexts must be in brP::targetP");
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                      sizeof(typename inputP::T) == sizeof(typename targetP::T),
+                  "AES state and blind-rotation target rings must match");
     static_assert(targetP::k == ahP::k && targetP::n == ahP::n &&
                       sizeof(typename targetP::T) == sizeof(typename ahP::T),
                   "ahP must share the brP::targetP torus ring");
@@ -738,11 +766,10 @@ void DeviceAESInvSubBytesBatched(
     constexpr uint32_t address_bit = 8;
     constexpr uint32_t words_bit = 3;
     constexpr uint32_t width_bit = targetP::nbit - words_bit;
-    static_assert(address_bit == width_bit,
-                  "CUDA AES currently supports target rings with nbit == 11");
+    static_assert(address_bit >= width_bit && address_bit - width_bit <= 1,
+                  "CUDA AES supports one or two TRLWE ROM tables");
 
-    constexpr size_t batch_count =
-        static_cast<size_t>(aes_bytes) * address_bit;
+    constexpr size_t batch_count = static_cast<size_t>(aes_bytes) * address_bit;
     constexpr size_t tlwe_elems = TLWEElements<targetP>();
     constexpr size_t trlwe_elems = TRLWEElements<targetP>();
     constexpr size_t trgsw_elems = TRGSWElements<targetP>();
@@ -756,6 +783,10 @@ void DeviceAESInvSubBytesBatched(
         <<<batch_count, ks_threads, 0, main_stream>>>(
             domain_tlwe, domain_tlwe_elems, state, input_tlwe_elems, ksk,
             batch_count);
+    if constexpr (address_bit != width_bit)
+        __NegateUpperAddressBitsKernel__<domainP, address_bit, width_bit>
+            <<<batch_count, 256, 0, main_stream>>>(
+                domain_tlwe, domain_tlwe_elems, batch_count);
 
     AnnihilateCircuitBootstrappingBatchWithWorkspace<brP, ahP>(
         address_poly, trgsw_elems, domain_tlwe, domain_tlwe_elems, cb_acc,
@@ -772,8 +803,8 @@ void DeviceAESInvSubBytesBatched(
         CuSafeCall(cudaStreamWaitEvent(byte_stream, ready_event, 0));
         DeviceLROMUX<targetP, address_bit, width_bit, 8>(
             state + static_cast<size_t>(byte) * 8 * tlwe_elems,
-            address_fft + static_cast<size_t>(byte) * address_bit *
-                              trgswfft_elems,
+            address_fft +
+                static_cast<size_t>(byte) * address_bit * trgswfft_elems,
             rom, acc + static_cast<size_t>(byte) * trlwe_elems,
             temp + static_cast<size_t>(byte) * trlwe_elems,
             product + static_cast<size_t>(byte) * trlwe_elems, byte_stream,
@@ -787,9 +818,11 @@ void DeviceAESInvSubBytesBatched(
 template <class P>
 void UploadAESInvSboxROM(typename P::T* const d_rom, const cudaStream_t st)
 {
-    auto rom = std::make_unique<TFHEpp::TRLWE<P>>();
+    constexpr size_t rom_count = (1U << 8) / (P::n / 8);
+    auto rom = std::make_unique<std::array<TFHEpp::TRLWE<P>, rom_count>>();
     *rom = {};
-    (*rom)[P::k] = TFHEpp::AESInvSboxROMPoly<P>()[0];
+    const auto polys = TFHEpp::AESInvSboxROMPoly<P>();
+    for (size_t i = 0; i < rom_count; i++) (*rom)[i][P::k] = polys[i];
     CuSafeCall(cudaMemcpyAsync(d_rom, rom->data(), sizeof(*rom),
                                cudaMemcpyHostToDevice, st));
 }
@@ -800,15 +833,19 @@ void InitializeBRKey(const TFHEpp::EvalKey& ek)
     using targetP = typename brP::targetP;
     if constexpr (targetP::n == TFHEpp::lvl2param::n) {
         InitializeNTThandlers_lvl02(_gpuNum);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         InitializeXaiNTT_lvl02(_gpuNum);
+#endif
+#ifdef USE_KEY_BUNDLE
         InitializeOneTRGSWNTT_lvl02(_gpuNum);
 #endif
     }
     else {
         InitializeNTThandlers(_gpuNum);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         InitializeXaiNTT(_gpuNum);
+#endif
+#ifdef USE_KEY_BUNDLE
         InitializeOneTRGSWNTT(_gpuNum);
 #endif
     }
@@ -825,15 +862,19 @@ void DeleteBRKey()
 {
     using targetP = typename brP::targetP;
     if constexpr (targetP::n == TFHEpp::lvl2param::n) {
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         DeleteXaiNTT_lvl02();
+#endif
+#ifdef USE_KEY_BUNDLE
         DeleteOneTRGSWNTT_lvl02();
 #endif
         DeleteBootstrappingKeyNTT_lvl02(_gpuNum);
     }
     else {
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         DeleteXaiNTT();
+#endif
+#ifdef USE_KEY_BUNDLE
         DeleteOneTRGSWNTT();
 #endif
         DeleteBootstrappingKeyNTT(_gpuNum);
@@ -845,9 +886,10 @@ void DeleteBRKey()
 template <class brP, class ahP>
 void InitializeAES(const TFHEpp::EvalKey& ek, const TFHEpp::SecretKey& sk)
 {
-    static_assert(std::is_same_v<typename brP::targetP, typename ahP::baseP> ||
-                      std::is_same_v<typename brP::targetP, ahP>,
-                  "ahP must be compatible with brP::targetP");
+    using targetP = typename brP::targetP;
+    static_assert(targetP::k == ahP::k && targetP::n == ahP::n &&
+                      sizeof(typename targetP::T) == sizeof(typename ahP::T),
+                  "ahP must share the brP::targetP torus ring");
     InitializeBRKey<brP>(ek);
 
     auto ahk = std::make_unique<AnnihilateKeyPolynomial<ahP>>();
@@ -877,8 +919,9 @@ void AESDec(
 {
     using targetP = typename brP::targetP;
     using inputP = typename iksP::domainP;
-    static_assert(std::is_same_v<inputP, targetP>,
-                  "AESDec expects ciphertexts in brP::targetP");
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                      sizeof(typename inputP::T) == sizeof(typename targetP::T),
+                  "AES state and blind-rotation target rings must match");
 
     cudaSetDevice(st.device_id());
 
@@ -893,25 +936,23 @@ void AESDec(
         static_cast<size_t>(TFHEpp::Nr + 1) * state_bytes;
     constexpr size_t trlwe_bytes =
         TRLWEElements<targetP>() * sizeof(typename targetP::T);
+    constexpr size_t rom_count = (1U << 8) / (targetP::n / 8);
     constexpr size_t sbox_trlwe_workspace_bytes =
         static_cast<size_t>(aes_bytes) * trlwe_bytes;
     constexpr size_t sbox_address_workspace_bytes =
         sbox_batch_count * trlwe_bytes;
     constexpr size_t trgsw_bytes = static_cast<size_t>(aes_bytes) *
-                                   sbox_address_bit *
-                                   TRGSWElements<targetP>() *
+                                   sbox_address_bit * TRGSWElements<targetP>() *
                                    sizeof(typename targetP::T);
-    constexpr size_t trgswfft_bytes = static_cast<size_t>(aes_bytes) *
-                                      sbox_address_bit *
-                                      TRGSWFFTElements<targetP>() *
-                                      sizeof(NTTValue);
-    constexpr size_t domain_tlwe_bytes =
-        TLWEElements<typename brP::domainP>() *
-        sizeof(typename brP::domainP::T);
+    constexpr size_t trgswfft_bytes =
+        static_cast<size_t>(aes_bytes) * sbox_address_bit *
+        TRGSWFFTElements<targetP>() * sizeof(NTTValue);
+    constexpr size_t domain_tlwe_bytes = TLWEElements<typename brP::domainP>() *
+                                         sizeof(typename brP::domainP::T);
     constexpr size_t domain_tlwe_workspace_bytes =
         sbox_batch_count * domain_tlwe_bytes;
     constexpr size_t cb_temptrlwe_workspace_bytes =
-        sbox_batch_count * targetP::l * trlwe_bytes;
+        sbox_batch_count * CircuitBootstrapLUTCount<targetP> * trlwe_bytes;
     constexpr size_t ksk_bytes = sizeof(TFHEpp::KeySwitchingKey<iksP>);
 
     typename targetP::T* d_state = nullptr;
@@ -931,24 +972,23 @@ void AESDec(
     CuSafeCall(cudaMalloc((void**)&d_state, state_bytes));
     CuSafeCall(cudaMalloc((void**)&d_scratch, state_bytes));
     CuSafeCall(cudaMalloc((void**)&d_roundkeys, roundkeys_bytes));
-    CuSafeCall(cudaMalloc((void**)&d_rom, trlwe_bytes));
+    CuSafeCall(cudaMalloc((void**)&d_rom, rom_count * trlwe_bytes));
     CuSafeCall(cudaMalloc((void**)&d_address_poly, trgsw_bytes));
     CuSafeCall(cudaMalloc((void**)&d_address_fft, trgswfft_bytes));
     CuSafeCall(cudaMalloc((void**)&d_acc, sbox_trlwe_workspace_bytes));
     CuSafeCall(cudaMalloc((void**)&d_temp, sbox_trlwe_workspace_bytes));
     CuSafeCall(cudaMalloc((void**)&d_product, sbox_trlwe_workspace_bytes));
-    CuSafeCall(cudaMalloc((void**)&d_domain_tlwe,
-                          domain_tlwe_workspace_bytes));
+    CuSafeCall(cudaMalloc((void**)&d_domain_tlwe, domain_tlwe_workspace_bytes));
     CuSafeCall(cudaMalloc((void**)&d_cb_acc, sbox_address_workspace_bytes));
-    CuSafeCall(cudaMalloc((void**)&d_cb_temptrlwe,
-                          cb_temptrlwe_workspace_bytes));
+    CuSafeCall(
+        cudaMalloc((void**)&d_cb_temptrlwe, cb_temptrlwe_workspace_bytes));
     CuSafeCall(cudaMalloc((void**)&d_ksk, ksk_bytes));
 
     std::array<cudaStream_t, aes_bytes> sbox_streams{};
     std::array<cudaEvent_t, aes_bytes> sbox_done_events{};
     cudaEvent_t sbox_ready_event = nullptr;
-    CuSafeCall(cudaEventCreateWithFlags(&sbox_ready_event,
-                                        cudaEventDisableTiming));
+    CuSafeCall(
+        cudaEventCreateWithFlags(&sbox_ready_event, cudaEventDisableTiming));
     for (uint32_t byte = 0; byte < aes_bytes; byte++) {
         CuSafeCall(cudaStreamCreateWithFlags(&sbox_streams[byte],
                                              cudaStreamNonBlocking));
@@ -965,23 +1005,22 @@ void AESDec(
 
     CuSafeCall(cudaMemcpyAsync(d_state, state->data(), state_bytes,
                                cudaMemcpyHostToDevice, st.st()));
-    CuSafeCall(cudaMemcpyAsync(d_roundkeys, expandedkey.data(),
-                               roundkeys_bytes, cudaMemcpyHostToDevice,
-                               st.st()));
+    CuSafeCall(cudaMemcpyAsync(d_roundkeys, expandedkey.data(), roundkeys_bytes,
+                               cudaMemcpyHostToDevice, st.st()));
     CuSafeCall(cudaMemcpyAsync(d_ksk, ek.getiksk<iksP>().data(), ksk_bytes,
                                cudaMemcpyHostToDevice, st.st()));
     UploadAESInvSboxROM<targetP>(d_rom, st.st());
 
     DeviceAddRoundKey<targetP>(
-        d_state, d_roundkeys + static_cast<size_t>(TFHEpp::Nr) * 128 * tlwe_elems,
+        d_state,
+        d_roundkeys + static_cast<size_t>(TFHEpp::Nr) * 128 * tlwe_elems,
         st.st());
     for (int round = TFHEpp::Nr - 1; round > 0; round--) {
         DeviceInvShiftRows<targetP>(d_state, d_scratch, st.st());
         DeviceAESInvSubBytesBatched<iksP, brP, ahP>(
-            d_state, d_ksk, d_rom, d_address_poly, d_address_fft, d_acc,
-            d_temp, d_product, d_domain_tlwe, d_cb_acc, d_cb_temptrlwe,
-            sbox_streams, sbox_ready_event, sbox_done_events, st.st(),
-            st.device_id());
+            d_state, d_ksk, d_rom, d_address_poly, d_address_fft, d_acc, d_temp,
+            d_product, d_domain_tlwe, d_cb_acc, d_cb_temptrlwe, sbox_streams,
+            sbox_ready_event, sbox_done_events, st.st(), st.device_id());
         DeviceAddRoundKey<targetP>(
             d_state,
             d_roundkeys + static_cast<size_t>(round) * 128 * tlwe_elems,
@@ -1034,20 +1073,46 @@ template void InitializeAES<TFHEpp::lvlh2param, TFHEpp::AHlvl2param>(
 template void CleanUpAES<TFHEpp::lvl02param, TFHEpp::AHlvl2param>();
 template void CleanUpAES<TFHEpp::lvlh2param, TFHEpp::AHlvl2param>();
 
-template void AESDec<TFHEpp::lvl20param, TFHEpp::lvl02param,
-                     TFHEpp::AHlvl2param>(
+template void
+AESDec<TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::AHlvl2param>(
     std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>&,
     const std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>&,
     const std::array<std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>,
                      TFHEpp::Nr + 1>&,
     const TFHEpp::EvalKey&, Stream);
 
-template void AESDec<TFHEpp::lvl2hparam, TFHEpp::lvlh2param,
-                     TFHEpp::AHlvl2param>(
+template void
+AESDec<TFHEpp::lvl2hparam, TFHEpp::lvlh2param, TFHEpp::AHlvl2param>(
     std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>&,
     const std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>&,
     const std::array<std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>,
                      TFHEpp::Nr + 1>&,
     const TFHEpp::EvalKey&, Stream);
+
+#if defined(USE_DIFFERENT_BR_PARAM) && defined(USE_DIFFERENT_AH_PARAM)
+template void InitializeAES<TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>(
+    const TFHEpp::EvalKey&, const TFHEpp::SecretKey&);
+template void InitializeAES<TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param>(
+    const TFHEpp::EvalKey&, const TFHEpp::SecretKey&);
+
+template void CleanUpAES<TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>();
+template void CleanUpAES<TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param>();
+
+template void
+AESDec<TFHEpp::lvl20param, TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>(
+    std::array<TFHEpp::TLWE<TFHEpp::cblvl2param>, 128>&,
+    const std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>&,
+    const std::array<std::array<TFHEpp::TLWE<TFHEpp::cblvl2param>, 128>,
+                     TFHEpp::Nr + 1>&,
+    const TFHEpp::EvalKey&, Stream);
+
+template void
+AESDec<TFHEpp::lvl2hparam, TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param>(
+    std::array<TFHEpp::TLWE<TFHEpp::cblvl2param>, 128>&,
+    const std::array<TFHEpp::TLWE<TFHEpp::lvl2param>, 128>&,
+    const std::array<std::array<TFHEpp::TLWE<TFHEpp::cblvl2param>, 128>,
+                     TFHEpp::Nr + 1>&,
+    const TFHEpp::EvalKey&, Stream);
+#endif
 
 }  // namespace cufhe

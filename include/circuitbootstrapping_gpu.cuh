@@ -15,6 +15,14 @@ struct SecretKey;
 namespace cufhe {
 
 template <class P>
+inline constexpr bool CircuitBootstrapSharedGadget =
+    P::l == P::lₐ && P::Bgbit == P::Bgₐbit;
+
+template <class P>
+inline constexpr uint32_t CircuitBootstrapLUTCount =
+    CircuitBootstrapSharedGadget<P> ? P::l : P::l + P::lₐ;
+
+template <class P>
 using CBswitchingKeyPolynomial = std::array<TFHEpp::TRGSW<P>, P::k>;
 
 template <class P>
@@ -26,8 +34,8 @@ void CBswitchingKeyPolynomialGen(CBswitchingKeyPolynomial<P>& cbsk,
                                  const TFHEpp::SecretKey& sk);
 
 template <class P>
-void CBswitchingKeyPolynomialToDevice(
-    const CBswitchingKeyPolynomial<P>& cbsk, const int gpuNum);
+void CBswitchingKeyPolynomialToDevice(const CBswitchingKeyPolynomial<P>& cbsk,
+                                      const int gpuNum);
 
 template <class P>
 void DeleteCBswitchingKey(const int gpuNum);
@@ -50,8 +58,8 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
     typename brP::targetP::T* const out, const size_t out_stride,
     const typename brP::domainP::T* const in, const size_t in_stride,
     typename brP::targetP::T* const acc,
-    typename brP::targetP::T* const temptrlwe,
-    const size_t batch_count, const cudaStream_t st, const int gpuNum);
+    typename brP::targetP::T* const temptrlwe, const size_t batch_count,
+    const cudaStream_t st, const int gpuNum);
 
 template <class iksP, class brP, class ahP>
 void AnnihilateCircuitBootstrapping(typename brP::targetP::T* const out,

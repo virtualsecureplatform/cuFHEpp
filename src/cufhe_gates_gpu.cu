@@ -23,11 +23,11 @@
 #include <unistd.h>
 
 #include <array>
-#include <tfhe/cloudkey.hpp>
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>
 #include <include/keyswitch_gpu.cuh>
 #include <params.hpp>
+#include <tfhe/cloudkey.hpp>
 
 namespace cufhe {
 
@@ -75,14 +75,16 @@ void CleanUp()
 void Initialize_lvl02(const TFHEpp::EvalKey& ek, const TFHEpp::SecretKey& sk)
 {
     InitializeNTThandlers_lvl02(_gpuNum);
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
+    InitializeXaiNTT_lvl02(_gpuNum);
+#endif
 #ifdef USE_KEY_BUNDLE
     BootstrappingKeyBundleToNTT<TFHEpp::lvl02param>(
         ek.getbk<TFHEpp::lvl02param>(), _gpuNum);
-    InitializeXaiNTT_lvl02(_gpuNum);
     InitializeOneTRGSWNTT_lvl02(_gpuNum);
 #else
     BootstrappingKeyToNTT<TFHEpp::lvl02param>(ek.getbk<TFHEpp::lvl02param>(),
-                                               _gpuNum);
+                                              _gpuNum);
 #endif
     KeySwitchingKeyToDevice_lvl20(ek.getiksk<TFHEpp::lvl20param>(), _gpuNum);
 }
@@ -91,8 +93,10 @@ void CleanUp_lvl02()
 {
     DeleteBootstrappingKeyNTT_lvl02(_gpuNum);
     DeleteKeySwitchingKey_lvl20(_gpuNum);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
     DeleteXaiNTT_lvl02();
+#endif
+#ifdef USE_KEY_BUNDLE
     DeleteOneTRGSWNTT_lvl02();
 #endif
 }

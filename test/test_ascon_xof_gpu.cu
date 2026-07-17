@@ -1,16 +1,15 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <chrono>
 #include <cctype>
+#include <chrono>
 #include <cstdint>
+#include <include/ascon_gpu.cuh>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <span>
 #include <vector>
-
-#include <include/ascon_gpu.cuh>
 
 extern "C" {
 int crypto_hash(unsigned char* out, const unsigned char* in,
@@ -56,18 +55,18 @@ void encrypt_bytes_as_bits(std::vector<TFHEpp::TLWE<P>>& out,
     out.resize(bytes.size() * 8);
     for (std::size_t byte = 0; byte < bytes.size(); byte++) {
         for (std::size_t bit = 0; bit < 8; bit++) {
-            TFHEpp::tlweSymEncrypt<P>(
-                out[byte * 8 + bit],
-                ((bytes[byte] >> bit) & 1U) ? TFHEpp::ascon_bit_mu<P>
-                                             : -TFHEpp::ascon_bit_mu<P>,
-                0.0, sk.key.get<P>());
+            TFHEpp::tlweSymEncrypt<P>(out[byte * 8 + bit],
+                                      ((bytes[byte] >> bit) & 1U)
+                                          ? TFHEpp::ascon_bit_mu<P>
+                                          : -TFHEpp::ascon_bit_mu<P>,
+                                      0.0, sk.key.get<P>());
         }
     }
 }
 
 template <class P>
-std::vector<uint8_t> decrypt_bits_as_bytes(std::span<const TFHEpp::TLWE<P>> bits,
-                                           const TFHEpp::SecretKey& sk)
+std::vector<uint8_t> decrypt_bits_as_bytes(
+    std::span<const TFHEpp::TLWE<P>> bits, const TFHEpp::SecretKey& sk)
 {
     assert(bits.size() % 8 == 0);
     std::vector<uint8_t> bytes(bits.size() / 8);
@@ -84,9 +83,15 @@ std::vector<uint8_t> decrypt_bits_as_bytes(std::span<const TFHEpp::TLWE<P>> bits
 
 int main()
 {
+#if defined(USE_DIFFERENT_BR_PARAM) && defined(USE_DIFFERENT_AH_PARAM)
+    using brP = TFHEpp::cblvl02param;
+    using iksP = TFHEpp::lvl20param;
+    using ahP = TFHEpp::cbAHlvl2param;
+#else
     using brP = TFHEpp::lvlh2param;
     using iksP = TFHEpp::lvl2hparam;
     using ahP = TFHEpp::AHlvl2param;
+#endif
     using P = typename brP::targetP;
 
     std::vector<uint8_t> message(2 * TFHEpp::ascon_xof_rate_bytes + 3);
@@ -129,14 +134,14 @@ int main()
         std::cerr << "ASCON XOF mismatch expected=" << to_hex(expected)
                   << " actual=" << to_hex(actual_one_shot) << std::endl;
     }
-    assert(actual_one_shot == expected);
+    if (actual_one_shot != expected) return 1;
 
     const auto actual_phased = decrypt_bits_as_bytes<P>(enc_output_phased, sk);
     if (actual_phased != expected) {
         std::cerr << "ASCON XOF phased mismatch expected=" << to_hex(expected)
                   << " actual=" << to_hex(actual_phased) << std::endl;
     }
-    assert(actual_phased == expected);
+    if (actual_phased != expected) return 1;
 
     const double one_shot_ms =
         std::chrono::duration<double, std::milli>(one_shot_end - one_shot_start)

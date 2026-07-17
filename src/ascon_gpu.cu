@@ -1,15 +1,9 @@
-#include <include/ascon_gpu.cuh>
-
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
-#include <limits>
-#include <memory>
-#include <type_traits>
-#include <vector>
-
 #include <include/annihilate_gpu.cuh>
+#include <include/ascon_gpu.cuh>
 #include <include/bootstrap_gpu.cuh>
 #include <include/circuitbootstrapping_gpu.cuh>
 #include <include/error_gpu.cuh>
@@ -17,6 +11,10 @@
 #include <include/keyswitch_gpu.cuh>
 #include <include/ntt_small_modulus.cuh>
 #include <include/utils_gpu.cuh>
+#include <limits>
+#include <memory>
+#include <type_traits>
+#include <vector>
 
 namespace cufhe {
 
@@ -26,14 +24,14 @@ extern std::vector<CuNTTHandler<TFHEpp::lvl2param::n>*> ntt_handlers_lvl02;
 namespace {
 
 template <class P>
-constexpr bool is_lvl1_ring_v = P::n == TFHEpp::lvl1param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl1param::T);
+constexpr bool is_lvl1_ring_v =
+    P::n == TFHEpp::lvl1param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl1param::T);
 
 template <class P>
-constexpr bool is_lvl2_ring_v = P::n == TFHEpp::lvl2param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl2param::T);
+constexpr bool is_lvl2_ring_v =
+    P::n == TFHEpp::lvl2param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl2param::T);
 
 template <class P>
 CuNTTHandler<P::n>* RingHandler(const int gpuNum)
@@ -108,8 +106,8 @@ __global__ void __IdentityKeySwitchBatchKernel__(
 {
     const size_t batch = blockIdx.x;
     if (batch >= batch_count) return;
-    KeySwitchFromTLWE<iksP>(out + batch * out_stride,
-                            in + batch * in_stride, ksk);
+    KeySwitchFromTLWE<iksP>(out + batch * out_stride, in + batch * in_stride,
+                            ksk);
 }
 
 template <class P>
@@ -140,14 +138,14 @@ __global__ void __TRGSWToFFTKernel__(NTTValue* const out,
                      std::numeric_limits<typename P::T>::digits / 2));
 
     if (tid < half_n) {
-        const double re = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid])) *
-                          norm;
-        const double im = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid + half_n])) *
-                          norm;
+        const double re =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid])) *
+            norm;
+        const double im =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid + half_n])) *
+            norm;
         NTTValue folded = {re, im};
 #ifdef USE_GPU_FFT
         folded *= __ldg(&ntt.twist_[tid]);
@@ -167,8 +165,7 @@ __global__ void __TRGSWToFFTKernel__(NTTValue* const out,
 #ifdef USE_GPU_FFT
         for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
 #else
-        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
-            __syncthreads();
+        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++) __syncthreads();
 #endif
     }
 
@@ -199,8 +196,7 @@ __device__ constexpr typename P::T ExternalProductOffset()
     for (uint32_t i = 1; i <= levels; i++)
         offset += (bg / 2) *
                   (static_cast<typename P::T>(1)
-                   << (std::numeric_limits<typename P::T>::digits -
-                       i * bgbit));
+                   << (std::numeric_limits<typename P::T>::digits - i * bgbit));
     return offset;
 }
 
@@ -231,9 +227,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_ASCON(
         const bool nonce = part < P::k;
         const uint32_t levels = nonce ? P::lₐ : P::l;
         const uint32_t bgbit = nonce ? P::Bgₐbit : P::Bgbit;
-        const typename P::T offset =
-            nonce ? ExternalProductOffset<P, true>()
-                  : ExternalProductOffset<P, false>();
+        const typename P::T offset = nonce ? ExternalProductOffset<P, true>()
+                                           : ExternalProductOffset<P, false>();
         const int remaining_bits =
             std::numeric_limits<typename P::T>::digits - levels * bgbit;
         const typename P::T roundoffset =
@@ -242,8 +237,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_ASCON(
                 : static_cast<typename P::T>(0);
         const typename P::T decomp_mask =
             (static_cast<typename P::T>(1) << bgbit) - 1;
-        const typename P::T decomp_half =
-            static_cast<typename P::T>(1) << (bgbit - 1);
+        const typename P::T decomp_half = static_cast<typename P::T>(1)
+                                          << (bgbit - 1);
 
         for (uint32_t digit = 0; digit < levels; digit++) {
             if (tid < half_n) {
@@ -252,15 +247,13 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_ASCON(
                 typename P::T temp_im =
                     in[part * N + tid + half_n] + offset + roundoffset;
                 const int32_t digit_re = static_cast<int32_t>(
-                    ((temp_re >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * bgbit)) &
+                    ((temp_re >> (std::numeric_limits<typename P::T>::digits -
+                                  (digit + 1) * bgbit)) &
                      decomp_mask) -
                     decomp_half);
                 const int32_t digit_im = static_cast<int32_t>(
-                    ((temp_im >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * bgbit)) &
+                    ((temp_im >> (std::numeric_limits<typename P::T>::digits -
+                                  (digit + 1) * bgbit)) &
                      decomp_mask) -
                     decomp_half);
                 NTTValue folded = {static_cast<double>(digit_re),
@@ -338,16 +331,21 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_ASCON(
 }
 
 template <class P>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>)
-void __ASCONExternalProductBatchKernel__(typename P::T* const out,
-                                         const size_t out_stride,
-                                         const typename P::T* const in,
-                                         const size_t in_stride,
-                                         const NTTValue* const address,
-                                         const size_t address_stride,
-                                         const uint32_t address_bit,
-                                         const CuNTTHandler<P::n> ntt,
-                                         const size_t batch_count)
+__global__ __launch_bounds__(
+    NUM_THREAD4HOMGATE<
+        P>) void __ASCONExternalProductBatchKernel__(typename P::T* const out,
+                                                     const size_t out_stride,
+                                                     const typename P::T* const
+                                                         in,
+                                                     const size_t in_stride,
+                                                     const NTTValue* const
+                                                         address,
+                                                     const size_t
+                                                         address_stride,
+                                                     const uint32_t address_bit,
+                                                     const CuNTTHandler<P::n>
+                                                         ntt,
+                                                     const size_t batch_count)
 {
     const size_t batch = blockIdx.x;
     if (batch >= batch_count) return;
@@ -429,11 +427,10 @@ __global__ void __TRLWEAddROMBatchKernel__(typename P::T* const out,
 }
 
 template <class P>
-__global__ void __TRLWEAddInPlaceBatchKernel__(typename P::T* const out,
-                                               const size_t out_stride,
-                                               const typename P::T* const addend,
-                                               const size_t addend_stride,
-                                               const size_t batch_count)
+__global__ void __TRLWEAddInPlaceBatchKernel__(
+    typename P::T* const out, const size_t out_stride,
+    const typename P::T* const addend, const size_t addend_stride,
+    const size_t batch_count)
 {
     const size_t batch = blockIdx.x;
     if (batch >= batch_count) return;
@@ -470,8 +467,7 @@ __global__ void __SampleExtractManyBatchKernel__(typename P::T* const out,
     const uint32_t bdim = ThisBlockSize();
     constexpr size_t tlwe_elems = TLWEElements<P>();
     constexpr size_t trlwe_elems = TRLWEElements<P>();
-    typename P::T* const tlwe =
-        out + (batch * num_tlwe + out_idx) * tlwe_elems;
+    typename P::T* const tlwe = out + (batch * num_tlwe + out_idx) * tlwe_elems;
     const typename P::T* const batch_acc = acc + batch * trlwe_elems;
     for (uint32_t i = tid; i < tlwe_elems; i += bdim)
         tlwe[i] = SampleExtractValue<P>(batch_acc, out_idx, i);
@@ -485,16 +481,11 @@ __global__ void __ASCONRoundConstantAndPreSboxKernel__(
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     constexpr size_t elems = TLWEElements<P>();
-    typename P::T* const x0 =
-        state + ASCONBitIndex(0, bit) * elems;
-    typename P::T* const x2 =
-        state + ASCONBitIndex(2, bit) * elems;
-    typename P::T* const x4 =
-        state + ASCONBitIndex(4, bit) * elems;
-    const typename P::T* const x1 =
-        state + ASCONBitIndex(1, bit) * elems;
-    const typename P::T* const x3 =
-        state + ASCONBitIndex(3, bit) * elems;
+    typename P::T* const x0 = state + ASCONBitIndex(0, bit) * elems;
+    typename P::T* const x2 = state + ASCONBitIndex(2, bit) * elems;
+    typename P::T* const x4 = state + ASCONBitIndex(4, bit) * elems;
+    const typename P::T* const x1 = state + ASCONBitIndex(1, bit) * elems;
+    const typename P::T* const x3 = state + ASCONBitIndex(3, bit) * elems;
 
     for (uint32_t i = tid; i < elems; i += bdim) {
         if (bit < 8 && ((constant >> bit) & 1U)) x2[i] = -x2[i];
@@ -519,8 +510,7 @@ __global__ void __ASCONGatherSboxInputsKernel__(
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     constexpr size_t elems = TLWEElements<P>();
-    const typename P::T* const src =
-        state + ASCONBitIndex(word, bit) * elems;
+    const typename P::T* const src = state + ASCONBitIndex(word, bit) * elems;
     typename P::T* const dst = out + static_cast<size_t>(packed) * elems;
     for (uint32_t i = tid; i < elems; i += bdim) dst[i] = src[i];
 }
@@ -535,8 +525,7 @@ __global__ void __ASCONScatterSboxOutputsKernel__(
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     constexpr size_t elems = TLWEElements<P>();
-    typename P::T* const dst =
-        t + ASCONBitIndex(word, bit) * elems;
+    typename P::T* const dst = t + ASCONBitIndex(word, bit) * elems;
     const typename P::T* const src =
         sbox_out + static_cast<size_t>(packed) * elems;
     for (uint32_t i = tid; i < elems; i += bdim) dst[i] = src[i];
@@ -551,10 +540,8 @@ __global__ void __ASCONPostSboxXor13Kernel__(typename P::T* const t)
     constexpr size_t elems = TLWEElements<P>();
     typename P::T* const x1 = t + ASCONBitIndex(1, bit) * elems;
     typename P::T* const x3 = t + ASCONBitIndex(3, bit) * elems;
-    const typename P::T* const x0 =
-        t + ASCONBitIndex(0, bit) * elems;
-    const typename P::T* const x2 =
-        t + ASCONBitIndex(2, bit) * elems;
+    const typename P::T* const x0 = t + ASCONBitIndex(0, bit) * elems;
+    const typename P::T* const x2 = t + ASCONBitIndex(2, bit) * elems;
     for (uint32_t i = tid; i < elems; i += bdim) {
         x1[i] += x0[i];
         x3[i] += x2[i];
@@ -574,8 +561,7 @@ __global__ void __ASCONPostSboxXor0Not2Kernel__(typename P::T* const t)
     constexpr size_t elems = TLWEElements<P>();
     typename P::T* const x0 = t + ASCONBitIndex(0, bit) * elems;
     typename P::T* const x2 = t + ASCONBitIndex(2, bit) * elems;
-    const typename P::T* const x4 =
-        t + ASCONBitIndex(4, bit) * elems;
+    const typename P::T* const x4 = t + ASCONBitIndex(4, bit) * elems;
     for (uint32_t i = tid; i < elems; i += bdim) {
         x0[i] += x4[i];
         x2[i] = -x2[i];
@@ -595,8 +581,7 @@ __global__ void __ASCONLinearDiffusionKernel__(typename P::T* const state,
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     constexpr size_t elems = TLWEElements<P>();
-    const typename P::T* const a =
-        t + ASCONBitIndex(word, bit) * elems;
+    const typename P::T* const a = t + ASCONBitIndex(word, bit) * elems;
     const typename P::T* const b =
         t + ASCONBitIndex(word, (bit + rot0[word]) & 63) * elems;
     const typename P::T* const c =
@@ -604,15 +589,17 @@ __global__ void __ASCONLinearDiffusionKernel__(typename P::T* const state,
     typename P::T* const out = state + static_cast<size_t>(state_bit) * elems;
     for (uint32_t i = tid; i < elems; i += bdim) {
         typename P::T value = a[i] + b[i] + c[i];
-        if (i == P::k * P::n) value += static_cast<typename P::T>(2) * BitMu<P>();
+        if (i == P::k * P::n)
+            value += static_cast<typename P::T>(2) * BitMu<P>();
         out[i] = value;
     }
 }
 
 template <class P>
-__global__ void __ASCONXORRateInputKernel__(
-    typename P::T* const state, const typename P::T* const input,
-    const size_t input_offset_bits, const size_t byte_count)
+__global__ void __ASCONXORRateInputKernel__(typename P::T* const state,
+                                            const typename P::T* const input,
+                                            const size_t input_offset_bits,
+                                            const size_t byte_count)
 {
     const size_t bit_index = blockIdx.x;
     if (bit_index >= byte_count * 8) return;
@@ -621,8 +608,7 @@ __global__ void __ASCONXORRateInputKernel__(
     constexpr size_t elems = TLWEElements<P>();
     const size_t byte = bit_index / 8;
     const size_t bit = bit_index & 7;
-    typename P::T* const dst =
-        state + ASCONRateByteBitIndex(byte, bit) * elems;
+    typename P::T* const dst = state + ASCONRateByteBitIndex(byte, bit) * elems;
     const typename P::T* const src =
         input + (input_offset_bits + bit_index) * elems;
     for (uint32_t i = tid; i < elems; i += bdim) {
@@ -638,15 +624,15 @@ __global__ void __ASCONNotRatePadKernel__(typename P::T* const state,
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     constexpr size_t elems = TLWEElements<P>();
-    typename P::T* const dst =
-        state + ASCONRateByteBitIndex(byte, 0) * elems;
+    typename P::T* const dst = state + ASCONRateByteBitIndex(byte, 0) * elems;
     for (uint32_t i = tid; i < elems; i += bdim) dst[i] = -dst[i];
 }
 
 template <class P>
-__global__ void __ASCONCopyRateOutputKernel__(
-    typename P::T* const output, const typename P::T* const state,
-    const size_t output_offset_bits, const size_t byte_count)
+__global__ void __ASCONCopyRateOutputKernel__(typename P::T* const output,
+                                              const typename P::T* const state,
+                                              const size_t output_offset_bits,
+                                              const size_t byte_count)
 {
     const size_t bit_index = blockIdx.x;
     if (bit_index >= byte_count * 8) return;
@@ -688,30 +674,25 @@ void DeviceLROMUXBatch(typename P::T* const out, const NTTValue* const address,
 
     __PolynomialMulByXaiMinusOneTRLWEBatchKernel__<P>
         <<<batch_count, threads, 0, st>>>(temp, trlwe_elems, data, 0,
-                                          2 * P::n - (P::n >> 1),
-                                          batch_count);
-    __ASCONExternalProductBatchKernel__<P>
-        <<<batch_count, threads, shmem, st>>>(
-            product, trlwe_elems, temp, trlwe_elems, address, address_stride,
-            width_bit - 1, *RingHandler<P>(gpuNum), batch_count);
-    __TRLWEAddROMBatchKernel__<P>
-        <<<batch_count, threads, 0, st>>>(acc, trlwe_elems, product,
-                                          trlwe_elems, data, batch_count);
+                                          2 * P::n - (P::n >> 1), batch_count);
+    __ASCONExternalProductBatchKernel__<P><<<batch_count, threads, shmem, st>>>(
+        product, trlwe_elems, temp, trlwe_elems, address, address_stride,
+        width_bit - 1, *RingHandler<P>(gpuNum), batch_count);
+    __TRLWEAddROMBatchKernel__<P><<<batch_count, threads, 0, st>>>(
+        acc, trlwe_elems, product, trlwe_elems, data, batch_count);
 
     for (uint32_t bit = 2; bit <= width_bit; bit++) {
         __PolynomialMulByXaiMinusOneTRLWEBatchKernel__<P>
-            <<<batch_count, threads, 0, st>>>(temp, trlwe_elems, acc,
-                                              trlwe_elems,
-                                              2 * P::n - (P::n >> bit),
-                                              batch_count);
+            <<<batch_count, threads, 0, st>>>(
+                temp, trlwe_elems, acc, trlwe_elems, 2 * P::n - (P::n >> bit),
+                batch_count);
         __ASCONExternalProductBatchKernel__<P>
             <<<batch_count, threads, shmem, st>>>(
                 product, trlwe_elems, temp, trlwe_elems, address,
                 address_stride, width_bit - bit, *RingHandler<P>(gpuNum),
                 batch_count);
-        __TRLWEAddInPlaceBatchKernel__<P>
-            <<<batch_count, threads, 0, st>>>(acc, trlwe_elems, product,
-                                              trlwe_elems, batch_count);
+        __TRLWEAddInPlaceBatchKernel__<P><<<batch_count, threads, 0, st>>>(
+            acc, trlwe_elems, product, trlwe_elems, batch_count);
     }
 
     const dim3 extract_grid(num_tlwe, batch_count);
@@ -736,15 +717,19 @@ void InitializeBRKey(const TFHEpp::EvalKey& ek)
     using targetP = typename brP::targetP;
     if constexpr (targetP::n == TFHEpp::lvl2param::n) {
         InitializeNTThandlers_lvl02(_gpuNum);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         InitializeXaiNTT_lvl02(_gpuNum);
+#endif
+#ifdef USE_KEY_BUNDLE
         InitializeOneTRGSWNTT_lvl02(_gpuNum);
 #endif
     }
     else {
         InitializeNTThandlers(_gpuNum);
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         InitializeXaiNTT(_gpuNum);
+#endif
+#ifdef USE_KEY_BUNDLE
         InitializeOneTRGSWNTT(_gpuNum);
 #endif
     }
@@ -761,15 +746,19 @@ void DeleteBRKey()
 {
     using targetP = typename brP::targetP;
     if constexpr (targetP::n == TFHEpp::lvl2param::n) {
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         DeleteXaiNTT_lvl02();
+#endif
+#ifdef USE_KEY_BUNDLE
         DeleteOneTRGSWNTT_lvl02();
 #endif
         DeleteBootstrappingKeyNTT_lvl02(_gpuNum);
     }
     else {
-#ifdef USE_KEY_BUNDLE
+#if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         DeleteXaiNTT();
+#endif
+#ifdef USE_KEY_BUNDLE
         DeleteOneTRGSWNTT();
 #endif
         DeleteBootstrappingKeyNTT(_gpuNum);
@@ -777,26 +766,27 @@ void DeleteBRKey()
 }
 
 template <class iksP, class brP, class ahP>
-void DeviceASCONSboxLayer(
-    typename brP::targetP::T* const state,
-    typename brP::targetP::T* const t,
-    const typename iksP::targetP::T* const ksk,
-    const typename brP::targetP::T* const rom,
-    typename brP::targetP::T* const sbox_input,
-    typename brP::targetP::T* const sbox_output,
-    typename brP::targetP::T* const address_poly, NTTValue* const address_fft,
-    typename brP::targetP::T* const acc,
-    typename brP::targetP::T* const temp,
-    typename brP::targetP::T* const product,
-    typename brP::domainP::T* const domain_tlwe,
-    typename brP::targetP::T* const cb_acc,
-    typename brP::targetP::T* const cb_temptrlwe, const cudaStream_t st,
-    const int gpuNum)
+void DeviceASCONSboxLayer(typename brP::targetP::T* const state,
+                          typename brP::targetP::T* const t,
+                          const typename iksP::targetP::T* const ksk,
+                          const typename brP::targetP::T* const rom,
+                          typename brP::targetP::T* const sbox_input,
+                          typename brP::targetP::T* const sbox_output,
+                          typename brP::targetP::T* const address_poly,
+                          NTTValue* const address_fft,
+                          typename brP::targetP::T* const acc,
+                          typename brP::targetP::T* const temp,
+                          typename brP::targetP::T* const product,
+                          typename brP::domainP::T* const domain_tlwe,
+                          typename brP::targetP::T* const cb_acc,
+                          typename brP::targetP::T* const cb_temptrlwe,
+                          const cudaStream_t st, const int gpuNum)
 {
     using targetP = typename brP::targetP;
     using domainP = typename brP::domainP;
     using inputP = typename iksP::domainP;
-    static_assert(std::is_same_v<inputP, targetP>);
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                  sizeof(typename inputP::T) == sizeof(typename targetP::T));
     static_assert(std::is_same_v<typename iksP::targetP, domainP>);
     static_assert(targetP::k == ahP::k && targetP::n == ahP::n &&
                   sizeof(typename targetP::T) == sizeof(typename ahP::T));
@@ -813,10 +803,9 @@ void DeviceASCONSboxLayer(
     __ASCONGatherSboxInputsKernel__<targetP>
         <<<batch_count, 256, 0, st>>>(sbox_input, state);
     const uint32_t ks_threads = std::min<uint32_t>(1024, domain_tlwe_elems);
-    __IdentityKeySwitchBatchKernel__<iksP>
-        <<<batch_count, ks_threads, 0, st>>>(
-            domain_tlwe, domain_tlwe_elems, sbox_input, tlwe_elems, ksk,
-            batch_count);
+    __IdentityKeySwitchBatchKernel__<iksP><<<batch_count, ks_threads, 0, st>>>(
+        domain_tlwe, domain_tlwe_elems, sbox_input, tlwe_elems, ksk,
+        batch_count);
 
     AnnihilateCircuitBootstrappingBatchWithWorkspace<brP, ahP>(
         address_poly, trgsw_elems, domain_tlwe, domain_tlwe_elems, cb_acc,
@@ -827,30 +816,26 @@ void DeviceASCONSboxLayer(
            st>>>(address_fft, address_poly, *RingHandler<targetP>(gpuNum));
 
     DeviceLROMUXBatch<targetP, address_bit, address_bit, address_bit>(
-        sbox_output, address_fft, rom, acc, temp, product, columns, st,
-        gpuNum);
+        sbox_output, address_fft, rom, acc, temp, product, columns, st, gpuNum);
     __ASCONScatterSboxOutputsKernel__<targetP>
         <<<batch_count, 256, 0, st>>>(t, sbox_output);
     CuCheckError();
 }
 
 template <class iksP, class brP, class ahP>
-void DeviceASCONRound(typename brP::targetP::T* const state,
-                      typename brP::targetP::T* const t,
-                      const typename iksP::targetP::T* const ksk,
-                      const typename brP::targetP::T* const rom,
-                      typename brP::targetP::T* const sbox_input,
-                      typename brP::targetP::T* const sbox_output,
-                      typename brP::targetP::T* const address_poly,
-                      NTTValue* const address_fft,
-                      typename brP::targetP::T* const acc,
-                      typename brP::targetP::T* const temp,
-                      typename brP::targetP::T* const product,
-                      typename brP::domainP::T* const domain_tlwe,
-                      typename brP::targetP::T* const cb_acc,
-                      typename brP::targetP::T* const cb_temptrlwe,
-                      const uint8_t constant, const cudaStream_t st,
-                      const int gpuNum)
+void DeviceASCONRound(
+    typename brP::targetP::T* const state, typename brP::targetP::T* const t,
+    const typename iksP::targetP::T* const ksk,
+    const typename brP::targetP::T* const rom,
+    typename brP::targetP::T* const sbox_input,
+    typename brP::targetP::T* const sbox_output,
+    typename brP::targetP::T* const address_poly, NTTValue* const address_fft,
+    typename brP::targetP::T* const acc, typename brP::targetP::T* const temp,
+    typename brP::targetP::T* const product,
+    typename brP::domainP::T* const domain_tlwe,
+    typename brP::targetP::T* const cb_acc,
+    typename brP::targetP::T* const cb_temptrlwe, const uint8_t constant,
+    const cudaStream_t st, const int gpuNum)
 {
     using targetP = typename brP::targetP;
     __ASCONRoundConstantAndPreSboxKernel__<targetP>
@@ -868,29 +853,26 @@ void DeviceASCONRound(typename brP::targetP::T* const state,
 }
 
 template <class iksP, class brP, class ahP>
-void DeviceASCONPermute(typename brP::targetP::T* const state,
-                        typename brP::targetP::T* const t,
-                        const typename iksP::targetP::T* const ksk,
-                        const typename brP::targetP::T* const rom,
-                        typename brP::targetP::T* const sbox_input,
-                        typename brP::targetP::T* const sbox_output,
-                        typename brP::targetP::T* const address_poly,
-                        NTTValue* const address_fft,
-                        typename brP::targetP::T* const acc,
-                        typename brP::targetP::T* const temp,
-                        typename brP::targetP::T* const product,
-                        typename brP::domainP::T* const domain_tlwe,
-                        typename brP::targetP::T* const cb_acc,
-                        typename brP::targetP::T* const cb_temptrlwe,
-                        const std::size_t rounds, const cudaStream_t st,
-                        const int gpuNum)
+void DeviceASCONPermute(
+    typename brP::targetP::T* const state, typename brP::targetP::T* const t,
+    const typename iksP::targetP::T* const ksk,
+    const typename brP::targetP::T* const rom,
+    typename brP::targetP::T* const sbox_input,
+    typename brP::targetP::T* const sbox_output,
+    typename brP::targetP::T* const address_poly, NTTValue* const address_fft,
+    typename brP::targetP::T* const acc, typename brP::targetP::T* const temp,
+    typename brP::targetP::T* const product,
+    typename brP::domainP::T* const domain_tlwe,
+    typename brP::targetP::T* const cb_acc,
+    typename brP::targetP::T* const cb_temptrlwe, const std::size_t rounds,
+    const cudaStream_t st, const int gpuNum)
 {
     const std::size_t begin = TFHEpp::ascon_round_constants.size() - rounds;
     for (std::size_t i = begin; i < TFHEpp::ascon_round_constants.size(); i++) {
         DeviceASCONRound<iksP, brP, ahP>(
             state, t, ksk, rom, sbox_input, sbox_output, address_poly,
-            address_fft, acc, temp, product, domain_tlwe, cb_acc,
-            cb_temptrlwe, TFHEpp::ascon_round_constants[i], st, gpuNum);
+            address_fft, acc, temp, product, domain_tlwe, cb_acc, cb_temptrlwe,
+            TFHEpp::ascon_round_constants[i], st, gpuNum);
     }
 }
 
@@ -900,10 +882,11 @@ typename P::T* DeviceCopyTLWEsToDevice(std::span<const TFHEpp::TLWE<P>> tlwes,
 {
     if (tlwes.empty()) return nullptr;
     typename P::T* device = nullptr;
-    const size_t bytes = tlwes.size() * TLWEElements<P>() * sizeof(typename P::T);
+    const size_t bytes =
+        tlwes.size() * TLWEElements<P>() * sizeof(typename P::T);
     CuSafeCall(cudaMalloc((void**)&device, bytes));
-    CuSafeCall(
-        cudaMemcpyAsync(device, tlwes.data(), bytes, cudaMemcpyHostToDevice, st));
+    CuSafeCall(cudaMemcpyAsync(device, tlwes.data(), bytes,
+                               cudaMemcpyHostToDevice, st));
     return device;
 }
 
@@ -923,16 +906,20 @@ void DeviceCopyTLWEsToHost(std::span<TFHEpp::TLWE<P>> tlwes,
                            const cudaStream_t st)
 {
     if (tlwes.empty()) return;
-    const size_t bytes = tlwes.size() * TLWEElements<P>() * sizeof(typename P::T);
-    CuSafeCall(
-        cudaMemcpyAsync(tlwes.data(), device, bytes, cudaMemcpyDeviceToHost, st));
+    const size_t bytes =
+        tlwes.size() * TLWEElements<P>() * sizeof(typename P::T);
+    CuSafeCall(cudaMemcpyAsync(tlwes.data(), device, bytes,
+                               cudaMemcpyDeviceToHost, st));
 }
 
 template <class iksP, class brP, class ahP>
 struct ASCONDeviceWorkspace {
     using targetP = typename brP::targetP;
     using domainP = typename brP::domainP;
-    static_assert(std::is_same_v<typename iksP::domainP, targetP>);
+    static_assert(iksP::domainP::k == targetP::k &&
+                  iksP::domainP::n == targetP::n &&
+                  sizeof(typename iksP::domainP::T) ==
+                      sizeof(typename targetP::T));
     static_assert(std::is_same_v<typename iksP::targetP, domainP>);
     static_assert(targetP::k == ahP::k && targetP::n == ahP::n &&
                   sizeof(typename targetP::T) == sizeof(typename ahP::T));
@@ -963,7 +950,7 @@ struct ASCONDeviceWorkspace {
     static constexpr size_t cb_acc_workspace_bytes =
         sbox_input_count * trlwe_bytes;
     static constexpr size_t cb_temptrlwe_workspace_bytes =
-        sbox_input_count * targetP::l * trlwe_bytes;
+        sbox_input_count * CircuitBootstrapLUTCount<targetP> * trlwe_bytes;
     static constexpr size_t ksk_bytes = sizeof(TFHEpp::KeySwitchingKey<iksP>);
 
     typename targetP::T* state = nullptr;
@@ -993,11 +980,11 @@ struct ASCONDeviceWorkspace {
         CuSafeCall(cudaMalloc((void**)&acc, sbox_trlwe_workspace_bytes));
         CuSafeCall(cudaMalloc((void**)&temp, sbox_trlwe_workspace_bytes));
         CuSafeCall(cudaMalloc((void**)&product, sbox_trlwe_workspace_bytes));
-        CuSafeCall(cudaMalloc((void**)&domain_tlwe,
-                              domain_tlwe_workspace_bytes));
+        CuSafeCall(
+            cudaMalloc((void**)&domain_tlwe, domain_tlwe_workspace_bytes));
         CuSafeCall(cudaMalloc((void**)&cb_acc, cb_acc_workspace_bytes));
-        CuSafeCall(cudaMalloc((void**)&cb_temptrlwe,
-                              cb_temptrlwe_workspace_bytes));
+        CuSafeCall(
+            cudaMalloc((void**)&cb_temptrlwe, cb_temptrlwe_workspace_bytes));
         CuSafeCall(cudaMalloc((void**)&ksk, ksk_bytes));
 
         CuSafeCall(cudaMemcpyAsync(ksk, ek.getiksk<iksP>().data(), ksk_bytes,
@@ -1081,12 +1068,11 @@ void DeviceASCONXOFAbsorb(ASCONDeviceWorkspace<iksP, brP, ahP>& workspace,
         byte_len -= TFHEpp::ascon_xof_rate_bytes;
     }
     if (byte_len > 0) {
-        __ASCONXORRateInputKernel__<targetP>
-            <<<byte_len * 8, 256, 0, st>>>(workspace.state, input,
-                                            offset_bits, byte_len);
+        __ASCONXORRateInputKernel__<targetP><<<byte_len * 8, 256, 0, st>>>(
+            workspace.state, input, offset_bits, byte_len);
     }
-    __ASCONNotRatePadKernel__<targetP><<<1, 256, 0, st>>>(workspace.state,
-                                                          byte_len);
+    __ASCONNotRatePadKernel__<targetP>
+        <<<1, 256, 0, st>>>(workspace.state, byte_len);
     workspace.PermuteP12(st, gpuNum);
 }
 
@@ -1111,9 +1097,8 @@ void DeviceASCONXOFSqueeze(ASCONDeviceWorkspace<iksP, brP, ahP>& workspace,
         byte_len -= TFHEpp::ascon_xof_rate_bytes;
     }
     if (byte_len > 0) {
-        __ASCONCopyRateOutputKernel__<targetP>
-            <<<byte_len * 8, 256, 0, st>>>(output, workspace.state,
-                                            offset_bits, byte_len);
+        __ASCONCopyRateOutputKernel__<targetP><<<byte_len * 8, 256, 0, st>>>(
+            output, workspace.state, offset_bits, byte_len);
     }
 }
 
@@ -1122,9 +1107,10 @@ void DeviceASCONXOFSqueeze(ASCONDeviceWorkspace<iksP, brP, ahP>& workspace,
 template <class brP, class ahP>
 void InitializeASCON(const TFHEpp::EvalKey& ek, const TFHEpp::SecretKey& sk)
 {
-    static_assert(std::is_same_v<typename brP::targetP, typename ahP::baseP> ||
-                      std::is_same_v<typename brP::targetP, ahP>,
-                  "ahP must be compatible with brP::targetP");
+    using targetP = typename brP::targetP;
+    static_assert(targetP::k == ahP::k && targetP::n == ahP::n &&
+                      sizeof(typename targetP::T) == sizeof(typename ahP::T),
+                  "ahP must share the brP::targetP torus ring");
     InitializeBRKey<brP>(ek);
 
     auto ahk = std::make_unique<AnnihilateKeyPolynomial<ahP>>();
@@ -1150,8 +1136,9 @@ void ASCONXOFInitialize(TFHEpp::ASCONState<typename brP::targetP>& state,
 {
     using targetP = typename brP::targetP;
     using inputP = typename iksP::domainP;
-    static_assert(std::is_same_v<inputP, targetP>,
-                  "ASCONXOFInitialize expects brP::targetP state");
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                      sizeof(typename inputP::T) == sizeof(typename targetP::T),
+                  "ASCON state and blind-rotation target rings must match");
 
     cudaSetDevice(st.device_id());
 
@@ -1169,8 +1156,9 @@ void ASCONXOFAbsorb(TFHEpp::ASCONState<typename brP::targetP>& state,
 {
     using targetP = typename brP::targetP;
     using inputP = typename iksP::domainP;
-    static_assert(std::is_same_v<inputP, targetP>,
-                  "ASCONXOFAbsorb expects input ciphertexts in brP::targetP");
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                      sizeof(typename inputP::T) == sizeof(typename targetP::T),
+                  "ASCON input and blind-rotation target rings must match");
     assert(input.size() % 8 == 0);
 
     cudaSetDevice(st.device_id());
@@ -1194,8 +1182,9 @@ void ASCONXOFSqueeze(TFHEpp::ASCONState<typename brP::targetP>& state,
 {
     using targetP = typename brP::targetP;
     using inputP = typename iksP::domainP;
-    static_assert(std::is_same_v<inputP, targetP>,
-                  "ASCONXOFSqueeze expects brP::targetP state");
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                      sizeof(typename inputP::T) == sizeof(typename targetP::T),
+                  "ASCON state and blind-rotation target rings must match");
     assert(output.size() % 8 == 0);
 
     cudaSetDevice(st.device_id());
@@ -1220,8 +1209,9 @@ void ASCONXOF(std::span<TFHEpp::TLWE<typename brP::targetP>> output,
 {
     using targetP = typename brP::targetP;
     using inputP = typename iksP::domainP;
-    static_assert(std::is_same_v<inputP, targetP>,
-                  "ASCONXOF expects input ciphertexts in brP::targetP");
+    static_assert(inputP::k == targetP::k && inputP::n == targetP::n &&
+                      sizeof(typename inputP::T) == sizeof(typename targetP::T),
+                  "ASCON input and blind-rotation target rings must match");
     assert(input.size() % 8 == 0);
     assert(output.size() % 8 == 0);
 
@@ -1254,44 +1244,92 @@ template void InitializeASCON<TFHEpp::lvlh2param, TFHEpp::AHlvl2param>(
 template void CleanUpASCON<TFHEpp::lvl02param, TFHEpp::AHlvl2param>();
 template void CleanUpASCON<TFHEpp::lvlh2param, TFHEpp::AHlvl2param>();
 
-template void ASCONXOFInitialize<TFHEpp::lvl20param, TFHEpp::lvl02param,
-                                 TFHEpp::AHlvl2param>(
+template void
+ASCONXOFInitialize<TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::AHlvl2param>(
     TFHEpp::ASCONState<TFHEpp::lvl2param>&, const TFHEpp::EvalKey&, Stream);
-template void ASCONXOFInitialize<TFHEpp::lvl2hparam, TFHEpp::lvlh2param,
-                                 TFHEpp::AHlvl2param>(
+template void
+ASCONXOFInitialize<TFHEpp::lvl2hparam, TFHEpp::lvlh2param, TFHEpp::AHlvl2param>(
     TFHEpp::ASCONState<TFHEpp::lvl2param>&, const TFHEpp::EvalKey&, Stream);
 
-template void ASCONXOFAbsorb<TFHEpp::lvl20param, TFHEpp::lvl02param,
-                             TFHEpp::AHlvl2param>(
+template void
+ASCONXOFAbsorb<TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::AHlvl2param>(
     TFHEpp::ASCONState<TFHEpp::lvl2param>&,
-    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>,
-    const TFHEpp::EvalKey&, Stream);
-template void ASCONXOFAbsorb<TFHEpp::lvl2hparam, TFHEpp::lvlh2param,
-                             TFHEpp::AHlvl2param>(
-    TFHEpp::ASCONState<TFHEpp::lvl2param>&,
-    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>,
-    const TFHEpp::EvalKey&, Stream);
-
-template void ASCONXOFSqueeze<TFHEpp::lvl20param, TFHEpp::lvl02param,
-                              TFHEpp::AHlvl2param>(
-    TFHEpp::ASCONState<TFHEpp::lvl2param>&,
-    std::span<TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&,
+    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&,
     Stream);
-template void ASCONXOFSqueeze<TFHEpp::lvl2hparam, TFHEpp::lvlh2param,
-                              TFHEpp::AHlvl2param>(
+template void
+ASCONXOFAbsorb<TFHEpp::lvl2hparam, TFHEpp::lvlh2param, TFHEpp::AHlvl2param>(
     TFHEpp::ASCONState<TFHEpp::lvl2param>&,
-    std::span<TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&,
+    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&,
     Stream);
 
-template void ASCONXOF<TFHEpp::lvl20param, TFHEpp::lvl02param,
-                       TFHEpp::AHlvl2param>(
+template void
+ASCONXOFSqueeze<TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::AHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::lvl2param>&,
+    std::span<TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&, Stream);
+template void
+ASCONXOFSqueeze<TFHEpp::lvl2hparam, TFHEpp::lvlh2param, TFHEpp::AHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::lvl2param>&,
+    std::span<TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&, Stream);
+
+template void
+ASCONXOF<TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::AHlvl2param>(
     std::span<TFHEpp::TLWE<TFHEpp::lvl2param>>,
-    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>,
-    const TFHEpp::EvalKey&, Stream);
-template void ASCONXOF<TFHEpp::lvl2hparam, TFHEpp::lvlh2param,
-                       TFHEpp::AHlvl2param>(
+    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+template void
+ASCONXOF<TFHEpp::lvl2hparam, TFHEpp::lvlh2param, TFHEpp::AHlvl2param>(
     std::span<TFHEpp::TLWE<TFHEpp::lvl2param>>,
-    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>,
-    const TFHEpp::EvalKey&, Stream);
+    std::span<const TFHEpp::TLWE<TFHEpp::lvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+
+#if defined(USE_DIFFERENT_BR_PARAM) && defined(USE_DIFFERENT_AH_PARAM)
+template void InitializeASCON<TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>(
+    const TFHEpp::EvalKey&, const TFHEpp::SecretKey&);
+template void InitializeASCON<TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param>(
+    const TFHEpp::EvalKey&, const TFHEpp::SecretKey&);
+
+template void CleanUpASCON<TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>();
+template void CleanUpASCON<TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param>();
+
+template void ASCONXOFInitialize<TFHEpp::lvl20param, TFHEpp::cblvl02param,
+                                 TFHEpp::cbAHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::cblvl2param>&, const TFHEpp::EvalKey&, Stream);
+template void ASCONXOFInitialize<TFHEpp::lvl2hparam, TFHEpp::cblvlh2param,
+                                 TFHEpp::cbAHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::cblvl2param>&, const TFHEpp::EvalKey&, Stream);
+
+template void
+ASCONXOFAbsorb<TFHEpp::lvl20param, TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::cblvl2param>&,
+    std::span<const TFHEpp::TLWE<TFHEpp::cblvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+template void
+ASCONXOFAbsorb<TFHEpp::lvl2hparam, TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::cblvl2param>&,
+    std::span<const TFHEpp::TLWE<TFHEpp::cblvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+
+template void ASCONXOFSqueeze<TFHEpp::lvl20param, TFHEpp::cblvl02param,
+                              TFHEpp::cbAHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::cblvl2param>&,
+    std::span<TFHEpp::TLWE<TFHEpp::cblvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+template void ASCONXOFSqueeze<TFHEpp::lvl2hparam, TFHEpp::cblvlh2param,
+                              TFHEpp::cbAHlvl2param>(
+    TFHEpp::ASCONState<TFHEpp::cblvl2param>&,
+    std::span<TFHEpp::TLWE<TFHEpp::cblvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+
+template void
+ASCONXOF<TFHEpp::lvl20param, TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param>(
+    std::span<TFHEpp::TLWE<TFHEpp::cblvl2param>>,
+    std::span<const TFHEpp::TLWE<TFHEpp::cblvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+template void
+ASCONXOF<TFHEpp::lvl2hparam, TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param>(
+    std::span<TFHEpp::TLWE<TFHEpp::cblvl2param>>,
+    std::span<const TFHEpp::TLWE<TFHEpp::cblvl2param>>, const TFHEpp::EvalKey&,
+    Stream);
+#endif
 
 }  // namespace cufhe

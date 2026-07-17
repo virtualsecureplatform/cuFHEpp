@@ -147,28 +147,28 @@ class FFP64 {
 // Length-selected Modulus Operations
 //=============================================================================
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod64_normalize(
-    SmallNTTValue a)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_normalize(SmallNTTValue a)
 {
     return a + static_cast<uint32_t>(-(a >= small_ntt::P));
 }
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod64_add(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_add(SmallNTTValue a, SmallNTTValue b)
 {
     SmallNTTValue tmp = a + b;
     return tmp + static_cast<uint32_t>(-(tmp < b || tmp >= small_ntt::P));
 }
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod64_sub(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_sub(SmallNTTValue a, SmallNTTValue b)
 {
     SmallNTTValue tmp = a - b;
     return tmp - static_cast<uint32_t>(-(tmp > a));
 }
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod64_mult(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_mult(SmallNTTValue a, SmallNTTValue b)
 {
     unsigned __int128 prod = static_cast<unsigned __int128>(a) * b;
     const SmallNTTValue lo = static_cast<SmallNTTValue>(prod);
@@ -181,38 +181,37 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod64_mult(
     prod >>= 32;
     const uint32_t limb3 = static_cast<uint32_t>(prod);
 
-    SmallNTTValue res =
-        ((static_cast<SmallNTTValue>(limb1) + limb2) << 32) + limb0 - limb3 -
-        limb2;
+    SmallNTTValue res = ((static_cast<SmallNTTValue>(limb1) + limb2) << 32) +
+                        limb0 - limb3 - limb2;
     res -= static_cast<uint32_t>(-((res > lo) && (limb2 == 0)));
     res += static_cast<uint32_t>(-((res < lo) && (limb2 != 0)));
     return small_mod64_normalize(res);
 }
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod31_normalize(
-    SmallNTTValue a)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod31_normalize(SmallNTTValue a)
 {
     if (a >= small_ntt31::P) a %= small_ntt31::P;
     return static_cast<uint32_t>(a);
 }
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod31_add(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod31_add(SmallNTTValue a, SmallNTTValue b)
 {
     uint32_t sum = static_cast<uint32_t>(a) + static_cast<uint32_t>(b);
     return (sum >= small_ntt31::P) ? (sum - small_ntt31::P) : sum;
 }
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod31_sub(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod31_sub(SmallNTTValue a, SmallNTTValue b)
 {
     uint32_t diff =
         static_cast<uint32_t>(a) + small_ntt31::P - static_cast<uint32_t>(b);
     return (diff >= small_ntt31::P) ? (diff - small_ntt31::P) : diff;
 }
 
-__host__ __device__ __forceinline__ SmallNTTValue small_mod31_mult(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod31_mult(SmallNTTValue a, SmallNTTValue b)
 {
     constexpr uint32_t p = small_ntt31::P;
     constexpr uint64_t mu = small_ntt31::BARRETT_MU;
@@ -231,8 +230,8 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod31_mult(
 }
 
 template <uint32_t N>
-__host__ __device__ __forceinline__ SmallNTTValue small_mod_normalize(
-    SmallNTTValue a)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod_normalize(SmallNTTValue a)
 {
     if constexpr (N == TFHEpp::lvl1param::n) {
         return small_mod31_normalize(a);
@@ -243,8 +242,8 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod_normalize(
 }
 
 template <uint32_t N>
-__host__ __device__ __forceinline__ SmallNTTValue small_mod_add(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue small_mod_add(SmallNTTValue a,
+                                                                SmallNTTValue b)
 {
     if constexpr (N == TFHEpp::lvl1param::n) {
         return small_mod31_add(a, b);
@@ -255,8 +254,8 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod_add(
 }
 
 template <uint32_t N>
-__host__ __device__ __forceinline__ SmallNTTValue small_mod_sub(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue small_mod_sub(SmallNTTValue a,
+                                                                SmallNTTValue b)
 {
     if constexpr (N == TFHEpp::lvl1param::n) {
         return small_mod31_sub(a, b);
@@ -267,8 +266,8 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod_sub(
 }
 
 template <uint32_t N>
-__host__ __device__ __forceinline__ SmallNTTValue small_mod_mult(
-    SmallNTTValue a, SmallNTTValue b)
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod_mult(SmallNTTValue a, SmallNTTValue b)
 {
     if constexpr (N == TFHEpp::lvl1param::n) {
         return small_mod31_mult(a, b);
@@ -279,8 +278,8 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod_mult(
 }
 
 template <uint32_t N, typename TorusT>
-__host__ __device__ __forceinline__ SmallNTTValue torus_to_ntt_mod(
-    TorusT torus_val)
+__host__ __device__ __forceinline__ SmallNTTValue
+torus_to_ntt_mod(TorusT torus_val)
 {
     using UnsignedT = std::make_unsigned_t<TorusT>;
     constexpr int bits = std::numeric_limits<UnsignedT>::digits;
@@ -292,8 +291,8 @@ __host__ __device__ __forceinline__ SmallNTTValue torus_to_ntt_mod(
 }
 
 template <uint32_t N>
-__host__ __device__ __forceinline__ SmallNTTValue signed_int_to_ntt_mod(
-    int32_t val)
+__host__ __device__ __forceinline__ SmallNTTValue
+signed_int_to_ntt_mod(int32_t val)
 {
     if (val < 0) {
         return small_mod_sub<N>(
@@ -302,8 +301,8 @@ __host__ __device__ __forceinline__ SmallNTTValue signed_int_to_ntt_mod(
     return static_cast<SmallNTTValue>(val);
 }
 
-__host__ __device__ __forceinline__ uint64_t ntt_abs_to_torus64_goldilocks(
-    SmallNTTValue val)
+__host__ __device__ __forceinline__ uint64_t
+ntt_abs_to_torus64_goldilocks(SmallNTTValue val)
 {
     const unsigned __int128 mul = val;
     return static_cast<uint64_t>(((mul << 64) + (mul << 32) - mul +
@@ -312,8 +311,8 @@ __host__ __device__ __forceinline__ uint64_t ntt_abs_to_torus64_goldilocks(
 }
 
 template <uint32_t N>
-__host__ __device__ __forceinline__ uint64_t ntt_mod_to_torus64(
-    SmallNTTValue val)
+__host__ __device__ __forceinline__ uint64_t
+ntt_mod_to_torus64(SmallNTTValue val)
 {
     if constexpr (N == TFHEpp::lvl1param::n) {
         const bool neg = val > small_ntt31::HALF_P;
@@ -334,8 +333,8 @@ __host__ __device__ __forceinline__ uint64_t ntt_mod_to_torus64(
 }
 
 template <uint32_t N>
-__host__ __device__ __forceinline__ uint32_t ntt_mod_to_torus32(
-    SmallNTTValue val)
+__host__ __device__ __forceinline__ uint32_t
+ntt_mod_to_torus32(SmallNTTValue val)
 {
     if constexpr (N == TFHEpp::lvl1param::n) {
         const bool neg = val > small_ntt31::HALF_P;
@@ -348,11 +347,11 @@ __host__ __device__ __forceinline__ uint32_t ntt_mod_to_torus32(
     }
     else {
         const bool neg = val > small_ntt::HALF_P;
-        const uint64_t torus64 = ntt_abs_to_torus64_goldilocks(
-            neg ? (small_ntt::P - val) : val);
+        const uint64_t torus64 =
+            ntt_abs_to_torus64_goldilocks(neg ? (small_ntt::P - val) : val);
         uint32_t torus32 = static_cast<uint32_t>(torus64 >> 32);
-        torus32 += static_cast<uint32_t>((torus64 & 0xFFFFFFFFULL) >=
-                                         0x80000000ULL);
+        torus32 +=
+            static_cast<uint32_t>((torus64 & 0xFFFFFFFFULL) >= 0x80000000ULL);
         return neg ? static_cast<uint32_t>(-torus32) : torus32;
     }
 }
@@ -410,8 +409,8 @@ __device__ __forceinline__ void SmallForwardNTT(SmallNTTValue* sh,
         if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
             root = d_const_forward_root_31[current_root_index];
         }
-        SmallCooleyTukeyUnit<N_POWER>(
-            sh[in_shared_address], sh[in_shared_address + t], root);
+        SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
+                                      sh[in_shared_address + t], root);
 
         t = t >> 1;
         t_2 -= 1;
@@ -424,9 +423,9 @@ __device__ __forceinline__ void SmallForwardNTT(SmallNTTValue* sh,
 #pragma unroll
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
-        SmallCooleyTukeyUnit<N_POWER>(
-            sh[in_shared_address], sh[in_shared_address + t],
-            __ldg(&root_table[current_root_index]));
+        SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
+                                      sh[in_shared_address + t],
+                                      __ldg(&root_table[current_root_index]));
 
         t = t >> 1;
         t_2 -= 1;
@@ -438,9 +437,10 @@ __device__ __forceinline__ void SmallForwardNTT(SmallNTTValue* sh,
 }
 
 template <int N_POWER>
-__device__ __forceinline__ void SmallInverseNTT(
-    SmallNTTValue* sh, const SmallNTTValue* root_table,
-    SmallNTTValue n_inverse, int tid)
+__device__ __forceinline__ void SmallInverseNTT(SmallNTTValue* sh,
+                                                const SmallNTTValue* root_table,
+                                                SmallNTTValue n_inverse,
+                                                int tid)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
     constexpr int NUM_THREADS = 1 << (N_POWER - 1);
@@ -475,8 +475,8 @@ __device__ __forceinline__ void SmallInverseNTT(
         if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
             root = d_const_inverse_root_31[current_root_index];
         }
-        SmallGentlemanSandeUnit<N_POWER>(
-            sh[in_shared_address], sh[in_shared_address + t], root);
+        SmallGentlemanSandeUnit<N_POWER>(sh[in_shared_address],
+                                         sh[in_shared_address + t], root);
 
         t = t << 1;
         t_2 += 1;
@@ -488,8 +488,7 @@ __device__ __forceinline__ void SmallInverseNTT(
 
     constexpr uint32_t N = 1U << N_POWER;
     sh[tid] = small_mod_mult<N>(sh[tid], n_inverse);
-    sh[tid + NUM_THREADS] =
-        small_mod_mult<N>(sh[tid + NUM_THREADS], n_inverse);
+    sh[tid + NUM_THREADS] = small_mod_mult<N>(sh[tid + NUM_THREADS], n_inverse);
     __syncthreads();
 }
 
@@ -605,7 +604,8 @@ class CuSmallNTTHandler {
      *
      * Used for decomposed polynomials that are already integers
      */
-    __device__ inline void NTT(SmallNTTValue* const out, const int32_t* const in,
+    __device__ inline void NTT(SmallNTTValue* const out,
+                               const int32_t* const in,
                                SmallNTTValue* const sh_temp,
                                uint32_t leading_thread = 0) const
     {
@@ -648,8 +648,7 @@ class CuSmallNTTHandler {
      */
     __device__ inline void NTTInvWithModSwitch(
         uint32_t* const out, const SmallNTTValue* const in,
-        SmallNTTValue* const sh_temp,
-        uint32_t leading_thread = 0) const
+        SmallNTTValue* const sh_temp, uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
@@ -663,7 +662,8 @@ class CuSmallNTTHandler {
 
         // Inverse NTT
         if (tid < NUM_THREADS) {
-            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_, tid);
+            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_,
+                                        tid);
         }
         else {
             for (int i = 0; i < SmallInverseNTTSyncCount<N>(); i++)
@@ -684,8 +684,7 @@ class CuSmallNTTHandler {
      */
     __device__ inline void NTTInvAddWithModSwitch(
         uint32_t* const out, const SmallNTTValue* const in,
-        SmallNTTValue* const sh_temp,
-        uint32_t leading_thread = 0) const
+        SmallNTTValue* const sh_temp, uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
@@ -699,7 +698,8 @@ class CuSmallNTTHandler {
 
         // Inverse NTT
         if (tid < NUM_THREADS) {
-            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_, tid);
+            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_,
+                                        tid);
         }
         else {
             for (int i = 0; i < SmallInverseNTTSyncCount<N>(); i++)
@@ -804,7 +804,8 @@ __device__ inline double2 operator*(const double2 a, double b)
 }
 
 // Warp shuffle helpers for register-based warp-local FFT stages.
-// Eliminates shared memory bank conflicts (up to 8-way for double2 at stride 1).
+// Eliminates shared memory bank conflicts (up to 8-way for double2 at stride
+// 1).
 __device__ __forceinline__ double shfl_xor_d(double val, int mask)
 {
     int lo = __double2loint(val);
@@ -984,8 +985,9 @@ __device__ __forceinline__ void GPUFFTForward512(
         double2 c = sh[tid + 256];
         double2 d = sh[tid + 384];
 
-        double2 w0 = __ldg(&root_table[0]);   // coarse (stride 256) + fine first pair
-        double2 w1b = __ldg(&root_table[1]);   // fine (stride 128), second pair
+        double2 w0 =
+            __ldg(&root_table[0]);  // coarse (stride 256) + fine first pair
+        double2 w1b = __ldg(&root_table[1]);  // fine (stride 128), second pair
 
         // Step 1: coarse stage (stride 256)
         double2 cw = c * w0;
@@ -996,9 +998,9 @@ __device__ __forceinline__ void GPUFFTForward512(
         double2 d1 = b - dw;
 
         // Step 2: fine stage (stride 128)
-        double2 b1w = b1 * w0;    // w1a = w0 = root_table[0]
+        double2 b1w = b1 * w0;  // w1a = w0 = root_table[0]
         double2 d1w = d1 * w1b;
-        sh[tid]       = a1 + b1w;
+        sh[tid] = a1 + b1w;
         sh[tid + 128] = a1 - b1w;
         sh[tid + 256] = c1 + d1w;
         sh[tid + 384] = c1 - d1w;
@@ -1027,7 +1029,7 @@ __device__ __forceinline__ void GPUFFTForward512(
         sh[in_shared_address + 32] = U - V;
     }
 
-// Warp-local stages (stride 16..1): register-based with warp shuffle.
+    // Warp-local stages (stride 16..1): register-based with warp shuffle.
     {
         int t_2 = 4;
         int in_shared_address = ((tid >> 4) << 4) + tid;
@@ -1092,7 +1094,7 @@ __device__ __forceinline__ void GPUFFTInverse512(
 
     int in_shared_address = ((tid >> 0) << 0) + tid;
 
-// Warp-local stages (stride 1..16): register-based with warp shuffle.
+    // Warp-local stages (stride 1..16): register-based with warp shuffle.
     {
         double2 reg_u = sh[in_shared_address];
         double2 reg_v = sh[in_shared_address + t];
@@ -1160,20 +1162,21 @@ __device__ __forceinline__ void GPUFFTInverse512(
         double2 c = sh[tid + 256];
         double2 d = sh[tid + 384];
 
-        double2 w_s  = __ldg(&root_table[0]);   // stride 128, first pair + stride 256
-        double2 w_s2 = __ldg(&root_table[1]);   // stride 128, second pair
+        double2 w_s =
+            __ldg(&root_table[0]);  // stride 128, first pair + stride 256
+        double2 w_s2 = __ldg(&root_table[1]);  // stride 128, second pair
 
         // Step 1: GS at stride 128
         double2 t0 = a + b;
-        double2 t1 = (a - b) * w_s;     // w_s1 = root_table[0]
+        double2 t1 = (a - b) * w_s;  // w_s1 = root_table[0]
         double2 t2 = c + d;
         double2 t3 = (c - d) * w_s2;
 
         // Step 2: GS at stride 256
-        sh[tid]       = t0 + t2;
-        sh[tid + 256] = (t0 - t2) * w_s;   // w_2s = root_table[0]
+        sh[tid] = t0 + t2;
+        sh[tid + 256] = (t0 - t2) * w_s;  // w_2s = root_table[0]
         sh[tid + 128] = t1 + t3;
-        sh[tid + 384] = (t1 - t3) * w_s;   // w_2s = root_table[0]
+        sh[tid + 384] = (t1 - t3) * w_s;  // w_2s = root_table[0]
     }
     __syncthreads();
 }
@@ -1199,8 +1202,9 @@ __device__ __forceinline__ void GPUFFTForward1024(
         double2 c = sh[tid + 512];
         double2 d = sh[tid + 768];
 
-        double2 w0 = __ldg(&root_table[0]);   // coarse (stride 512) + fine first pair
-        double2 w1b = __ldg(&root_table[1]);   // fine (stride 256), second pair
+        double2 w0 =
+            __ldg(&root_table[0]);  // coarse (stride 512) + fine first pair
+        double2 w1b = __ldg(&root_table[1]);  // fine (stride 256), second pair
 
         // Step 1: coarse stage (stride 512)
         double2 cw = c * w0;
@@ -1211,9 +1215,9 @@ __device__ __forceinline__ void GPUFFTForward1024(
         double2 d1 = b - dw;
 
         // Step 2: fine stage (stride 256)
-        double2 b1w = b1 * w0;    // w1a = w0 = root_table[0]
+        double2 b1w = b1 * w0;  // w1a = w0 = root_table[0]
         double2 d1w = d1 * w1b;
-        sh[tid]       = a1 + b1w;
+        sh[tid] = a1 + b1w;
         sh[tid + 256] = a1 - b1w;
         sh[tid + 512] = c1 + d1w;
         sh[tid + 768] = c1 - d1w;
@@ -1223,8 +1227,8 @@ __device__ __forceinline__ void GPUFFTForward1024(
     // Radix-4 merge of stages 2+3 (strides 128+64, CT DIT)
     // 256 active threads, each handles 4 elements in groups of 256
     if (tid < 256) {
-        int group = tid >> 6;        // 0..3
-        int local = tid & 63;        // 0..63
+        int group = tid >> 6;  // 0..3
+        int local = tid & 63;  // 0..63
         int base = group * 256 + local;
 
         double2 a = sh[base];
@@ -1232,9 +1236,11 @@ __device__ __forceinline__ void GPUFFTForward1024(
         double2 c = sh[base + 128];
         double2 d = sh[base + 192];
 
-        double2 w0  = __ldg(&root_table[group]);           // coarse (stride 128)
-        double2 w1a = __ldg(&root_table[2 * group]);       // fine (stride 64), first pair
-        double2 w1b = __ldg(&root_table[2 * group + 1]);   // fine (stride 64), second pair
+        double2 w0 = __ldg(&root_table[group]);  // coarse (stride 128)
+        double2 w1a =
+            __ldg(&root_table[2 * group]);  // fine (stride 64), first pair
+        double2 w1b =
+            __ldg(&root_table[2 * group + 1]);  // fine (stride 64), second pair
 
         // Step 1: coarse stage (stride 128)
         double2 cw = c * w0;
@@ -1247,8 +1253,8 @@ __device__ __forceinline__ void GPUFFTForward1024(
         // Step 2: fine stage (stride 64)
         double2 b1w = b1 * w1a;
         double2 d1w = d1 * w1b;
-        sh[base]       = a1 + b1w;
-        sh[base + 64]  = a1 - b1w;
+        sh[base] = a1 + b1w;
+        sh[base + 64] = a1 - b1w;
         sh[base + 128] = c1 + d1w;
         sh[base + 192] = c1 - d1w;
     }
@@ -1265,7 +1271,7 @@ __device__ __forceinline__ void GPUFFTForward1024(
         sh[in_shared_address + 32] = U - V;
     }
 
-// Warp-local stages (stride 16..1): register-based with warp shuffle.
+    // Warp-local stages (stride 16..1): register-based with warp shuffle.
     {
         int t_2 = 4;
         int in_shared_address = ((tid >> 4) << 4) + tid;
@@ -1325,7 +1331,7 @@ __device__ __forceinline__ void GPUFFTInverse1024(
 
     int in_shared_address = ((tid >> 0) << 0) + tid;
 
-// Warp-local stages (stride 1..16): register-based with warp shuffle.
+    // Warp-local stages (stride 1..16): register-based with warp shuffle.
     {
         double2 reg_u = sh[in_shared_address];
         double2 reg_v = sh[in_shared_address + t];
@@ -1376,8 +1382,8 @@ __device__ __forceinline__ void GPUFFTInverse1024(
     // Radix-4 merge of stages 6+7 (strides 64+128, GS DIF)
     // 256 active threads out of 512, each handles 4 elements in groups of 256
     if (tid < 256) {
-        int group = tid >> 6;        // 0..3
-        int local = tid & 63;        // 0..63
+        int group = tid >> 6;  // 0..3
+        int local = tid & 63;  // 0..63
         int base = group * 256 + local;
 
         double2 a = sh[base];
@@ -1385,9 +1391,10 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         double2 c = sh[base + 128];
         double2 d = sh[base + 192];
 
-        double2 w_s1 = __ldg(&root_table[2 * group]);       // stride 64, first pair
-        double2 w_s2 = __ldg(&root_table[2 * group + 1]);   // stride 64, second pair
-        double2 w_2s = __ldg(&root_table[group]);            // stride 128
+        double2 w_s1 = __ldg(&root_table[2 * group]);  // stride 64, first pair
+        double2 w_s2 =
+            __ldg(&root_table[2 * group + 1]);     // stride 64, second pair
+        double2 w_2s = __ldg(&root_table[group]);  // stride 128
 
         // Step 1: GS at stride 64
         double2 t0 = a + b;
@@ -1396,9 +1403,9 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         double2 t3 = (c - d) * w_s2;
 
         // Step 2: GS at stride 128
-        sh[base]       = t0 + t2;
+        sh[base] = t0 + t2;
         sh[base + 128] = (t0 - t2) * w_2s;
-        sh[base + 64]  = t1 + t3;
+        sh[base + 64] = t1 + t3;
         sh[base + 192] = (t1 - t3) * w_2s;
     }
     __syncthreads();
@@ -1411,20 +1418,21 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         double2 c = sh[tid + 512];
         double2 d = sh[tid + 768];
 
-        double2 w_s  = __ldg(&root_table[0]);   // stride 256, first pair + stride 512
-        double2 w_s2 = __ldg(&root_table[1]);   // stride 256, second pair
+        double2 w_s =
+            __ldg(&root_table[0]);  // stride 256, first pair + stride 512
+        double2 w_s2 = __ldg(&root_table[1]);  // stride 256, second pair
 
         // Step 1: GS at stride 256
         double2 t0 = a + b;
-        double2 t1 = (a - b) * w_s;     // w_s1 = root_table[0]
+        double2 t1 = (a - b) * w_s;  // w_s1 = root_table[0]
         double2 t2 = c + d;
         double2 t3 = (c - d) * w_s2;
 
         // Step 2: GS at stride 512
-        sh[tid]       = t0 + t2;
-        sh[tid + 512] = (t0 - t2) * w_s;   // w_2s = root_table[0]
+        sh[tid] = t0 + t2;
+        sh[tid + 512] = (t0 - t2) * w_s;  // w_2s = root_table[0]
         sh[tid + 256] = t1 + t3;
-        sh[tid + 768] = (t1 - t3) * w_s;   // w_2s = root_table[0]
+        sh[tid + 768] = (t1 - t3) * w_s;  // w_2s = root_table[0]
     }
     __syncthreads();
 }
@@ -1538,7 +1546,7 @@ using CuNTTHandler = CuFFTHandler<length>;
 template <uint32_t N>
 __host__ __device__ constexpr int TfheRsFFTSharedSyncCount()
 {
-    return 2 * HalfDegree<Degree<N>>::log2_degree - 7;
+    return 2 * HalfDegree<Degree<N> >::log2_degree - 7;
 }
 
 #endif  // USE_GPU_FFT
@@ -1586,6 +1594,7 @@ extern std::vector<NTTValue*> xai_ntt_devs;
 extern std::vector<NTTValue*> one_trgsw_ntt_devs;
 #ifdef USE_BLOCK_BINARY
 extern __device__ NTTValue* block_xai_fft;
+extern __device__ NTTValue* block_xai_fft_lvl02;
 #endif
 
 void InitializeXaiNTT(const int gpuNum);

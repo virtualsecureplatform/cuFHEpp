@@ -78,17 +78,21 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
 
     // Load + normalize + fold + twist
     constexpr double norm =
-        1.0 / static_cast<double>(1ULL << (std::numeric_limits<typename P::T>::digits / 2)) /
-        static_cast<double>(1ULL << (std::numeric_limits<typename P::T>::digits - std::numeric_limits<typename P::T>::digits / 2));
+        1.0 /
+        static_cast<double>(
+            1ULL << (std::numeric_limits<typename P::T>::digits / 2)) /
+        static_cast<double>(
+            1ULL << (std::numeric_limits<typename P::T>::digits -
+                     std::numeric_limits<typename P::T>::digits / 2));
     if (tid < HALF_N) {
-        double re = static_cast<double>(
-                        static_cast<std::make_signed_t<typename P::T>>(
-                            bk[in_index + tid])) *
-                    norm;
-        double im = static_cast<double>(
-                        static_cast<std::make_signed_t<typename P::T>>(
-                            bk[in_index + tid + HALF_N])) *
-                    norm;
+        double re =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                bk[in_index + tid])) *
+            norm;
+        double im =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                bk[in_index + tid + HALF_N])) *
+            norm;
         double2 folded = {re, im};
         double2 tw = __ldg(&ntt.twist_[tid]);
         sh_fft[tid] = folded * tw;
@@ -115,7 +119,8 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
  */
 template <class P = TFHEpp::lvl1param>
 __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
-                              const typename P::T* const bk, CuNTTHandler<P::n> ntt)
+                              const typename P::T* const bk,
+                              CuNTTHandler<P::n> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t HALF_N = N >> 1;
@@ -214,7 +219,8 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
     auto& bk_storage = []() -> vector<NTTValue*>& {
         if constexpr (N == TFHEpp::lvl2param::n) {
             return bk_ntts_lvl02;
-        } else {
+        }
+        else {
             return bk_ntts;
         }
     }();
@@ -243,11 +249,12 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
             P::domainP::n);
         dim3 block(N >> NTT_THREAD_UNITBIT);
         if constexpr (N == TFHEpp::lvl2param::n) {
-            __TRGSW2FFT__<typename P::targetP><<<grid, block>>>(
-                bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
-        } else {
-            __TRGSW2FFT__<typename P::targetP><<<grid, block>>>(
-                bk_storage[i], d_bk, *ntt_handlers[i]);
+            __TRGSW2FFT__<typename P::targetP>
+                <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
+        }
+        else {
+            __TRGSW2FFT__<typename P::targetP>
+                <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers[i]);
         }
         cudaDeviceSynchronize();
         CuCheckError();
@@ -261,6 +268,10 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
 INST(TFHEpp::lvl01param);
 INST(TFHEpp::lvl02param);
 INST(TFHEpp::lvlh2param);
+#ifdef USE_DIFFERENT_BR_PARAM
+INST(TFHEpp::cblvl02param);
+INST(TFHEpp::cblvlh2param);
+#endif
 #undef INST
 
 #ifdef USE_KEY_BUNDLE
@@ -282,7 +293,8 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
     auto& bk_storage = []() -> vector<NTTValue*>& {
         if constexpr (N == TFHEpp::lvl2param::n) {
             return bk_ntts_lvl02;
-        } else {
+        }
+        else {
             return bk_ntts;
         }
     }();
@@ -305,11 +317,12 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
         dim3 grid(1, trgsw_polys, num_pairs * bk_elements_per_pair);
         dim3 block(HALF_N);
         if constexpr (N == TFHEpp::lvl2param::n) {
-            __TRGSW2FFT__<typename P::targetP><<<grid, block>>>(
-                bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
-        } else {
+            __TRGSW2FFT__<typename P::targetP>
+                <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
+        }
+        else {
             __TRGSW2FFT__<<<grid, block>>>(bk_storage[i], d_bk,
-                                          *ntt_handlers[i]);
+                                           *ntt_handlers[i]);
         }
         cudaDeviceSynchronize();
         CuCheckError();
@@ -323,6 +336,10 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
 INST(TFHEpp::lvl01param);
 INST(TFHEpp::lvl02param);
 INST(TFHEpp::lvlh2param);
+#ifdef USE_DIFFERENT_BR_PARAM
+INST(TFHEpp::cblvl02param);
+INST(TFHEpp::cblvlh2param);
+#endif
 #undef INST
 #endif  // USE_KEY_BUNDLE
 
@@ -341,8 +358,7 @@ void InitializeNTThandlers_lvl02(const int gpuNum)
     CuNTTHandler<TFHEpp::lvl2param::n>::Create();
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
-        ntt_handlers_lvl02.push_back(
-            new CuNTTHandler<TFHEpp::lvl2param::n>());
+        ntt_handlers_lvl02.push_back(new CuNTTHandler<TFHEpp::lvl2param::n>());
         ntt_handlers_lvl02[i]->SetDevicePointers(i);
         cudaDeviceSynchronize();
         CuCheckError();
@@ -372,8 +388,7 @@ void BootstrappingKeyFlatToNTT_lvl02(
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t trgsw_polys = (tgtP::k + 1) * tgtP::l * (tgtP::k + 1);
 
-    size_t fft_elems =
-        static_cast<size_t>(num_elements) * trgsw_polys * HALF_N;
+    size_t fft_elems = static_cast<size_t>(num_elements) * trgsw_polys * HALF_N;
 
     bk_ntts_lvl02.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
@@ -392,8 +407,8 @@ void BootstrappingKeyFlatToNTT_lvl02(
 
         dim3 grid(1, trgsw_polys, num_elements);
         dim3 block(N >> NTT_THREAD_UNITBIT);
-        __TRGSW2FFT__<tgtP><<<grid, block>>>(
-            bk_ntts_lvl02[i], d_bk, *ntt_handlers_lvl02[i]);
+        __TRGSW2FFT__<tgtP>
+            <<<grid, block>>>(bk_ntts_lvl02[i], d_bk, *ntt_handlers_lvl02[i]);
         cudaDeviceSynchronize();
         CuCheckError();
 
@@ -409,7 +424,8 @@ void BootstrappingKeyFlatToNTT_lvl02(
 
 template <class P = TFHEpp::lvl1param>
 __global__ void __TRGSW2NTT__(NTTValue* const bk_ntt,
-                              const typename P::T* const bk, CuNTTHandler<P::n> ntt)
+                              const typename P::T* const bk,
+                              CuNTTHandler<P::n> ntt)
 {
     __shared__ NTTValue sh_temp[P::n];
     const int index = blockIdx.z * ((P::k + 1) * P::l * (P::k + 1) * P::n) +
@@ -503,12 +519,12 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
                   P::domainP::n);
         dim3 block(N >> NTT_THREAD_UNITBIT);
         if constexpr (N == TFHEpp::lvl2param::n) {
-            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
-                bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
+            __TRGSW2NTT__<typename P::targetP>
+                <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
         }
         else {
-            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
-                bk_storage[i], d_bk, *ntt_handlers[i]);
+            __TRGSW2NTT__<typename P::targetP>
+                <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers[i]);
         }
         cudaDeviceSynchronize();
         CuCheckError();
@@ -522,6 +538,10 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
 INST(TFHEpp::lvl01param);
 INST(TFHEpp::lvl02param);
 INST(TFHEpp::lvlh2param);
+#ifdef USE_DIFFERENT_BR_PARAM
+INST(TFHEpp::cblvl02param);
+INST(TFHEpp::cblvlh2param);
+#endif
 #undef INST
 
 #ifdef USE_KEY_BUNDLE
@@ -530,15 +550,13 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                                  const int gpuNum)
 {
     constexpr uint32_t N = P::targetP::n;
-    constexpr uint32_t num_pairs =
-        P::domainP::k * P::domainP::n / P::Addends;
+    constexpr uint32_t num_pairs = P::domainP::k * P::domainP::n / P::Addends;
     constexpr uint32_t bk_elements_per_pair =
         (1 << P::Addends) - 1;  // 3 for Addends=2
     constexpr uint32_t trgsw_polys =
         (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
     constexpr size_t total_ntt_elems =
-        static_cast<size_t>(num_pairs) * bk_elements_per_pair * trgsw_polys *
-        N;
+        static_cast<size_t>(num_pairs) * bk_elements_per_pair * trgsw_polys * N;
 
     auto& bk_storage = []() -> vector<NTTValue*>& {
         if constexpr (N == TFHEpp::lvl2param::n) {
@@ -567,12 +585,12 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                   num_pairs * bk_elements_per_pair);
         dim3 block(N >> NTT_THREAD_UNITBIT);
         if constexpr (N == TFHEpp::lvl2param::n) {
-            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
-                bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
+            __TRGSW2NTT__<typename P::targetP>
+                <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
         }
         else {
-            __TRGSW2NTT__<typename P::targetP><<<grid, block>>>(
-                bk_storage[i], d_bk, *ntt_handlers[i]);
+            __TRGSW2NTT__<typename P::targetP>
+                <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers[i]);
         }
         cudaDeviceSynchronize();
         CuCheckError();
@@ -586,6 +604,10 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
 INST(TFHEpp::lvl01param);
 INST(TFHEpp::lvl02param);
 INST(TFHEpp::lvlh2param);
+#ifdef USE_DIFFERENT_BR_PARAM
+INST(TFHEpp::cblvl02param);
+INST(TFHEpp::cblvlh2param);
+#endif
 #undef INST
 #endif  // USE_KEY_BUNDLE
 
@@ -606,8 +628,7 @@ void InitializeNTThandlers_lvl02(const int gpuNum)
     CuNTTHandler<TFHEpp::lvl2param::n>::Create();
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
-        ntt_handlers_lvl02.push_back(
-            new CuNTTHandler<TFHEpp::lvl2param::n>());
+        ntt_handlers_lvl02.push_back(new CuNTTHandler<TFHEpp::lvl2param::n>());
         ntt_handlers_lvl02[i]->SetDevicePointers(i);
         cudaDeviceSynchronize();
         CuCheckError();
@@ -656,8 +677,8 @@ void BootstrappingKeyFlatToNTT_lvl02(
 
         dim3 grid(tgtP::k + 1, (tgtP::k + 1) * tgtP::l, num_elements);
         dim3 block(N >> NTT_THREAD_UNITBIT);
-        __TRGSW2NTT__<tgtP><<<grid, block>>>(
-            bk_ntts_lvl02[i], d_bk, *ntt_handlers_lvl02[i]);
+        __TRGSW2NTT__<tgtP>
+            <<<grid, block>>>(bk_ntts_lvl02[i], d_bk, *ntt_handlers_lvl02[i]);
         cudaDeviceSynchronize();
         CuCheckError();
 
@@ -976,9 +997,9 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
                                         out_k)
                                        << lvl1param::nbit) +
                                       i]);
-                        sh_accum[out_k * N + i] =
-                            small_mod_add<N>(sh_accum[out_k * N + i],
-                                             small_mod_mult<N>(ntt_val, bk_val));
+                        sh_accum[out_k * N + i] = small_mod_add<N>(
+                            sh_accum[out_k * N + i],
+                            small_mod_mult<N>(ntt_val, bk_val));
                     }
                 }
             }
@@ -1006,9 +1027,8 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
 #pragma unroll
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
-                out[k_idx * N + i] =
-                    trlwe0[k_idx * N + i] +
-                    ntt_mod_to_torus32<N>(sh_ntt_buf[i]);
+                out[k_idx * N + i] = trlwe0[k_idx * N + i] +
+                                     ntt_mod_to_torus32<N>(sh_ntt_buf[i]);
             }
         }
         __syncthreads();
@@ -1059,10 +1079,13 @@ __global__ __launch_bounds__(
                                                  const TFHEpp::lvl1param::T mu,
                                                  const NTTValue* const bk,
 #ifdef USE_KEY_BUNDLE
-                                                 const NTTValue* const one_trgsw_ntt,
+                                                 const NTTValue* const
+                                                     one_trgsw_ntt,
                                                  const NTTValue* const xai_ntt,
 #endif
-                                                 const CuNTTHandler<P::targetP::n> ntt)
+                                                 const CuNTTHandler<
+                                                     P::targetP::n>
+                                                     ntt)
 {
 #ifdef USE_KEY_BUNDLE
     __BlindRotateKeyBundle__<P>(out, in, mu, bk, one_trgsw_ntt, xai_ntt, ntt);
@@ -1086,7 +1109,8 @@ __global__ __launch_bounds__(
 #ifdef USE_KEY_BUNDLE
                                                        const NTTValue* const
                                                            one_trgsw_ntt,
-                                                       const NTTValue* const xai_ntt,
+                                                       const NTTValue* const
+                                                           xai_ntt,
 #endif
                                                        const CuNTTHandler<> ntt)
 {
@@ -1318,7 +1342,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<brP, μ, iksP, -1, -1, brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                        ntt);
@@ -1338,7 +1363,9 @@ __global__ __launch_bounds__(
                                                       NTTValue* bk,
                                                       const typename iksP::
                                                           targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+                                                      const CuNTTHandler<
+                                                          brP::targetP::n>
+                                                          ntt)
 {
     __HomGate__<brP, μ, iksP, -1, -1, -brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                         ntt);
@@ -1359,7 +1386,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<brP, μ, iksP, -2, -2, -2 * brP::domainP::μ>(out, in0, in1, bk,
                                                             ksk, ntt);
@@ -1379,7 +1407,9 @@ __global__ __launch_bounds__(
                                                       NTTValue* bk,
                                                       const typename iksP::
                                                           targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+                                                      const CuNTTHandler<
+                                                          brP::targetP::n>
+                                                          ntt)
 {
     __HomGate__<brP, μ, iksP, 1, 1, -brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                       ntt);
@@ -1399,7 +1429,8 @@ __global__ __launch_bounds__(
                                            NTTValue* bk,
                                            const typename iksP::targetP::
                                                T* const ksk,
-                                           const CuNTTHandler<brP::targetP::n> ntt)
+                                           const CuNTTHandler<brP::targetP::n>
+                                               ntt)
 {
     __HomGate__<brP, μ, iksP, 1, 1, brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                      ntt);
@@ -1419,7 +1450,9 @@ __global__ __launch_bounds__(
                                                       NTTValue* bk,
                                                       const typename iksP::
                                                           targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+                                                      const CuNTTHandler<
+                                                          brP::targetP::n>
+                                                          ntt)
 {
     __HomGate__<brP, μ, iksP, 2, 2, 2 * brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                          ntt);
@@ -1440,7 +1473,9 @@ __global__ __launch_bounds__(
                                               NTTValue* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
-                                              const CuNTTHandler<brP::targetP::n> ntt)
+                                              const CuNTTHandler<
+                                                  brP::targetP::n>
+                                                  ntt)
 {
     __HomGate__<brP, μ, iksP, -1, 1, -brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                        ntt);
@@ -1461,7 +1496,9 @@ __global__ __launch_bounds__(
                                               NTTValue* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
-                                              const CuNTTHandler<brP::targetP::n> ntt)
+                                              const CuNTTHandler<
+                                                  brP::targetP::n>
+                                                  ntt)
 {
     __HomGate__<brP, μ, iksP, 1, -1, -brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                        ntt);
@@ -1482,7 +1519,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<brP, μ, iksP, -1, 1, brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                       ntt);
@@ -1503,7 +1541,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<brP, μ, iksP, 1, -1, brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                       ntt);
@@ -1524,7 +1563,9 @@ __global__ __launch_bounds__(
                                                       const NTTValue* const bk,
                                                       const typename iksP::
                                                           targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+                                                      const CuNTTHandler<
+                                                          brP::targetP::n>
+                                                          ntt)
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
@@ -1533,7 +1574,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ>(trlwe1, inc, in1, bk,
                                                        ntt);
@@ -1581,7 +1623,8 @@ __global__ __launch_bounds__(
                                              const NTTValue* const bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
@@ -1590,7 +1633,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ>(trlwe1, inc, in1, bk,
                                                        ntt);
@@ -1637,7 +1681,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<iksP, brP, μ, -1, -1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                         ntt);
@@ -1647,16 +1692,17 @@ template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
           typename brP::targetP::T μ = TFHEpp::lvl1param::μ>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __NorBootstrap__(typename brP::targetP::
-                                                          T* const out,
-                                                      const typename iksP::
-                                                          domainP::T* const in0,
-                                                      const typename iksP::
-                                                          domainP::T* const in1,
-                                                      NTTValue* bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+        typename brP::
+            targetP>) void __NorBootstrap__(typename brP::targetP::T* const out,
+                                            const typename iksP::domainP::
+                                                T* const in0,
+                                            const typename iksP::domainP::
+                                                T* const in1,
+                                            NTTValue* bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     __HomGate__<iksP, brP, μ, -1, -1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                          ntt);
@@ -1676,7 +1722,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<iksP, brP, μ, -2, -2, -2 * iksP::domainP::μ>(out, in0, in1, bk,
                                                              ksk, ntt);
@@ -1686,16 +1733,17 @@ template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
           typename brP::targetP::T μ = TFHEpp::lvl1param::μ>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __AndBootstrap__(typename brP::targetP::
-                                                          T* const out,
-                                                      const typename iksP::
-                                                          domainP::T* const in0,
-                                                      const typename iksP::
-                                                          domainP::T* const in1,
-                                                      NTTValue* bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+        typename brP::
+            targetP>) void __AndBootstrap__(typename brP::targetP::T* const out,
+                                            const typename iksP::domainP::
+                                                T* const in0,
+                                            const typename iksP::domainP::
+                                                T* const in1,
+                                            NTTValue* bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     __HomGate__<iksP, brP, μ, 1, 1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                        ntt);
@@ -1705,16 +1753,17 @@ template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
           typename brP::targetP::T μ = TFHEpp::lvl1param::μ>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __OrBootstrap__(typename brP::targetP::
-                                                         T* const out,
-                                                     const typename iksP::
-                                                         domainP::T* const in0,
-                                                     const typename iksP::
-                                                         domainP::T* const in1,
-                                                     NTTValue* bk,
-                                                     const typename iksP::
-                                                         targetP::T* const ksk,
-                                                     const CuNTTHandler<brP::targetP::n> ntt)
+        typename brP::
+            targetP>) void __OrBootstrap__(typename brP::targetP::T* const out,
+                                           const typename iksP::domainP::
+                                               T* const in0,
+                                           const typename iksP::domainP::
+                                               T* const in1,
+                                           NTTValue* bk,
+                                           const typename iksP::targetP::
+                                               T* const ksk,
+                                           const CuNTTHandler<brP::targetP::n>
+                                               ntt)
 {
     __HomGate__<iksP, brP, μ, 1, 1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                       ntt);
@@ -1724,16 +1773,17 @@ template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
           typename brP::targetP::T μ = TFHEpp::lvl1param::μ>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __XorBootstrap__(typename brP::targetP::
-                                                          T* const out,
-                                                      const typename iksP::
-                                                          domainP::T* const in0,
-                                                      const typename iksP::
-                                                          domainP::T* const in1,
-                                                      NTTValue* bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+        typename brP::
+            targetP>) void __XorBootstrap__(typename brP::targetP::T* const out,
+                                            const typename iksP::domainP::
+                                                T* const in0,
+                                            const typename iksP::domainP::
+                                                T* const in1,
+                                            NTTValue* bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     __HomGate__<iksP, brP, μ, 2, 2, 2 * iksP::domainP::μ>(out, in0, in1, bk,
                                                           ksk, ntt);
@@ -1753,7 +1803,9 @@ __global__ __launch_bounds__(
                                               NTTValue* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
-                                              const CuNTTHandler<brP::targetP::n> ntt)
+                                              const CuNTTHandler<
+                                                  brP::targetP::n>
+                                                  ntt)
 {
     __HomGate__<iksP, brP, μ, -1, 1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                         ntt);
@@ -1773,7 +1825,9 @@ __global__ __launch_bounds__(
                                               NTTValue* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
-                                              const CuNTTHandler<brP::targetP::n> ntt)
+                                              const CuNTTHandler<
+                                                  brP::targetP::n>
+                                                  ntt)
 {
     __HomGate__<iksP, brP, μ, 1, -1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                         ntt);
@@ -1793,7 +1847,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<iksP, brP, μ, -1, 1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                        ntt);
@@ -1813,7 +1868,8 @@ __global__ __launch_bounds__(
                                              NTTValue* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __HomGate__<iksP, brP, μ, 1, -1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
                                                        ntt);
@@ -1821,23 +1877,24 @@ __global__ __launch_bounds__(
 
 #ifdef USE_KEY_BUNDLE
 // Key-bundle gate kernels (BR-IKS order)
-#define DEFINE_KB_GATE_BRIKS(Name, casign_val, cbsign_val, offset_expr) \
-    template <class brP = TFHEpp::lvl01param,                           \
-              typename brP::targetP::T μ = TFHEpp::lvl1param::μ,        \
-              class iksP = TFHEpp::lvl10param>                          \
-    __global__ __launch_bounds__(                                       \
-        NUM_THREAD4HOMGATE<typename brP::targetP>) void                 \
-        __##Name##BootstrapKB__(                                        \
-            typename iksP::targetP::T* const out,                       \
-            const typename brP::domainP::T* const in0,                  \
-            const typename brP::domainP::T* const in1, NTTValue* bk,    \
-            const typename iksP::targetP::T* const ksk,                 \
-            const NTTValue* const one_trgsw_ntt,                        \
-            const NTTValue* const xai_ntt, const CuNTTHandler<brP::targetP::n> ntt)    \
-    {                                                                   \
-        __HomGateKeyBundle__<brP, μ, iksP, casign_val, cbsign_val,      \
-                             offset_expr>(out, in0, in1, bk, ksk,       \
-                                          one_trgsw_ntt, xai_ntt, ntt); \
+#define DEFINE_KB_GATE_BRIKS(Name, casign_val, cbsign_val, offset_expr)     \
+    template <class brP = TFHEpp::lvl01param,                               \
+              typename brP::targetP::T μ = TFHEpp::lvl1param::μ,            \
+              class iksP = TFHEpp::lvl10param>                              \
+    __global__ __launch_bounds__(                                           \
+        NUM_THREAD4HOMGATE<typename brP::targetP>) void                     \
+        __##Name##BootstrapKB__(typename iksP::targetP::T* const out,       \
+                                const typename brP::domainP::T* const in0,  \
+                                const typename brP::domainP::T* const in1,  \
+                                NTTValue* bk,                               \
+                                const typename iksP::targetP::T* const ksk, \
+                                const NTTValue* const one_trgsw_ntt,        \
+                                const NTTValue* const xai_ntt,              \
+                                const CuNTTHandler<brP::targetP::n> ntt)    \
+    {                                                                       \
+        __HomGateKeyBundle__<brP, μ, iksP, casign_val, cbsign_val,          \
+                             offset_expr>(out, in0, in1, bk, ksk,           \
+                                          one_trgsw_ntt, xai_ntt, ntt);     \
     }
 
 DEFINE_KB_GATE_BRIKS(Nand, -1, -1, brP::domainP::μ)
@@ -1858,13 +1915,14 @@ DEFINE_KB_GATE_BRIKS(OrYN, 1, -1, brP::domainP::μ)
               typename brP::targetP::T μ = TFHEpp::lvl1param::μ>               \
     __global__ __launch_bounds__(                                              \
         NUM_THREAD4HOMGATE<typename brP::targetP>) void                        \
-        __##Name##BootstrapKB__(                                               \
-            typename brP::targetP::T* const out,                               \
-            const typename iksP::domainP::T* const in0,                        \
-            const typename iksP::domainP::T* const in1, NTTValue* bk,          \
-            const typename iksP::targetP::T* const ksk,                        \
-            const NTTValue* const one_trgsw_ntt,                               \
-            const NTTValue* const xai_ntt, const CuNTTHandler<brP::targetP::n> ntt)           \
+        __##Name##BootstrapKB__(typename brP::targetP::T* const out,           \
+                                const typename iksP::domainP::T* const in0,    \
+                                const typename iksP::domainP::T* const in1,    \
+                                NTTValue* bk,                                  \
+                                const typename iksP::targetP::T* const ksk,    \
+                                const NTTValue* const one_trgsw_ntt,           \
+                                const NTTValue* const xai_ntt,                 \
+                                const CuNTTHandler<brP::targetP::n> ntt)       \
     {                                                                          \
         __HomGateKeyBundle__<iksP, brP, μ, casign_val, cbsign_val,             \
                              offset_expr>(out, in0, in1, bk, ksk,              \
@@ -1902,7 +1960,9 @@ __global__ __launch_bounds__(
                                               const NTTValue* const
                                                   one_trgsw_ntt,
                                               const NTTValue* const xai_ntt,
-                                              const CuNTTHandler<brP::targetP::n> ntt)
+                                              const CuNTTHandler<
+                                                  brP::targetP::n>
+                                                  ntt)
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
@@ -1911,7 +1971,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     __BlindRotatePreAddKeyBundle__<brP, 1, 1, -brP::domainP::μ>(
         trlwe1, inc, in1, bk, one_trgsw_ntt, xai_ntt, ntt);
@@ -1959,7 +2020,9 @@ __global__ __launch_bounds__(
                                                const NTTValue* const
                                                    one_trgsw_ntt,
                                                const NTTValue* const xai_ntt,
-                                               const CuNTTHandler<brP::targetP::n> ntt)
+                                               const CuNTTHandler<
+                                                   brP::targetP::n>
+                                                   ntt)
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
@@ -1968,7 +2031,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     __BlindRotatePreAddKeyBundle__<brP, 1, 1, -brP::domainP::μ>(
         trlwe1, inc, in1, bk, one_trgsw_ntt, xai_ntt, ntt);
@@ -2016,7 +2080,9 @@ __global__ __launch_bounds__(
                                               const NTTValue* const
                                                   one_trgsw_ntt,
                                               const NTTValue* const xai_ntt,
-                                              const CuNTTHandler<brP::targetP::n> ntt)
+                                              const CuNTTHandler<
+                                                  brP::targetP::n>
+                                                  ntt)
 {
     __shared__ typename iksP::targetP::T
         tlwelvl0[iksP::targetP::k * iksP::targetP::n + 1];
@@ -2028,7 +2094,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2078,7 +2145,9 @@ __global__ __launch_bounds__(
                                                const NTTValue* const
                                                    one_trgsw_ntt,
                                                const NTTValue* const xai_ntt,
-                                               const CuNTTHandler<brP::targetP::n> ntt)
+                                               const CuNTTHandler<
+                                                   brP::targetP::n>
+                                                   ntt)
 {
     __shared__ typename iksP::targetP::T
         tlwelvl0[iksP::targetP::k * iksP::targetP::n + 1];
@@ -2090,7 +2159,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2150,18 +2220,19 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __NotBootstrap__(
 template <class iksP, class brP, typename brP::targetP::T μ>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __MuxBootstrap__(typename brP::targetP::
-                                                          T* const out,
-                                                      const typename iksP::
-                                                          domainP::T* const inc,
-                                                      const typename iksP::
-                                                          domainP::T* const in1,
-                                                      const typename iksP::
-                                                          domainP::T* const in0,
-                                                      const NTTValue* const bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<brP::targetP::n> ntt)
+        typename brP::
+            targetP>) void __MuxBootstrap__(typename brP::targetP::T* const out,
+                                            const typename iksP::domainP::
+                                                T* const inc,
+                                            const typename iksP::domainP::
+                                                T* const in1,
+                                            const typename iksP::domainP::
+                                                T* const in0,
+                                            const NTTValue* const bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     __shared__ typename iksP::targetP::T
         tlwelvl0[iksP::targetP::k * iksP::targetP::n + 1];
@@ -2173,7 +2244,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2220,7 +2292,8 @@ __global__ __launch_bounds__(
                                              const NTTValue* const bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
-                                             const CuNTTHandler<brP::targetP::n> ntt)
+                                             const CuNTTHandler<brP::targetP::n>
+                                                 ntt)
 {
     __shared__ typename iksP::targetP::T
         tlwelvl0[iksP::targetP::k * iksP::targetP::n + 1];
@@ -2232,7 +2305,8 @@ __global__ __launch_bounds__(
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes + trlwe_bytes);
+        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
+                                                    trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2351,7 +2425,8 @@ void NandBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__NandBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2372,7 +2447,8 @@ void NandBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __NandBootstrap__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2408,7 +2484,8 @@ void NandBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__NandBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2429,7 +2506,8 @@ void NandBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __NandBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2466,7 +2544,8 @@ void OrBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__OrBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2487,7 +2566,8 @@ void OrBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __OrBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2523,7 +2603,8 @@ void OrBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__OrBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2544,7 +2625,8 @@ void OrBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __OrBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2581,7 +2663,8 @@ void OrYNBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__OrYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2602,7 +2685,8 @@ void OrYNBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __OrYNBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2638,7 +2722,8 @@ void OrYNBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__OrYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2659,7 +2744,8 @@ void OrYNBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __OrYNBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2696,7 +2782,8 @@ void OrNYBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__OrNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2717,7 +2804,8 @@ void OrNYBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __OrNYBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2753,7 +2841,8 @@ void OrNYBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__OrNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2774,7 +2863,8 @@ void OrNYBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __OrNYBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2811,7 +2901,8 @@ void AndBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__AndBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2832,7 +2923,8 @@ void AndBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __AndBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2868,7 +2960,8 @@ void AndBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__AndBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2889,7 +2982,8 @@ void AndBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __AndBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2926,7 +3020,8 @@ void AndYNBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__AndYNBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -2947,7 +3042,8 @@ void AndYNBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __AndYNBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -2983,7 +3079,8 @@ void AndYNBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__AndYNBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3004,7 +3101,8 @@ void AndYNBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __AndYNBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3041,7 +3139,8 @@ void AndNYBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__AndNYBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3062,7 +3161,8 @@ void AndNYBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __AndNYBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3098,7 +3198,8 @@ void AndNYBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__AndNYBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3119,7 +3220,8 @@ void AndNYBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __AndNYBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3156,7 +3258,8 @@ void NorBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__NorBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3177,7 +3280,8 @@ void NorBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __NorBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3213,7 +3317,8 @@ void NorBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__NorBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3234,7 +3339,8 @@ void NorBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __NorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3271,7 +3377,8 @@ void XorBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__XorBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3292,7 +3399,8 @@ void XorBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __XorBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3328,7 +3436,8 @@ void XorBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__XorBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3349,7 +3458,8 @@ void XorBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __XorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3386,7 +3496,8 @@ void XnorBootstrap(typename iksP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__XnorBootstrapKB__<brP, brP::targetP::μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3407,7 +3518,8 @@ void XnorBootstrap(typename iksP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __XnorBootstrap__<brP, brP::targetP::μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3443,7 +3555,8 @@ void XnorBootstrap(typename brP::targetP::T* const out,
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         cudaFuncSetAttribute(__XnorBootstrapKB__<iksP, brP, brP::targetP::μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4HOMGATE_DYN<typename brP::targetP>);
@@ -3464,7 +3577,8 @@ void XnorBootstrap(typename brP::targetP::T* const out,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
-    } else {
+    }
+    else {
         __XnorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
                MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
@@ -3532,20 +3646,21 @@ void MuxBootstrap(typename iksP::targetP::T* const out,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __MuxBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], one_trgsw_ntt_devs_lvl02[gpuNum],
+                xai_ntt_devs_lvl02[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         cudaFuncSetAttribute(__MuxBootstrapKB__<brP, μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __MuxBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #else
     cudaFuncSetAttribute(__MuxBootstrap__<brP, μ, iksP>,
@@ -3554,15 +3669,16 @@ void MuxBootstrap(typename iksP::targetP::T* const out,
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
         __MuxBootstrap__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         __MuxBootstrap__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #endif
     CuCheckError();
@@ -3591,20 +3707,21 @@ void MuxBootstrap(typename brP::targetP::T* const out,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __MuxBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], one_trgsw_ntt_devs_lvl02[gpuNum],
+                xai_ntt_devs_lvl02[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         cudaFuncSetAttribute(__MuxBootstrapKB__<iksP, brP, μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __MuxBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #else
     cudaFuncSetAttribute(__MuxBootstrap__<iksP, brP, μ>,
@@ -3613,15 +3730,16 @@ void MuxBootstrap(typename brP::targetP::T* const out,
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
         __MuxBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         __MuxBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #endif
     CuCheckError();
@@ -3651,20 +3769,21 @@ void NMuxBootstrap(typename brP::targetP::T* const out,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __NMuxBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], one_trgsw_ntt_devs_lvl02[gpuNum],
+                xai_ntt_devs_lvl02[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         cudaFuncSetAttribute(__NMuxBootstrapKB__<iksP, brP, μ>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __NMuxBootstrapKB__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #else
     cudaFuncSetAttribute(__NMuxBootstrap__<iksP, brP, μ>,
@@ -3673,15 +3792,16 @@ void NMuxBootstrap(typename brP::targetP::T* const out,
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
         __NMuxBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         __NMuxBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #endif
     CuCheckError();
@@ -3710,20 +3830,21 @@ void NMuxBootstrap(typename iksP::targetP::T* const out,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __NMuxBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     one_trgsw_ntt_devs_lvl02[gpuNum], xai_ntt_devs_lvl02[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], one_trgsw_ntt_devs_lvl02[gpuNum],
+                xai_ntt_devs_lvl02[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         cudaFuncSetAttribute(__NMuxBootstrapKB__<brP, μ, iksP>,
                              cudaFuncAttributeMaxDynamicSharedMemorySize,
                              MEM4MUXGATE_DYN<typename brP::targetP>);
         __NMuxBootstrapKB__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                one_trgsw_ntt_devs[gpuNum], xai_ntt_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #else
     cudaFuncSetAttribute(__NMuxBootstrap__<brP, μ, iksP>,
@@ -3732,15 +3853,16 @@ void NMuxBootstrap(typename iksP::targetP::T* const out,
     if constexpr (brP::targetP::n == TFHEpp::lvl2param::n) {
         __NMuxBootstrap__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
-                     *ntt_handlers_lvl02[gpuNum]);
-    } else {
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], *ntt_handlers_lvl02[gpuNum]);
+    }
+    else {
         __NMuxBootstrap__<brP, μ, iksP>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4MUXGATE_DYN<typename brP::targetP>,
-               st>>>(out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
-                     *ntt_handlers[gpuNum]);
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                *ntt_handlers[gpuNum]);
     }
 #endif
     CuCheckError();

@@ -5,12 +5,12 @@ set(CUFHE_GPU_SOURCES
     keyswitch_gpu.cu
     ntt_small_modulus.cu  # Small modulus NTT tables (~2^31)
 )
-if(NOT USE_BLOCK_BINARY AND NOT USE_CONCRETE)
+if(NOT USE_CONCRETE)
     list(APPEND CUFHE_GPU_SOURCES
         annihilate_gpu.cu
         circuitbootstrapping_gpu.cu)
 endif()
-if(USE_FFT AND NOT USE_BLOCK_BINARY AND NOT USE_CONCRETE)
+if(USE_FFT AND NOT USE_CONCRETE)
     list(APPEND CUFHE_GPU_SOURCES
         aes_gpu.cu
         ascon_gpu.cu)

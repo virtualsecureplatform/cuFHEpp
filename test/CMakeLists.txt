@@ -27,11 +27,9 @@ if(NOT USE_BLOCK_BINARY)
     target_link_libraries(test_backend_gate_bench cufhe_gpu ${CUDA_LIBRARIES})
 endif()
 
-if(NOT USE_BLOCK_BINARY)
-    add_executable(test_gate_gpu_lvl02 test_gate_gpu_lvl02.cc)
-    target_include_directories(test_gate_gpu_lvl02 PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(test_gate_gpu_lvl02 cufhe_gpu ${CUDA_LIBRARIES})
-endif()
+add_executable(test_gate_gpu_lvl02 test_gate_gpu_lvl02.cc)
+target_include_directories(test_gate_gpu_lvl02 PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_link_libraries(test_gate_gpu_lvl02 cufhe_gpu ${CUDA_LIBRARIES})
 
 if(USE_FFT AND USE_GPU_FFT)
     add_executable(test_fft_roundtrip test_fft_roundtrip.cu)
@@ -47,7 +45,7 @@ if(USE_FFT AND USE_GPU_FFT AND NOT USE_BLOCK_BINARY)
     target_link_libraries(test_accumulate_diag cufhe_gpu ${CUDA_LIBRARIES})
 endif()
 
-if(NOT USE_BLOCK_BINARY AND NOT USE_CONCRETE)
+if(NOT USE_CONCRETE)
     add_executable(test_annihilate_gpu test_annihilate_gpu.cu)
     target_include_directories(test_annihilate_gpu PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
     set_target_properties(test_annihilate_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -94,7 +92,7 @@ if(USE_FFT AND USE_GPU_FFT)
     target_link_libraries(test_fft_perf cufhe_gpu ${CUDA_LIBRARIES})
 endif()
 
-if(USE_FFT AND NOT USE_BLOCK_BINARY AND NOT USE_CONCRETE)
+if(USE_FFT AND NOT USE_CONCRETE)
     add_executable(test_aes_decrypt_gpu
         test_aes_decrypt_gpu.cu
         ${PROJECT_SOURCE_DIR}/thirdparties/TFHEpp/thirdparties/AES/src/AES.cpp)

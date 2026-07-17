@@ -2,10 +2,6 @@
 
 #include <cmath>
 #include <cstdint>
-#include <limits>
-#include <type_traits>
-#include <vector>
-
 #include <include/annihilate_gpu.cuh>
 #include <include/bootstrap_gpu.cuh>
 #include <include/circuitbootstrapping_gpu.cuh>
@@ -13,8 +9,11 @@
 #include <include/gatebootstrapping_gpu.cuh>
 #include <include/keyswitch_gpu.cuh>
 #include <include/ntt_small_modulus.cuh>
+#include <limits>
 #include <tfhe/key.hpp>
 #include <tfhe/trgsw.hpp>
+#include <type_traits>
+#include <vector>
 
 namespace cufhe {
 
@@ -28,6 +27,13 @@ std::vector<NTTValue*> cbsk_ntts_lvl2;
 
 namespace {
 
+template <class P, class = void>
+struct HasBlockBinaryDomain : std::false_type {};
+
+template <class P>
+struct HasBlockBinaryDomain<P, std::void_t<decltype(P::ell)>> : std::true_type {
+};
+
 __host__ __device__ constexpr uint32_t BitsNeeded(const uint32_t data)
 {
     uint32_t value = data;
@@ -40,14 +46,14 @@ __host__ __device__ constexpr uint32_t BitsNeeded(const uint32_t data)
 }
 
 template <class P>
-constexpr bool is_lvl1_ring_v = P::n == TFHEpp::lvl1param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl1param::T);
+constexpr bool is_lvl1_ring_v =
+    P::n == TFHEpp::lvl1param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl1param::T);
 
 template <class P>
-constexpr bool is_lvl2_ring_v = P::n == TFHEpp::lvl2param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl2param::T);
+constexpr bool is_lvl2_ring_v =
+    P::n == TFHEpp::lvl2param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl2param::T);
 
 template <class P>
 std::vector<NTTValue*>& CBswitchingKeyStorage()
@@ -113,28 +119,24 @@ typename iksP::targetP::T* KeySwitchingKeyStorage(const int gpuNum)
         return reinterpret_cast<typename iksP::targetP::T*>(
             ksk_devs_lvl20[gpuNum]);
     else
-        return reinterpret_cast<typename iksP::targetP::T*>(
-            ksk_devs[gpuNum]);
+        return reinterpret_cast<typename iksP::targetP::T*>(ksk_devs[gpuNum]);
 }
 
 template <class P>
-__host__ __device__
-constexpr uint32_t TRGSWRows()
+__host__ __device__ constexpr uint32_t TRGSWRows()
 {
     return P::k * P::lₐ * P::l̅ₐ + P::l * P::l̅;
 }
 
 template <class P>
-__host__ __device__
-constexpr size_t TRGSWFFTElements()
+__host__ __device__ constexpr size_t TRGSWFFTElements()
 {
 #if defined(USE_FFT)
     constexpr uint32_t transform_size = P::n / 2;
 #else
     constexpr uint32_t transform_size = P::n;
 #endif
-    return static_cast<size_t>(TRGSWRows<P>()) * (P::k + 1) *
-           transform_size;
+    return static_cast<size_t>(TRGSWRows<P>()) * (P::k + 1) * transform_size;
 }
 
 template <class P>
@@ -165,8 +167,7 @@ __device__ constexpr typename P::T ExternalProductOffset()
     for (uint32_t i = 1; i <= levels; i++)
         offset += (bg / 2) *
                   (static_cast<typename P::T>(1)
-                   << (std::numeric_limits<typename P::T>::digits -
-                       i * bgbit));
+                   << (std::numeric_limits<typename P::T>::digits - i * bgbit));
     return offset;
 }
 
@@ -175,8 +176,8 @@ __device__ constexpr typename P::T ExternalProductOffset()
 #if defined(USE_FFT)
 template <class P>
 __global__ void __TRGSWPolynomialToFFT__(NTTValue* const out,
-                                        const typename P::T* const in,
-                                        CuNTTHandler<P::n> ntt)
+                                         const typename P::T* const in,
+                                         CuNTTHandler<P::n> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t half_n = N / 2;
@@ -200,14 +201,14 @@ __global__ void __TRGSWPolynomialToFFT__(NTTValue* const out,
                      std::numeric_limits<typename P::T>::digits / 2));
 
     if (tid < half_n) {
-        const double re = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid])) *
-                          norm;
-        const double im = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid + half_n])) *
-                          norm;
+        const double re =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid])) *
+            norm;
+        const double im =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid + half_n])) *
+            norm;
         NTTValue folded = {re, im};
 #ifdef USE_GPU_FFT
         folded *= __ldg(&ntt.twist_[tid]);
@@ -227,8 +228,7 @@ __global__ void __TRGSWPolynomialToFFT__(NTTValue* const out,
 #ifdef USE_GPU_FFT
         for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
 #else
-        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
-            __syncthreads();
+        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++) __syncthreads();
 #endif
     }
 
@@ -237,8 +237,8 @@ __global__ void __TRGSWPolynomialToFFT__(NTTValue* const out,
 #else
 template <class P>
 __global__ void __TRGSWPolynomialToNTT__(NTTValue* const out,
-                                        const typename P::T* const in,
-                                        CuNTTHandler<P::n> ntt)
+                                         const typename P::T* const in,
+                                         CuNTTHandler<P::n> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t num_threads = N / 2;
@@ -261,8 +261,7 @@ __global__ void __TRGSWPolynomialToNTT__(NTTValue* const out,
         SmallForwardNTT<P::nbit>(sh_ntt, ntt.forward_root_, tid);
     }
     else {
-        for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
-            __syncthreads();
+        for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < num_threads) {
@@ -276,14 +275,34 @@ __global__ void __TRGSWPolynomialToNTT__(NTTValue* const out,
 #endif  // USE_FFT
 
 template <class P, uint32_t num_out>
+__device__ inline typename P::T CBGadgetHalfValue(const uint32_t digit)
+{
+    if constexpr (num_out == P::l) {
+        return static_cast<typename P::T>(1)
+               << (std::numeric_limits<typename P::T>::digits -
+                   (digit + 1) * P::Bgbit - 1);
+    }
+    else {
+        static_assert(num_out == P::l + P::lₐ);
+        if (digit < P::l)
+            return static_cast<typename P::T>(1)
+                   << (std::numeric_limits<typename P::T>::digits -
+                       (digit + 1) * P::Bgbit - 1);
+        if (digit < P::l + P::lₐ)
+            return static_cast<typename P::T>(1)
+                   << (std::numeric_limits<typename P::T>::digits -
+                       (digit - P::l + 1) * P::Bgₐbit - 1);
+        return 0;
+    }
+}
+
+template <class P, uint32_t num_out>
 __device__ inline typename P::T CBTestVectorValue(const uint32_t index)
 {
     constexpr uint32_t bitwidth = BitsNeeded(num_out - 1);
     constexpr uint32_t mask = (1U << bitwidth) - 1;
     const uint32_t digit = index & mask;
-    return static_cast<typename P::T>(1)
-           << (std::numeric_limits<typename P::T>::digits -
-               (digit + 1) * P::Bgbit - 1);
+    return CBGadgetHalfValue<P, num_out>(digit);
 }
 
 template <class P, uint32_t num_out>
@@ -306,26 +325,32 @@ __device__ inline typename P::T RotatedCBTestVectorValue(
 }
 
 template <class brP, uint32_t num_out>
-__device__ inline uint32_t CBModSwitch(
-    const typename brP::domainP::T value)
+__device__ inline uint32_t CBModSwitch(const typename brP::domainP::T value)
 {
     constexpr uint32_t bitwidth = BitsNeeded(num_out - 1);
-    return (value >>
-            (std::numeric_limits<typename brP::domainP::T>::digits - 1 -
-             brP::targetP::nbit + bitwidth))
+    return (value >> (std::numeric_limits<typename brP::domainP::T>::digits -
+                      1 - brP::targetP::nbit + bitwidth))
            << bitwidth;
 }
 
 template <class brP, uint32_t num_out>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>)
-void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
-                             const typename brP::domainP::T* const in,
-                             const NTTValue* const bk,
+__global__ __launch_bounds__(
+    NUM_THREAD4HOMGATE<
+        typename brP::
+            targetP>) void __BlindRotateCBKernel__(typename brP::targetP::
+                                                       T* const out,
+                                                   const typename brP::domainP::
+                                                       T* const in,
+                                                   const NTTValue* const bk,
 #ifdef USE_KEY_BUNDLE
-                             const NTTValue* const one_trgsw_ntt,
-                             const NTTValue* const xai_ntt,
+                                                   const NTTValue* const
+                                                       one_trgsw_ntt,
+                                                   const NTTValue* const
+                                                       xai_ntt,
 #endif
-                             const CuNTTHandler<brP::targetP::n> ntt)
+                                                   const CuNTTHandler<
+                                                       brP::targetP::n>
+                                                       ntt)
 {
     using targetP = typename brP::targetP;
     const uint32_t tid = ThisThreadRankInBlock();
@@ -340,10 +365,11 @@ void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
         std::numeric_limits<typename brP::domainP::T>::digits - 1 -
         targetP::nbit;
     constexpr uint32_t input_count = brP::domainP::k * brP::domainP::n;
+    using DomainT = typename brP::domainP::T;
     using SignedDomainT = std::make_signed_t<typename brP::domainP::T>;
-    __shared__ long long residual[NUM_THREAD4HOMGATE<targetP>];
+    __shared__ DomainT residual[NUM_THREAD4HOMGATE<targetP>];
 
-    long long local_residual = 0;
+    DomainT local_residual = 0;
     for (uint32_t i = tid; i < input_count; i += bdim) {
         const uint32_t moded = CBModSwitch<brP, num_out>(in[i] + roundoffset);
         const typename brP::domainP::T rounded =
@@ -359,8 +385,8 @@ void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
 
     const typename brP::domainP::T corrected_b =
         static_cast<typename brP::domainP::T>(
-            in[brP::domainP::k * brP::domainP::n] - residual[0] / 2 +
-            roundoffset);
+            in[brP::domainP::k * brP::domainP::n] -
+            static_cast<SignedDomainT>(residual[0]) / 2 + roundoffset);
     const uint32_t bbar = 2 * N - CBModSwitch<brP, num_out>(corrected_b);
     for (uint32_t i = tid; i < total; i += bdim) {
         const uint32_t k_idx = i >> targetP::nbit;
@@ -374,15 +400,63 @@ void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
     extern __shared__ NTTValue sh[];
     NTTValue* const sh_acc_ntt = &sh[0];
 
-#ifdef USE_KEY_BUNDLE
+#ifdef USE_BLOCK_BINARY
+    if constexpr (HasBlockBinaryDomain<typename brP::domainP>::value) {
+        if constexpr (sizeof(typename targetP::T) == 8) {
+#ifdef USE_FFT
+            constexpr size_t trgsw_size = BootstrappingTRGSWRows<targetP> *
+                                          (targetP::k + 1) * (targetP::n / 2);
+#else
+            constexpr size_t trgsw_size =
+                BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
+#endif
+            for (uint32_t i = 0; i < input_count; i++) {
+                const uint32_t abar =
+                    CBModSwitch<brP, num_out>(in[i] + roundoffset);
+                if (abar != 0)
+                    Accumulate<brP>(out, sh_acc_ntt, abar,
+                                    bk + static_cast<size_t>(i) * trgsw_size,
+                                    ntt);
+            }
+        }
+        else {
+            constexpr uint32_t blocks = input_count / brP::domainP::ell;
+            for (uint32_t block = 0; block < blocks; block++) {
+                uint32_t bara[brP::domainP::ell];
+#pragma unroll
+                for (uint32_t offset = 0; offset < brP::domainP::ell; offset++)
+                    bara[offset] = CBModSwitch<brP, num_out>(
+                        in[block * brP::domainP::ell + offset] + roundoffset);
+                AccumulateBlockBinary<brP>(out, sh_acc_ntt, block, bara, bk,
+                                           ntt);
+            }
+        }
+    }
+    else {
+#ifdef USE_FFT
+        constexpr size_t trgsw_size = BootstrappingTRGSWRows<targetP> *
+                                      (targetP::k + 1) * (targetP::n / 2);
+#else
+        constexpr size_t trgsw_size =
+            BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
+#endif
+        for (uint32_t i = 0; i < input_count; i++) {
+            const uint32_t abar =
+                CBModSwitch<brP, num_out>(in[i] + roundoffset);
+            if (abar != 0)
+                Accumulate<brP>(out, sh_acc_ntt, abar, bk + i * trgsw_size,
+                                ntt);
+        }
+    }
+#elif defined(USE_KEY_BUNDLE)
     constexpr uint32_t num_pairs =
         brP::domainP::k * brP::domainP::n / brP::Addends;
 #ifdef USE_FFT
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * (targetP::k + 1) * targetP::l * (targetP::n / 2);
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * (targetP::n / 2);
 #else
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * (targetP::k + 1) * targetP::l * targetP::n;
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
 #endif
     for (uint32_t i = 0; i < num_pairs; i++) {
         const uint32_t bara0 =
@@ -398,14 +472,13 @@ void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
 #else
 #ifdef USE_FFT
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * targetP::l * (targetP::k + 1) * (targetP::n / 2);
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * (targetP::n / 2);
 #else
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * targetP::l * (targetP::k + 1) * targetP::n;
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
 #endif
     for (uint32_t i = 0; i < brP::domainP::k * brP::domainP::n; i++) {
-        const uint32_t abar =
-            CBModSwitch<brP, num_out>(in[i] + roundoffset);
+        const uint32_t abar = CBModSwitch<brP, num_out>(in[i] + roundoffset);
         if (abar == 0) continue;
         Accumulate<brP>(out, sh_acc_ntt, abar, bk + i * trgsw_size, ntt);
     }
@@ -413,18 +486,29 @@ void __BlindRotateCBKernel__(typename brP::targetP::T* const out,
 }
 
 template <class brP, uint32_t num_out>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>)
-void __BlindRotateCBBatchKernel__(typename brP::targetP::T* const out,
-                                  const size_t out_stride,
-                                  const typename brP::domainP::T* const in,
-                                  const size_t in_stride,
-                                  const NTTValue* const bk,
+__global__ __launch_bounds__(
+    NUM_THREAD4HOMGATE<
+        typename brP::
+            targetP>) void __BlindRotateCBBatchKernel__(typename brP::targetP::
+                                                            T* const out,
+                                                        const size_t out_stride,
+                                                        const typename brP::
+                                                            domainP::T* const
+                                                                in,
+                                                        const size_t in_stride,
+                                                        const NTTValue* const
+                                                            bk,
 #ifdef USE_KEY_BUNDLE
-                                  const NTTValue* const one_trgsw_ntt,
-                                  const NTTValue* const xai_ntt,
+                                                        const NTTValue* const
+                                                            one_trgsw_ntt,
+                                                        const NTTValue* const
+                                                            xai_ntt,
 #endif
-                                  const CuNTTHandler<brP::targetP::n> ntt,
-                                  const size_t batch_count)
+                                                        const CuNTTHandler<
+                                                            brP::targetP::n>
+                                                            ntt,
+                                                        const size_t
+                                                            batch_count)
 {
     using targetP = typename brP::targetP;
     const size_t batch = blockIdx.x;
@@ -444,10 +528,11 @@ void __BlindRotateCBBatchKernel__(typename brP::targetP::T* const out,
         std::numeric_limits<typename brP::domainP::T>::digits - 1 -
         targetP::nbit;
     constexpr uint32_t input_count = brP::domainP::k * brP::domainP::n;
+    using DomainT = typename brP::domainP::T;
     using SignedDomainT = std::make_signed_t<typename brP::domainP::T>;
-    __shared__ long long residual[NUM_THREAD4HOMGATE<targetP>];
+    __shared__ DomainT residual[NUM_THREAD4HOMGATE<targetP>];
 
-    long long local_residual = 0;
+    DomainT local_residual = 0;
     for (uint32_t i = tid; i < input_count; i += bdim) {
         const uint32_t moded =
             CBModSwitch<brP, num_out>(batch_in[i] + roundoffset);
@@ -465,14 +550,13 @@ void __BlindRotateCBBatchKernel__(typename brP::targetP::T* const out,
     const typename brP::domainP::T corrected_b =
         static_cast<typename brP::domainP::T>(
             batch_in[brP::domainP::k * brP::domainP::n] -
-            residual[0] / 2 + roundoffset);
+            static_cast<SignedDomainT>(residual[0]) / 2 + roundoffset);
     const uint32_t bbar = 2 * N - CBModSwitch<brP, num_out>(corrected_b);
     for (uint32_t i = tid; i < total; i += bdim) {
         const uint32_t k_idx = i >> targetP::nbit;
         const uint32_t n = i & (N - 1);
         batch_out[i] = k_idx == targetP::k
-                           ? RotatedCBTestVectorValue<targetP, num_out>(n,
-                                                                         bbar)
+                           ? RotatedCBTestVectorValue<targetP, num_out>(n, bbar)
                            : 0;
     }
     __syncthreads();
@@ -480,15 +564,64 @@ void __BlindRotateCBBatchKernel__(typename brP::targetP::T* const out,
     extern __shared__ NTTValue sh[];
     NTTValue* const sh_acc_ntt = &sh[0];
 
-#ifdef USE_KEY_BUNDLE
+#ifdef USE_BLOCK_BINARY
+    if constexpr (HasBlockBinaryDomain<typename brP::domainP>::value) {
+        if constexpr (sizeof(typename targetP::T) == 8) {
+#ifdef USE_FFT
+            constexpr size_t trgsw_size = BootstrappingTRGSWRows<targetP> *
+                                          (targetP::k + 1) * (targetP::n / 2);
+#else
+            constexpr size_t trgsw_size =
+                BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
+#endif
+            for (uint32_t i = 0; i < input_count; i++) {
+                const uint32_t abar =
+                    CBModSwitch<brP, num_out>(batch_in[i] + roundoffset);
+                if (abar != 0)
+                    Accumulate<brP>(batch_out, sh_acc_ntt, abar,
+                                    bk + static_cast<size_t>(i) * trgsw_size,
+                                    ntt);
+            }
+        }
+        else {
+            constexpr uint32_t blocks = input_count / brP::domainP::ell;
+            for (uint32_t block = 0; block < blocks; block++) {
+                uint32_t bara[brP::domainP::ell];
+#pragma unroll
+                for (uint32_t offset = 0; offset < brP::domainP::ell; offset++)
+                    bara[offset] = CBModSwitch<brP, num_out>(
+                        batch_in[block * brP::domainP::ell + offset] +
+                        roundoffset);
+                AccumulateBlockBinary<brP>(batch_out, sh_acc_ntt, block, bara,
+                                           bk, ntt);
+            }
+        }
+    }
+    else {
+#ifdef USE_FFT
+        constexpr size_t trgsw_size = BootstrappingTRGSWRows<targetP> *
+                                      (targetP::k + 1) * (targetP::n / 2);
+#else
+        constexpr size_t trgsw_size =
+            BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
+#endif
+        for (uint32_t i = 0; i < input_count; i++) {
+            const uint32_t abar =
+                CBModSwitch<brP, num_out>(batch_in[i] + roundoffset);
+            if (abar != 0)
+                Accumulate<brP>(batch_out, sh_acc_ntt, abar,
+                                bk + i * trgsw_size, ntt);
+        }
+    }
+#elif defined(USE_KEY_BUNDLE)
     constexpr uint32_t num_pairs =
         brP::domainP::k * brP::domainP::n / brP::Addends;
 #ifdef USE_FFT
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * (targetP::k + 1) * targetP::l * (targetP::n / 2);
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * (targetP::n / 2);
 #else
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * (targetP::k + 1) * targetP::l * targetP::n;
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
 #endif
     for (uint32_t i = 0; i < num_pairs; i++) {
         const uint32_t bara0 =
@@ -498,16 +631,16 @@ void __BlindRotateCBBatchKernel__(typename brP::targetP::T* const out,
         const NTTValue* const bk0 = bk + i * 3 * trgsw_size;
         const NTTValue* const bk1 = bk + (i * 3 + 1) * trgsw_size;
         const NTTValue* const bk2 = bk + (i * 3 + 2) * trgsw_size;
-        AccumulateKeyBundle<brP>(batch_out, sh_acc_ntt, bara0, bara1, bk0,
-                                 bk1, bk2, one_trgsw_ntt, xai_ntt, ntt);
+        AccumulateKeyBundle<brP>(batch_out, sh_acc_ntt, bara0, bara1, bk0, bk1,
+                                 bk2, one_trgsw_ntt, xai_ntt, ntt);
     }
 #else
 #ifdef USE_FFT
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * targetP::l * (targetP::k + 1) * (targetP::n / 2);
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * (targetP::n / 2);
 #else
     constexpr size_t trgsw_size =
-        (targetP::k + 1) * targetP::l * (targetP::k + 1) * targetP::n;
+        BootstrappingTRGSWRows<targetP> * (targetP::k + 1) * targetP::n;
 #endif
     for (uint32_t i = 0; i < brP::domainP::k * brP::domainP::n; i++) {
         const uint32_t abar =
@@ -547,18 +680,16 @@ __global__ void __InvSampleExtractCBKernel__(typename P::T* const out,
         const uint32_t n = i & (N - 1);
         if (k_idx < P::k) {
             if (n == 0)
-                trlwe[i] = SampleExtractValue<P, num_out>(
-                    acc, digit, k_idx * N);
+                trlwe[i] =
+                    SampleExtractValue<P, num_out>(acc, digit, k_idx * N);
             else
-                trlwe[i] = -SampleExtractValue<P, num_out>(
-                    acc, digit, k_idx * N + (N - n));
+                trlwe[i] = -SampleExtractValue<P, num_out>(acc, digit,
+                                                           k_idx * N + (N - n));
         }
         else {
             if (n == 0) {
                 const typename P::T offset =
-                    static_cast<typename P::T>(1)
-                    << (std::numeric_limits<typename P::T>::digits -
-                        (digit + 1) * P::Bgbit - 1);
+                    CBGadgetHalfValue<P, num_out>(digit);
                 trlwe[i] = acc[P::k * N + digit] + offset;
             }
             else {
@@ -591,18 +722,16 @@ __global__ void __InvSampleExtractCBBatchKernel__(
         const uint32_t n = i & (N - 1);
         if (k_idx < P::k) {
             if (n == 0)
-                trlwe[i] = SampleExtractValue<P, num_out>(
-                    batch_acc, digit, k_idx * N);
+                trlwe[i] =
+                    SampleExtractValue<P, num_out>(batch_acc, digit, k_idx * N);
             else
-                trlwe[i] = -SampleExtractValue<P, num_out>(
-                    batch_acc, digit, k_idx * N + (N - n));
+                trlwe[i] = -SampleExtractValue<P, num_out>(batch_acc, digit,
+                                                           k_idx * N + (N - n));
         }
         else {
             if (n == 0) {
                 const typename P::T offset =
-                    static_cast<typename P::T>(1)
-                    << (std::numeric_limits<typename P::T>::digits -
-                        (digit + 1) * P::Bgbit - 1);
+                    CBGadgetHalfValue<P, num_out>(digit);
                 trlwe[i] = batch_acc[P::k * N + digit] + offset;
             }
             else {
@@ -665,9 +794,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT(
         const bool nonce = part < P::k;
         const uint32_t levels = nonce ? P::lₐ : P::l;
         const uint32_t bgbit = nonce ? P::Bgₐbit : P::Bgbit;
-        const typename P::T offset =
-            nonce ? ExternalProductOffset<P, true>()
-                  : ExternalProductOffset<P, false>();
+        const typename P::T offset = nonce ? ExternalProductOffset<P, true>()
+                                           : ExternalProductOffset<P, false>();
         const int remaining_bits =
             std::numeric_limits<typename P::T>::digits - levels * bgbit;
         const typename P::T roundoffset =
@@ -676,8 +804,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT(
                 : static_cast<typename P::T>(0);
         const typename P::T decomp_mask =
             (static_cast<typename P::T>(1) << bgbit) - 1;
-        const typename P::T decomp_half =
-            static_cast<typename P::T>(1) << (bgbit - 1);
+        const typename P::T decomp_half = static_cast<typename P::T>(1)
+                                          << (bgbit - 1);
 
         for (uint32_t digit = 0; digit < levels; digit++) {
             if (tid < half_n) {
@@ -686,15 +814,13 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT(
                 typename P::T temp_im =
                     in[part * N + tid + half_n] + offset + roundoffset;
                 const int32_t digit_re = static_cast<int32_t>(
-                    ((temp_re >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * bgbit)) &
+                    ((temp_re >> (std::numeric_limits<typename P::T>::digits -
+                                  (digit + 1) * bgbit)) &
                      decomp_mask) -
                     decomp_half);
                 const int32_t digit_im = static_cast<int32_t>(
-                    ((temp_im >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * bgbit)) &
+                    ((temp_im >> (std::numeric_limits<typename P::T>::digits -
+                                  (digit + 1) * bgbit)) &
                      decomp_mask) -
                     decomp_half);
                 NTTValue folded = {static_cast<double>(digit_re),
@@ -765,8 +891,7 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT(
             val *= __ldg(&ntt.untwist_[tid]);
 #endif
             out[k_idx * N + tid] = CBTorusFromDouble<P>(val.x);
-            out[k_idx * N + tid + half_n] =
-                CBTorusFromDouble<P>(val.y);
+            out[k_idx * N + tid + half_n] = CBTorusFromDouble<P>(val.y);
         }
         __syncthreads();
     }
@@ -792,9 +917,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWNTT(
         const bool nonce = part < P::k;
         const uint32_t levels = nonce ? P::lₐ : P::l;
         const uint32_t bgbit = nonce ? P::Bgₐbit : P::Bgbit;
-        const typename P::T offset =
-            nonce ? ExternalProductOffset<P, true>()
-                  : ExternalProductOffset<P, false>();
+        const typename P::T offset = nonce ? ExternalProductOffset<P, true>()
+                                           : ExternalProductOffset<P, false>();
         const int remaining_bits =
             std::numeric_limits<typename P::T>::digits - levels * bgbit;
         const typename P::T roundoffset =
@@ -803,8 +927,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWNTT(
                 : static_cast<typename P::T>(0);
         const typename P::T decomp_mask =
             (static_cast<typename P::T>(1) << bgbit) - 1;
-        const typename P::T decomp_half =
-            static_cast<typename P::T>(1) << (bgbit - 1);
+        const typename P::T decomp_half = static_cast<typename P::T>(1)
+                                          << (bgbit - 1);
 
         for (uint32_t digit = 0; digit < levels; digit++) {
             if (tid < num_threads) {
@@ -814,9 +938,8 @@ __device__ inline void ExternalProductTRLWE_TRGSWNTT(
                     typename P::T temp =
                         in[part * N + i] + offset + roundoffset;
                     const int32_t digit_val = static_cast<int32_t>(
-                        ((temp >>
-                          (std::numeric_limits<typename P::T>::digits -
-                           (digit + 1) * bgbit)) &
+                        ((temp >> (std::numeric_limits<typename P::T>::digits -
+                                   (digit + 1) * bgbit)) &
                          decomp_mask) -
                         decomp_half);
                     sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
@@ -879,11 +1002,10 @@ __device__ inline void ExternalProductTRLWE_TRGSWNTT(
 #endif  // USE_FFT
 
 template <class P>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>)
-void __CBExternalProductKernel__(typename P::T* const out,
-                                 const typename P::T* const in,
-                                 const NTTValue* const cbsk,
-                                 const CuNTTHandler<P::n> ntt)
+__global__
+__launch_bounds__(NUM_THREAD4HOMGATE<P>) void __CBExternalProductKernel__(
+    typename P::T* const out, const typename P::T* const in,
+    const NTTValue* const cbsk, const CuNTTHandler<P::n> ntt)
 {
     extern __shared__ NTTValue sh_acc_ntt[];
 #if defined(USE_FFT)
@@ -894,12 +1016,11 @@ void __CBExternalProductKernel__(typename P::T* const out,
 }
 
 template <class P, uint32_t num_out, uint32_t target_l_a>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>)
-void __CBExternalProductBatchKernel__(typename P::T* const trgsw,
-                                      const size_t trgsw_stride,
-                                      const NTTValue* const cbsk,
-                                      const CuNTTHandler<P::n> ntt,
-                                      const size_t batch_count)
+__global__
+__launch_bounds__(NUM_THREAD4HOMGATE<P>) void __CBExternalProductBatchKernel__(
+    typename P::T* const trgsw, const size_t trgsw_stride,
+    const NTTValue* const cbsk, const CuNTTHandler<P::n> ntt,
+    const size_t batch_count)
 {
     const uint32_t row = blockIdx.x;
     const size_t batch = blockIdx.y;
@@ -915,18 +1036,60 @@ void __CBExternalProductBatchKernel__(typename P::T* const trgsw,
     extern __shared__ NTTValue sh_acc_ntt[];
 #if defined(USE_FFT)
     ExternalProductTRLWE_TRGSWFFT<P>(
-        batch_trgsw +
-            static_cast<size_t>(k * target_l_a + i) * trlwe_elems,
-        batch_trgsw +
-            static_cast<size_t>(main_row_offset + i) * trlwe_elems,
+        batch_trgsw + static_cast<size_t>(k * target_l_a + i) * trlwe_elems,
+        batch_trgsw + static_cast<size_t>(main_row_offset + i) * trlwe_elems,
         cbsk + static_cast<size_t>(k) * cbsk_one_key_elems, sh_acc_ntt, ntt);
 #else
     ExternalProductTRLWE_TRGSWNTT<P>(
-        batch_trgsw +
-            static_cast<size_t>(k * target_l_a + i) * trlwe_elems,
-        batch_trgsw +
-            static_cast<size_t>(main_row_offset + i) * trlwe_elems,
+        batch_trgsw + static_cast<size_t>(k * target_l_a + i) * trlwe_elems,
+        batch_trgsw + static_cast<size_t>(main_row_offset + i) * trlwe_elems,
         cbsk + static_cast<size_t>(k) * cbsk_one_key_elems, sh_acc_ntt, ntt);
+#endif
+}
+
+template <class P, uint32_t target_l_a>
+__global__ __launch_bounds__(
+    NUM_THREAD4HOMGATE<
+        P>) void __CBExternalProductFromSourceBatchKernel__(typename P::T* const
+                                                                trgsw,
+                                                            const size_t
+                                                                trgsw_stride,
+                                                            const uint32_t
+                                                                nonce_digit,
+                                                            const typename P::
+                                                                T* const source,
+                                                            const size_t
+                                                                source_stride,
+                                                            const NTTValue* const
+                                                                cbsk,
+                                                            const CuNTTHandler<
+                                                                P::n>
+                                                                ntt,
+                                                            const size_t
+                                                                batch_count)
+{
+    const uint32_t k = blockIdx.x;
+    const size_t batch = blockIdx.y;
+    if (batch >= batch_count) return;
+
+    constexpr size_t trlwe_elems = TRLWEElements<P>();
+    constexpr size_t cbsk_one_key_elems = TRGSWFFTElements<P>();
+    typename P::T* const batch_trgsw = trgsw + batch * trgsw_stride;
+    const typename P::T* const batch_source = source + batch * source_stride;
+
+    extern __shared__ NTTValue sh_acc_ntt[];
+#if defined(USE_FFT)
+    ExternalProductTRLWE_TRGSWFFT<P>(
+        batch_trgsw +
+            static_cast<size_t>(k * target_l_a + nonce_digit) * trlwe_elems,
+        batch_source, cbsk + static_cast<size_t>(k) * cbsk_one_key_elems,
+        sh_acc_ntt, ntt);
+#else
+    ExternalProductTRLWE_TRGSWNTT<P>(
+        batch_trgsw +
+            static_cast<size_t>(k * target_l_a + nonce_digit) * trlwe_elems,
+        batch_source, cbsk + static_cast<size_t>(k) * cbsk_one_key_elems,
+        sh_acc_ntt, ntt);
 #endif
 }
 
@@ -959,13 +1122,12 @@ void CBswitchingKeyPolynomialGen(CBswitchingKeyPolynomial<P>& cbsk,
 }
 
 template <class P>
-void CBswitchingKeyPolynomialToDevice(
-    const CBswitchingKeyPolynomial<P>& cbsk, const int gpuNum)
+void CBswitchingKeyPolynomialToDevice(const CBswitchingKeyPolynomial<P>& cbsk,
+                                      const int gpuNum)
 {
-    static_assert(P::k == 1,
-                  "CUDA CB switching currently supports GLWE dimension 1");
-    static_assert(P::l̅ == 1 && P::l̅ₐ == 1,
-                  "CUDA CB switching currently supports standard decomposition");
+    static_assert(
+        P::l̅ == 1 && P::l̅ₐ == 1,
+        "CUDA CB switching currently supports standard decomposition");
 
     auto& storage = CBswitchingKeyStorage<P>();
     constexpr uint32_t rows = P::k * TRGSWRows<P>() * (P::k + 1);
@@ -976,8 +1138,7 @@ void CBswitchingKeyPolynomialToDevice(
     std::vector<typename P::T> packed(poly_elems);
     size_t row = 0;
     for (uint32_t key_idx = 0; key_idx < P::k; key_idx++) {
-        for (uint32_t trgsw_row = 0; trgsw_row < TRGSWRows<P>();
-             trgsw_row++) {
+        for (uint32_t trgsw_row = 0; trgsw_row < TRGSWRows<P>(); trgsw_row++) {
             for (uint32_t out_k = 0; out_k <= P::k; out_k++) {
                 const auto& poly = cbsk[key_idx][trgsw_row][out_k];
                 for (uint32_t i = 0; i < P::n; i++)
@@ -997,11 +1158,11 @@ void CBswitchingKeyPolynomialToDevice(
         CuSafeCall(cudaMemcpy(d_poly, packed.data(), poly_bytes,
                               cudaMemcpyHostToDevice));
 #if defined(USE_FFT)
-        __TRGSWPolynomialToFFT__<P><<<rows, P::n / 2>>>(
-            storage[i], d_poly, *RingHandler<P>(i));
+        __TRGSWPolynomialToFFT__<P>
+            <<<rows, P::n / 2>>>(storage[i], d_poly, *RingHandler<P>(i));
 #else
-        __TRGSWPolynomialToNTT__<P><<<rows, P::n / 2>>>(
-            storage[i], d_poly, *RingHandler<P>(i));
+        __TRGSWPolynomialToNTT__<P>
+            <<<rows, P::n / 2>>>(storage[i], d_poly, *RingHandler<P>(i));
 #endif
         CuCheckError();
         CuSafeCall(cudaFree(d_poly));
@@ -1028,24 +1189,20 @@ void AnnihilateCircuitBootstrappingWithWorkspace(
     const int gpuNum)
 {
     using targetP = typename brP::targetP;
-    static_assert(targetP::k == ahP::k,
-                  "brP::targetP::k must match ahP::k");
+    static_assert(targetP::k == ahP::k, "brP::targetP::k must match ahP::k");
     static_assert(targetP::n == ahP::n &&
                       sizeof(typename targetP::T) == sizeof(typename ahP::T),
                   "brP::targetP and ahP must share the same torus ring");
-    static_assert(targetP::l == targetP::lₐ,
-                  "CUDA Annihilate CB currently expects target l == l_a");
 
     cudaSetDevice(gpuNum);
-    constexpr uint32_t num_out = targetP::l;
+    constexpr uint32_t num_out = CircuitBootstrapLUTCount<targetP>;
     constexpr size_t trlwe_elems = TRLWEElements<targetP>();
 
     static bool blindrotate_attribute_set = false;
     if (!blindrotate_attribute_set) {
         CuSafeCall(cudaFuncSetAttribute(
             __BlindRotateCBKernel__<brP, num_out>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize,
-            MEM4HOMGATE<targetP>));
+            cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<targetP>));
         blindrotate_attribute_set = true;
     }
     __BlindRotateCBKernel__<brP, num_out>
@@ -1060,14 +1217,6 @@ void AnnihilateCircuitBootstrappingWithWorkspace(
         <<<num_out, NUM_THREAD4HOMGATE<targetP>, 0, st>>>(temptrlwe, acc);
 
     constexpr uint32_t main_row_offset = targetP::k * targetP::lₐ;
-    for (uint32_t i = 0; i < num_out; i++) {
-        typename targetP::T* const extracted =
-            temptrlwe + static_cast<size_t>(i) * trlwe_elems;
-        AnnihilateKeySwitchingWithWorkspace<ahP>(
-            out + static_cast<size_t>(main_row_offset + i) * trlwe_elems,
-            extracted, extracted, st, gpuNum);
-    }
-
     constexpr size_t cbsk_one_key_elems = TRGSWFFTElements<ahP>();
     const NTTValue* const cbsk = CBswitchingKeyStorage<ahP>()[gpuNum];
     static bool external_product_attribute_set = false;
@@ -1077,16 +1226,44 @@ void AnnihilateCircuitBootstrappingWithWorkspace(
             cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<ahP>));
         external_product_attribute_set = true;
     }
-    for (uint32_t k = 0; k < targetP::k; k++) {
-        for (uint32_t i = 0; i < num_out; i++) {
-            __CBExternalProductKernel__<ahP>
-                <<<1, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
-                    out + static_cast<size_t>(k * targetP::lₐ + i) *
-                              trlwe_elems,
-                    out + static_cast<size_t>(main_row_offset + i) *
-                              trlwe_elems,
-                    cbsk + static_cast<size_t>(k) * cbsk_one_key_elems,
-                    *RingHandler<ahP>(gpuNum));
+
+    if constexpr (!CircuitBootstrapSharedGadget<targetP>) {
+        for (uint32_t i = 0; i < targetP::lₐ; i++) {
+            typename targetP::T* const extracted =
+                temptrlwe + static_cast<size_t>(targetP::l + i) * trlwe_elems;
+            AnnihilateKeySwitchingWithWorkspace<ahP>(acc, extracted, extracted,
+                                                     st, gpuNum);
+            for (uint32_t k = 0; k < targetP::k; k++) {
+                __CBExternalProductKernel__<ahP>
+                    <<<1, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
+                        out + static_cast<size_t>(k * targetP::lₐ + i) *
+                                  trlwe_elems,
+                        acc, cbsk + static_cast<size_t>(k) * cbsk_one_key_elems,
+                        *RingHandler<ahP>(gpuNum));
+            }
+        }
+    }
+
+    for (uint32_t i = 0; i < targetP::l; i++) {
+        typename targetP::T* const extracted =
+            temptrlwe + static_cast<size_t>(i) * trlwe_elems;
+        AnnihilateKeySwitchingWithWorkspace<ahP>(
+            out + static_cast<size_t>(main_row_offset + i) * trlwe_elems,
+            extracted, extracted, st, gpuNum);
+    }
+
+    if constexpr (CircuitBootstrapSharedGadget<targetP>) {
+        for (uint32_t k = 0; k < targetP::k; k++) {
+            for (uint32_t i = 0; i < targetP::lₐ; i++) {
+                __CBExternalProductKernel__<ahP>
+                    <<<1, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
+                        out + static_cast<size_t>(k * targetP::lₐ + i) *
+                                  trlwe_elems,
+                        out + static_cast<size_t>(main_row_offset + i) *
+                                  trlwe_elems,
+                        cbsk + static_cast<size_t>(k) * cbsk_one_key_elems,
+                        *RingHandler<ahP>(gpuNum));
+            }
         }
     }
 
@@ -1098,21 +1275,18 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
     typename brP::targetP::T* const out, const size_t out_stride,
     const typename brP::domainP::T* const in, const size_t in_stride,
     typename brP::targetP::T* const acc,
-    typename brP::targetP::T* const temptrlwe,
-    const size_t batch_count, const cudaStream_t st, const int gpuNum)
+    typename brP::targetP::T* const temptrlwe, const size_t batch_count,
+    const cudaStream_t st, const int gpuNum)
 {
     using targetP = typename brP::targetP;
-    static_assert(targetP::k == ahP::k,
-                  "brP::targetP::k must match ahP::k");
+    static_assert(targetP::k == ahP::k, "brP::targetP::k must match ahP::k");
     static_assert(targetP::n == ahP::n &&
                       sizeof(typename targetP::T) == sizeof(typename ahP::T),
                   "brP::targetP and ahP must share the same torus ring");
-    static_assert(targetP::l == targetP::lₐ,
-                  "CUDA Annihilate CB currently expects target l == l_a");
     if (batch_count == 0) return;
 
     cudaSetDevice(gpuNum);
-    constexpr uint32_t num_out = targetP::l;
+    constexpr uint32_t num_out = CircuitBootstrapLUTCount<targetP>;
     constexpr size_t trlwe_elems = TRLWEElements<targetP>();
     constexpr size_t temptrlwe_stride =
         static_cast<size_t>(num_out) * trlwe_elems;
@@ -1121,8 +1295,7 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
     if (!blindrotate_batch_attribute_set) {
         CuSafeCall(cudaFuncSetAttribute(
             __BlindRotateCBBatchKernel__<brP, num_out>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize,
-            MEM4HOMGATE<targetP>));
+            cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<targetP>));
         blindrotate_batch_attribute_set = true;
     }
     __BlindRotateCBBatchKernel__<brP, num_out>
@@ -1140,7 +1313,31 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
             temptrlwe, temptrlwe_stride, acc, trlwe_elems, batch_count);
 
     constexpr uint32_t main_row_offset = targetP::k * targetP::lₐ;
-    for (uint32_t i = 0; i < num_out; i++) {
+    const NTTValue* const cbsk = CBswitchingKeyStorage<ahP>()[gpuNum];
+
+    if constexpr (!CircuitBootstrapSharedGadget<targetP>) {
+        static bool external_product_source_attribute_set = false;
+        if (!external_product_source_attribute_set) {
+            CuSafeCall(cudaFuncSetAttribute(
+                __CBExternalProductFromSourceBatchKernel__<ahP, targetP::lₐ>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<ahP>));
+            external_product_source_attribute_set = true;
+        }
+        const dim3 external_grid(targetP::k, batch_count);
+        for (uint32_t i = 0; i < targetP::lₐ; i++) {
+            typename targetP::T* const extracted =
+                temptrlwe + static_cast<size_t>(targetP::l + i) * trlwe_elems;
+            AnnihilateKeySwitchingBatchWithWorkspace<ahP>(
+                acc, trlwe_elems, extracted, temptrlwe_stride, extracted,
+                temptrlwe_stride, batch_count, st, gpuNum);
+            __CBExternalProductFromSourceBatchKernel__<ahP, targetP::lₐ>
+                <<<external_grid, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>,
+                   st>>>(out, out_stride, i, acc, trlwe_elems, cbsk,
+                         *RingHandler<ahP>(gpuNum), batch_count);
+        }
+    }
+
+    for (uint32_t i = 0; i < targetP::l; i++) {
         typename targetP::T* const extracted =
             temptrlwe + static_cast<size_t>(i) * trlwe_elems;
         AnnihilateKeySwitchingBatchWithWorkspace<ahP>(
@@ -1149,18 +1346,19 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
             temptrlwe_stride, batch_count, st, gpuNum);
     }
 
-    const NTTValue* const cbsk = CBswitchingKeyStorage<ahP>()[gpuNum];
-    static bool external_product_batch_attribute_set = false;
-    if (!external_product_batch_attribute_set) {
-        CuSafeCall(cudaFuncSetAttribute(
-            __CBExternalProductBatchKernel__<ahP, num_out, targetP::lₐ>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<ahP>));
-        external_product_batch_attribute_set = true;
+    if constexpr (CircuitBootstrapSharedGadget<targetP>) {
+        static bool external_product_batch_attribute_set = false;
+        if (!external_product_batch_attribute_set) {
+            CuSafeCall(cudaFuncSetAttribute(
+                __CBExternalProductBatchKernel__<ahP, targetP::l, targetP::lₐ>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<ahP>));
+            external_product_batch_attribute_set = true;
+        }
+        const dim3 external_grid(targetP::k * targetP::lₐ, batch_count);
+        __CBExternalProductBatchKernel__<ahP, targetP::l, targetP::lₐ>
+            <<<external_grid, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
+                out, out_stride, cbsk, *RingHandler<ahP>(gpuNum), batch_count);
     }
-    const dim3 external_grid(targetP::k * num_out, batch_count);
-    __CBExternalProductBatchKernel__<ahP, num_out, targetP::lₐ>
-        <<<external_grid, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
-            out, out_stride, cbsk, *RingHandler<ahP>(gpuNum), batch_count);
 
     CuCheckError();
 }
@@ -1171,7 +1369,7 @@ void AnnihilateCircuitBootstrapping(typename brP::targetP::T* const out,
                                     const cudaStream_t st, const int gpuNum)
 {
     using targetP = typename brP::targetP;
-    constexpr uint32_t num_out = targetP::l;
+    constexpr uint32_t num_out = CircuitBootstrapLUTCount<targetP>;
     constexpr size_t trlwe_elems = TRLWEElements<targetP>();
     constexpr size_t trlwe_bytes = trlwe_elems * sizeof(typename targetP::T);
     typename targetP::T* acc = nullptr;
@@ -1192,9 +1390,8 @@ void AnnihilateCircuitBootstrapping(typename brP::targetP::T* const out,
     static_assert(std::is_same_v<typename iksP::targetP, typename brP::domainP>,
                   "iksP::targetP must match brP::domainP");
     cudaSetDevice(gpuNum);
-    constexpr size_t tlwe0_bytes =
-        (brP::domainP::k * brP::domainP::n + 1) *
-        sizeof(typename brP::domainP::T);
+    constexpr size_t tlwe0_bytes = (brP::domainP::k * brP::domainP::n + 1) *
+                                   sizeof(typename brP::domainP::T);
     typename brP::domainP::T* tlwe0 = nullptr;
     CuSafeCall(cudaMalloc(&tlwe0, tlwe0_bytes));
     __IdentityKeySwitchKernel__<iksP>
@@ -1204,47 +1401,58 @@ void AnnihilateCircuitBootstrapping(typename brP::targetP::T* const out,
     CuSafeCall(cudaFree(tlwe0));
 }
 
-#define INST_KEY(P)                                                          \
-    template void CBswitchingKeyPolynomialGen<P>(                            \
-        CBswitchingKeyPolynomial<P>&, const TFHEpp::Key<P>&);                \
-    template void CBswitchingKeyPolynomialGen<P>(                            \
-        CBswitchingKeyPolynomial<P>&, const TFHEpp::SecretKey&);             \
-    template void CBswitchingKeyPolynomialToDevice<P>(                       \
-        const CBswitchingKeyPolynomial<P>&, const int);                      \
+#define INST_KEY(P)                                                            \
+    template void CBswitchingKeyPolynomialGen<P>(CBswitchingKeyPolynomial<P>&, \
+                                                 const TFHEpp::Key<P>&);       \
+    template void CBswitchingKeyPolynomialGen<P>(CBswitchingKeyPolynomial<P>&, \
+                                                 const TFHEpp::SecretKey&);    \
+    template void CBswitchingKeyPolynomialToDevice<P>(                         \
+        const CBswitchingKeyPolynomial<P>&, const int);                        \
     template void DeleteCBswitchingKey<P>(const int)
 
 INST_KEY(TFHEpp::AHlvl1param);
 INST_KEY(TFHEpp::AHlvl2param);
+#ifdef USE_DIFFERENT_AH_PARAM
+INST_KEY(TFHEpp::cbAHlvl2param);
+#endif
 
 #undef INST_KEY
 
 #define INST_CB(brP, ahP)                                                     \
     template void AnnihilateCircuitBootstrappingWithWorkspace<brP, ahP>(      \
-        typename brP::targetP::T* const, const typename brP::domainP::T* const, \
-        typename brP::targetP::T* const, typename brP::targetP::T* const,      \
+        typename brP::targetP::T* const,                                      \
+        const typename brP::domainP::T* const,                                \
+        typename brP::targetP::T* const, typename brP::targetP::T* const,     \
         const cudaStream_t, const int);                                       \
     template void AnnihilateCircuitBootstrappingBatchWithWorkspace<brP, ahP>( \
-        typename brP::targetP::T* const, const size_t,                         \
-        const typename brP::domainP::T* const, const size_t,                   \
-        typename brP::targetP::T* const, typename brP::targetP::T* const,      \
+        typename brP::targetP::T* const, const size_t,                        \
+        const typename brP::domainP::T* const, const size_t,                  \
+        typename brP::targetP::T* const, typename brP::targetP::T* const,     \
         const size_t, const cudaStream_t, const int);                         \
-    template void AnnihilateCircuitBootstrapping<brP, ahP>(                  \
-        typename brP::targetP::T* const, const typename brP::domainP::T* const, \
-        const cudaStream_t, const int)
+    template void AnnihilateCircuitBootstrapping<brP, ahP>(                   \
+        typename brP::targetP::T* const,                                      \
+        const typename brP::domainP::T* const, const cudaStream_t, const int)
 
 INST_CB(TFHEpp::lvl01param, TFHEpp::AHlvl1param);
 INST_CB(TFHEpp::lvl02param, TFHEpp::AHlvl2param);
 INST_CB(TFHEpp::lvlh2param, TFHEpp::AHlvl2param);
+#if defined(USE_DIFFERENT_BR_PARAM) && defined(USE_DIFFERENT_AH_PARAM)
+INST_CB(TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param);
+INST_CB(TFHEpp::cblvlh2param, TFHEpp::cbAHlvl2param);
+#endif
 
 #undef INST_CB
 
-#define INST_CB_IKS(iksP, brP, ahP)                                           \
-    template void AnnihilateCircuitBootstrapping<iksP, brP, ahP>(            \
-        typename brP::targetP::T* const, const typename iksP::domainP::T* const, \
-        const cudaStream_t, const int)
+#define INST_CB_IKS(iksP, brP, ahP)                               \
+    template void AnnihilateCircuitBootstrapping<iksP, brP, ahP>( \
+        typename brP::targetP::T* const,                          \
+        const typename iksP::domainP::T* const, const cudaStream_t, const int)
 
 INST_CB_IKS(TFHEpp::lvl10param, TFHEpp::lvl01param, TFHEpp::AHlvl1param);
 INST_CB_IKS(TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::AHlvl2param);
+#if defined(USE_DIFFERENT_BR_PARAM) && defined(USE_DIFFERENT_AH_PARAM)
+INST_CB_IKS(TFHEpp::lvl20param, TFHEpp::cblvl02param, TFHEpp::cbAHlvl2param);
+#endif
 
 #undef INST_CB_IKS
 

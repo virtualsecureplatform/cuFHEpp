@@ -89,16 +89,25 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     }
     __syncthreads();
 
-    // Decomposition constants
-    constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
-    constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
-    constexpr typename P::targetP::T roundoffset =
-        1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
-                 P::targetP::l * P::targetP::Bgbit - 1);
-
     for (int j = 0; j <= P::targetP::k; j++) {
-        for (int digit = 0; digit < P::targetP::l; digit++) {
+        const bool nonce = j < P::targetP::k;
+        const uint32_t digits = nonce ? P::targetP::lₐ : P::targetP::l;
+        const uint32_t basebit = nonce ? P::targetP::Bgₐbit : P::targetP::Bgbit;
+        const uint32_t base = nonce ? P::targetP::Bgₐ : P::targetP::Bg;
+        const uint32_t decomp_mask = base - 1;
+        const int32_t decomp_half = base >> 1;
+        typename P::targetP::T decomp_offset = 0;
+        for (uint32_t digit = 1; digit <= digits; digit++)
+            decomp_offset +=
+                static_cast<typename P::targetP::T>(decomp_half)
+                << (std::numeric_limits<typename P::targetP::T>::digits -
+                    digit * basebit);
+        const typename P::targetP::T roundoffset =
+            static_cast<typename P::targetP::T>(1)
+            << (std::numeric_limits<typename P::targetP::T>::digits -
+                digits * basebit - 1);
+
+        for (uint32_t digit = 0; digit < digits; digit++) {
             // Step 1: DECOMPOSE + FOLD + TWIST
             // Fold: Complex[i] = {Poly[i], Poly[i + N/2]}
             // Twist: Complex[i] *= twist[i]
@@ -115,7 +124,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                 int32_t digit_re = static_cast<int32_t>(
                     ((temp_re >>
                       (std::numeric_limits<typename P::targetP::T>::digits -
-                       (digit + 1) * P::targetP::Bgbit)) &
+                       (digit + 1) * basebit)) &
                      decomp_mask) -
                     decomp_half);
 
@@ -131,7 +140,7 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                 int32_t digit_im = static_cast<int32_t>(
                     ((temp_im >>
                       (std::numeric_limits<typename P::targetP::T>::digits -
-                       (digit + 1) * P::targetP::Bgbit)) &
+                       (digit + 1) * basebit)) &
                      decomp_mask) -
                     decomp_half);
 
@@ -153,7 +162,9 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
             }
 
             // Step 3: Multiply-accumulate with BSK
-            int digit_linear = j * P::targetP::l + digit;
+            const uint32_t digit_linear =
+                nonce ? j * P::targetP::lₐ + digit
+                      : P::targetP::k * P::targetP::lₐ + digit;
             if (tid < HALF_N) {
                 double2 fft_val = sh_fft[tid];
 #pragma unroll
@@ -170,9 +181,9 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     }
 
     // Step 4: Inverse FFT + untwist + unfold + add to trlwe
-    constexpr double denorm =
-        (sizeof(typename P::targetP::T) == 4) ? 4294967296.0
-                                               : 18446744073709551616.0;
+    constexpr double denorm = (sizeof(typename P::targetP::T) == 4)
+                                  ? 4294967296.0
+                                  : 18446744073709551616.0;
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
 
@@ -191,17 +202,15 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
             double2 utw = __ldg(&ntt.untwist_[tid]);
             val = val * utw;
             if constexpr (sizeof(typename P::targetP::T) == 4) {
-                trlwe[k_idx * N + tid] +=
-                    static_cast<typename P::targetP::T>(
-                        static_cast<int32_t>(llrint(val.x * denorm)));
+                trlwe[k_idx * N + tid] += static_cast<typename P::targetP::T>(
+                    static_cast<int32_t>(llrint(val.x * denorm)));
                 trlwe[k_idx * N + tid + HALF_N] +=
                     static_cast<typename P::targetP::T>(
                         static_cast<int32_t>(llrint(val.y * denorm)));
             }
             else {
-                trlwe[k_idx * N + tid] +=
-                    static_cast<typename P::targetP::T>(
-                        double_to_torus64(val.x * denorm));
+                trlwe[k_idx * N + tid] += static_cast<typename P::targetP::T>(
+                    double_to_torus64(val.x * denorm));
                 trlwe[k_idx * N + tid + HALF_N] +=
                     static_cast<typename P::targetP::T>(
                         double_to_torus64(val.y * denorm));
@@ -232,6 +241,8 @@ __device__ inline void AccumulateBlockBinary(
         "Block-binary GPU bootstrapping requires single decomposition");
 
     const uint32_t tid = ThisThreadRankInBlock();
+    const NTTValue* const xai_fft =
+        N == TFHEpp::lvl1param::n ? block_xai_fft : block_xai_fft_lvl02;
     double2* const sh_fft = &sh_acc_ntt[0];
     double2* const sh_accum = &sh_acc_ntt[HALF_N];
     for (int i = tid; i < (targetP::k + 1) * HALF_N; i += NUM_THREADS)
@@ -299,7 +310,7 @@ __device__ inline void AccumulateBlockBinary(
                         const double2 bk_value =
                             __ldg(&bk[key_index * TRGSW_SIZE + poly_index]);
                         const double2 xai =
-                            __ldg(&block_xai_fft[bara[offset] * HALF_N + tid]);
+                            __ldg(&xai_fft[bara[offset] * HALF_N + tid]);
                         block_product += bk_value * xai;
                     }
                     sh_accum[out_component * HALF_N + tid] +=
@@ -322,10 +333,18 @@ __device__ inline void AccumulateBlockBinary(
 
         if (tid < HALF_N) {
             double2 value = sh_inverse[tid] * __ldg(&ntt.untwist_[tid]);
-            trlwe[component * N + tid] +=
-                static_cast<T>(static_cast<int32_t>(llrint(value.x * denorm)));
-            trlwe[component * N + tid + HALF_N] +=
-                static_cast<T>(static_cast<int32_t>(llrint(value.y * denorm)));
+            if constexpr (sizeof(T) == 4) {
+                trlwe[component * N + tid] += static_cast<T>(
+                    static_cast<int32_t>(llrint(value.x * denorm)));
+                trlwe[component * N + tid + HALF_N] += static_cast<T>(
+                    static_cast<int32_t>(llrint(value.y * denorm)));
+            }
+            else {
+                trlwe[component * N + tid] +=
+                    static_cast<T>(double_to_torus64(value.x * denorm));
+                trlwe[component * N + tid + HALF_N] +=
+                    static_cast<T>(double_to_torus64(value.y * denorm));
+            }
         }
         __syncthreads();
     }
@@ -376,7 +395,8 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset =
+        offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -528,7 +548,8 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset =
+        offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -593,9 +614,9 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                                         out_k)
                                        << P::targetP::nbit) +
                                       i]);
-                        sh_accum[out_k * N + i] =
-                            small_mod_add<N>(sh_accum[out_k * N + i],
-                                             small_mod_mult<N>(ntt_val, bk_val));
+                        sh_accum[out_k * N + i] = small_mod_add<N>(
+                            sh_accum[out_k * N + i],
+                            small_mod_mult<N>(ntt_val, bk_val));
                     }
                 }
             }
@@ -622,16 +643,14 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
 #pragma unroll
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
-                if constexpr (std::numeric_limits<typename P::targetP::T>::digits ==
-                              64) {
-                    trlwe[k_idx * N + i] +=
-                        static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus64<N>(sh_ntt_buf[i]));
+                if constexpr (std::numeric_limits<
+                                  typename P::targetP::T>::digits == 64) {
+                    trlwe[k_idx * N + i] += static_cast<typename P::targetP::T>(
+                        ntt_mod_to_torus64<N>(sh_ntt_buf[i]));
                 }
                 else {
-                    trlwe[k_idx * N + i] +=
-                        static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus32<N>(sh_ntt_buf[i]));
+                    trlwe[k_idx * N + i] += static_cast<typename P::targetP::T>(
+                        ntt_mod_to_torus32<N>(sh_ntt_buf[i]));
                 }
             }
         }
@@ -759,7 +778,8 @@ __device__ inline void AccumulateKeyBundle(
 
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset =
+        offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -837,9 +857,9 @@ __device__ inline void AccumulateKeyBundle(
     }
 
     // Step 4: Inverse FFT + untwist + unfold, REPLACE trlwe
-    constexpr double denorm =
-        (sizeof(typename P::targetP::T) == 4) ? 4294967296.0
-                                               : 18446744073709551616.0;
+    constexpr double denorm = (sizeof(typename P::targetP::T) == 4)
+                                  ? 4294967296.0
+                                  : 18446744073709551616.0;
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
         if (tid < FFT_THREADS) {
@@ -911,7 +931,8 @@ __device__ inline void AccumulateKeyBundle(
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset =
+        offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -1054,7 +1075,8 @@ __device__ inline void AccumulateKeyBundle(
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
     constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
-    constexpr typename P::targetP::T decomp_offset = offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T decomp_offset =
+        offsetgen<typename P::targetP>();
     constexpr typename P::targetP::T roundoffset =
         1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
                  P::targetP::l * P::targetP::Bgbit - 1);
@@ -1129,10 +1151,9 @@ __device__ inline void AccumulateKeyBundle(
                             combined, small_mod_mult<N>(bk0_val, xai01));
 
                         // Accumulate: decomp_ntt * combined
-                        sh_accum[out_k * N + i] =
-                            small_mod_add<N>(
-                                sh_accum[out_k * N + i],
-                                small_mod_mult<N>(ntt_val, combined));
+                        sh_accum[out_k * N + i] = small_mod_add<N>(
+                            sh_accum[out_k * N + i],
+                            small_mod_mult<N>(ntt_val, combined));
                     }
                 }
             }
@@ -1156,16 +1177,14 @@ __device__ inline void AccumulateKeyBundle(
 #pragma unroll
             for (int e = 0; e < 2; e++) {
                 int i = tid + e * NUM_THREADS;
-                if constexpr (std::numeric_limits<typename P::targetP::T>::digits ==
-                              64) {
-                    trlwe[k_idx * N + i] =
-                        static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus64<N>(sh_ntt_buf[i]));
+                if constexpr (std::numeric_limits<
+                                  typename P::targetP::T>::digits == 64) {
+                    trlwe[k_idx * N + i] = static_cast<typename P::targetP::T>(
+                        ntt_mod_to_torus64<N>(sh_ntt_buf[i]));
                 }
                 else {
-                    trlwe[k_idx * N + i] =
-                        static_cast<typename P::targetP::T>(
-                            ntt_mod_to_torus32<N>(sh_ntt_buf[i]));
+                    trlwe[k_idx * N + i] = static_cast<typename P::targetP::T>(
+                        ntt_mod_to_torus32<N>(sh_ntt_buf[i]));
                 }
             }
         }

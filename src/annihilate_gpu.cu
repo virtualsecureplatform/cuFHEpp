@@ -1,16 +1,15 @@
 #include <cuda_runtime.h>
 
 #include <cstdint>
-#include <limits>
-#include <type_traits>
-#include <vector>
-
 #include <include/annihilate_gpu.cuh>
 #include <include/error_gpu.cuh>
 #include <include/gatebootstrapping_gpu.cuh>
+#include <limits>
 #include <tfhe/key.hpp>
 #include <tfhe/trgsw.hpp>
+#include <type_traits>
 #include <utils.hpp>
+#include <vector>
 
 namespace cufhe {
 
@@ -23,14 +22,14 @@ std::vector<NTTValue*> ahk_ntts_lvl2;
 namespace {
 
 template <class P>
-constexpr bool is_lvl1_ring_v = P::n == TFHEpp::lvl1param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl1param::T);
+constexpr bool is_lvl1_ring_v =
+    P::n == TFHEpp::lvl1param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl1param::T);
 
 template <class P>
-constexpr bool is_lvl2_ring_v = P::n == TFHEpp::lvl2param::n &&
-                                sizeof(typename P::T) ==
-                                    sizeof(typename TFHEpp::lvl2param::T);
+constexpr bool is_lvl2_ring_v =
+    P::n == TFHEpp::lvl2param::n &&
+    sizeof(typename P::T) == sizeof(typename TFHEpp::lvl2param::T);
 
 template <class P>
 std::vector<NTTValue*>& AnnihilateKeyStorage()
@@ -68,8 +67,7 @@ constexpr size_t EvalAutoKeyElements()
 #else
     constexpr uint32_t transform_size = P::n;
 #endif
-    return static_cast<size_t>(P::k) * P::l * (P::k + 1) *
-           transform_size;
+    return static_cast<size_t>(P::k) * P::l * (P::k + 1) * transform_size;
 }
 
 template <class P>
@@ -83,8 +81,8 @@ constexpr size_t AnnihilateKeyElements()
 #if defined(USE_FFT)
 template <class P>
 __global__ void __HalfTRGSWPolynomialToFFT__(NTTValue* const out,
-                                            const typename P::T* const in,
-                                            CuNTTHandler<P::n> ntt)
+                                             const typename P::T* const in,
+                                             CuNTTHandler<P::n> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t half_n = N / 2;
@@ -109,14 +107,14 @@ __global__ void __HalfTRGSWPolynomialToFFT__(NTTValue* const out,
                      std::numeric_limits<typename P::T>::digits / 2));
 
     if (tid < half_n) {
-        const double re = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid])) *
-                          norm;
-        const double im = static_cast<double>(
-                              static_cast<std::make_signed_t<typename P::T>>(
-                                  in[in_index + tid + half_n])) *
-                          norm;
+        const double re =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid])) *
+            norm;
+        const double im =
+            static_cast<double>(static_cast<std::make_signed_t<typename P::T>>(
+                in[in_index + tid + half_n])) *
+            norm;
         NTTValue folded = {re, im};
 #ifdef USE_GPU_FFT
         folded *= __ldg(&ntt.twist_[tid]);
@@ -136,8 +134,7 @@ __global__ void __HalfTRGSWPolynomialToFFT__(NTTValue* const out,
 #ifdef USE_GPU_FFT
         for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
 #else
-        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++)
-            __syncthreads();
+        for (int s = 0; s < TfheRsFFTSharedSyncCount<N>(); s++) __syncthreads();
 #endif
     }
 
@@ -146,8 +143,8 @@ __global__ void __HalfTRGSWPolynomialToFFT__(NTTValue* const out,
 #else
 template <class P>
 __global__ void __HalfTRGSWPolynomialToNTT__(NTTValue* const out,
-                                            const typename P::T* const in,
-                                            CuNTTHandler<P::n> ntt)
+                                             const typename P::T* const in,
+                                             CuNTTHandler<P::n> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t num_threads = N / 2;
@@ -170,8 +167,7 @@ __global__ void __HalfTRGSWPolynomialToNTT__(NTTValue* const out,
         SmallForwardNTT<P::nbit>(sh_ntt, ntt.forward_root_, tid);
     }
     else {
-        for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
-            __syncthreads();
+        for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++) __syncthreads();
     }
 
     if (tid < num_threads) {
@@ -206,8 +202,9 @@ __global__ void __TRLWEAddInPlace__(typename P::T* const out,
 }
 
 template <class P>
-__device__ inline void __AutomorphismPolynomial__(
-    typename P::T* const out, const typename P::T* const in, const uint32_t d)
+__device__ inline void __AutomorphismPolynomial__(typename P::T* const out,
+                                                  const typename P::T* const in,
+                                                  const uint32_t d)
 {
     const uint32_t tid = ThisThreadRankInBlock();
     constexpr uint32_t N = P::n;
@@ -251,8 +248,8 @@ __device__ inline typename P::T __TorusFromNTT__(const NTTValue value)
 template <class P>
 __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
     typename P::T* const out, const typename P::T* const poly,
-    const typename P::T* const auto_b, const NTTValue* const halftrgswfft,
-    NTTValue* const sh_acc_ntt, const CuNTTHandler<P::n> ntt)
+    const NTTValue* const halftrgswfft, NTTValue* const sh_acc_ntt,
+    const CuNTTHandler<P::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
     constexpr uint32_t N = P::n;
@@ -262,8 +259,7 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
 #ifdef USE_GPU_FFT
     constexpr uint32_t fft_threads = half_n >> 1;
 #else
-    constexpr uint32_t fft_threads =
-        half_n / (Degree<N>::opt / 2);
+    constexpr uint32_t fft_threads = half_n / (Degree<N>::opt / 2);
 #endif
 
     NTTValue* const sh_fft = &sh_acc_ntt[0];
@@ -282,8 +278,8 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
             : static_cast<typename P::T>(0);
     constexpr typename P::T decomp_mask =
         (static_cast<typename P::T>(1) << P::Bgbit) - 1;
-    constexpr typename P::T decomp_half =
-        static_cast<typename P::T>(1) << (P::Bgbit - 1);
+    constexpr typename P::T decomp_half = static_cast<typename P::T>(1)
+                                          << (P::Bgbit - 1);
 
     for (uint32_t digit = 0; digit < P::l; digit++) {
         if (tid < half_n) {
@@ -291,15 +287,13 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
             typename P::T temp_im =
                 poly[tid + half_n] + decomp_offset + roundoffset;
             const int32_t digit_re = static_cast<int32_t>(
-                ((temp_re >>
-                  (std::numeric_limits<typename P::T>::digits -
-                   (digit + 1) * P::Bgbit)) &
+                ((temp_re >> (std::numeric_limits<typename P::T>::digits -
+                              (digit + 1) * P::Bgbit)) &
                  decomp_mask) -
                 decomp_half);
             const int32_t digit_im = static_cast<int32_t>(
-                ((temp_im >>
-                  (std::numeric_limits<typename P::T>::digits -
-                   (digit + 1) * P::Bgbit)) &
+                ((temp_im >> (std::numeric_limits<typename P::T>::digits -
+                              (digit + 1) * P::Bgbit)) &
                  decomp_mask) -
                 decomp_half);
             NTTValue folded = {static_cast<double>(digit_re),
@@ -332,8 +326,7 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
             const NTTValue fft_val = sh_fft[tid];
             for (uint32_t out_k = 0; out_k <= P::k; out_k++) {
                 const size_t key_offset =
-                    (static_cast<size_t>(digit) * (P::k + 1) + out_k) *
-                        half_n +
+                    (static_cast<size_t>(digit) * (P::k + 1) + out_k) * half_n +
                     tid;
                 const NTTValue key_val = __ldg(&halftrgswfft[key_offset]);
                 sh_accum[out_k * half_n + tid] += fft_val * key_val;
@@ -368,15 +361,8 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
 #endif
             const typename P::T lo = __TorusFromDouble__<P>(val.x);
             const typename P::T hi = __TorusFromDouble__<P>(val.y);
-            if (k_idx == P::k) {
-                out[k_idx * N + tid] = auto_b[tid] - lo;
-                out[k_idx * N + tid + half_n] =
-                    auto_b[tid + half_n] - hi;
-            }
-            else {
-                out[k_idx * N + tid] = -lo;
-                out[k_idx * N + tid + half_n] = -hi;
-            }
+            out[k_idx * N + tid] -= lo;
+            out[k_idx * N + tid + half_n] -= hi;
         }
         __syncthreads();
     }
@@ -385,8 +371,8 @@ __device__ inline void __ExternalProductPolyHalfTRGSWFFT__(
 template <class P>
 __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
     typename P::T* const out, const typename P::T* const poly,
-    const typename P::T* const auto_b, const NTTValue* const halftrgswntt,
-    NTTValue* const sh_acc_ntt, const CuNTTHandler<P::n> ntt)
+    const NTTValue* const halftrgswntt, NTTValue* const sh_acc_ntt,
+    const CuNTTHandler<P::n> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
     constexpr uint32_t N = P::n;
@@ -407,8 +393,8 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
             : static_cast<typename P::T>(0);
     constexpr typename P::T decomp_mask =
         (static_cast<typename P::T>(1) << P::Bgbit) - 1;
-    constexpr typename P::T decomp_half =
-        static_cast<typename P::T>(1) << (P::Bgbit - 1);
+    constexpr typename P::T decomp_half = static_cast<typename P::T>(1)
+                                          << (P::Bgbit - 1);
 
     for (uint32_t digit = 0; digit < P::l; digit++) {
         if (tid < num_threads) {
@@ -417,9 +403,8 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
                 const uint32_t i = tid + e * num_threads;
                 typename P::T temp = poly[i] + decomp_offset + roundoffset;
                 const int32_t digit_val = static_cast<int32_t>(
-                    ((temp >>
-                      (std::numeric_limits<typename P::T>::digits -
-                       (digit + 1) * P::Bgbit)) &
+                    ((temp >> (std::numeric_limits<typename P::T>::digits -
+                               (digit + 1) * P::Bgbit)) &
                      decomp_mask) -
                     decomp_half);
                 sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
@@ -470,10 +455,7 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
             for (int e = 0; e < 2; e++) {
                 const uint32_t i = tid + e * num_threads;
                 const typename P::T val = __TorusFromNTT__<P>(sh_inv[i]);
-                if (k_idx == P::k)
-                    out[k_idx * N + i] = auto_b[i] - val;
-                else
-                    out[k_idx * N + i] = -val;
+                out[k_idx * N + i] -= val;
             }
         }
         __syncthreads();
@@ -482,31 +464,42 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
 #endif  // USE_FFT
 
 template <class P>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>)
-void __EvalAutoKernel__(typename P::T* const out,
-                        const typename P::T* const in, const uint32_t d,
-                        const NTTValue* const evalautokey,
-                        const CuNTTHandler<P::n> ntt)
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>) void __EvalAutoKernel__(
+    typename P::T* const out, const typename P::T* const in, const uint32_t d,
+    const NTTValue* const evalautokey, const CuNTTHandler<P::n> ntt)
 {
-    static_assert(P::k == 1,
-                  "CUDA EvalAuto currently supports GLWE dimension 1");
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<P>;
     auto* sh_acc_ntt = reinterpret_cast<NTTValue*>(dyn_sh);
-    auto* auto_a = reinterpret_cast<typename P::T*>(dyn_sh + fft_bytes);
-    auto* auto_b = auto_a + P::n;
+    auto* auto_poly = reinterpret_cast<typename P::T*>(dyn_sh + fft_bytes);
+    const uint32_t tid = ThisThreadRankInBlock();
+    const uint32_t bdim = ThisBlockSize();
+    constexpr uint32_t total = (P::k + 1) * P::n;
+#if defined(USE_FFT)
+    constexpr uint32_t transform_size = P::n / 2;
+#else
+    constexpr uint32_t transform_size = P::n;
+#endif
+    constexpr size_t halftrgsw_elems =
+        static_cast<size_t>(P::l) * (P::k + 1) * transform_size;
 
-    __AutomorphismPolynomial__<P>(auto_a, in, d);
-    __AutomorphismPolynomial__<P>(auto_b, in + P::n, d);
+    for (uint32_t i = tid; i < total; i += bdim) out[i] = 0;
+    __AutomorphismPolynomial__<P>(out + P::k * P::n, in + P::k * P::n, d);
     __syncthreads();
 
+    for (uint32_t key_idx = 0; key_idx < P::k; key_idx++) {
+        __AutomorphismPolynomial__<P>(auto_poly, in + key_idx * P::n, d);
+        __syncthreads();
 #if defined(USE_FFT)
-    __ExternalProductPolyHalfTRGSWFFT__<P>(out, auto_a, auto_b, evalautokey,
-                                           sh_acc_ntt, ntt);
+        __ExternalProductPolyHalfTRGSWFFT__<P>(
+            out, auto_poly, evalautokey + key_idx * halftrgsw_elems, sh_acc_ntt,
+            ntt);
 #else
-    __ExternalProductPolyHalfTRGSWNTT__<P>(out, auto_a, auto_b, evalautokey,
-                                           sh_acc_ntt, ntt);
+        __ExternalProductPolyHalfTRGSWNTT__<P>(
+            out, auto_poly, evalautokey + key_idx * halftrgsw_elems, sh_acc_ntt,
+            ntt);
 #endif
+    }
 }
 
 template <class P>
@@ -562,39 +555,52 @@ __global__ void __TRLWEAddInPlaceBatch__(typename P::T* const out,
 }
 
 template <class P>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>)
-void __EvalAutoBatchKernel__(typename P::T* const out,
-                             const size_t out_stride,
-                             const typename P::T* const in,
-                             const size_t in_stride, const uint32_t d,
-                             const NTTValue* const evalautokey,
-                             const CuNTTHandler<P::n> ntt,
-                             const size_t batch_count)
+__global__
+__launch_bounds__(NUM_THREAD4HOMGATE<P>) void __EvalAutoBatchKernel__(
+    typename P::T* const out, const size_t out_stride,
+    const typename P::T* const in, const size_t in_stride, const uint32_t d,
+    const NTTValue* const evalautokey, const CuNTTHandler<P::n> ntt,
+    const size_t batch_count)
 {
     const size_t batch = blockIdx.x;
     if (batch >= batch_count) return;
 
-    static_assert(P::k == 1,
-                  "CUDA EvalAuto currently supports GLWE dimension 1");
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<P>;
     auto* sh_acc_ntt = reinterpret_cast<NTTValue*>(dyn_sh);
-    auto* auto_a = reinterpret_cast<typename P::T*>(dyn_sh + fft_bytes);
-    auto* auto_b = auto_a + P::n;
+    auto* auto_poly = reinterpret_cast<typename P::T*>(dyn_sh + fft_bytes);
 
     const typename P::T* const batch_in = in + batch * in_stride;
     typename P::T* const batch_out = out + batch * out_stride;
-    __AutomorphismPolynomial__<P>(auto_a, batch_in, d);
-    __AutomorphismPolynomial__<P>(auto_b, batch_in + P::n, d);
+    const uint32_t tid = ThisThreadRankInBlock();
+    const uint32_t bdim = ThisBlockSize();
+    constexpr uint32_t total = (P::k + 1) * P::n;
+#if defined(USE_FFT)
+    constexpr uint32_t transform_size = P::n / 2;
+#else
+    constexpr uint32_t transform_size = P::n;
+#endif
+    constexpr size_t halftrgsw_elems =
+        static_cast<size_t>(P::l) * (P::k + 1) * transform_size;
+
+    for (uint32_t i = tid; i < total; i += bdim) batch_out[i] = 0;
+    __AutomorphismPolynomial__<P>(batch_out + P::k * P::n,
+                                  batch_in + P::k * P::n, d);
     __syncthreads();
 
+    for (uint32_t key_idx = 0; key_idx < P::k; key_idx++) {
+        __AutomorphismPolynomial__<P>(auto_poly, batch_in + key_idx * P::n, d);
+        __syncthreads();
 #if defined(USE_FFT)
-    __ExternalProductPolyHalfTRGSWFFT__<P>(
-        batch_out, auto_a, auto_b, evalautokey, sh_acc_ntt, ntt);
+        __ExternalProductPolyHalfTRGSWFFT__<P>(
+            batch_out, auto_poly, evalautokey + key_idx * halftrgsw_elems,
+            sh_acc_ntt, ntt);
 #else
-    __ExternalProductPolyHalfTRGSWNTT__<P>(
-        batch_out, auto_a, auto_b, evalautokey, sh_acc_ntt, ntt);
+        __ExternalProductPolyHalfTRGSWNTT__<P>(
+            batch_out, auto_poly, evalautokey + key_idx * halftrgsw_elems,
+            sh_acc_ntt, ntt);
 #endif
+    }
 }
 
 template <class P>
@@ -626,8 +632,6 @@ template <class P>
 void AnnihilateKeyPolynomialToDevice(const AnnihilateKeyPolynomial<P>& ahk,
                                      const int gpuNum)
 {
-    static_assert(P::k == 1,
-                  "CUDA annihilate currently supports GLWE dimension 1");
     static_assert(P::l̅ == 1 && P::l̅ₐ == 1,
                   "CUDA annihilate currently supports standard decomposition");
     auto& storage = AnnihilateKeyStorage<P>();
@@ -661,11 +665,11 @@ void AnnihilateKeyPolynomialToDevice(const AnnihilateKeyPolynomial<P>& ahk,
         CuSafeCall(cudaMemcpy(d_poly, packed.data(), poly_bytes,
                               cudaMemcpyHostToDevice));
 #if defined(USE_FFT)
-        __HalfTRGSWPolynomialToFFT__<P><<<rows, P::n / 2>>>(
-            storage[i], d_poly, *AnnihilateHandler<P>(i));
+        __HalfTRGSWPolynomialToFFT__<P>
+            <<<rows, P::n / 2>>>(storage[i], d_poly, *AnnihilateHandler<P>(i));
 #else
-        __HalfTRGSWPolynomialToNTT__<P><<<rows, P::n / 2>>>(
-            storage[i], d_poly, *AnnihilateHandler<P>(i));
+        __HalfTRGSWPolynomialToNTT__<P>
+            <<<rows, P::n / 2>>>(storage[i], d_poly, *AnnihilateHandler<P>(i));
 #endif
         CuCheckError();
         CuSafeCall(cudaFree(d_poly));
@@ -684,28 +688,28 @@ void DeleteAnnihilateKey(const int gpuNum)
 }
 
 template <class P>
-void AnnihilateKeySwitchingWithWorkspace(
-    typename P::T* const out, const typename P::T* const in,
-    typename P::T* const evaledauto, const cudaStream_t st, const int gpuNum)
+void AnnihilateKeySwitchingWithWorkspace(typename P::T* const out,
+                                         const typename P::T* const in,
+                                         typename P::T* const evaledauto,
+                                         const cudaStream_t st,
+                                         const int gpuNum)
 {
-    static_assert(P::k == 1,
-                  "CUDA annihilate currently supports GLWE dimension 1");
     cudaSetDevice(gpuNum);
     auto& storage = AnnihilateKeyStorage<P>();
     const NTTValue* const ahk = storage[gpuNum];
     auto* const handler = AnnihilateHandler<P>(gpuNum);
 
     constexpr size_t trlwe_bytes = (P::k + 1) * P::n * sizeof(typename P::T);
-    CuSafeCall(cudaMemcpyAsync(out, in, trlwe_bytes, cudaMemcpyDeviceToDevice,
-                               st));
+    CuSafeCall(
+        cudaMemcpyAsync(out, in, trlwe_bytes, cudaMemcpyDeviceToDevice, st));
 
     constexpr size_t evalauto_key_elems = EvalAutoKeyElements<P>();
-    constexpr size_t shmem = MEM4HOMGATE<P> + 2 * P::n * sizeof(typename P::T);
+    constexpr size_t shmem = MEM4HOMGATE<P> + P::n * sizeof(typename P::T);
     static bool evalauto_attribute_set = false;
     if (!evalauto_attribute_set) {
         CuSafeCall(cudaFuncSetAttribute(
-            __EvalAutoKernel__<P>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+            __EvalAutoKernel__<P>, cudaFuncAttributeMaxDynamicSharedMemorySize,
+            shmem));
         evalauto_attribute_set = true;
     }
 
@@ -714,8 +718,8 @@ void AnnihilateKeySwitchingWithWorkspace(
         const uint32_t d = (1U << (bit + 1)) + 1U;
         __EvalAutoKernel__<P><<<1, NUM_THREAD4HOMGATE<P>, shmem, st>>>(
             evaledauto, out, d, ahk + bit * evalauto_key_elems, *handler);
-        __TRLWEAddInPlace__<P><<<1, NUM_THREAD4HOMGATE<P>, 0, st>>>(
-            out, evaledauto);
+        __TRLWEAddInPlace__<P>
+            <<<1, NUM_THREAD4HOMGATE<P>, 0, st>>>(out, evaledauto);
     }
 
     CuCheckError();
@@ -728,8 +732,6 @@ void AnnihilateKeySwitchingBatchWithWorkspace(
     typename P::T* const evaledauto, const size_t evaledauto_stride,
     const size_t batch_count, const cudaStream_t st, const int gpuNum)
 {
-    static_assert(P::k == 1,
-                  "CUDA annihilate currently supports GLWE dimension 1");
     if (batch_count == 0) return;
 
     cudaSetDevice(gpuNum);
@@ -738,7 +740,7 @@ void AnnihilateKeySwitchingBatchWithWorkspace(
     auto* const handler = AnnihilateHandler<P>(gpuNum);
 
     constexpr size_t evalauto_key_elems = EvalAutoKeyElements<P>();
-    constexpr size_t shmem = MEM4HOMGATE<P> + 2 * P::n * sizeof(typename P::T);
+    constexpr size_t shmem = MEM4HOMGATE<P> + P::n * sizeof(typename P::T);
     static bool evalauto_batch_attribute_set = false;
     if (!evalauto_batch_attribute_set) {
         CuSafeCall(cudaFuncSetAttribute(
@@ -747,13 +749,12 @@ void AnnihilateKeySwitchingBatchWithWorkspace(
         evalauto_batch_attribute_set = true;
     }
 
-    __CopyTRLWEBatch__<P>
-        <<<batch_count, NUM_THREAD4HOMGATE<P>, 0, st>>>(
-            out, out_stride, in, in_stride, batch_count);
+    __CopyTRLWEBatch__<P><<<batch_count, NUM_THREAD4HOMGATE<P>, 0, st>>>(
+        out, out_stride, in, in_stride, batch_count);
     for (uint32_t bit = 0; bit < P::nbit; bit++) {
         __DivideTRLWEBy2Batch__<P>
-            <<<batch_count, NUM_THREAD4HOMGATE<P>, 0, st>>>(
-                out, out_stride, batch_count);
+            <<<batch_count, NUM_THREAD4HOMGATE<P>, 0, st>>>(out, out_stride,
+                                                            batch_count);
         const uint32_t d = (1U << (bit + 1)) + 1U;
         __EvalAutoBatchKernel__<P>
             <<<batch_count, NUM_THREAD4HOMGATE<P>, shmem, st>>>(
@@ -780,23 +781,23 @@ void AnnihilateKeySwitching(typename P::T* const out,
 }
 
 #define INST(P)                                                              \
-    template void AnnihilateKeyPolynomialGen<P>(                             \
-        AnnihilateKeyPolynomial<P>&, const TFHEpp::Key<P>&);                 \
-    template void AnnihilateKeyPolynomialGen<P>(                             \
-        AnnihilateKeyPolynomial<P>&, const TFHEpp::SecretKey&);              \
+    template void AnnihilateKeyPolynomialGen<P>(AnnihilateKeyPolynomial<P>&, \
+                                                const TFHEpp::Key<P>&);      \
+    template void AnnihilateKeyPolynomialGen<P>(AnnihilateKeyPolynomial<P>&, \
+                                                const TFHEpp::SecretKey&);   \
     template void AnnihilateKeyPolynomialToDevice<P>(                        \
         const AnnihilateKeyPolynomial<P>&, const int);                       \
     template void DeleteAnnihilateKey<P>(const int);                         \
     template void AnnihilateKeySwitchingWithWorkspace<P>(                    \
-        typename P::T* const, const typename P::T* const, typename P::T* const, \
-        const cudaStream_t, const int);                                       \
+        typename P::T* const, const typename P::T* const,                    \
+        typename P::T* const, const cudaStream_t, const int);                \
     template void AnnihilateKeySwitchingBatchWithWorkspace<P>(               \
-        typename P::T* const, const size_t, const typename P::T* const,       \
-        const size_t, typename P::T* const, const size_t, const size_t,       \
+        typename P::T* const, const size_t, const typename P::T* const,      \
+        const size_t, typename P::T* const, const size_t, const size_t,      \
         const cudaStream_t, const int);                                      \
-    template void AnnihilateKeySwitching<P>(                                 \
-        typename P::T* const, const typename P::T* const, const cudaStream_t, \
-        const int)
+    template void AnnihilateKeySwitching<P>(typename P::T* const,            \
+                                            const typename P::T* const,      \
+                                            const cudaStream_t, const int)
 
 INST(TFHEpp::lvl1param);
 #if !defined(USE_BLOCK_BINARY) && !defined(USE_CONCRETE)
@@ -805,6 +806,9 @@ INST(TFHEpp::AHlvl1param);
 INST(TFHEpp::lvl2param);
 #if !defined(USE_BLOCK_BINARY) && !defined(USE_CONCRETE)
 INST(TFHEpp::AHlvl2param);
+#endif
+#ifdef USE_DIFFERENT_AH_PARAM
+INST(TFHEpp::cbAHlvl2param);
 #endif
 
 #undef INST

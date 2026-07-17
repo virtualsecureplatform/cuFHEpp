@@ -5,13 +5,12 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <include/aes_gpu.cuh>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <vector>
-
-#include <include/aes_gpu.cuh>
 
 namespace {
 
@@ -31,8 +30,8 @@ void encrypt_block_as_bits(std::array<TFHEpp::TLWE<P>, 128>& out,
         for (std::size_t bit = 0; bit < 8; bit++) {
             TFHEpp::tlweSymEncrypt<P>(
                 out[byte * 8 + bit],
-                ((bytes[byte] >> bit) & 1U) ? bit_mu<P>() : -bit_mu<P>(),
-                0.0, sk.key.get<P>());
+                ((bytes[byte] >> bit) & 1U) ? bit_mu<P>() : -bit_mu<P>(), 0.0,
+                sk.key.get<P>());
         }
     }
 }
@@ -42,16 +41,15 @@ void encrypt_expanded_aes_key(
     std::array<std::array<TFHEpp::TLWE<P>, 128>, TFHEpp::Nr + 1>& out,
     const std::array<uint8_t, 16>& key, const TFHEpp::SecretKey& sk)
 {
-    std::array<uint8_t, 4 * TFHEpp::Nb *(TFHEpp::Nr + 1)> expanded;
+    std::array<uint8_t, 4 * TFHEpp::Nb*(TFHEpp::Nr + 1)> expanded;
     TFHEpp::KeyExpansion(expanded, key);
     for (std::size_t round = 0; round < TFHEpp::Nr + 1; round++) {
         for (std::size_t byte = 0; byte < 16; byte++) {
             for (std::size_t bit = 0; bit < 8; bit++) {
                 TFHEpp::tlweSymEncrypt<P>(
                     out[round][byte * 8 + bit],
-                    ((expanded[round * 16 + byte] >> bit) & 1U)
-                        ? bit_mu<P>()
-                        : -bit_mu<P>(),
+                    ((expanded[round * 16 + byte] >> bit) & 1U) ? bit_mu<P>()
+                                                                : -bit_mu<P>(),
                     0.0, sk.key.get<P>());
             }
         }
@@ -60,8 +58,7 @@ void encrypt_expanded_aes_key(
 
 template <class P>
 std::array<uint8_t, 16> decrypt_block_bits(
-    const std::array<TFHEpp::TLWE<P>, 128>& bits,
-    const TFHEpp::SecretKey& sk)
+    const std::array<TFHEpp::TLWE<P>, 128>& bits, const TFHEpp::SecretKey& sk)
 {
     std::array<uint8_t, 16> bytes = {};
     for (std::size_t byte = 0; byte < bytes.size(); byte++) {
@@ -77,9 +74,15 @@ std::array<uint8_t, 16> decrypt_block_bits(
 
 int main()
 {
+#if defined(USE_DIFFERENT_BR_PARAM) && defined(USE_DIFFERENT_AH_PARAM)
+    using brP = TFHEpp::cblvl02param;
+    using iksP = TFHEpp::lvl20param;
+    using ahP = TFHEpp::cbAHlvl2param;
+#else
     using brP = TFHEpp::lvlh2param;
     using iksP = TFHEpp::lvl2hparam;
     using ahP = TFHEpp::AHlvl2param;
+#endif
     using P = typename brP::targetP;
 
     const std::array<uint8_t, 16> key = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
@@ -104,9 +107,8 @@ int main()
     ek.emplaceiksk<iksP>(sk);
 
     auto enc_cipher = std::make_unique<std::array<TFHEpp::TLWE<P>, 128>>();
-    auto enc_expanded_key =
-        std::make_unique<std::array<std::array<TFHEpp::TLWE<P>, 128>,
-                                    TFHEpp::Nr + 1>>();
+    auto enc_expanded_key = std::make_unique<
+        std::array<std::array<TFHEpp::TLWE<P>, 128>, TFHEpp::Nr + 1>>();
     auto enc_plain = std::make_unique<std::array<TFHEpp::TLWE<P>, 128>>();
 
     encrypt_block_as_bits<P>(*enc_cipher, cipher, sk);
@@ -118,8 +120,8 @@ int main()
     cufhe::Stream st;
     st.Create();
     const auto aes_start = std::chrono::steady_clock::now();
-    cufhe::AESDec<iksP, brP, ahP>(*enc_plain, *enc_cipher,
-                                  *enc_expanded_key, ek, st);
+    cufhe::AESDec<iksP, brP, ahP>(*enc_plain, *enc_cipher, *enc_expanded_key,
+                                  ek, st);
     const auto aes_end = std::chrono::steady_clock::now();
     st.Destroy();
     cufhe::CleanUpAES<brP, ahP>();
@@ -136,7 +138,7 @@ int main()
                       << static_cast<int>(byte);
         std::cerr << std::dec << std::endl;
     }
-    assert(decrypted == plain);
+    if (decrypted != plain) return 1;
     const double aes_ms =
         std::chrono::duration<double, std::milli>(aes_end - aes_start).count();
     std::cout << "GPU AES decrypt elapsed: " << aes_ms << " ms" << std::endl;
