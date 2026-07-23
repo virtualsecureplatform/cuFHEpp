@@ -172,7 +172,7 @@ void TRGSW2NTT(cuFHETRGSWNTTlvl1& trgswntt,
                     cudaMemcpyHostToDevice, st.st());
 
     constexpr uint32_t num_threads = lvl1param::n >> 1;  // N/2
-    dim3 grid(1, (lvl1param::k + 1) * lvl1param::l * (lvl1param::k + 1), 1);
+    dim3 grid(1, BootstrappingTRGSWRows<lvl1param> * (lvl1param::k + 1), 1);
     dim3 block(num_threads);
     __TRGSW2FFT__<<<grid, block, 0, st.st()>>>(
         trgswntt.trgswdevices[st.device_id()], d_trgsw,
@@ -386,7 +386,8 @@ void BootstrappingKeyFlatToNTT_lvl02(
     using tgtP = TFHEpp::lvl2param;
     constexpr uint32_t N = tgtP::n;
     constexpr uint32_t HALF_N = N >> 1;
-    constexpr uint32_t trgsw_polys = (tgtP::k + 1) * tgtP::l * (tgtP::k + 1);
+    constexpr uint32_t trgsw_polys =
+        BootstrappingTRGSWRows<tgtP> * (tgtP::k + 1);
 
     size_t fft_elems = static_cast<size_t>(num_elements) * trgsw_polys * HALF_N;
 
@@ -428,8 +429,9 @@ __global__ void __TRGSW2NTT__(NTTValue* const bk_ntt,
                               CuNTTHandler<P::n> ntt)
 {
     __shared__ NTTValue sh_temp[P::n];
-    const int index = blockIdx.z * ((P::k + 1) * P::l * (P::k + 1) * P::n) +
-                      blockIdx.y * (P::k + 1) * P::n + blockIdx.x * P::n;
+    const int index =
+        blockIdx.z * (BootstrappingTRGSWRows<P> * (P::k + 1) * P::n) +
+        blockIdx.y * (P::k + 1) * P::n + blockIdx.x * P::n;
     const uint32_t tid = threadIdx.x;
     const uint32_t bdim = blockDim.x;
     // Load and convert each element: Torus -> NTT mod
@@ -457,7 +459,7 @@ void TRGSW2NTT(cuFHETRGSWNTTlvl1& trgswntt,
                     cudaMemcpyHostToDevice, st.st());
 
     constexpr uint32_t num_threads = lvl1param::n >> 1;  // N/2
-    dim3 grid(lvl1param::k + 1, (lvl1param::k + 1) * lvl1param::l, 1);
+    dim3 grid(lvl1param::k + 1, BootstrappingTRGSWRows<lvl1param>, 1);
     dim3 block(num_threads);
     __TRGSW2NTT__<<<grid, block, 0, st.st()>>>(
         trgswntt.trgswdevices[st.device_id()], d_trgsw,
@@ -505,8 +507,9 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
         cudaSetDevice(i);
 
         cudaMalloc((void**)&bk_storage[i],
-                   sizeof(NTTValue) * P::domainP::n * (P::targetP::k + 1) *
-                       P::targetP::l * (P::targetP::k + 1) * N);
+                   sizeof(NTTValue) * P::domainP::n *
+                       BootstrappingTRGSWRows<typename P::targetP> *
+                       (P::targetP::k + 1) * N);
 
         typename P::targetP::T* d_bk;
         cudaMalloc((void**)&d_bk, sizeof(bk));
@@ -515,8 +518,8 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
         cudaDeviceSynchronize();
         CuCheckError();
 
-        dim3 grid(P::targetP::k + 1, (P::targetP::k + 1) * P::targetP::l,
-                  P::domainP::n);
+        dim3 grid(P::targetP::k + 1,
+                  BootstrappingTRGSWRows<typename P::targetP>, P::domainP::n);
         dim3 block(N >> NTT_THREAD_UNITBIT);
         if constexpr (N == TFHEpp::lvl2param::n) {
             __TRGSW2NTT__<typename P::targetP>
@@ -554,7 +557,7 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
     constexpr uint32_t bk_elements_per_pair =
         (1 << P::Addends) - 1;  // 3 for Addends=2
     constexpr uint32_t trgsw_polys =
-        (P::targetP::k + 1) * P::targetP::l * (P::targetP::k + 1);
+        BootstrappingTRGSWRows<typename P::targetP> * (P::targetP::k + 1);
     constexpr size_t total_ntt_elems =
         static_cast<size_t>(num_pairs) * bk_elements_per_pair * trgsw_polys * N;
 
@@ -581,7 +584,8 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
         cudaDeviceSynchronize();
         CuCheckError();
 
-        dim3 grid(P::targetP::k + 1, (P::targetP::k + 1) * P::targetP::l,
+        dim3 grid(P::targetP::k + 1,
+                  BootstrappingTRGSWRows<typename P::targetP>,
                   num_pairs * bk_elements_per_pair);
         dim3 block(N >> NTT_THREAD_UNITBIT);
         if constexpr (N == TFHEpp::lvl2param::n) {
@@ -657,7 +661,8 @@ void BootstrappingKeyFlatToNTT_lvl02(
 {
     using tgtP = TFHEpp::lvl2param;
     constexpr uint32_t N = tgtP::n;
-    constexpr uint32_t trgsw_polys = (tgtP::k + 1) * tgtP::l * (tgtP::k + 1);
+    constexpr uint32_t trgsw_polys =
+        BootstrappingTRGSWRows<tgtP> * (tgtP::k + 1);
 
     size_t ntt_elems = static_cast<size_t>(num_elements) * trgsw_polys * N;
 
@@ -675,7 +680,7 @@ void BootstrappingKeyFlatToNTT_lvl02(
         cudaDeviceSynchronize();
         CuCheckError();
 
-        dim3 grid(tgtP::k + 1, (tgtP::k + 1) * tgtP::l, num_elements);
+        dim3 grid(tgtP::k + 1, BootstrappingTRGSWRows<tgtP>, num_elements);
         dim3 block(N >> NTT_THREAD_UNITBIT);
         __TRGSW2NTT__<tgtP>
             <<<grid, block>>>(bk_ntts_lvl02[i], d_bk, *ntt_handlers_lvl02[i]);

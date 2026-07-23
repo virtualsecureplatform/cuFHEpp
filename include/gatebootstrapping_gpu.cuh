@@ -657,6 +657,145 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
         __syncthreads();
     }
 }
+
+#ifdef USE_BLOCK_BINARY
+template <class P>
+__device__ inline void AccumulateBlockBinary(
+    typename P::targetP::T* const trlwe, NTTValue* const sh_acc_ntt,
+    const uint32_t block, const uint32_t* const bara, const NTTValue* const bk,
+    const CuNTTHandler<P::targetP::n> ntt)
+{
+    using targetP = typename P::targetP;
+    using T = typename targetP::T;
+    constexpr uint32_t N = targetP::n;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr uint32_t ROWS = BootstrappingTRGSWRows<targetP>;
+    constexpr size_t TRGSW_SIZE = ROWS * (targetP::k + 1) * N;
+    static_assert(P::domainP::ell > 1);
+    static_assert(
+        targetP::l̅ == 1 && targetP::l̅ₐ == 1,
+        "Block-binary GPU bootstrapping requires single decomposition");
+
+    const uint32_t tid = ThisThreadRankInBlock();
+    const NTTValue* const xai_ntt =
+        N == TFHEpp::lvl1param::n ? block_xai_fft : block_xai_fft_lvl02;
+    NTTValue* const sh_work = &sh_acc_ntt[0];
+    NTTValue* const sh_accum = &sh_acc_ntt[N];
+
+    if (tid < NUM_THREADS) {
+        for (int component = 0; component <= targetP::k; component++) {
+            sh_accum[component * N + tid] = 0;
+            sh_accum[component * N + tid + NUM_THREADS] = 0;
+        }
+    }
+    __syncthreads();
+
+    for (int component = 0; component <= targetP::k; component++) {
+        const bool nonce = component < targetP::k;
+        const uint32_t digits = nonce ? targetP::lₐ : targetP::l;
+        const uint32_t basebit = nonce ? targetP::Bgₐbit : targetP::Bgbit;
+        const uint32_t base = nonce ? targetP::Bgₐ : targetP::Bg;
+        const uint32_t mask = base - 1;
+        const int32_t halfbase = base >> 1;
+        T decomp_offset = 0;
+        for (uint32_t digit = 1; digit <= digits; digit++)
+            decomp_offset +=
+                static_cast<T>(halfbase)
+                << (std::numeric_limits<T>::digits - digit * basebit);
+        const T roundoffset =
+            static_cast<T>(1)
+            << (std::numeric_limits<T>::digits - digits * basebit - 1);
+
+        for (uint32_t digit = 0; digit < digits; digit++) {
+            if (tid < NUM_THREADS) {
+#pragma unroll
+                for (int e = 0; e < 2; e++) {
+                    const int i = tid + e * NUM_THREADS;
+                    const T value =
+                        trlwe[component * N + i] + decomp_offset + roundoffset;
+                    const int32_t decomposed =
+                        static_cast<int32_t>(
+                            (value >> (std::numeric_limits<T>::digits -
+                                       (digit + 1) * basebit)) &
+                            mask) -
+                        halfbase;
+                    sh_work[i] = signed_int_to_ntt_mod<N>(decomposed);
+                }
+            }
+            __syncthreads();
+
+            if (tid < NUM_THREADS) {
+                SmallForwardNTT<targetP::nbit>(sh_work, ntt.forward_root_, tid);
+            }
+            else {
+                for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+                    __syncthreads();
+            }
+
+            const uint32_t row = nonce ? component * targetP::lₐ + digit
+                                       : targetP::k * targetP::lₐ + digit;
+            if (tid < NUM_THREADS) {
+#pragma unroll
+                for (int e = 0; e < 2; e++) {
+                    const int i = tid + e * NUM_THREADS;
+                    const NTTValue decomposition = sh_work[i];
+#pragma unroll
+                    for (int out_component = 0; out_component <= targetP::k;
+                         out_component++) {
+                        NTTValue block_product = 0;
+#pragma unroll
+                        for (uint32_t offset = 0; offset < P::domainP::ell;
+                             offset++) {
+                            const size_t key_index =
+                                block * P::domainP::ell + offset;
+                            const size_t poly_index =
+                                (row * (targetP::k + 1) + out_component) * N +
+                                i;
+                            const NTTValue bk_value =
+                                __ldg(&bk[key_index * TRGSW_SIZE + poly_index]);
+                            const NTTValue xai =
+                                __ldg(&xai_ntt[bara[offset] * N + i]);
+                            block_product = small_mod_add<N>(
+                                block_product,
+                                small_mod_mult<N>(bk_value, xai));
+                        }
+                        sh_accum[out_component * N + i] = small_mod_add<N>(
+                            sh_accum[out_component * N + i],
+                            small_mod_mult<N>(decomposition, block_product));
+                    }
+                }
+            }
+            __syncthreads();
+        }
+    }
+
+    for (int component = 0; component <= targetP::k; component++) {
+        NTTValue* const sh_result = &sh_accum[component * N];
+        if (tid < NUM_THREADS) {
+            SmallInverseNTT<targetP::nbit>(sh_result, ntt.inverse_root_,
+                                           ntt.n_inverse_, tid);
+        }
+        else {
+            for (int s = 0; s < SmallInverseNTTSyncCount<N>(); s++)
+                __syncthreads();
+        }
+
+        if (tid < NUM_THREADS) {
+#pragma unroll
+            for (int e = 0; e < 2; e++) {
+                const int i = tid + e * NUM_THREADS;
+                if constexpr (std::numeric_limits<T>::digits == 64)
+                    trlwe[component * N + i] +=
+                        static_cast<T>(ntt_mod_to_torus64<N>(sh_result[i]));
+                else
+                    trlwe[component * N + i] +=
+                        static_cast<T>(ntt_mod_to_torus32<N>(sh_result[i]));
+            }
+        }
+        __syncthreads();
+    }
+}
+#endif
 #endif  // USE_FFT
 
 template <class P>

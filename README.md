@@ -20,7 +20,7 @@ By default, cuFHEpp uses a negacyclic FFT over double-precision complex numbers 
 
 Key bundle bootstrapping (`-DUSE_KEY_BUNDLE=ON`, default) processes 2 LWE bits per blind rotation step, reducing the number of iterations by half at the cost of a slightly more complex per-step computation. This yields a ~10-17% throughput improvement over the standard 1-bit blind rotation.
 
-Block-binary keys are available with `-DUSE_BLOCK_BINARY=ON`. This selects TFHEpp's block-binary parameters, enables subset key switching, disables incompatible key bundling, and uses a fused block external product for Boolean gates at levels 0 and 1. This configuration currently requires the custom GPU FFT backend (`USE_FFT=ON`, `USE_GPU_FFT=ON`). Circuit bootstrapping, AES, and ASCON targets are not built with block-binary parameters because those CUDA paths currently require GLWE dimension 1.
+Block-binary keys are available with `-DUSE_BLOCK_BINARY=ON`. This selects TFHEpp's block-binary parameters, enables subset key switching, disables incompatible key bundling, and uses a fused block external product for Boolean gates at levels 0 and 1. Both the custom GPU FFT backend (the default) and the NTT backend (`USE_FFT=OFF`) support block-binary bootstrapping. Circuit bootstrapping, AES, and ASCON targets are not built with block-binary parameters because those CUDA paths currently require GLWE dimension 1.
 
 ## Performance
 
@@ -99,6 +99,13 @@ For a block-binary build:
 cmake -B build-block -DENABLE_TEST=ON -DUSE_BLOCK_BINARY=ON
 cmake --build build-block
 ./build-block/test/test_block_binary_gpu
+```
+
+For block-binary keys with the NTT backend:
+```
+cmake -B build-block-ntt -DENABLE_TEST=ON -DUSE_BLOCK_BINARY=ON -DUSE_FFT=OFF
+cmake --build build-block-ntt
+./build-block-ntt/test/test_block_binary_gpu
 ```
 
 ### User Manual

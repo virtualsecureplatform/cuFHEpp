@@ -1000,6 +1000,17 @@ void InitializeXaiNTTForLength(std::vector<NTTValue*>& storage,
             <<<grid, block>>>(storage[i], params[i].forward_root);
         cudaDeviceSynchronize();
         CuCheckError();
+#ifdef USE_BLOCK_BINARY
+        NTTValue* const xai_ptr = storage[i];
+        if constexpr (N == TFHEpp::lvl1param::n) {
+            CuSafeCall(
+                cudaMemcpyToSymbol(block_xai_fft, &xai_ptr, sizeof(xai_ptr)));
+        }
+        else {
+            CuSafeCall(cudaMemcpyToSymbol(block_xai_fft_lvl02, &xai_ptr,
+                                          sizeof(xai_ptr)));
+        }
+#endif
     }
 }
 

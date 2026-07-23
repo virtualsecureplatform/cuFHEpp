@@ -27,6 +27,10 @@
 
 namespace cufhe {
 
+template <class P>
+inline constexpr uint32_t BootstrappingTRGSWRows =
+    P::k * P::lₐ * P::l̅ₐ + P::l * P::l̅;
+
 //=============================================================================
 // NTT Constants
 //=============================================================================
@@ -725,10 +729,6 @@ class CuSmallNTTHandler {
 
 // NTT value type: double2 complex for FFT
 using NTTValue = double2;
-
-template <class P>
-inline constexpr uint32_t BootstrappingTRGSWRows =
-    P::k * P::lₐ * P::l̅ₐ + P::l * P::l̅;
 
 // Thread configuration: still N/2 = 512 threads per block
 // (FFT uses 256 active threads, decomposition uses all 512)

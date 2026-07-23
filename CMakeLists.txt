@@ -53,15 +53,18 @@ if(USE_FFT)
 endif()
 
 option(USE_GPU_FFT "Use GPU-FFT library for negacyclic FFT" ON)
+if(NOT USE_FFT AND USE_GPU_FFT)
+  message(STATUS "USE_FFT=OFF selects the NTT backend; disabling USE_GPU_FFT")
+  set(USE_GPU_FFT OFF CACHE BOOL
+      "Use GPU-FFT library for negacyclic FFT" FORCE)
+endif()
 if(USE_GPU_FFT)
-  if(NOT USE_FFT)
-    message(FATAL_ERROR "USE_GPU_FFT=ON requires USE_FFT=ON")
-  endif()
   add_compile_definitions(USE_GPU_FFT)
 endif()
 
-if(USE_BLOCK_BINARY AND (NOT USE_FFT OR NOT USE_GPU_FFT))
-  message(FATAL_ERROR "USE_BLOCK_BINARY currently requires USE_FFT=ON and USE_GPU_FFT=ON")
+if(USE_BLOCK_BINARY AND USE_FFT AND NOT USE_GPU_FFT)
+  message(FATAL_ERROR
+      "Block-binary FFT builds require USE_GPU_FFT=ON; use USE_FFT=OFF for NTT")
 endif()
 
 if(USE_80BIT_SECURITY)
