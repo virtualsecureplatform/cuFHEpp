@@ -27,6 +27,13 @@ if(NOT USE_BLOCK_BINARY)
     target_link_libraries(test_backend_gate_bench cufhe_gpu ${CUDA_LIBRARIES})
 endif()
 
+if(NOT USE_FFT)
+    add_executable(test_small_modulus test_small_modulus.cu)
+    target_include_directories(test_small_modulus PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    set_target_properties(test_small_modulus PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_link_libraries(test_small_modulus cufhe_gpu ${CUDA_LIBRARIES})
+endif()
+
 add_executable(test_gate_gpu_lvl02 test_gate_gpu_lvl02.cc)
 target_include_directories(test_gate_gpu_lvl02 PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_link_libraries(test_gate_gpu_lvl02 cufhe_gpu ${CUDA_LIBRARIES})

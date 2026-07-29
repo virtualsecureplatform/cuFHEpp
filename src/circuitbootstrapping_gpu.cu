@@ -983,10 +983,9 @@ __device__ inline void ExternalProductTRLWE_TRGSWNTT(
                             (static_cast<size_t>(row) * (P::k + 1) + out_k) *
                                 N +
                             i;
-                        sh_accum[out_k * N + i] = small_mod_add<N>(
-                            sh_accum[out_k * N + i],
-                            small_mod_mult<N>(ntt_val,
-                                              __ldg(&trgswntt[key_offset])));
+                        sh_accum[out_k * N + i] = small_mod_madd<N>(
+                            ntt_val, __ldg(&trgswntt[key_offset]),
+                            sh_accum[out_k * N + i]);
                     }
                 }
             }

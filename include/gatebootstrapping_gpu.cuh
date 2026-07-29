@@ -615,9 +615,8 @@ __device__ inline void Accumulate(
                                         out_k)
                                        << P::targetP::nbit) +
                                       i]);
-                        sh_accum[out_k * N + i] = small_mod_add<N>(
-                            sh_accum[out_k * N + i],
-                            small_mod_mult<N>(ntt_val, bk_val));
+                        sh_accum[out_k * N + i] = small_mod_madd<N>(
+                            ntt_val, bk_val, sh_accum[out_k * N + i]);
                     }
                 }
             }
@@ -762,13 +761,12 @@ __device__ inline void AccumulateBlockBinary(
                                 __ldg(&bk[key_index * TRGSW_SIZE + poly_index]);
                             const NTTValueFor<P::targetP::n> xai =
                                 __ldg(&xai_ntt[bara[offset] * N + i]);
-                            block_product = small_mod_add<N>(
-                                block_product,
-                                small_mod_mult<N>(bk_value, xai));
+                            block_product =
+                                small_mod_madd<N>(bk_value, xai, block_product);
                         }
-                        sh_accum[out_component * N + i] = small_mod_add<N>(
-                            sh_accum[out_component * N + i],
-                            small_mod_mult<N>(decomposition, block_product));
+                        sh_accum[out_component * N + i] = small_mod_madd<N>(
+                            decomposition, block_product,
+                            sh_accum[out_component * N + i]);
                     }
                 }
             }
@@ -1304,18 +1302,16 @@ __device__ inline void AccumulateKeyBundle(
                             __ldg(&bk2_ntt[bk_offset]);
 
                         // combined = one + bk2*xai1 + bk1*xai0 + bk0*xai01
-                        NTTValueFor<P::targetP::n> combined = one_val;
-                        combined = small_mod_add<N>(
-                            combined, small_mod_mult<N>(bk2_val, xai1));
-                        combined = small_mod_add<N>(
-                            combined, small_mod_mult<N>(bk1_val, xai0));
-                        combined = small_mod_add<N>(
-                            combined, small_mod_mult<N>(bk0_val, xai01));
+                        NTTValueFor<P::targetP::n> combined =
+                            small_mod_madd<N>(bk2_val, xai1, one_val);
+                        combined =
+                            small_mod_madd<N>(bk1_val, xai0, combined);
+                        combined =
+                            small_mod_madd<N>(bk0_val, xai01, combined);
 
                         // Accumulate: decomp_ntt * combined
-                        sh_accum[out_k * N + i] = small_mod_add<N>(
-                            sh_accum[out_k * N + i],
-                            small_mod_mult<N>(ntt_val, combined));
+                        sh_accum[out_k * N + i] = small_mod_madd<N>(
+                            ntt_val, combined, sh_accum[out_k * N + i]);
                     }
                 }
             }

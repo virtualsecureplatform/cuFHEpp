@@ -430,10 +430,9 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
                     const size_t key_offset =
                         (static_cast<size_t>(digit) * (P::k + 1) + out_k) * N +
                         i;
-                    sh_accum[out_k * N + i] = small_mod_add<N>(
-                        sh_accum[out_k * N + i],
-                        small_mod_mult<N>(ntt_val,
-                                          __ldg(&halftrgswntt[key_offset])));
+                    sh_accum[out_k * N + i] = small_mod_madd<N>(
+                        ntt_val, __ldg(&halftrgswntt[key_offset]),
+                        sh_accum[out_k * N + i]);
                 }
             }
         }

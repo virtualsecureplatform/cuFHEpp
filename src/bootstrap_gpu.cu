@@ -987,9 +987,8 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
                                         out_k)
                                        << lvl1param::nbit) +
                                       i]);
-                        sh_accum[out_k * N + i] = small_mod_add<N>(
-                            sh_accum[out_k * N + i],
-                            small_mod_mult<N>(ntt_val, bk_val));
+                        sh_accum[out_k * N + i] = small_mod_madd<N>(
+                            ntt_val, bk_val, sh_accum[out_k * N + i]);
                     }
                 }
             }

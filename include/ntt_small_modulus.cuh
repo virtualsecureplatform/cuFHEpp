@@ -207,6 +207,27 @@ small_mod64_mult(SmallNTTValue a, SmallNTTValue b)
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
+{
+    unsigned __int128 sum = static_cast<unsigned __int128>(a) * b + c;
+    const SmallNTTValue lo = static_cast<SmallNTTValue>(sum);
+
+    const uint32_t limb0 = static_cast<uint32_t>(sum);
+    sum >>= 32;
+    const uint32_t limb1 = static_cast<uint32_t>(sum);
+    sum >>= 32;
+    const uint32_t limb2 = static_cast<uint32_t>(sum);
+    sum >>= 32;
+    const uint32_t limb3 = static_cast<uint32_t>(sum);
+
+    SmallNTTValue res = ((static_cast<SmallNTTValue>(limb1) + limb2) << 32) +
+                        limb0 - limb3 - limb2;
+    res -= static_cast<uint32_t>(-((res > lo) && (limb2 == 0)));
+    res += static_cast<uint32_t>(-((res < lo) && (limb2 != 0)));
+    return small_mod64_normalize(res);
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue
 small_mod31_normalize(SmallNTTValue a)
 {
     if (a >= small_ntt31::P) a %= small_ntt31::P;
@@ -239,6 +260,24 @@ small_mod31_mult(SmallNTTValue a, SmallNTTValue b)
 
     // p = 2^31 - 10239, so 2^31 is congruent to 10239 modulo p.
     // For z < p^2, two folds leave a value below 2p.
+    const uint32_t lo = static_cast<uint32_t>(z) & mask;
+    const uint32_t hi = static_cast<uint32_t>(z >> 31);
+    const uint64_t folded = lo + static_cast<uint64_t>(hi) * factor;
+    const uint32_t result = (static_cast<uint32_t>(folded) & mask) +
+                            static_cast<uint32_t>(folded >> 31) * factor;
+    return (result >= p) ? (result - p) : result;
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod31_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
+{
+    constexpr uint32_t p = small_ntt31::P;
+    const uint64_t z = static_cast<uint64_t>(static_cast<uint32_t>(a)) *
+                           static_cast<uint32_t>(b) +
+                       static_cast<uint32_t>(c);
+    constexpr uint32_t mask = small_ntt31::FOLD_MASK;
+    constexpr uint32_t factor = small_ntt31::FOLD_FACTOR;
+
     const uint32_t lo = static_cast<uint32_t>(z) & mask;
     const uint32_t hi = static_cast<uint32_t>(z >> 31);
     const uint64_t folded = lo + static_cast<uint64_t>(hi) * factor;
@@ -292,6 +331,18 @@ small_mod_mult(SmallNTTValue a, SmallNTTValue b)
     }
     else {
         return small_mod64_mult(a, b);
+    }
+}
+
+template <uint32_t N>
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
+{
+    if constexpr (N == TFHEpp::lvl1param::n) {
+        return small_mod31_madd(a, b, c);
+    }
+    else {
+        return small_mod64_madd(a, b, c);
     }
 }
 
