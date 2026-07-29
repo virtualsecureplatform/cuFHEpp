@@ -457,6 +457,38 @@ __device__ __forceinline__ void SmallGentlemanSandeUnit(
 }
 
 template <int N_POWER>
+__device__ __forceinline__ void SmallCooleyTukeyRadix4Unit(
+    SmallNTTValueFor<1U << N_POWER>& a,
+    SmallNTTValueFor<1U << N_POWER>& b,
+    SmallNTTValueFor<1U << N_POWER>& c,
+    SmallNTTValueFor<1U << N_POWER>& d,
+    const SmallNTTValueFor<1U << N_POWER> root_stage0,
+    const SmallNTTValueFor<1U << N_POWER> root_stage1_lo,
+    const SmallNTTValueFor<1U << N_POWER> root_stage1_hi)
+{
+    SmallCooleyTukeyUnit<N_POWER>(a, c, root_stage0);
+    SmallCooleyTukeyUnit<N_POWER>(b, d, root_stage0);
+    SmallCooleyTukeyUnit<N_POWER>(a, b, root_stage1_lo);
+    SmallCooleyTukeyUnit<N_POWER>(c, d, root_stage1_hi);
+}
+
+template <int N_POWER>
+__device__ __forceinline__ void SmallGentlemanSandeRadix4Unit(
+    SmallNTTValueFor<1U << N_POWER>& a,
+    SmallNTTValueFor<1U << N_POWER>& b,
+    SmallNTTValueFor<1U << N_POWER>& c,
+    SmallNTTValueFor<1U << N_POWER>& d,
+    const SmallNTTValueFor<1U << N_POWER> root_stage0_lo,
+    const SmallNTTValueFor<1U << N_POWER> root_stage0_hi,
+    const SmallNTTValueFor<1U << N_POWER> root_stage1)
+{
+    SmallGentlemanSandeUnit<N_POWER>(a, b, root_stage0_lo);
+    SmallGentlemanSandeUnit<N_POWER>(c, d, root_stage0_hi);
+    SmallGentlemanSandeUnit<N_POWER>(a, c, root_stage1);
+    SmallGentlemanSandeUnit<N_POWER>(b, d, root_stage1);
+}
+
+template <int N_POWER>
 __device__ __forceinline__ void SmallForwardNTT(
     SmallNTTValueFor<1U << N_POWER>* sh,
     const SmallNTTValueFor<1U << N_POWER>* root_table, int tid)
@@ -472,7 +504,50 @@ __device__ __forceinline__ void SmallForwardNTT(
     int current_root_index;
 
 #pragma unroll
-    for (int lp = 0; lp < N_POWER - 6; lp++) {
+    for (int lp = 0; lp < (N_POWER - 6) / 2; lp++) {
+        if (tid < (1 << (N_POWER - 2))) {
+            const int radix_t = t >> 1;
+            const int group = tid >> (t_ - 1);
+            const int offset = tid & (radix_t - 1);
+            const int address = (group << (t_ + 1)) + offset;
+
+            const int root0_index = m + group;
+            const int root1_lo_index = (m << 1) + (group << 1);
+            const int root1_hi_index = root1_lo_index + 1;
+            SmallNTTValueFor<1U << N_POWER> root0 =
+                __ldg(&root_table[root0_index]);
+            SmallNTTValueFor<1U << N_POWER> root1_lo =
+                __ldg(&root_table[root1_lo_index]);
+            SmallNTTValueFor<1U << N_POWER> root1_hi =
+                __ldg(&root_table[root1_hi_index]);
+            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+                root0 = d_const_forward_root_31[root0_index];
+                root1_lo = d_const_forward_root_31[root1_lo_index];
+                root1_hi = d_const_forward_root_31[root1_hi_index];
+            }
+
+            SmallNTTValueFor<1U << N_POWER> a = sh[address];
+            SmallNTTValueFor<1U << N_POWER> b = sh[address + radix_t];
+            SmallNTTValueFor<1U << N_POWER> c = sh[address + t];
+            SmallNTTValueFor<1U << N_POWER> d =
+                sh[address + t + radix_t];
+            SmallCooleyTukeyRadix4Unit<N_POWER>(a, b, c, d, root0,
+                                                 root1_lo, root1_hi);
+            sh[address] = a;
+            sh[address + radix_t] = b;
+            sh[address + t] = c;
+            sh[address + t + radix_t] = d;
+        }
+
+        t >>= 2;
+        t_2 -= 2;
+        t_ -= 2;
+        m <<= 2;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+    if constexpr ((N_POWER - 6) % 2 != 0) {
         current_root_index = m + (tid >> t_2);
         SmallNTTValueFor<1U << N_POWER> root =
             __ldg(&root_table[current_root_index]);
@@ -481,8 +556,7 @@ __device__ __forceinline__ void SmallForwardNTT(
         }
         SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
                                       sh[in_shared_address + t], root);
-
-        t = t >> 1;
+        t >>= 1;
         t_2 -= 1;
         t_ -= 1;
         m <<= 1;
@@ -539,7 +613,48 @@ __device__ __forceinline__ void SmallInverseNTT(
     __syncthreads();
 
 #pragma unroll
-    for (int lp = 0; lp < N_POWER - 6; lp++) {
+    for (int lp = 0; lp < (N_POWER - 6) / 2; lp++) {
+        if (tid < (1 << (N_POWER - 2))) {
+            const int group = tid >> t_;
+            const int offset = tid & (t - 1);
+            const int address = (group << (t_ + 2)) + offset;
+
+            const int root0_lo_index = m + (group << 1);
+            const int root0_hi_index = root0_lo_index + 1;
+            const int root1_index = (m >> 1) + group;
+            SmallNTTValueFor<1U << N_POWER> root0_lo =
+                __ldg(&root_table[root0_lo_index]);
+            SmallNTTValueFor<1U << N_POWER> root0_hi =
+                __ldg(&root_table[root0_hi_index]);
+            SmallNTTValueFor<1U << N_POWER> root1 =
+                __ldg(&root_table[root1_index]);
+            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+                root0_lo = d_const_inverse_root_31[root0_lo_index];
+                root0_hi = d_const_inverse_root_31[root0_hi_index];
+                root1 = d_const_inverse_root_31[root1_index];
+            }
+
+            SmallNTTValueFor<1U << N_POWER> a = sh[address];
+            SmallNTTValueFor<1U << N_POWER> b = sh[address + t];
+            SmallNTTValueFor<1U << N_POWER> c = sh[address + 2 * t];
+            SmallNTTValueFor<1U << N_POWER> d = sh[address + 3 * t];
+            SmallGentlemanSandeRadix4Unit<N_POWER>(
+                a, b, c, d, root0_lo, root0_hi, root1);
+            sh[address] = a;
+            sh[address + t] = b;
+            sh[address + 2 * t] = c;
+            sh[address + 3 * t] = d;
+        }
+
+        t <<= 2;
+        t_2 += 2;
+        t_ += 2;
+        m >>= 2;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+        __syncthreads();
+    }
+
+    if constexpr ((N_POWER - 6) % 2 != 0) {
         current_root_index = m + (tid >> t_2);
         SmallNTTValueFor<1U << N_POWER> root =
             __ldg(&root_table[current_root_index]);
@@ -548,8 +663,7 @@ __device__ __forceinline__ void SmallInverseNTT(
         }
         SmallGentlemanSandeUnit<N_POWER>(sh[in_shared_address],
                                          sh[in_shared_address + t], root);
-
-        t = t << 1;
+        t <<= 1;
         t_2 += 1;
         t_ += 1;
         m >>= 1;
@@ -567,13 +681,13 @@ __device__ __forceinline__ void SmallInverseNTT(
 template <uint32_t N>
 __host__ __device__ constexpr int SmallForwardNTTSyncCount()
 {
-    return static_cast<int>(SmallLog2<N>()) - 5;
+    return (static_cast<int>(SmallLog2<N>()) - 5) / 2 + 1;
 }
 
 template <uint32_t N>
 __host__ __device__ constexpr int SmallInverseNTTSyncCount()
 {
-    return static_cast<int>(SmallLog2<N>()) - 5;
+    return (static_cast<int>(SmallLog2<N>()) - 5) / 2 + 1;
 }
 
 #endif  // __CUDACC__
