@@ -12,7 +12,7 @@
 
 namespace cufhe {
 extern std::vector<NTTValue*> bk_ntts;
-extern std::vector<NTTValue*> bk_ntts_lvl02;
+extern std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> bk_ntts_lvl02;
 }
 
 namespace {
@@ -144,10 +144,12 @@ void AllocateFakeEvaluationKeysLvl02(const int gpu_num)
     cufhe::ksk_devs_lvl20.resize(gpu_num);
     for (int gpu = 0; gpu < gpu_num; gpu++) {
         cudaSetDevice(gpu);
-        CUDA_CHECK(cudaMalloc(&cufhe::bk_ntts_lvl02[gpu],
-                              sizeof(cufhe::NTTValue) * bk_elements));
-        CUDA_CHECK(cudaMemset(cufhe::bk_ntts_lvl02[gpu], 0,
-                              sizeof(cufhe::NTTValue) * bk_elements));
+        CUDA_CHECK(
+            cudaMalloc(&cufhe::bk_ntts_lvl02[gpu],
+                       sizeof(cufhe::NTTValueFor<targetP::n>) * bk_elements));
+        CUDA_CHECK(
+            cudaMemset(cufhe::bk_ntts_lvl02[gpu], 0,
+                       sizeof(cufhe::NTTValueFor<targetP::n>) * bk_elements));
 
         CUDA_CHECK(cudaMalloc(&cufhe::ksk_devs_lvl20[gpu],
                               sizeof(TFHEpp::KeySwitchingKey<iksP>)));

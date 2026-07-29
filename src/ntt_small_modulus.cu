@@ -18,8 +18,8 @@ __constant__ uint32_t d_const_forward_root_31[TFHEpp::lvl1param::n];
 __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
 
 // Host-side storage for NTT parameters per GPU
-std::vector<SmallNTTParams> g_small_ntt_params;
-std::vector<SmallNTTParams> g_small_ntt_params_lvl02;
+std::vector<SmallNTTParams<TFHEpp::lvl1param::n>> g_small_ntt_params;
+std::vector<SmallNTTParams<TFHEpp::lvl2param::n>> g_small_ntt_params_lvl02;
 
 namespace {
 
@@ -135,7 +135,7 @@ SmallRootTableState& RootTablesForLength()
 }
 
 template <uint32_t length>
-std::vector<SmallNTTParams>& ParamsForLength()
+auto& ParamsForLength()
 {
     if constexpr (length == TFHEpp::lvl2param::n) {
         return g_small_ntt_params_lvl02;
@@ -283,6 +283,7 @@ void CuSmallNTTHandler<length>::Destroy()
 template <uint32_t length>
 void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
 {
+    using Value = SmallNTTValueFor<length>;
     auto& params_vec = ParamsForLength<length>();
     auto& tables = RootTablesForLength<length>();
 
@@ -291,42 +292,37 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
         params_vec.resize(device_id + 1);
     }
 
-    SmallNTTParams& params = params_vec[device_id];
+    SmallNTTParams<length>& params = params_vec[device_id];
 
     // Initialize if not already done
     if (!params.initialized) {
         // Allocate device memory for root tables
-        CuSafeCall(
-            cudaMalloc(&params.forward_root, sizeof(SmallNTTValue) * kLength));
-        CuSafeCall(
-            cudaMalloc(&params.inverse_root, sizeof(SmallNTTValue) * kLength));
+        CuSafeCall(cudaMalloc(&params.forward_root, sizeof(Value) * kLength));
+        CuSafeCall(cudaMalloc(&params.inverse_root, sizeof(Value) * kLength));
+
+        std::vector<Value> forward_root(kLength);
+        std::vector<Value> inverse_root(kLength);
+        for (uint32_t i = 0; i < kLength; i++) {
+            forward_root[i] = static_cast<Value>(tables.forward_table[i]);
+            inverse_root[i] = static_cast<Value>(tables.inverse_table[i]);
+        }
 
         // Copy root tables to device
-        CuSafeCall(cudaMemcpy(params.forward_root, tables.forward_table.data(),
-                              sizeof(SmallNTTValue) * kLength,
-                              cudaMemcpyHostToDevice));
-        CuSafeCall(cudaMemcpy(params.inverse_root, tables.inverse_table.data(),
-                              sizeof(SmallNTTValue) * kLength,
-                              cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.forward_root, forward_root.data(),
+                              sizeof(Value) * kLength, cudaMemcpyHostToDevice));
+        CuSafeCall(cudaMemcpy(params.inverse_root, inverse_root.data(),
+                              sizeof(Value) * kLength, cudaMemcpyHostToDevice));
 
         if constexpr (length == TFHEpp::lvl1param::n) {
-            std::vector<uint32_t> forward_root_31(kLength);
-            std::vector<uint32_t> inverse_root_31(kLength);
-            for (uint32_t i = 0; i < kLength; i++) {
-                forward_root_31[i] =
-                    static_cast<uint32_t>(tables.forward_table[i]);
-                inverse_root_31[i] =
-                    static_cast<uint32_t>(tables.inverse_table[i]);
-            }
             CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root_31,
-                                          forward_root_31.data(),
+                                          forward_root.data(),
                                           sizeof(uint32_t) * kLength));
             CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root_31,
-                                          inverse_root_31.data(),
+                                          inverse_root.data(),
                                           sizeof(uint32_t) * kLength));
         }
 
-        params.n_inverse = tables.n_inverse;
+        params.n_inverse = static_cast<Value>(tables.n_inverse);
         params.initialized = true;
     }
 
@@ -546,7 +542,7 @@ std::vector<NTTValue*> xai_ntt_devs;
 std::vector<NTTValue*> one_trgsw_ntt_devs;
 #ifdef USE_BLOCK_BINARY
 __device__ NTTValue* block_xai_fft;
-__device__ NTTValue* block_xai_fft_lvl02;
+__device__ NTTValueFor<TFHEpp::lvl2param::n>* block_xai_fft_lvl02;
 #endif
 
 #ifdef USE_FFT
@@ -892,12 +888,12 @@ void InitializeOneTRGSWNTT(const int gpuNum)
 
 // GPU kernel to NTT multiple polynomials
 template <uint32_t N>
-__global__ void __NTTPolynomials__(NTTValue* const out,
-                                   const NTTValue* const in,
-                                   const NTTValue* const forward_root)
+__global__ void __NTTPolynomials__(NTTValueFor<N>* const out,
+                                   const NTTValueFor<N>* const in,
+                                   const NTTValueFor<N>* const forward_root)
 {
     constexpr uint32_t LOG_N = SmallLog2<N>();
-    __shared__ NTTValue sh_temp[N];
+    __shared__ NTTValueFor<N> sh_temp[N];
 
     const uint32_t poly_idx = blockIdx.x;
     const uint32_t tid = threadIdx.x;
@@ -926,11 +922,11 @@ __global__ void __NTTPolynomials__(NTTValue* const out,
 }
 
 template <uint32_t N>
-__global__ void __ComputeXaiNTT__(NTTValue* const xai_ntt,
-                                  const NTTValue* const forward_root)
+__global__ void __ComputeXaiNTT__(NTTValueFor<N>* const xai_ntt,
+                                  const NTTValueFor<N>* const forward_root)
 {
     constexpr uint32_t LOG_N = SmallLog2<N>();
-    __shared__ NTTValue poly[N];
+    __shared__ NTTValueFor<N> poly[N];
 
     const uint32_t a = blockIdx.x;  // 0..2N-1
     const uint32_t tid = threadIdx.x;
@@ -981,13 +977,13 @@ __global__ void __ComputeXaiNTT__(NTTValue* const xai_ntt,
 }
 
 template <class P>
-void InitializeXaiNTTForLength(std::vector<NTTValue*>& storage,
-                               std::vector<SmallNTTParams>& params,
+void InitializeXaiNTTForLength(std::vector<NTTValueFor<P::n>*>& storage,
+                               std::vector<SmallNTTParams<P::n>>& params,
                                const int gpuNum)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t table_entries = 2 * N;
-    constexpr size_t table_size = table_entries * N * sizeof(NTTValue);
+    constexpr size_t table_size = table_entries * N * sizeof(NTTValueFor<N>);
 
     storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
@@ -1001,7 +997,7 @@ void InitializeXaiNTTForLength(std::vector<NTTValue*>& storage,
         cudaDeviceSynchronize();
         CuCheckError();
 #ifdef USE_BLOCK_BINARY
-        NTTValue* const xai_ptr = storage[i];
+        NTTValueFor<N>* const xai_ptr = storage[i];
         if constexpr (N == TFHEpp::lvl1param::n) {
             CuSafeCall(
                 cudaMemcpyToSymbol(block_xai_fft, &xai_ptr, sizeof(xai_ptr)));
@@ -1021,8 +1017,8 @@ void InitializeXaiNTT(const int gpuNum)
 }
 
 template <class P>
-void InitializeOneTRGSWNTTForLength(std::vector<NTTValue*>& storage,
-                                    std::vector<SmallNTTParams>& params,
+void InitializeOneTRGSWNTTForLength(std::vector<NTTValueFor<P::n>*>& storage,
+                                    std::vector<SmallNTTParams<P::n>>& params,
                                     const int gpuNum)
 {
     constexpr uint32_t N = P::n;
@@ -1030,7 +1026,7 @@ void InitializeOneTRGSWNTTForLength(std::vector<NTTValue*>& storage,
     constexpr uint32_t l = P::l;
     constexpr uint32_t Bgbit = P::Bgbit;
     constexpr uint32_t num_polys = (k + 1) * l * (k + 1);
-    constexpr size_t total_size = num_polys * N * sizeof(NTTValue);
+    constexpr size_t total_size = num_polys * N * sizeof(NTTValueFor<N>);
 
     std::vector<typename P::T> h(l);
     for (uint32_t i = 0; i < l; i++) {
@@ -1039,7 +1035,7 @@ void InitializeOneTRGSWNTTForLength(std::vector<NTTValue*>& storage,
             << (std::numeric_limits<typename P::T>::digits - (i + 1) * Bgbit);
     }
 
-    std::vector<NTTValue> host_polys(num_polys * N, 0);
+    std::vector<NTTValueFor<N>> host_polys(num_polys * N, 0);
     for (uint32_t j = 0; j <= k; j++) {
         for (uint32_t digit = 0; digit < l; digit++) {
             uint32_t row = j * l + digit;
@@ -1053,10 +1049,11 @@ void InitializeOneTRGSWNTTForLength(std::vector<NTTValue*>& storage,
         cudaSetDevice(i);
         CuSafeCall(cudaMalloc(&storage[i], total_size));
 
-        NTTValue* d_polys;
-        CuSafeCall(cudaMalloc(&d_polys, num_polys * N * sizeof(NTTValue)));
+        NTTValueFor<N>* d_polys;
+        CuSafeCall(
+            cudaMalloc(&d_polys, num_polys * N * sizeof(NTTValueFor<N>)));
         CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
-                              num_polys * N * sizeof(NTTValue),
+                              num_polys * N * sizeof(NTTValueFor<N>),
                               cudaMemcpyHostToDevice));
 
         dim3 grid(num_polys);
@@ -1100,8 +1097,8 @@ void DeleteOneTRGSWNTT()
 // lvl02 key-bundle tables: xai and one_trgsw for the configured lvl2 FFT.
 //=============================================================================
 
-std::vector<NTTValue*> xai_ntt_devs_lvl02;
-std::vector<NTTValue*> one_trgsw_ntt_devs_lvl02;
+std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> xai_ntt_devs_lvl02;
+std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> one_trgsw_ntt_devs_lvl02;
 
 #ifdef USE_FFT
 #ifdef USE_GPU_FFT

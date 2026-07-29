@@ -86,6 +86,10 @@ static_assert(P == 18446744069414584321ULL,
 using SmallNTTValue = uint64_t;
 
 template <uint32_t N>
+using SmallNTTValueFor =
+    std::conditional_t<N == TFHEpp::lvl1param::n, uint32_t, uint64_t>;
+
+template <uint32_t N>
 struct SmallNTTModulus {
     static_assert(N == TFHEpp::lvl1param::n || N == TFHEpp::lvl2param::n,
                   "Unsupported small NTT length");
@@ -377,9 +381,9 @@ extern __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
 
 // Cooley-Tukey butterfly for forward NTT
 template <int N_POWER>
-__device__ __forceinline__ void SmallCooleyTukeyUnit(SmallNTTValue& U,
-                                                     SmallNTTValue& V,
-                                                     SmallNTTValue root)
+__device__ __forceinline__ void SmallCooleyTukeyUnit(
+    SmallNTTValueFor<1U << N_POWER>& U, SmallNTTValueFor<1U << N_POWER>& V,
+    SmallNTTValueFor<1U << N_POWER> root)
 {
     constexpr uint32_t N = 1U << N_POWER;
     SmallNTTValue u = U;
@@ -390,9 +394,9 @@ __device__ __forceinline__ void SmallCooleyTukeyUnit(SmallNTTValue& U,
 
 // Gentleman-Sande butterfly for inverse NTT
 template <int N_POWER>
-__device__ __forceinline__ void SmallGentlemanSandeUnit(SmallNTTValue& U,
-                                                        SmallNTTValue& V,
-                                                        SmallNTTValue root)
+__device__ __forceinline__ void SmallGentlemanSandeUnit(
+    SmallNTTValueFor<1U << N_POWER>& U, SmallNTTValueFor<1U << N_POWER>& V,
+    SmallNTTValueFor<1U << N_POWER> root)
 {
     constexpr uint32_t N = 1U << N_POWER;
     SmallNTTValue u = U;
@@ -402,9 +406,9 @@ __device__ __forceinline__ void SmallGentlemanSandeUnit(SmallNTTValue& U,
 }
 
 template <int N_POWER>
-__device__ __forceinline__ void SmallForwardNTT(SmallNTTValue* sh,
-                                                const SmallNTTValue* root_table,
-                                                int tid)
+__device__ __forceinline__ void SmallForwardNTT(
+    SmallNTTValueFor<1U << N_POWER>* sh,
+    const SmallNTTValueFor<1U << N_POWER>* root_table, int tid)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
 
@@ -419,7 +423,8 @@ __device__ __forceinline__ void SmallForwardNTT(SmallNTTValue* sh,
 #pragma unroll
     for (int lp = 0; lp < N_POWER - 6; lp++) {
         current_root_index = m + (tid >> t_2);
-        SmallNTTValue root = __ldg(&root_table[current_root_index]);
+        SmallNTTValueFor<1U << N_POWER> root =
+            __ldg(&root_table[current_root_index]);
         if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
             root = d_const_forward_root_31[current_root_index];
         }
@@ -451,10 +456,10 @@ __device__ __forceinline__ void SmallForwardNTT(SmallNTTValue* sh,
 }
 
 template <int N_POWER>
-__device__ __forceinline__ void SmallInverseNTT(SmallNTTValue* sh,
-                                                const SmallNTTValue* root_table,
-                                                SmallNTTValue n_inverse,
-                                                int tid)
+__device__ __forceinline__ void SmallInverseNTT(
+    SmallNTTValueFor<1U << N_POWER>* sh,
+    const SmallNTTValueFor<1U << N_POWER>* root_table,
+    SmallNTTValueFor<1U << N_POWER> n_inverse, int tid)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
     constexpr int NUM_THREADS = 1 << (N_POWER - 1);
@@ -485,7 +490,8 @@ __device__ __forceinline__ void SmallInverseNTT(SmallNTTValue* sh,
 #pragma unroll
     for (int lp = 0; lp < N_POWER - 6; lp++) {
         current_root_index = m + (tid >> t_2);
-        SmallNTTValue root = __ldg(&root_table[current_root_index]);
+        SmallNTTValueFor<1U << N_POWER> root =
+            __ldg(&root_table[current_root_index]);
         if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
             root = d_const_inverse_root_31[current_root_index];
         }
@@ -525,18 +531,20 @@ __host__ __device__ constexpr int SmallInverseNTTSyncCount()
 //=============================================================================
 
 // Host-side storage for small NTT parameters
+template <uint32_t length>
 struct SmallNTTParams {
-    SmallNTTValue* forward_root;
-    SmallNTTValue* inverse_root;
-    SmallNTTValue n_inverse;
+    SmallNTTValueFor<length>* forward_root;
+    SmallNTTValueFor<length>* inverse_root;
+    SmallNTTValueFor<length> n_inverse;
     bool initialized;
 };
 
-extern std::vector<SmallNTTParams> g_small_ntt_params;
-extern std::vector<SmallNTTParams> g_small_ntt_params_lvl02;
+extern std::vector<SmallNTTParams<TFHEpp::lvl1param::n>> g_small_ntt_params;
+extern std::vector<SmallNTTParams<TFHEpp::lvl2param::n>>
+    g_small_ntt_params_lvl02;
 
 /**
- * Goldilocks-prime NTT Handler for cuFHE
+ * Length-selected small-modulus NTT handler for cuFHE
  *
  * Before NTT, coefficients are modulus-switched from the torus to P. After
  * INTT, coefficients are centered and switched back to Torus32/Torus64.
@@ -544,6 +552,7 @@ extern std::vector<SmallNTTParams> g_small_ntt_params_lvl02;
 template <uint32_t length = TFHEpp::lvl1param::n>
 class CuSmallNTTHandler {
    public:
+    using Value = SmallNTTValueFor<length>;
     static constexpr uint32_t kLength = length;
     static constexpr uint32_t kLogLength = []() constexpr {
         uint32_t n = length, log = 0;
@@ -554,9 +563,9 @@ class CuSmallNTTHandler {
         return log;
     }();
 
-    SmallNTTValue* forward_root_;
-    SmallNTTValue* inverse_root_;
-    SmallNTTValue n_inverse_;
+    Value* forward_root_;
+    Value* inverse_root_;
+    Value n_inverse_;
 
     __host__ __device__ CuSmallNTTHandler()
         : forward_root_(nullptr), inverse_root_(nullptr), n_inverse_(0)
@@ -572,16 +581,16 @@ class CuSmallNTTHandler {
 
 #ifdef __CUDACC__
     /**
-     * Forward NTT with modulus switching (Torus32 -> NTT domain)
+     * Forward NTT with modulus switching (torus -> NTT domain)
      *
      * This performs:
      * 1. Modulus switch: Convert input from 2^32 to P discretization
      * 2. Forward NTT in modulus P
      */
     template <typename TorusT>
-    __device__ inline void NTTWithModSwitch(SmallNTTValue* const out,
+    __device__ inline void NTTWithModSwitch(Value* const out,
                                             const TorusT* const in,
-                                            SmallNTTValue* const sh_temp,
+                                            Value* const sh_temp,
                                             uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
@@ -618,9 +627,8 @@ class CuSmallNTTHandler {
      *
      * Used for decomposed polynomials that are already integers
      */
-    __device__ inline void NTT(SmallNTTValue* const out,
-                               const int32_t* const in,
-                               SmallNTTValue* const sh_temp,
+    __device__ inline void NTT(Value* const out, const int32_t* const in,
+                               Value* const sh_temp,
                                uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
@@ -661,8 +669,8 @@ class CuSmallNTTHandler {
      * 2. Modulus switch: Convert from P to 2^32 discretization
      */
     __device__ inline void NTTInvWithModSwitch(
-        uint32_t* const out, const SmallNTTValue* const in,
-        SmallNTTValue* const sh_temp, uint32_t leading_thread = 0) const
+        uint32_t* const out, const Value* const in, Value* const sh_temp,
+        uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
@@ -697,8 +705,8 @@ class CuSmallNTTHandler {
      * Inverse NTT with modulus switching and addition
      */
     __device__ inline void NTTInvAddWithModSwitch(
-        uint32_t* const out, const SmallNTTValue* const in,
-        SmallNTTValue* const sh_temp, uint32_t leading_thread = 0) const
+        uint32_t* const out, const Value* const in, Value* const sh_temp,
+        uint32_t leading_thread = 0) const
     {
         const int tid = threadIdx.x - leading_thread;
         constexpr int N = length;
@@ -739,6 +747,9 @@ class CuSmallNTTHandler {
 
 // NTT value type: double2 complex for FFT
 using NTTValue = double2;
+
+template <uint32_t N>
+using NTTValueFor = NTTValue;
 
 // Thread configuration: still N/2 = 512 threads per block
 // (FFT uses 256 active threads, decomposition uses all 512)
@@ -1564,7 +1575,7 @@ __host__ __device__ constexpr int TfheRsFFTSharedSyncCount()
 #else  // !USE_FFT
 
 //=============================================================================
-// NTT mode: Use Goldilocks-prime NTT
+// NTT mode: use a modulus selected for each supported ring size
 //=============================================================================
 
 // Thread configuration for NTT
@@ -1574,12 +1585,15 @@ constexpr uint32_t NTT_THREAD_UNITBIT = 1;
 template <uint32_t length = TFHEpp::lvl1param::n>
 using CuNTTHandler = CuSmallNTTHandler<length>;
 
-// NTT value type: 64-bit for the Goldilocks prime.
-using NTTValue = SmallNTTValue;
+// NTT storage follows the selected modulus: 32-bit for lvl1 and 64-bit for
+// lvl02's Goldilocks prime. NTTValue remains the lvl1 API shorthand.
+template <uint32_t N>
+using NTTValueFor = SmallNTTValueFor<N>;
+using NTTValue = NTTValueFor<TFHEpp::lvl1param::n>;
 
-// Shared memory size per gate: (k+2) * N * sizeof(NTTValue)
+// Shared memory size per gate: (k+2) * N field elements.
 template <class P = TFHEpp::lvl1param>
-constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(NTTValue);
+constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(NTTValueFor<P::n>);
 
 // Dynamic shared memory size for regular gates:
 // NTT workspace + one TRLWE array placed after it
@@ -1604,7 +1618,7 @@ extern std::vector<NTTValue*> xai_ntt_devs;
 extern std::vector<NTTValue*> one_trgsw_ntt_devs;
 #ifdef USE_BLOCK_BINARY
 extern __device__ NTTValue* block_xai_fft;
-extern __device__ NTTValue* block_xai_fft_lvl02;
+extern __device__ NTTValueFor<TFHEpp::lvl2param::n>* block_xai_fft_lvl02;
 #endif
 
 void InitializeXaiNTT(const int gpuNum);
@@ -1613,8 +1627,8 @@ void DeleteXaiNTT();
 void DeleteOneTRGSWNTT();
 
 // lvl02 (N=2048) key-bundle tables
-extern std::vector<NTTValue*> xai_ntt_devs_lvl02;
-extern std::vector<NTTValue*> one_trgsw_ntt_devs_lvl02;
+extern std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> xai_ntt_devs_lvl02;
+extern std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> one_trgsw_ntt_devs_lvl02;
 
 void InitializeXaiNTT_lvl02(const int gpuNum);
 void InitializeOneTRGSWNTT_lvl02(const int gpuNum);

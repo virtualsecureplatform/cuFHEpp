@@ -40,8 +40,21 @@ vector<NTTValue*> bk_ntts;
 vector<CuNTTHandler<>*> ntt_handlers;
 
 // lvl02 storage (lvl0 -> lvl2 bootstrapping)
-vector<NTTValue*> bk_ntts_lvl02;
+vector<NTTValueFor<TFHEpp::lvl2param::n>*> bk_ntts_lvl02;
 vector<CuNTTHandler<TFHEpp::lvl2param::n>*> ntt_handlers_lvl02;
+
+template <uint32_t N>
+auto& BootstrappingKeyStorage()
+{
+    if constexpr (N == TFHEpp::lvl2param::n) {
+        return bk_ntts_lvl02;
+    }
+    else {
+        static_assert(N == TFHEpp::lvl1param::n,
+                      "Unsupported bootstrapping ring size");
+        return bk_ntts;
+    }
+}
 
 #ifdef USE_FFT
 
@@ -215,15 +228,7 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t HALF_N = N >> 1;
 
-    // Select the right storage vector based on target param
-    auto& bk_storage = []() -> vector<NTTValue*>& {
-        if constexpr (N == TFHEpp::lvl2param::n) {
-            return bk_ntts_lvl02;
-        }
-        else {
-            return bk_ntts;
-        }
-    }();
+    auto& bk_storage = BootstrappingKeyStorage<N>();
 
     bk_storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
@@ -289,15 +294,7 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                                        bk_elements_per_pair * trgsw_polys *
                                        HALF_N;
 
-    // Dispatch storage based on target parameter ring size
-    auto& bk_storage = []() -> vector<NTTValue*>& {
-        if constexpr (N == TFHEpp::lvl2param::n) {
-            return bk_ntts_lvl02;
-        }
-        else {
-            return bk_ntts;
-        }
-    }();
+    auto& bk_storage = BootstrappingKeyStorage<N>();
 
     bk_storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
@@ -424,11 +421,11 @@ void BootstrappingKeyFlatToNTT_lvl02(
 // ============================================================================
 
 template <class P = TFHEpp::lvl1param>
-__global__ void __TRGSW2NTT__(NTTValue* const bk_ntt,
+__global__ void __TRGSW2NTT__(NTTValueFor<P::n>* const bk_ntt,
                               const typename P::T* const bk,
                               CuNTTHandler<P::n> ntt)
 {
-    __shared__ NTTValue sh_temp[P::n];
+    __shared__ NTTValueFor<P::n> sh_temp[P::n];
     const int index =
         blockIdx.z * (BootstrappingTRGSWRows<P> * (P::k + 1) * P::n) +
         blockIdx.y * (P::k + 1) * P::n + blockIdx.x * P::n;
@@ -493,21 +490,14 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
 {
     constexpr uint32_t N = P::targetP::n;
 
-    auto& bk_storage = []() -> vector<NTTValue*>& {
-        if constexpr (N == TFHEpp::lvl2param::n) {
-            return bk_ntts_lvl02;
-        }
-        else {
-            return bk_ntts;
-        }
-    }();
+    auto& bk_storage = BootstrappingKeyStorage<N>();
 
     bk_storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
 
         cudaMalloc((void**)&bk_storage[i],
-                   sizeof(NTTValue) * P::domainP::n *
+                   sizeof(NTTValueFor<N>) * P::domainP::n *
                        BootstrappingTRGSWRows<typename P::targetP> *
                        (P::targetP::k + 1) * N);
 
@@ -561,20 +551,14 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
     constexpr size_t total_ntt_elems =
         static_cast<size_t>(num_pairs) * bk_elements_per_pair * trgsw_polys * N;
 
-    auto& bk_storage = []() -> vector<NTTValue*>& {
-        if constexpr (N == TFHEpp::lvl2param::n) {
-            return bk_ntts_lvl02;
-        }
-        else {
-            return bk_ntts;
-        }
-    }();
+    auto& bk_storage = BootstrappingKeyStorage<N>();
 
     bk_storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
 
-        cudaMalloc((void**)&bk_storage[i], sizeof(NTTValue) * total_ntt_elems);
+        cudaMalloc((void**)&bk_storage[i],
+                   sizeof(NTTValueFor<N>) * total_ntt_elems);
 
         typename P::targetP::T* d_bk;
         size_t bk_byte_size = sizeof(bk);
@@ -670,7 +654,8 @@ void BootstrappingKeyFlatToNTT_lvl02(
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
 
-        cudaMalloc((void**)&bk_ntts_lvl02[i], sizeof(NTTValue) * ntt_elems);
+        cudaMalloc((void**)&bk_ntts_lvl02[i],
+                   sizeof(NTTValueFor<N>) * ntt_elems);
 
         size_t bk_bytes =
             static_cast<size_t>(num_elements) * sizeof(TFHEpp::TRGSW<tgtP>);
@@ -1047,7 +1032,8 @@ __global__
 __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __Bootstrap__(
     typename iksP::targetP::T* const out,
     const typename brP::domainP::T* const in, const typename brP::targetP::T mu,
-    const NTTValue* const bk, const typename iksP::targetP::T* const ksk,
+    const NTTValueFor<brP::targetP::n>* const bk,
+    const typename iksP::targetP::T* const ksk,
     const CuNTTHandler<brP::targetP::n> ntt)
 {
     __shared__
@@ -1225,7 +1211,7 @@ template <class iksP, class brP, std::make_signed_t<typename brP::targetP::T> μ
 __device__ inline void __HomGate__(typename brP::targetP::T* const out,
                                    const typename iksP::domainP::T* const in0,
                                    const typename iksP::domainP::T* const in1,
-                                   const NTTValue* const bk,
+                                   const NTTValueFor<brP::targetP::n>* const bk,
                                    const typename iksP::targetP::T* const ksk,
                                    const CuNTTHandler<brP::targetP::n> ntt)
 {
@@ -1250,7 +1236,7 @@ template <class brP, std::make_signed_t<typename brP::targetP::T> μ, class iksP
 __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
                                    const typename brP::domainP::T* const in0,
                                    const typename brP::domainP::T* const in1,
-                                   const NTTValue* const bk,
+                                   const NTTValueFor<brP::targetP::n>* const bk,
                                    const typename iksP::targetP::T* const ksk,
                                    const CuNTTHandler<brP::targetP::n> ntt)
 {
@@ -1279,9 +1265,11 @@ template <class iksP, class brP, std::make_signed_t<typename brP::targetP::T> μ
 __device__ inline void __HomGateKeyBundle__(
     typename brP::targetP::T* const out,
     const typename iksP::domainP::T* const in0,
-    const typename iksP::domainP::T* const in1, const NTTValue* const bk,
+    const typename iksP::domainP::T* const in1,
+    const NTTValueFor<brP::targetP::n>* const bk,
     const typename iksP::targetP::T* const ksk,
-    const NTTValue* const one_trgsw_ntt, const NTTValue* const xai_ntt,
+    const NTTValueFor<brP::targetP::n>* const one_trgsw_ntt,
+    const NTTValueFor<brP::targetP::n>* const xai_ntt,
     const CuNTTHandler<brP::targetP::n> ntt)
 {
     __shared__
@@ -1307,9 +1295,11 @@ template <class brP, std::make_signed_t<typename brP::targetP::T> μ, class iksP
 __device__ inline void __HomGateKeyBundle__(
     typename iksP::targetP::T* const out,
     const typename brP::domainP::T* const in0,
-    const typename brP::domainP::T* const in1, const NTTValue* const bk,
+    const typename brP::domainP::T* const in1,
+    const NTTValueFor<brP::targetP::n>* const bk,
     const typename iksP::targetP::T* const ksk,
-    const NTTValue* const one_trgsw_ntt, const NTTValue* const xai_ntt,
+    const NTTValueFor<brP::targetP::n>* const one_trgsw_ntt,
+    const NTTValueFor<brP::targetP::n>* const xai_ntt,
     const CuNTTHandler<brP::targetP::n> ntt)
 {
     extern __shared__ char dyn_sh[];
@@ -1344,7 +1334,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename brP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1359,18 +1349,18 @@ template <class brP = TFHEpp::lvl01param,
           class iksP = TFHEpp::lvl10param>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __NorBootstrap__(typename iksP::targetP::
-                                                          T* const out,
-                                                      const typename brP::
-                                                          domainP::T* const in0,
-                                                      const typename brP::
-                                                          domainP::T* const in1,
-                                                      NTTValue* bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<
-                                                          brP::targetP::n>
-                                                          ntt)
+        typename brP::
+            targetP>) void __NorBootstrap__(typename iksP::targetP::T* const
+                                                out,
+                                            const typename brP::domainP::
+                                                T* const in0,
+                                            const typename brP::domainP::
+                                                T* const in1,
+                                            NTTValueFor<brP::targetP::n>* bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     __HomGate__<brP, μ, iksP, -1, -1, -brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                         ntt);
@@ -1388,7 +1378,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename brP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1403,18 +1393,18 @@ template <class brP = TFHEpp::lvl01param,
           class iksP = TFHEpp::lvl10param>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __AndBootstrap__(typename iksP::targetP::
-                                                          T* const out,
-                                                      const typename brP::
-                                                          domainP::T* const in0,
-                                                      const typename brP::
-                                                          domainP::T* const in1,
-                                                      NTTValue* bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<
-                                                          brP::targetP::n>
-                                                          ntt)
+        typename brP::
+            targetP>) void __AndBootstrap__(typename iksP::targetP::T* const
+                                                out,
+                                            const typename brP::domainP::
+                                                T* const in0,
+                                            const typename brP::domainP::
+                                                T* const in1,
+                                            NTTValueFor<brP::targetP::n>* bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     __HomGate__<brP, μ, iksP, 1, 1, -brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                       ntt);
@@ -1431,7 +1421,7 @@ __global__ __launch_bounds__(
                                                in0,
                                            const typename brP::domainP::T* const
                                                in1,
-                                           NTTValue* bk,
+                                           NTTValueFor<brP::targetP::n>* bk,
                                            const typename iksP::targetP::
                                                T* const ksk,
                                            const CuNTTHandler<brP::targetP::n>
@@ -1446,18 +1436,18 @@ template <class brP = TFHEpp::lvl01param,
           class iksP = TFHEpp::lvl10param>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __XorBootstrap__(typename iksP::targetP::
-                                                          T* const out,
-                                                      const typename brP::
-                                                          domainP::T* const in0,
-                                                      const typename brP::
-                                                          domainP::T* const in1,
-                                                      NTTValue* bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<
-                                                          brP::targetP::n>
-                                                          ntt)
+        typename brP::
+            targetP>) void __XorBootstrap__(typename iksP::targetP::T* const
+                                                out,
+                                            const typename brP::domainP::
+                                                T* const in0,
+                                            const typename brP::domainP::
+                                                T* const in1,
+                                            NTTValueFor<brP::targetP::n>* bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     __HomGate__<brP, μ, iksP, 2, 2, 2 * brP::domainP::μ>(out, in0, in1, bk, ksk,
                                                          ntt);
@@ -1475,7 +1465,7 @@ __global__ __launch_bounds__(
                                                   T* const in0,
                                               const typename brP::domainP::
                                                   T* const in1,
-                                              NTTValue* bk,
+                                              NTTValueFor<brP::targetP::n>* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
                                               const CuNTTHandler<
@@ -1498,7 +1488,7 @@ __global__ __launch_bounds__(
                                                   T* const in0,
                                               const typename brP::domainP::
                                                   T* const in1,
-                                              NTTValue* bk,
+                                              NTTValueFor<brP::targetP::n>* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
                                               const CuNTTHandler<
@@ -1521,7 +1511,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename brP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1543,7 +1533,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename brP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1557,20 +1547,21 @@ __global__ __launch_bounds__(
 template <class brP, typename brP::targetP::T μ, class iksP>
 __global__ __launch_bounds__(
     NUM_THREAD4HOMGATE<
-        typename brP::targetP>) void __MuxBootstrap__(typename iksP::targetP::
-                                                          T* const out,
-                                                      const typename brP::
-                                                          domainP::T* const inc,
-                                                      const typename brP::
-                                                          domainP::T* const in1,
-                                                      const typename brP::
-                                                          domainP::T* const in0,
-                                                      const NTTValue* const bk,
-                                                      const typename iksP::
-                                                          targetP::T* const ksk,
-                                                      const CuNTTHandler<
-                                                          brP::targetP::n>
-                                                          ntt)
+        typename brP::
+            targetP>) void __MuxBootstrap__(typename iksP::targetP::T* const
+                                                out,
+                                            const typename brP::domainP::
+                                                T* const inc,
+                                            const typename brP::domainP::
+                                                T* const in1,
+                                            const typename brP::domainP::
+                                                T* const in0,
+                                            const NTTValueFor<
+                                                brP::targetP::n>* const bk,
+                                            const typename iksP::targetP::
+                                                T* const ksk,
+                                            const CuNTTHandler<brP::targetP::n>
+                                                ntt)
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
@@ -1625,7 +1616,8 @@ __global__ __launch_bounds__(
                                                  T* const in1,
                                              const typename brP::domainP::
                                                  T* const in0,
-                                             const NTTValue* const bk,
+                                             const NTTValueFor<
+                                                 brP::targetP::n>* const bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1683,7 +1675,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename iksP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1703,7 +1695,7 @@ __global__ __launch_bounds__(
                                                 T* const in0,
                                             const typename iksP::domainP::
                                                 T* const in1,
-                                            NTTValue* bk,
+                                            NTTValueFor<brP::targetP::n>* bk,
                                             const typename iksP::targetP::
                                                 T* const ksk,
                                             const CuNTTHandler<brP::targetP::n>
@@ -1724,7 +1716,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename iksP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1744,7 +1736,7 @@ __global__ __launch_bounds__(
                                                 T* const in0,
                                             const typename iksP::domainP::
                                                 T* const in1,
-                                            NTTValue* bk,
+                                            NTTValueFor<brP::targetP::n>* bk,
                                             const typename iksP::targetP::
                                                 T* const ksk,
                                             const CuNTTHandler<brP::targetP::n>
@@ -1764,7 +1756,7 @@ __global__ __launch_bounds__(
                                                T* const in0,
                                            const typename iksP::domainP::
                                                T* const in1,
-                                           NTTValue* bk,
+                                           NTTValueFor<brP::targetP::n>* bk,
                                            const typename iksP::targetP::
                                                T* const ksk,
                                            const CuNTTHandler<brP::targetP::n>
@@ -1784,7 +1776,7 @@ __global__ __launch_bounds__(
                                                 T* const in0,
                                             const typename iksP::domainP::
                                                 T* const in1,
-                                            NTTValue* bk,
+                                            NTTValueFor<brP::targetP::n>* bk,
                                             const typename iksP::targetP::
                                                 T* const ksk,
                                             const CuNTTHandler<brP::targetP::n>
@@ -1805,7 +1797,7 @@ __global__ __launch_bounds__(
                                                   T* const in0,
                                               const typename iksP::domainP::
                                                   T* const in1,
-                                              NTTValue* bk,
+                                              NTTValueFor<brP::targetP::n>* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
                                               const CuNTTHandler<
@@ -1827,7 +1819,7 @@ __global__ __launch_bounds__(
                                                   T* const in0,
                                               const typename iksP::domainP::
                                                   T* const in1,
-                                              NTTValue* bk,
+                                              NTTValueFor<brP::targetP::n>* bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
                                               const CuNTTHandler<
@@ -1849,7 +1841,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename iksP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1870,7 +1862,7 @@ __global__ __launch_bounds__(
                                                  T* const in0,
                                              const typename iksP::domainP::
                                                  T* const in1,
-                                             NTTValue* bk,
+                                             NTTValueFor<brP::targetP::n>* bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>
@@ -1882,24 +1874,25 @@ __global__ __launch_bounds__(
 
 #ifdef USE_KEY_BUNDLE
 // Key-bundle gate kernels (BR-IKS order)
-#define DEFINE_KB_GATE_BRIKS(Name, casign_val, cbsign_val, offset_expr)     \
-    template <class brP = TFHEpp::lvl01param,                               \
-              typename brP::targetP::T μ = TFHEpp::lvl1param::μ,            \
-              class iksP = TFHEpp::lvl10param>                              \
-    __global__ __launch_bounds__(                                           \
-        NUM_THREAD4HOMGATE<typename brP::targetP>) void                     \
-        __##Name##BootstrapKB__(typename iksP::targetP::T* const out,       \
-                                const typename brP::domainP::T* const in0,  \
-                                const typename brP::domainP::T* const in1,  \
-                                NTTValue* bk,                               \
-                                const typename iksP::targetP::T* const ksk, \
-                                const NTTValue* const one_trgsw_ntt,        \
-                                const NTTValue* const xai_ntt,              \
-                                const CuNTTHandler<brP::targetP::n> ntt)    \
-    {                                                                       \
-        __HomGateKeyBundle__<brP, μ, iksP, casign_val, cbsign_val,          \
-                             offset_expr>(out, in0, in1, bk, ksk,           \
-                                          one_trgsw_ntt, xai_ntt, ntt);     \
+#define DEFINE_KB_GATE_BRIKS(Name, casign_val, cbsign_val, offset_expr) \
+    template <class brP = TFHEpp::lvl01param,                           \
+              typename brP::targetP::T μ = TFHEpp::lvl1param::μ,        \
+              class iksP = TFHEpp::lvl10param>                          \
+    __global__ __launch_bounds__(                                       \
+        NUM_THREAD4HOMGATE<typename brP::targetP>) void                 \
+        __##Name##BootstrapKB__(                                        \
+            typename iksP::targetP::T* const out,                       \
+            const typename brP::domainP::T* const in0,                  \
+            const typename brP::domainP::T* const in1,                  \
+            NTTValueFor<brP::targetP::n>* bk,                           \
+            const typename iksP::targetP::T* const ksk,                 \
+            const NTTValueFor<brP::targetP::n>* const one_trgsw_ntt,    \
+            const NTTValueFor<brP::targetP::n>* const xai_ntt,          \
+            const CuNTTHandler<brP::targetP::n> ntt)                    \
+    {                                                                   \
+        __HomGateKeyBundle__<brP, μ, iksP, casign_val, cbsign_val,      \
+                             offset_expr>(out, in0, in1, bk, ksk,       \
+                                          one_trgsw_ntt, xai_ntt, ntt); \
     }
 
 DEFINE_KB_GATE_BRIKS(Nand, -1, -1, brP::domainP::μ)
@@ -1920,14 +1913,15 @@ DEFINE_KB_GATE_BRIKS(OrYN, 1, -1, brP::domainP::μ)
               typename brP::targetP::T μ = TFHEpp::lvl1param::μ>               \
     __global__ __launch_bounds__(                                              \
         NUM_THREAD4HOMGATE<typename brP::targetP>) void                        \
-        __##Name##BootstrapKB__(typename brP::targetP::T* const out,           \
-                                const typename iksP::domainP::T* const in0,    \
-                                const typename iksP::domainP::T* const in1,    \
-                                NTTValue* bk,                                  \
-                                const typename iksP::targetP::T* const ksk,    \
-                                const NTTValue* const one_trgsw_ntt,           \
-                                const NTTValue* const xai_ntt,                 \
-                                const CuNTTHandler<brP::targetP::n> ntt)       \
+        __##Name##BootstrapKB__(                                               \
+            typename brP::targetP::T* const out,                               \
+            const typename iksP::domainP::T* const in0,                        \
+            const typename iksP::domainP::T* const in1,                        \
+            NTTValueFor<brP::targetP::n>* bk,                                  \
+            const typename iksP::targetP::T* const ksk,                        \
+            const NTTValueFor<brP::targetP::n>* const one_trgsw_ntt,           \
+            const NTTValueFor<brP::targetP::n>* const xai_ntt,                 \
+            const CuNTTHandler<brP::targetP::n> ntt)                           \
     {                                                                          \
         __HomGateKeyBundle__<iksP, brP, μ, casign_val, cbsign_val,             \
                              offset_expr>(out, in0, in1, bk, ksk,              \
@@ -1959,12 +1953,16 @@ __global__ __launch_bounds__(
                                                   T* const in1,
                                               const typename brP::domainP::
                                                   T* const in0,
-                                              const NTTValue* const bk,
+                                              const NTTValueFor<
+                                                  brP::targetP::n>* const bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
-                                              const NTTValue* const
+                                              const NTTValueFor<
+                                                  brP::targetP::n>* const
                                                   one_trgsw_ntt,
-                                              const NTTValue* const xai_ntt,
+                                              const NTTValueFor<
+                                                  brP::targetP::n>* const
+                                                  xai_ntt,
                                               const CuNTTHandler<
                                                   brP::targetP::n>
                                                   ntt)
@@ -2019,12 +2017,16 @@ __global__ __launch_bounds__(
                                                    T* const in1,
                                                const typename brP::domainP::
                                                    T* const in0,
-                                               const NTTValue* const bk,
+                                               const NTTValueFor<
+                                                   brP::targetP::n>* const bk,
                                                const typename iksP::targetP::
                                                    T* const ksk,
-                                               const NTTValue* const
+                                               const NTTValueFor<
+                                                   brP::targetP::n>* const
                                                    one_trgsw_ntt,
-                                               const NTTValue* const xai_ntt,
+                                               const NTTValueFor<
+                                                   brP::targetP::n>* const
+                                                   xai_ntt,
                                                const CuNTTHandler<
                                                    brP::targetP::n>
                                                    ntt)
@@ -2079,12 +2081,16 @@ __global__ __launch_bounds__(
                                                   T* const in1,
                                               const typename iksP::domainP::
                                                   T* const in0,
-                                              const NTTValue* const bk,
+                                              const NTTValueFor<
+                                                  brP::targetP::n>* const bk,
                                               const typename iksP::targetP::
                                                   T* const ksk,
-                                              const NTTValue* const
+                                              const NTTValueFor<
+                                                  brP::targetP::n>* const
                                                   one_trgsw_ntt,
-                                              const NTTValue* const xai_ntt,
+                                              const NTTValueFor<
+                                                  brP::targetP::n>* const
+                                                  xai_ntt,
                                               const CuNTTHandler<
                                                   brP::targetP::n>
                                                   ntt)
@@ -2144,12 +2150,16 @@ __global__ __launch_bounds__(
                                                    T* const in1,
                                                const typename iksP::domainP::
                                                    T* const in0,
-                                               const NTTValue* const bk,
+                                               const NTTValueFor<
+                                                   brP::targetP::n>* const bk,
                                                const typename iksP::targetP::
                                                    T* const ksk,
-                                               const NTTValue* const
+                                               const NTTValueFor<
+                                                   brP::targetP::n>* const
                                                    one_trgsw_ntt,
-                                               const NTTValue* const xai_ntt,
+                                               const NTTValueFor<
+                                                   brP::targetP::n>* const
+                                                   xai_ntt,
                                                const CuNTTHandler<
                                                    brP::targetP::n>
                                                    ntt)
@@ -2233,7 +2243,8 @@ __global__ __launch_bounds__(
                                                 T* const in1,
                                             const typename iksP::domainP::
                                                 T* const in0,
-                                            const NTTValue* const bk,
+                                            const NTTValueFor<
+                                                brP::targetP::n>* const bk,
                                             const typename iksP::targetP::
                                                 T* const ksk,
                                             const CuNTTHandler<brP::targetP::n>
@@ -2294,7 +2305,8 @@ __global__ __launch_bounds__(
                                                  T* const in1,
                                              const typename iksP::domainP::
                                                  T* const in0,
-                                             const NTTValue* const bk,
+                                             const NTTValueFor<
+                                                 brP::targetP::n>* const bk,
                                              const typename iksP::targetP::
                                                  T* const ksk,
                                              const CuNTTHandler<brP::targetP::n>

@@ -30,11 +30,11 @@
 #include <include/cufhe_gpu.cuh>
 
 namespace cufhe {
-extern std::vector<NTTValue*> bk_ntts_lvl02;
+extern std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> bk_ntts_lvl02;
 extern std::vector<CuNTTHandler<TFHEpp::lvl2param::n>*> ntt_handlers_lvl02;
 #ifdef USE_KEY_BUNDLE
-extern std::vector<NTTValue*> xai_ntt_devs_lvl02;
-extern std::vector<NTTValue*> one_trgsw_ntt_devs_lvl02;
+extern std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> xai_ntt_devs_lvl02;
+extern std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> one_trgsw_ntt_devs_lvl02;
 #endif
 }
 
@@ -43,17 +43,28 @@ using namespace cufhe;
 
 // Kernel: run just BlindRotatePreAdd and copy TRLWE output to global memory
 template <class brP, int casign, int cbsign, int offset>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>)
-void __TestBlindRotate__(
-    typename brP::targetP::T* const trlwe_out,
-    const typename brP::domainP::T* const in0,
-    const typename brP::domainP::T* const in1,
-    const cufhe::NTTValue* const bk,
+__global__ __launch_bounds__(
+    NUM_THREAD4HOMGATE<
+        typename brP::
+            targetP>) void __TestBlindRotate__(typename brP::targetP::T* const
+                                                   trlwe_out,
+                                               const typename brP::domainP::
+                                                   T* const in0,
+                                               const typename brP::domainP::
+                                                   T* const in1,
+                                               const cufhe::NTTValueFor<
+                                                   brP::targetP::n>* const bk,
 #ifdef USE_KEY_BUNDLE
-    const cufhe::NTTValue* const one_trgsw_ntt,
-    const cufhe::NTTValue* const xai_ntt,
+                                               const cufhe::NTTValueFor<
+                                                   brP::targetP::n>* const
+                                                   one_trgsw_ntt,
+                                               const cufhe::NTTValueFor<
+                                                   brP::targetP::n>* const
+                                                   xai_ntt,
 #endif
-    const cufhe::CuNTTHandler<brP::targetP::n> ntt)
+                                               const cufhe::CuNTTHandler<
+                                                   brP::targetP::n>
+                                                   ntt)
 {
     constexpr uint32_t N = brP::targetP::n;
 
@@ -126,7 +137,7 @@ int main()
     printf("GPU FFT BSK ready.\n\n");
 
     // Get BSK device pointer
-    NTTValue* d_bk = cufhe::bk_ntts_lvl02[0];
+    NTTValueFor<tgtP::n>* d_bk = cufhe::bk_ntts_lvl02[0];
 
     // Allocate device memory for input and output
     typename domP::T* d_in0;
