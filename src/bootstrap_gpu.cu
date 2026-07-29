@@ -1041,7 +1041,6 @@ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>) void __Bootstrap__(
 
     __BlindRotate__<brP>(tlwe, in, mu, bk, ntt);
     KeySwitch<iksP>(out, tlwe, ksk);
-    __threadfence();
 }
 
 // template <class iksP, class bkP>
@@ -1181,7 +1180,6 @@ __global__ __launch_bounds__(
     for (int i = 0; i < (lvl1param::k + 1) * lvl1param::n; i++) {
         out[i] = tlwe[i];
     }
-    __threadfence();
 }
 
 template <class P, uint index>
@@ -1228,7 +1226,6 @@ __device__ inline void __HomGate__(typename brP::targetP::T* const out,
 
     __BlindRotate__<brP>(trlwe, tlwe, μ, bk, ntt);
     __SampleExtractIndex__<typename brP::targetP, 0>(out, trlwe);
-    __threadfence();
 }
 
 template <class brP, std::make_signed_t<typename brP::targetP::T> μ, class iksP,
@@ -1255,7 +1252,6 @@ __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
     __syncthreads();
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
-    __threadfence();
 }
 
 #ifdef USE_KEY_BUNDLE
@@ -1286,7 +1282,6 @@ __device__ inline void __HomGateKeyBundle__(
     __BlindRotateKeyBundle__<brP>(trlwe, tlwe, μ, bk, one_trgsw_ntt, xai_ntt,
                                   ntt);
     __SampleExtractIndex__<typename brP::targetP, 0>(out, trlwe);
-    __threadfence();
 }
 
 // Key-bundle HomGate variants (BR-IKS order)
@@ -1317,7 +1312,6 @@ __device__ inline void __HomGateKeyBundle__(
     __syncthreads();
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
-    __threadfence();
 }
 #endif  // USE_KEY_BUNDLE
 
@@ -1600,7 +1594,6 @@ __global__ __launch_bounds__(
     __syncthreads();
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
-    __threadfence();
 }
 
 // NMux(inc,in1,in0) = !(inc?in1:in0) = !(inc&in1 + (!inc)&in0)
@@ -1660,7 +1653,6 @@ __global__ __launch_bounds__(
     __syncthreads();
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
-    __threadfence();
 }
 
 // iks br ver.
@@ -2001,7 +1993,6 @@ __global__ __launch_bounds__(
     __syncthreads();
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
-    __threadfence();
 }
 
 // Key-bundle NMux (BR-IKS order)
@@ -2065,7 +2056,6 @@ __global__ __launch_bounds__(
     __syncthreads();
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
-    __threadfence();
 }
 
 // Key-bundle Mux (IKS-BR order)
@@ -2134,7 +2124,6 @@ __global__ __launch_bounds__(
     if (tid == 0) {
         out[brP::targetP::k * brP::targetP::n] += μ;
     }
-    __threadfence();
 }
 
 // Key-bundle NMux (IKS-BR order)
@@ -2203,7 +2192,6 @@ __global__ __launch_bounds__(
     if (tid == 0) {
         out[brP::targetP::k * brP::targetP::n] -= μ;
     }
-    __threadfence();
 }
 #endif  // USE_KEY_BUNDLE
 
@@ -2216,7 +2204,6 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __CopyBootstrap__(
     const uint bdim = ThisBlockSize();
     for (int i = tid; i <= P::k * P::n; i += bdim) out[i] = in[i];
     __syncthreads();
-    __threadfence();
 }
 
 template <class P>
@@ -2228,7 +2215,6 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>) void __NotBootstrap__(
     const uint bdim = ThisBlockSize();
     for (int i = tid; i <= P::k * P::n; i += bdim) out[i] = -in[i];
     __syncthreads();
-    __threadfence();
 }
 
 // Mux(inc,in1,in0) = inc?in1:in0 = inc&in1 + (!inc)&in0
@@ -2289,7 +2275,6 @@ __global__ __launch_bounds__(
     if (tid == 0) {
         out[brP::targetP::k * brP::targetP::n] += μ;
     }
-    __threadfence();
 }
 
 // NMux(inc,in1,in0) = !(inc?in1:in0) = !(inc&in1 + (!inc)&in0)
@@ -2352,7 +2337,6 @@ __global__ __launch_bounds__(
     if (tid == 0) {
         out[brP::targetP::k * brP::targetP::n] -= μ;
     }
-    __threadfence();
 }
 
 void Bootstrap(TFHEpp::lvl0param::T* const out,

@@ -55,7 +55,6 @@ __global__ void __SEIandKS__(typename P::targetP::T* const out,
                              const typename P::targetP::T* const ksk)
 {
     KeySwitch<TFHEpp::lvl10param>(out, in, ksk);
-    __threadfence();
 }
 
 void SEIandKS(TFHEpp::lvl0param::T* const out,
