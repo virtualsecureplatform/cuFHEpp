@@ -183,6 +183,9 @@ void PrintResult(const char* level, const cudaDeviceProp& prop,
     std::cout << "Level: " << level << std::endl;
     std::cout << "GPU: " << prop.name << std::endl;
     std::cout << "Gate: gNAND" << std::endl;
+    std::cout << "Streams per SM:\t"
+              << num_streams / static_cast<uint32_t>(prop.multiProcessorCount)
+              << std::endl;
     std::cout << "Number of streams:\t" << num_streams << std::endl;
     std::cout << "Number of tests:\t" << num_tests << std::endl;
     std::cout << "Number of tests per stream:\t" << gates_per_stream
@@ -203,14 +206,9 @@ int main()
     CUDA_CHECK(cudaGetDeviceProperties(&prop, 0));
 
     const int gpu_num = 1;
-    const uint32_t num_streams = prop.multiProcessorCount;
-    const uint32_t num_tests = num_streams * 32;
-    const uint32_t gates_per_stream = num_tests / num_streams;
+    constexpr uint32_t gates_per_stream = 32;
 
     cufhe::SetGPUNum(gpu_num);
-
-    std::vector<cufhe::Stream> streams(num_streams);
-    for (auto& stream : streams) stream.Create();
 
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
@@ -218,6 +216,20 @@ int main()
 
     {
         using Param = TFHEpp::lvl1param;
+#ifdef USE_FFT
+        constexpr uint32_t streams_per_sm = 1;
+#else
+        // The 32-bit lvl1 NTT gate fits two resident blocks per SM. Give each
+        // block an independent stream so one stream's sequential gate chain
+        // does not leave the second slot idle.
+        constexpr uint32_t streams_per_sm = 2;
+#endif
+        const uint32_t num_streams = prop.multiProcessorCount * streams_per_sm;
+        const uint32_t num_tests = num_streams * gates_per_stream;
+
+        std::vector<cufhe::Stream> streams(num_streams);
+        for (auto& stream : streams) stream.Create();
+
         AllocateFakeEvaluationKeys(gpu_num);
 
         std::vector<cufhe::Ctxt<Param>> out(num_tests);
@@ -248,12 +260,21 @@ int main()
         PrintResult("lvl1", prop, num_streams, num_tests, gates_per_stream,
                     elapsed_ms);
         FreeFakeEvaluationKeys(gpu_num);
+
+        for (auto& stream : streams) stream.Destroy();
     }
 
     std::cout << std::endl;
 
     {
         using Param = TFHEpp::lvl0param;
+        constexpr uint32_t streams_per_sm = 1;
+        const uint32_t num_streams = prop.multiProcessorCount * streams_per_sm;
+        const uint32_t num_tests = num_streams * gates_per_stream;
+
+        std::vector<cufhe::Stream> streams(num_streams);
+        for (auto& stream : streams) stream.Create();
+
         AllocateFakeEvaluationKeysLvl02(gpu_num);
 
         std::vector<cufhe::Ctxt<Param>> out(num_tests);
@@ -287,12 +308,13 @@ int main()
         PrintResult("lvl02", prop, num_streams, num_tests, gates_per_stream,
                     elapsed_ms);
         FreeFakeEvaluationKeysLvl02(gpu_num);
+
+        for (auto& stream : streams) stream.Destroy();
     }
 
     CUDA_CHECK(cudaEventDestroy(start));
     CUDA_CHECK(cudaEventDestroy(stop));
 
-    for (auto& stream : streams) stream.Destroy();
     return 0;
 }
 
