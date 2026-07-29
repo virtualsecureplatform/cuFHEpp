@@ -439,7 +439,7 @@ __device__ __forceinline__ void SmallForwardNTT(
         __syncthreads();
     }
 
-#pragma unroll
+#pragma unroll 1
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
@@ -472,7 +472,7 @@ __device__ __forceinline__ void SmallInverseNTT(
     int in_shared_address = ((tid >> t_) << t_) + tid;
     int current_root_index;
 
-#pragma unroll
+#pragma unroll 1
     for (int lp = 0; lp < 6; lp++) {
         current_root_index = m + (tid >> t_2);
         SmallGentlemanSandeUnit<N_POWER>(
