@@ -50,9 +50,19 @@ static_assert(P == 2147473409U, "Unexpected lvl1 NTT prime value");
 static_assert(P < 3037000500ULL,
               "Modulus too large for safe 64-bit multiplication");
 
-constexpr uint32_t BARRETT_K = 62;
-constexpr uint64_t BARRETT_MU = (1ULL << BARRETT_K) / P;
+constexpr Value FOLD_BITS = 31;
+constexpr Value FOLD_MASK = (1U << FOLD_BITS) - 1;
+constexpr Value FOLD_FACTOR = (1U << FOLD_BITS) - P;
+constexpr uint64_t MAX_SECOND_FOLD =
+    static_cast<uint64_t>(FOLD_MASK) +
+    static_cast<uint64_t>(FOLD_FACTOR) * FOLD_FACTOR;
 constexpr uint64_t INV_MODSWITCH_MUL = (1ULL << 63) / P;
+
+static_assert(FOLD_FACTOR == 10239U, "Unexpected lvl1 NTT fold factor");
+static_assert(MAX_SECOND_FOLD < 2ULL * P,
+              "Two folds must leave at most one conditional subtraction");
+static_assert(MAX_SECOND_FOLD < (1ULL << 32),
+              "Second fold must fit in a uint32_t");
 
 }  // namespace small_ntt31
 
@@ -218,19 +228,19 @@ __host__ __device__ __forceinline__ SmallNTTValue
 small_mod31_mult(SmallNTTValue a, SmallNTTValue b)
 {
     constexpr uint32_t p = small_ntt31::P;
-    constexpr uint64_t mu = small_ntt31::BARRETT_MU;
     const uint64_t z = static_cast<uint64_t>(static_cast<uint32_t>(a)) *
                        static_cast<uint32_t>(b);
+    constexpr uint32_t mask = small_ntt31::FOLD_MASK;
+    constexpr uint32_t factor = small_ntt31::FOLD_FACTOR;
 
-#ifdef __CUDA_ARCH__
-    const uint64_t hi = __umul64hi(z, mu);
-    const uint64_t lo = z * mu;
-    const uint64_t q = (hi << 2) | (lo >> 62);
-    uint32_t result = static_cast<uint32_t>(z - q * p);
+    // p = 2^31 - 10239, so 2^31 is congruent to 10239 modulo p.
+    // For z < p^2, two folds leave a value below 2p.
+    const uint32_t lo = static_cast<uint32_t>(z) & mask;
+    const uint32_t hi = static_cast<uint32_t>(z >> 31);
+    const uint64_t folded = lo + static_cast<uint64_t>(hi) * factor;
+    const uint32_t result = (static_cast<uint32_t>(folded) & mask) +
+                            static_cast<uint32_t>(folded >> 31) * factor;
     return (result >= p) ? (result - p) : result;
-#else
-    return static_cast<uint32_t>(z % p);
-#endif
 }
 
 template <uint32_t N>
