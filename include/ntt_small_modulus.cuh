@@ -507,9 +507,10 @@ __device__ __forceinline__ void SmallInverseNTT(
     }
 
     constexpr uint32_t N = 1U << N_POWER;
+    // Scaling is coefficient-local. Callers synchronize only when the shared
+    // buffer is handed to another phase.
     sh[tid] = small_mod_mult<N>(sh[tid], n_inverse);
     sh[tid + NUM_THREADS] = small_mod_mult<N>(sh[tid + NUM_THREADS], n_inverse);
-    __syncthreads();
 }
 
 template <uint32_t N>
@@ -521,7 +522,7 @@ __host__ __device__ constexpr int SmallForwardNTTSyncCount()
 template <uint32_t N>
 __host__ __device__ constexpr int SmallInverseNTTSyncCount()
 {
-    return static_cast<int>(SmallLog2<N>()) - 4;
+    return static_cast<int>(SmallLog2<N>()) - 5;
 }
 
 #endif  // __CUDACC__
