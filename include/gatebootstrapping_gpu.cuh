@@ -543,7 +543,6 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
             sh_accum[k_idx * N + tid + NUM_THREADS] = 0;
         }
     }
-    __syncthreads();
 
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
@@ -620,9 +619,12 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                     }
                 }
             }
-            __syncthreads();
         }
     }
+
+    // Accumulation is coefficient-local. Synchronize once before the inverse
+    // butterflies begin reading coefficients written by other threads.
+    __syncthreads();
 
     // Step 4: Inverse NTT on accumulated results and add to trlwe
     // Operate directly on sh_accum to avoid copying to sh_work
@@ -654,8 +656,8 @@ __device__ inline void Accumulate(typename P::targetP::T* const trlwe,
                 }
             }
         }
-        __syncthreads();
     }
+    __syncthreads();
 }
 
 #ifdef USE_BLOCK_BINARY
@@ -688,7 +690,6 @@ __device__ inline void AccumulateBlockBinary(
             sh_accum[component * N + tid + NUM_THREADS] = 0;
         }
     }
-    __syncthreads();
 
     for (int component = 0; component <= targetP::k; component++) {
         const bool nonce = component < targetP::k;
@@ -765,9 +766,12 @@ __device__ inline void AccumulateBlockBinary(
                     }
                 }
             }
-            __syncthreads();
         }
     }
+
+    // Accumulation is coefficient-local. Synchronize once before the inverse
+    // butterflies begin reading coefficients written by other threads.
+    __syncthreads();
 
     for (int component = 0; component <= targetP::k; component++) {
         NTTValue* const sh_result = &sh_accum[component * N];
@@ -792,8 +796,8 @@ __device__ inline void AccumulateBlockBinary(
                         static_cast<T>(ntt_mod_to_torus32<N>(sh_result[i]));
             }
         }
-        __syncthreads();
     }
+    __syncthreads();
 }
 #endif
 #endif  // USE_FFT
@@ -1209,7 +1213,6 @@ __device__ inline void AccumulateKeyBundle(
             sh_accum[k_idx * N + tid + NUM_THREADS] = 0;
         }
     }
-    __syncthreads();
 
     // Decomposition constants
     constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
@@ -1296,9 +1299,12 @@ __device__ inline void AccumulateKeyBundle(
                     }
                 }
             }
-            __syncthreads();
         }
     }
+
+    // Accumulation is coefficient-local. Synchronize once before the inverse
+    // butterflies begin reading coefficients written by other threads.
+    __syncthreads();
 
     // Step 4: Inverse NTT and REPLACE trlwe (not add)
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
@@ -1327,8 +1333,8 @@ __device__ inline void AccumulateKeyBundle(
                 }
             }
         }
-        __syncthreads();
     }
+    __syncthreads();
 }
 #endif  // USE_FFT
 
