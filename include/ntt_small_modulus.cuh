@@ -429,6 +429,8 @@ ntt_mod_to_torus32(SmallNTTValue val)
 
 extern __constant__ uint32_t d_const_forward_root_31[TFHEpp::lvl1param::n];
 extern __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
+extern __constant__ uint64_t d_const_forward_root_64[TFHEpp::lvl2param::n];
+extern __constant__ uint64_t d_const_inverse_root_64[TFHEpp::lvl2param::n];
 
 // Cooley-Tukey butterfly for forward NTT
 template <int N_POWER>
@@ -525,6 +527,11 @@ __device__ __forceinline__ void SmallForwardNTT(
                 root1_lo = d_const_forward_root_31[root1_lo_index];
                 root1_hi = d_const_forward_root_31[root1_hi_index];
             }
+            else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+                root0 = d_const_forward_root_64[root0_index];
+                root1_lo = d_const_forward_root_64[root1_lo_index];
+                root1_hi = d_const_forward_root_64[root1_hi_index];
+            }
 
             SmallNTTValueFor<1U << N_POWER> a = sh[address];
             SmallNTTValueFor<1U << N_POWER> b = sh[address + radix_t];
@@ -553,6 +560,9 @@ __device__ __forceinline__ void SmallForwardNTT(
             __ldg(&root_table[current_root_index]);
         if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
             root = d_const_forward_root_31[current_root_index];
+        }
+        else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+            root = d_const_forward_root_64[current_root_index];
         }
         SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
                                       sh[in_shared_address + t], root);
@@ -633,6 +643,11 @@ __device__ __forceinline__ void SmallInverseNTT(
                 root0_hi = d_const_inverse_root_31[root0_hi_index];
                 root1 = d_const_inverse_root_31[root1_index];
             }
+            else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+                root0_lo = d_const_inverse_root_64[root0_lo_index];
+                root0_hi = d_const_inverse_root_64[root0_hi_index];
+                root1 = d_const_inverse_root_64[root1_index];
+            }
 
             SmallNTTValueFor<1U << N_POWER> a = sh[address];
             SmallNTTValueFor<1U << N_POWER> b = sh[address + t];
@@ -660,6 +675,9 @@ __device__ __forceinline__ void SmallInverseNTT(
             __ldg(&root_table[current_root_index]);
         if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
             root = d_const_inverse_root_31[current_root_index];
+        }
+        else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+            root = d_const_inverse_root_64[current_root_index];
         }
         SmallGentlemanSandeUnit<N_POWER>(sh[in_shared_address],
                                          sh[in_shared_address + t], root);

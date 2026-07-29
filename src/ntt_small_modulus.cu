@@ -16,6 +16,8 @@ namespace cufhe {
 
 __constant__ uint32_t d_const_forward_root_31[TFHEpp::lvl1param::n];
 __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
+__constant__ uint64_t d_const_forward_root_64[TFHEpp::lvl2param::n];
+__constant__ uint64_t d_const_inverse_root_64[TFHEpp::lvl2param::n];
 
 // Host-side storage for NTT parameters per GPU
 std::vector<SmallNTTParams<TFHEpp::lvl1param::n>> g_small_ntt_params;
@@ -320,6 +322,14 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
             CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root_31,
                                           inverse_root.data(),
                                           sizeof(uint32_t) * kLength));
+        }
+        else if constexpr (length == TFHEpp::lvl2param::n) {
+            CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root_64,
+                                          forward_root.data(),
+                                          sizeof(uint64_t) * kLength));
+            CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root_64,
+                                          inverse_root.data(),
+                                          sizeof(uint64_t) * kLength));
         }
 
         params.n_inverse = static_cast<Value>(tables.n_inverse);
