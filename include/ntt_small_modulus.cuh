@@ -923,6 +923,21 @@ class CuSmallNTTHandler {
 #endif  // CUFHE_GPU_DEVICE_COMPILER
 };
 
+// gfx1201 exposes 64 KiB of LDS per workgroup.  A lvl02 bootstrap using the
+// traditional layout needs 80 KiB (112 KiB for Mux), even though the
+// transform itself only needs 16 KiB.  On HIP's 64-bit-capable custom FFT and
+// NTT paths, keep lvl02 accumulators in registers and reuse the transform area
+// as TLWE scratch after blind rotate.  CUDA retains the existing shared-memory
+// fast path; the 32-bit-only tfhe-rs-style FFT retains its original layout.
+template <class P>
+constexpr bool USE_LOW_LDS_BOOTSTRAP =
+#if defined(CUFHE_USE_HIP) && !defined(USE_BLOCK_BINARY) && \
+    (!defined(USE_FFT) || defined(USE_GPU_FFT))
+    P::n == TFHEpp::lvl2param::n;
+#else
+    false;
+#endif
+
 #ifdef USE_FFT
 
 //=============================================================================
@@ -944,8 +959,17 @@ constexpr uint32_t NTT_THREAD_UNITBIT = 1;
 // sh_accum[(k+1) × N/2] = (k+1) × 512 × double2 = 16 KB (for k=1)
 // Total: 24 KB for k=1
 template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE_WORK = (P::n / 2) * sizeof(double2);
+
+template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE_TLWE = (P::k * P::n + 1) * sizeof(typename P::T);
+
+template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE =
-    ((P::n / 2) + (P::k + 1) * (P::n / 2)) * sizeof(double2);
+    USE_LOW_LDS_BOOTSTRAP<P>
+        ? (MEM4HOMGATE_WORK<P> > MEM4HOMGATE_TLWE<P> ? MEM4HOMGATE_WORK<P>
+                                                     : MEM4HOMGATE_TLWE<P>)
+        : ((P::n / 2) + (P::k + 1) * (P::n / 2)) * sizeof(double2);
 
 // Dynamic shared memory size for regular gates:
 // FFT workspace + one TRLWE array placed after it
@@ -953,11 +977,12 @@ template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_DYN =
     MEM4HOMGATE<P> + (P::k + 1) * P::n * sizeof(typename P::T);
 
-// Dynamic shared memory size for Mux/NMux gates:
-// FFT workspace + two TRLWE arrays placed after it
+// Dynamic shared memory size for Mux/NMux gates.  The low-LDS path reuses one
+// TRLWE array sequentially; the regular path keeps two arrays.
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4MUXGATE_DYN =
-    MEM4HOMGATE<P> + 2 * (P::k + 1) * P::n * sizeof(typename P::T);
+    MEM4HOMGATE<P> + (USE_LOW_LDS_BOOTSTRAP<P> ? 1 : 2) * (P::k + 1) * P::n *
+                         sizeof(typename P::T);
 
 // Number of threads for homomorphic gate (N/2 = 512 for N=1024)
 template <class P = TFHEpp::lvl1param>
@@ -1775,9 +1800,21 @@ template <uint32_t N>
 using NTTValueFor = SmallNTTValueFor<N>;
 using NTTValue = NTTValueFor<TFHEpp::lvl1param::n>;
 
-// Shared memory size per gate: (k+2) * N field elements.
+// Shared memory size per gate: (k+2) * N field elements normally.  The
+// low-LDS path needs one N-element transform buffer plus extracted-TLWE
+// scratch, with the larger of those two determining the reusable prefix.
 template <class P = TFHEpp::lvl1param>
-constexpr uint32_t MEM4HOMGATE = (P::k + 2) * P::n * sizeof(NTTValueFor<P::n>);
+constexpr uint32_t MEM4HOMGATE_WORK = P::n * sizeof(NTTValueFor<P::n>);
+
+template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE_TLWE = (P::k * P::n + 1) * sizeof(typename P::T);
+
+template <class P = TFHEpp::lvl1param>
+constexpr uint32_t MEM4HOMGATE =
+    USE_LOW_LDS_BOOTSTRAP<P>
+        ? (MEM4HOMGATE_WORK<P> > MEM4HOMGATE_TLWE<P> ? MEM4HOMGATE_WORK<P>
+                                                     : MEM4HOMGATE_TLWE<P>)
+        : (P::k + 2) * P::n * sizeof(NTTValueFor<P::n>);
 
 // Dynamic shared memory size for regular gates:
 // NTT workspace + one TRLWE array placed after it
@@ -1785,11 +1822,12 @@ template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_DYN =
     MEM4HOMGATE<P> + (P::k + 1) * P::n * sizeof(typename P::T);
 
-// Dynamic shared memory size for Mux/NMux gates:
-// NTT workspace + two TRLWE arrays placed after it
+// Dynamic shared memory size for Mux/NMux gates.  The low-LDS path reuses one
+// TRLWE array sequentially; the regular path keeps two arrays.
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4MUXGATE_DYN =
-    MEM4HOMGATE<P> + 2 * (P::k + 1) * P::n * sizeof(typename P::T);
+    MEM4HOMGATE<P> + (USE_LOW_LDS_BOOTSTRAP<P> ? 1 : 2) * (P::k + 1) * P::n *
+                         sizeof(typename P::T);
 
 // Number of threads for NTT (N/2 = 512 for N=1024)
 template <class P = TFHEpp::lvl1param>

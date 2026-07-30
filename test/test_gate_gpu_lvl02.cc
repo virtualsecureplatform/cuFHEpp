@@ -1,5 +1,5 @@
 /**
- * Test for lvl02param gate bootstrapping (GPU-FFT backend).
+ * Test for lvl02param gate bootstrapping (GPU-FFT or NTT backend).
  * Same structure as test_gate_gpu.cc but uses the lvl02 path
  * (lvl0->lvl2 blind rotate, lvl2->lvl0 key switch).
  */

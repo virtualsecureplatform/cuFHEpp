@@ -48,7 +48,16 @@ NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) wi
 
 ### ROCm validation — AMD Radeon AI PRO R9700
 
-The ROCm backend was validated on an R9700 (`gfx1201`) with ROCm 7.14, using the default lvl1 parameters, KeyBundle, 32 streams, and 1024 encrypted gates per test. All Boolean gate correctness tests passed. The default custom GPU-FFT backend reached about 3.53 ms/gate throughput for binary gates and 6.98 ms/gate for MUX/NMUX. The small-modulus NTT backend reached about 5.17 ms/gate and 10.48 ms/gate respectively, making GPU-FFT approximately 1.5x faster on this GPU.
+The ROCm backend was validated on an R9700 (`gfx1201`) with ROCm 7.14, KeyBundle, 32 streams, and 1024 encrypted gates per test. All Boolean gate correctness tests passed for both lvl1 and lvl02 with the custom GPU-FFT and small-modulus NTT backends.
+
+| Parameters | Backend | Binary gates | MUX / NMUX | Faster backend |
+|---|---|---:|---:|---|
+| lvl1 (N=1024) | GPU-FFT | ~3.53 ms/gate | ~6.98 ms/gate | **GPU-FFT (~1.5x)** |
+| lvl1 (N=1024) | NTT | ~5.17 ms/gate | ~10.48 ms/gate | |
+| lvl02 (N=2048) | GPU-FFT | ~6.4 ms/gate | ~12.1 ms/gate | |
+| lvl02 (N=2048) | NTT | **~5.6 ms/gate** | **~10.4 ms/gate** | **NTT (~1.15x)** |
+
+These figures are throughput measurements from the encrypted correctness suite, not single-stream latency. The preferred transform depends on the parameter level: GPU-FFT is faster for lvl1, while NTT is faster for lvl02 on this GPU.
 
 ### All gates — cuFHEpp GPU, lvl1 (N=1024), FFT + KeyBundle
 
@@ -89,7 +98,7 @@ The ROCm backend was validated on an R9700 (`gfx1201`) with ROCm 7.14, using the
 - AMD builds require a ROCm development installation containing the HIP Clang compiler, HIP headers, and `amdhip64` runtime library. The R9700 port was validated with ROCm 7.14.
 - The AMD kernels currently target 32-lane wavefront GPUs. The default HIP architecture is therefore `gfx1201` for the R9700.
 
-The R9700's 64 KiB per-workgroup LDS supports the lvl1 Boolean gate path. The existing lvl02 kernels require 80 KiB of dynamic shared memory (112 KiB for MUX/NMUX), so lvl02 execution is not supported on this GPU even though those targets compile.
+The R9700's 64 KiB per-workgroup LDS supports lvl1 directly. For lvl02, the HIP kernels use a 49,160-byte low-LDS layout: transform accumulators stay in registers, the transform area is reused for extracted-TLWE scratch, and MUX/NMUX reuse a single TRLWE buffer. This path supports the default custom GPU-FFT backend and the NTT backend. The optional tfhe-rs-style FFT (`-DUSE_GPU_FFT=OFF`) remains limited to lvl1 on this GPU.
 
 ### Installation (Linux)
 Do the standard CMake compilation process.
@@ -112,7 +121,11 @@ cmake -S . -B build-rocm \
 cmake --build build-rocm
 ./build-rocm/test/test_fft_roundtrip
 ./build-rocm/test/test_gate_gpu
+./build-rocm/test/test_gate_gpu_lvl02
 ```
+
+For lvl02 with the faster NTT backend on R9700, configure with
+`-DUSE_FFT=OFF` and run the same `test_gate_gpu_lvl02` executable.
 
 If CMake cannot locate the ROCm compiler automatically, also pass
 `-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang++"`. `CUFHE_GPU_BACKEND=ROCM`
@@ -172,6 +185,12 @@ uint8_t result = TFHEpp::tlweSymDecrypt<P>(ct_out.tlwehost, sk.key.get<P>());
 st.Destroy();
 CleanUp();
 ```
+
+The lvl02 Boolean API keeps lvl0 ciphertext inputs and outputs while using
+`lvl02param` for blind rotation. Generate `lvl02param`/`lvl20param` evaluation
+keys, call `Initialize_lvl02(ek, sk)`, use gates such as `Nand_lvl02` and
+`Mux_lvl02`, then call `CleanUp_lvl02()`. See
+`test/test_gate_gpu_lvl02.cc` for a complete example.
 
 With `USE_BLOCK_BINARY=ON`, generate the subset key-switching key instead:
 ```c++

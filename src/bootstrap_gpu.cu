@@ -1182,24 +1182,72 @@ __global__ __launch_bounds__(
 }
 
 template <class P, uint index>
+__device__ inline typename P::T __SampleExtractValue__(
+    const typename P::T* const in, const uint i)
+{
+    constexpr uint nmask = P::n - 1;
+    if (i == P::k * P::n) return in[P::k * P::n + index];
+
+    const uint k = i >> P::nbit;
+    const uint n = i & nmask;
+    return n <= index ? in[k * P::n + index - n]
+                      : -in[k * P::n + P::n + index - n];
+}
+
+template <class P, uint index>
 __device__ inline void __SampleExtractIndex__(typename P::T* const res,
                                               const typename P::T* const in)
 {
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
-    constexpr uint nmask = P::n - 1;
+    for (uint i = tid; i <= P::k * P::n; i += bdim)
+        res[i] = __SampleExtractValue__<P, index>(in, i);
+}
+
+// Combine a sample extraction directly with a previously extracted TLWE.
+// This lets the low-LDS Mux path reuse one TRLWE buffer for both blind
+// rotations instead of keeping two 32 KiB lvl02 ciphertexts in shared memory.
+template <class P, uint index, bool negate>
+__device__ inline void __SampleExtractCombine__(typename P::T* const res,
+                                                const typename P::T* const in)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+    const uint32_t bdim = ThisBlockSize();
     for (uint i = tid; i <= P::k * P::n; i += bdim) {
-        if (i == P::k * P::n) {
-            res[P::k * P::n] = in[P::k * P::n + index];
-        }
-        else {
-            const uint k = i >> P::nbit;
-            const uint n = i & nmask;
-            if (n <= index)
-                res[i] = in[k * P::n + index - n];
-            else
-                res[i] = -in[k * P::n + P::n + index - n];
-        }
+        const typename P::T value = __SampleExtractValue__<P, index>(in, i);
+
+        if constexpr (negate)
+            res[i] = -res[i] - value;
+        else
+            res[i] += value;
+    }
+}
+
+template <class P, uint index>
+__device__ inline void __SampleExtractToRegisters__(typename P::T* const res,
+                                                    const typename P::T* in)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+    const uint32_t bdim = ThisBlockSize();
+    uint slot = 0;
+    for (uint i = tid; i <= P::k * P::n; i += bdim)
+        res[slot++] = __SampleExtractValue__<P, index>(in, i);
+}
+
+template <class P, uint index, bool negate>
+__device__ inline void __SampleExtractRegistersCombine__(
+    typename P::T* const res, const typename P::T* const saved,
+    const typename P::T* const in)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+    const uint32_t bdim = ThisBlockSize();
+    uint slot = 0;
+    for (uint i = tid; i <= P::k * P::n; i += bdim) {
+        const typename P::T value = __SampleExtractValue__<P, index>(in, i);
+        if constexpr (negate)
+            res[i] = -saved[slot++] - value;
+        else
+            res[i] = saved[slot++] + value;
     }
 }
 
@@ -1558,39 +1606,48 @@ __global__ __launch_bounds__(
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? trlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ>(trlwe1, inc, in1, bk,
                                                        ntt);
-    __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe0, inc, in0, bk,
-                                                        ntt);
-
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    // Add all (k+1)*n elements of the TRLWE ciphertexts
-    constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
-#pragma unroll
-    for (int i = tid; i < trlwe_size; i += bdim) {
-        trlwe1[i] += trlwe0[i];
-    }
-    // Add μ to b[0] (the constant term of polynomial b)
-    if (tid == 0) {
-        trlwe1[brP::targetP::k * brP::targetP::n] += μ;
-    }
-
-    __syncthreads();
-
-    // After BlindRotates, FFT workspace is free -- reuse for tlwe
     typename brP::targetP::T* tlwe =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
-    __syncthreads();
+
+    if constexpr (low_lds) {
+        typename brP::targetP::T saved[2 * brP::targetP::k + 1];
+        __SampleExtractToRegisters__<typename brP::targetP, 0>(saved, trlwe1);
+        __syncthreads();
+
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe1, inc, in0,
+                                                            bk, ntt);
+        __SampleExtractRegistersCombine__<typename brP::targetP, 0, false>(
+            tlwe, saved, trlwe1);
+        if (tid == 0) tlwe[brP::targetP::k * brP::targetP::n] += μ;
+        __syncthreads();
+    }
+    else {
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe0, inc, in0,
+                                                            bk, ntt);
+
+        constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
+#pragma unroll
+        for (int i = tid; i < trlwe_size; i += bdim) trlwe1[i] += trlwe0[i];
+        if (tid == 0) trlwe1[brP::targetP::k * brP::targetP::n] += μ;
+        __syncthreads();
+
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
+        __syncthreads();
+    }
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
 }
@@ -1617,39 +1674,49 @@ __global__ __launch_bounds__(
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? trlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ>(trlwe1, inc, in1, bk,
                                                        ntt);
-    __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe0, inc, in0, bk,
-                                                        ntt);
-
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    // Negate and add all (k+1)*n elements of the TRLWE ciphertexts
-    constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
-#pragma unroll
-    for (int i = tid; i < trlwe_size; i += bdim) {
-        trlwe1[i] = -trlwe1[i] - trlwe0[i];
-    }
-    // Subtract μ from b[0] (the constant term of polynomial b)
-    if (tid == 0) {
-        trlwe1[brP::targetP::k * brP::targetP::n] -= μ;
-    }
-
-    __syncthreads();
-
-    // After BlindRotates, FFT workspace is free -- reuse for tlwe
     typename brP::targetP::T* tlwe =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
-    __syncthreads();
+
+    if constexpr (low_lds) {
+        typename brP::targetP::T saved[2 * brP::targetP::k + 1];
+        __SampleExtractToRegisters__<typename brP::targetP, 0>(saved, trlwe1);
+        __syncthreads();
+
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe1, inc, in0,
+                                                            bk, ntt);
+        __SampleExtractRegistersCombine__<typename brP::targetP, 0, true>(
+            tlwe, saved, trlwe1);
+        if (tid == 0) tlwe[brP::targetP::k * brP::targetP::n] -= μ;
+        __syncthreads();
+    }
+    else {
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe0, inc, in0,
+                                                            bk, ntt);
+
+        constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
+#pragma unroll
+        for (int i = tid; i < trlwe_size; i += bdim)
+            trlwe1[i] = -trlwe1[i] - trlwe0[i];
+        if (tid == 0) trlwe1[brP::targetP::k * brP::targetP::n] -= μ;
+        __syncthreads();
+
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
+        __syncthreads();
+    }
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
 }
@@ -1960,36 +2027,48 @@ __global__ __launch_bounds__(
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? trlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     __BlindRotatePreAddKeyBundle__<brP, 1, 1, -brP::domainP::μ>(
         trlwe1, inc, in1, bk, one_trgsw_ntt, xai_ntt, ntt);
-    __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(
-        trlwe0, inc, in0, bk, one_trgsw_ntt, xai_ntt, ntt);
-
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
-#pragma unroll
-    for (int i = tid; i < trlwe_size; i += bdim) {
-        trlwe1[i] += trlwe0[i];
-    }
-    if (tid == 0) {
-        trlwe1[brP::targetP::k * brP::targetP::n] += μ;
-    }
-    __syncthreads();
-
-    // After BlindRotates, FFT workspace is free -- reuse for tlwe
     typename brP::targetP::T* tlwe =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
-    __syncthreads();
+
+    if constexpr (low_lds) {
+        typename brP::targetP::T saved[2 * brP::targetP::k + 1];
+        __SampleExtractToRegisters__<typename brP::targetP, 0>(saved, trlwe1);
+        __syncthreads();
+
+        __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(
+            trlwe1, inc, in0, bk, one_trgsw_ntt, xai_ntt, ntt);
+        __SampleExtractRegistersCombine__<typename brP::targetP, 0, false>(
+            tlwe, saved, trlwe1);
+        if (tid == 0) tlwe[brP::targetP::k * brP::targetP::n] += μ;
+        __syncthreads();
+    }
+    else {
+        __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(
+            trlwe0, inc, in0, bk, one_trgsw_ntt, xai_ntt, ntt);
+
+        constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
+#pragma unroll
+        for (int i = tid; i < trlwe_size; i += bdim) trlwe1[i] += trlwe0[i];
+        if (tid == 0) trlwe1[brP::targetP::k * brP::targetP::n] += μ;
+        __syncthreads();
+
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
+        __syncthreads();
+    }
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
 }
@@ -2023,36 +2102,49 @@ __global__ __launch_bounds__(
 {
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* trlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* trlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? trlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     __BlindRotatePreAddKeyBundle__<brP, 1, 1, -brP::domainP::μ>(
         trlwe1, inc, in1, bk, one_trgsw_ntt, xai_ntt, ntt);
-    __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(
-        trlwe0, inc, in0, bk, one_trgsw_ntt, xai_ntt, ntt);
-
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
-#pragma unroll
-    for (int i = tid; i < trlwe_size; i += bdim) {
-        trlwe1[i] = -trlwe1[i] - trlwe0[i];
-    }
-    if (tid == 0) {
-        trlwe1[brP::targetP::k * brP::targetP::n] -= μ;
-    }
-    __syncthreads();
-
-    // After BlindRotates, FFT workspace is free -- reuse for tlwe
     typename brP::targetP::T* tlwe =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
-    __syncthreads();
+
+    if constexpr (low_lds) {
+        typename brP::targetP::T saved[2 * brP::targetP::k + 1];
+        __SampleExtractToRegisters__<typename brP::targetP, 0>(saved, trlwe1);
+        __syncthreads();
+
+        __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(
+            trlwe1, inc, in0, bk, one_trgsw_ntt, xai_ntt, ntt);
+        __SampleExtractRegistersCombine__<typename brP::targetP, 0, true>(
+            tlwe, saved, trlwe1);
+        if (tid == 0) tlwe[brP::targetP::k * brP::targetP::n] -= μ;
+        __syncthreads();
+    }
+    else {
+        __BlindRotatePreAddKeyBundle__<brP, -1, 1, -brP::domainP::μ>(
+            trlwe0, inc, in0, bk, one_trgsw_ntt, xai_ntt, ntt);
+
+        constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
+#pragma unroll
+        for (int i = tid; i < trlwe_size; i += bdim)
+            trlwe1[i] = -trlwe1[i] - trlwe0[i];
+        if (tid == 0) trlwe1[brP::targetP::k * brP::targetP::n] -= μ;
+        __syncthreads();
+
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe1);
+        __syncthreads();
+    }
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
 }
@@ -2089,13 +2181,15 @@ __global__ __launch_bounds__(
 
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? tlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2109,20 +2203,21 @@ __global__ __launch_bounds__(
     __syncthreads();
     __BlindRotateKeyBundle__<brP>(tlwe0, tlwelvl0, μ, bk, one_trgsw_ntt,
                                   xai_ntt, ntt);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
-
-    __syncthreads();
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
+    if constexpr (low_lds) {
+        __SampleExtractCombine__<typename brP::targetP, 0, false>(out, tlwe0);
+    }
+    else {
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
+        __syncthreads();
+
+        constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
 #pragma unroll
-    for (int i = tid; i < tlwe_size; i += bdim) {
-        out[i] += tlwe1[i];
+        for (int i = tid; i < tlwe_size; i += bdim) out[i] += tlwe1[i];
     }
-    if (tid == 0) {
-        out[brP::targetP::k * brP::targetP::n] += μ;
-    }
+    if (tid == 0) out[brP::targetP::k * brP::targetP::n] += μ;
 }
 
 // Key-bundle NMux (IKS-BR order)
@@ -2157,13 +2252,15 @@ __global__ __launch_bounds__(
 
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? tlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2177,20 +2274,21 @@ __global__ __launch_bounds__(
     __syncthreads();
     __BlindRotateKeyBundle__<brP>(tlwe0, tlwelvl0, μ, bk, one_trgsw_ntt,
                                   xai_ntt, ntt);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
-
-    __syncthreads();
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
+    if constexpr (low_lds) {
+        __SampleExtractCombine__<typename brP::targetP, 0, true>(out, tlwe0);
+    }
+    else {
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
+        __syncthreads();
+
+        constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
 #pragma unroll
-    for (int i = tid; i < tlwe_size; i += bdim) {
-        out[i] = -out[i] - tlwe1[i];
+        for (int i = tid; i < tlwe_size; i += bdim) out[i] = -out[i] - tlwe1[i];
     }
-    if (tid == 0) {
-        out[brP::targetP::k * brP::targetP::n] -= μ;
-    }
+    if (tid == 0) out[brP::targetP::k * brP::targetP::n] -= μ;
 }
 #endif  // USE_KEY_BUNDLE
 
@@ -2240,13 +2338,15 @@ __global__ __launch_bounds__(
 
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? tlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2258,22 +2358,21 @@ __global__ __launch_bounds__(
                                                             ksk);
     __syncthreads();
     __BlindRotate__<brP>(tlwe0, tlwelvl0, μ, bk, ntt);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
-
-    __syncthreads();
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    // Add TLWE ciphertexts: k*n elements for 'a' parts plus 1 for 'b'
-    constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
+    if constexpr (low_lds) {
+        __SampleExtractCombine__<typename brP::targetP, 0, false>(out, tlwe0);
+    }
+    else {
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
+        __syncthreads();
+
+        constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
 #pragma unroll
-    for (int i = tid; i < tlwe_size; i += bdim) {
-        out[i] += tlwe1[i];
+        for (int i = tid; i < tlwe_size; i += bdim) out[i] += tlwe1[i];
     }
-    // Add μ to b (the last element)
-    if (tid == 0) {
-        out[brP::targetP::k * brP::targetP::n] += μ;
-    }
+    if (tid == 0) out[brP::targetP::k * brP::targetP::n] += μ;
 }
 
 // NMux(inc,in1,in0) = !(inc?in1:in0) = !(inc&in1 + (!inc)&in0)
@@ -2301,13 +2400,15 @@ __global__ __launch_bounds__(
 
     extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+    constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
                                    sizeof(typename brP::targetP::T);
     typename brP::targetP::T* tlwe1 =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
     typename brP::targetP::T* tlwe0 =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes +
-                                                    trlwe_bytes);
+        low_lds ? tlwe1
+                : reinterpret_cast<typename brP::targetP::T*>(
+                      dyn_sh + fft_bytes + trlwe_bytes);
 
     IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
                                                            ksk);
@@ -2319,23 +2420,21 @@ __global__ __launch_bounds__(
                                                             ksk);
     __syncthreads();
     __BlindRotate__<brP>(tlwe0, tlwelvl0, μ, bk, ntt);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
-
-    __syncthreads();
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-    // Negate and add TLWE ciphertexts: k*n elements for 'a' parts plus 1 for
-    // 'b'
-    constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
+    if constexpr (low_lds) {
+        __SampleExtractCombine__<typename brP::targetP, 0, true>(out, tlwe0);
+    }
+    else {
+        __SampleExtractIndex__<typename brP::targetP, 0>(tlwe1, tlwe0);
+        __syncthreads();
+
+        constexpr uint32_t tlwe_size = brP::targetP::k * brP::targetP::n + 1;
 #pragma unroll
-    for (int i = tid; i < tlwe_size; i += bdim) {
-        out[i] = -out[i] - tlwe1[i];
+        for (int i = tid; i < tlwe_size; i += bdim) out[i] = -out[i] - tlwe1[i];
     }
-    // Subtract μ from b (the last element)
-    if (tid == 0) {
-        out[brP::targetP::k * brP::targetP::n] -= μ;
-    }
+    if (tid == 0) out[brP::targetP::k * brP::targetP::n] -= μ;
 }
 
 void Bootstrap(TFHEpp::lvl0param::T* const out,

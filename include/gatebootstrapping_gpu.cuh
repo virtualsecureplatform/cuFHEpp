@@ -79,13 +79,22 @@ __device__ inline void Accumulate(
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t NUM_THREADS = N >> 1;
     constexpr uint32_t FFT_THREADS = HALF_N >> 1;
+    constexpr bool LOW_LDS = USE_LOW_LDS_BOOTSTRAP<typename P::targetP>;
 
     double2* const sh_fft = &sh_acc_ntt[0];
     double2* const sh_accum = &sh_acc_ntt[HALF_N];
+    double2 local_accum[P::targetP::k + 1];
 
     // Initialize accumulated results to zero
-    for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
-        sh_accum[i] = {0.0, 0.0};
+    if constexpr (LOW_LDS) {
+#pragma unroll
+        for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++)
+            local_accum[k_idx] = {0.0, 0.0};
+    }
+    else {
+        for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
+            sh_accum[i] = {0.0, 0.0};
+        }
     }
     __syncthreads();
 
@@ -173,7 +182,10 @@ __device__ inline void Accumulate(
                         &tgsw_fft[((P::targetP::k + 1) * digit_linear + out_k) *
                                       HALF_N +
                                   tid]);
-                    sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
+                    if constexpr (LOW_LDS)
+                        local_accum[out_k] += fft_val * bk_val;
+                    else
+                        sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
                 }
             }
             __syncthreads();
@@ -185,7 +197,15 @@ __device__ inline void Accumulate(
                                   ? 4294967296.0
                                   : 18446744073709551616.0;
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+        double2* sh_inv;
+        if constexpr (LOW_LDS) {
+            if (tid < HALF_N) sh_fft[tid] = local_accum[k_idx];
+            __syncthreads();
+            sh_inv = sh_fft;
+        }
+        else {
+            sh_inv = &sh_accum[k_idx * HALF_N];
+        }
 
         if (tid < FFT_THREADS) {
             GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
@@ -531,18 +551,27 @@ __device__ inline void Accumulate(
 
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t NUM_THREADS = N >> 1;  // 512 for N=1024
+    constexpr bool LOW_LDS = USE_LOW_LDS_BOOTSTRAP<typename P::targetP>;
 
     // Aliases for clarity
     NTTValueFor<P::targetP::n>* const sh_work =
         &sh_acc_ntt[0];  // Working buffer for NTT
     NTTValueFor<P::targetP::n>* const sh_accum =
         &sh_acc_ntt[N];  // Accumulated results (k+1 polynomials)
+    NTTValueFor<P::targetP::n> local_accum[P::targetP::k + 1][2];
 
     // Initialize accumulated results to zero
     if (tid < NUM_THREADS) {
+#pragma unroll
         for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-            sh_accum[k_idx * N + tid] = 0;
-            sh_accum[k_idx * N + tid + NUM_THREADS] = 0;
+            if constexpr (LOW_LDS) {
+                local_accum[k_idx][0] = 0;
+                local_accum[k_idx][1] = 0;
+            }
+            else {
+                sh_accum[k_idx * N + tid] = 0;
+                sh_accum[k_idx * N + tid + NUM_THREADS] = 0;
+            }
         }
     }
 
@@ -615,8 +644,12 @@ __device__ inline void Accumulate(
                                         out_k)
                                        << P::targetP::nbit) +
                                       i]);
-                        sh_accum[out_k * N + i] = small_mod_madd<N>(
-                            ntt_val, bk_val, sh_accum[out_k * N + i]);
+                        if constexpr (LOW_LDS)
+                            local_accum[out_k][e] = small_mod_madd<N>(
+                                ntt_val, bk_val, local_accum[out_k][e]);
+                        else
+                            sh_accum[out_k * N + i] = small_mod_madd<N>(
+                                ntt_val, bk_val, sh_accum[out_k * N + i]);
                     }
                 }
             }
@@ -630,8 +663,19 @@ __device__ inline void Accumulate(
     // Step 4: Inverse NTT on accumulated results and add to trlwe
     // Operate directly on sh_accum to avoid copying to sh_work
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-        // Inverse NTT directly on the accumulator buffer
-        NTTValueFor<P::targetP::n>* const sh_ntt_buf = &sh_accum[k_idx * N];
+        NTTValueFor<P::targetP::n>* sh_ntt_buf;
+        if constexpr (LOW_LDS) {
+            if (tid < NUM_THREADS) {
+                sh_work[tid] = local_accum[k_idx][0];
+                sh_work[tid + NUM_THREADS] = local_accum[k_idx][1];
+            }
+            __syncthreads();
+            sh_ntt_buf = sh_work;
+        }
+        else {
+            // Inverse NTT directly on the accumulator buffer.
+            sh_ntt_buf = &sh_accum[k_idx * N];
+        }
         if (tid < NUM_THREADS) {
             SmallInverseNTT<P::targetP::nbit>(sh_ntt_buf, ntt.inverse_root_,
                                               ntt.n_inverse_, tid);
@@ -657,6 +701,7 @@ __device__ inline void Accumulate(
                 }
             }
         }
+        if constexpr (LOW_LDS) __syncthreads();
     }
     __syncthreads();
 }
@@ -917,12 +962,21 @@ __device__ inline void AccumulateKeyBundle(
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t NUM_THREADS = N >> 1;
     constexpr uint32_t FFT_THREADS = HALF_N >> 1;  // 256
+    constexpr bool LOW_LDS = USE_LOW_LDS_BOOTSTRAP<typename P::targetP>;
 
     double2* const sh_fft = &sh_acc_ntt[0];
     double2* const sh_accum = &sh_acc_ntt[HALF_N];
+    double2 local_accum[P::targetP::k + 1];
 
-    for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
-        sh_accum[i] = {0.0, 0.0};
+    if constexpr (LOW_LDS) {
+#pragma unroll
+        for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++)
+            local_accum[k_idx] = {0.0, 0.0};
+    }
+    else {
+        for (int i = tid; i < (P::targetP::k + 1) * HALF_N; i += NUM_THREADS) {
+            sh_accum[i] = {0.0, 0.0};
+        }
     }
     __syncthreads();
 
@@ -999,7 +1053,10 @@ __device__ inline void AccumulateKeyBundle(
                     combined += bk1_val * xai0;
                     combined += bk0_val * xai01;
 
-                    sh_accum[out_k * HALF_N + tid] += fft_val * combined;
+                    if constexpr (LOW_LDS)
+                        local_accum[out_k] += fft_val * combined;
+                    else
+                        sh_accum[out_k * HALF_N + tid] += fft_val * combined;
                 }
             }
             __syncthreads();
@@ -1011,7 +1068,15 @@ __device__ inline void AccumulateKeyBundle(
                                   ? 4294967296.0
                                   : 18446744073709551616.0;
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-        double2* const sh_inv = &sh_accum[k_idx * HALF_N];
+        double2* sh_inv;
+        if constexpr (LOW_LDS) {
+            if (tid < HALF_N) sh_fft[tid] = local_accum[k_idx];
+            __syncthreads();
+            sh_inv = sh_fft;
+        }
+        else {
+            sh_inv = &sh_accum[k_idx * HALF_N];
+        }
         if (tid < FFT_THREADS) {
             GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
         }
@@ -1213,15 +1278,24 @@ __device__ inline void AccumulateKeyBundle(
 
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t NUM_THREADS = N >> 1;
+    constexpr bool LOW_LDS = USE_LOW_LDS_BOOTSTRAP<typename P::targetP>;
 
     NTTValueFor<P::targetP::n>* const sh_work = &sh_acc_ntt[0];
     NTTValueFor<P::targetP::n>* const sh_accum = &sh_acc_ntt[N];
+    NTTValueFor<P::targetP::n> local_accum[P::targetP::k + 1][2];
 
     // Initialize accumulated results to zero
     if (tid < NUM_THREADS) {
+#pragma unroll
         for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-            sh_accum[k_idx * N + tid] = 0;
-            sh_accum[k_idx * N + tid + NUM_THREADS] = 0;
+            if constexpr (LOW_LDS) {
+                local_accum[k_idx][0] = 0;
+                local_accum[k_idx][1] = 0;
+            }
+            else {
+                sh_accum[k_idx * N + tid] = 0;
+                sh_accum[k_idx * N + tid + NUM_THREADS] = 0;
+            }
         }
     }
 
@@ -1310,8 +1384,12 @@ __device__ inline void AccumulateKeyBundle(
                             small_mod_madd<N>(bk0_val, xai01, combined);
 
                         // Accumulate: decomp_ntt * combined
-                        sh_accum[out_k * N + i] = small_mod_madd<N>(
-                            ntt_val, combined, sh_accum[out_k * N + i]);
+                        if constexpr (LOW_LDS)
+                            local_accum[out_k][e] = small_mod_madd<N>(
+                                ntt_val, combined, local_accum[out_k][e]);
+                        else
+                            sh_accum[out_k * N + i] = small_mod_madd<N>(
+                                ntt_val, combined, sh_accum[out_k * N + i]);
                     }
                 }
             }
@@ -1324,7 +1402,18 @@ __device__ inline void AccumulateKeyBundle(
 
     // Step 4: Inverse NTT and REPLACE trlwe (not add)
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-        NTTValueFor<P::targetP::n>* const sh_ntt_buf = &sh_accum[k_idx * N];
+        NTTValueFor<P::targetP::n>* sh_ntt_buf;
+        if constexpr (LOW_LDS) {
+            if (tid < NUM_THREADS) {
+                sh_work[tid] = local_accum[k_idx][0];
+                sh_work[tid + NUM_THREADS] = local_accum[k_idx][1];
+            }
+            __syncthreads();
+            sh_ntt_buf = sh_work;
+        }
+        else {
+            sh_ntt_buf = &sh_accum[k_idx * N];
+        }
         if (tid < NUM_THREADS) {
             SmallInverseNTT<P::targetP::nbit>(sh_ntt_buf, ntt.inverse_root_,
                                               ntt.n_inverse_, tid);
@@ -1349,6 +1438,7 @@ __device__ inline void AccumulateKeyBundle(
                 }
             }
         }
+        if constexpr (LOW_LDS) __syncthreads();
     }
     __syncthreads();
 }
