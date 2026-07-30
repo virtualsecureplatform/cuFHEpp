@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "gpu_runtime.cuh"
+
 namespace cufhe {
 
 inline void CuSafeCall__(cudaError err, const char *file, const int line)

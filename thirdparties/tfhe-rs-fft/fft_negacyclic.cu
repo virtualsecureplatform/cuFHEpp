@@ -5,7 +5,7 @@
  * These are precomputed negacyclic roots of unity for the FFT butterfly pattern.
  */
 
-#include <cuda_runtime.h>
+#include <include/gpu_runtime.cuh>
 
 __device__ double2 negtwiddles[8192] = {
     {0x0p+0, 0x0p+0},

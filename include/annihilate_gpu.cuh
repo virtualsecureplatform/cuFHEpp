@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cuda_runtime.h>
+#include "gpu_runtime.cuh"
 
 #include <array>
 #include <cstddef>

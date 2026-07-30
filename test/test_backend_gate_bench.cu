@@ -1,4 +1,4 @@
-#include <cuda_runtime.h>
+#include <include/gpu_runtime.cuh>
 
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>

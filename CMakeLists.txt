@@ -1,15 +1,86 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.21)
 
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES AND NOT DEFINED ENV{CUDAARCHS})
-  set(CMAKE_CUDA_ARCHITECTURES "80;89" CACHE STRING
-      "CUDA architectures to build for. 80 supports A100; 89 supports RTX 4070.")
+set(CUFHE_GPU_BACKEND "CUDA" CACHE STRING
+    "GPU backend to use (CUDA or HIP)")
+set_property(CACHE CUFHE_GPU_BACKEND PROPERTY STRINGS CUDA HIP ROCM)
+string(TOUPPER "${CUFHE_GPU_BACKEND}" CUFHE_GPU_BACKEND)
+if(CUFHE_GPU_BACKEND STREQUAL "ROCM")
+  set(CUFHE_GPU_BACKEND "HIP")
 endif()
 
-project(cuFHE LANGUAGES CUDA CXX C)
+if(CUFHE_GPU_BACKEND STREQUAL "HIP")
+  if(NOT DEFINED CMAKE_HIP_ARCHITECTURES AND NOT DEFINED ENV{HIPARCHS})
+    set(CMAKE_HIP_ARCHITECTURES "gfx1201" CACHE STRING
+        "AMD GPU architectures to build for. gfx1201 targets Radeon AI PRO R9700.")
+  endif()
+  project(cuFHE LANGUAGES HIP CXX C)
+  add_compile_definitions(CUFHE_USE_HIP=1)
+elseif(CUFHE_GPU_BACKEND STREQUAL "CUDA")
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES AND NOT DEFINED ENV{CUDAARCHS})
+    set(CMAKE_CUDA_ARCHITECTURES "80;89" CACHE STRING
+        "CUDA architectures to build for. 80 supports A100; 89 supports RTX 4070.")
+  endif()
+  project(cuFHE LANGUAGES CUDA CXX C)
+  find_package(CUDAToolkit REQUIRED)
+  set(CUFHE_GPU_RUNTIME_TARGET CUDA::cudart)
+  set(CUFHE_GPU_INCLUDE_DIRECTORIES
+      ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+else()
+  message(FATAL_ERROR
+      "Unsupported CUFHE_GPU_BACKEND='${CUFHE_GPU_BACKEND}'. Use CUDA or HIP.")
+endif()
+message(STATUS "cuFHEpp GPU backend: ${CUFHE_GPU_BACKEND}")
+
+if(CUFHE_GPU_BACKEND STREQUAL "HIP")
+  find_path(CUFHE_HIP_INCLUDE_DIR hip/hip_runtime.h
+      HINTS ${CMAKE_HIP_COMPILER_ROCM_ROOT} $ENV{ROCM_PATH} /opt/rocm
+      PATH_SUFFIXES include
+      REQUIRED)
+  find_library(CUFHE_HIP_RUNTIME_LIBRARY amdhip64
+      HINTS ${CMAKE_HIP_COMPILER_ROCM_ROOT} $ENV{ROCM_PATH} /opt/rocm
+      PATH_SUFFIXES lib lib64
+      REQUIRED)
+  add_library(cufhe_hip_runtime INTERFACE)
+  target_compile_definitions(cufhe_hip_runtime INTERFACE
+      CUFHE_USE_HIP=1 __HIP_PLATFORM_AMD__=1)
+  target_include_directories(cufhe_hip_runtime SYSTEM INTERFACE
+      ${CUFHE_HIP_INCLUDE_DIR})
+  target_link_libraries(cufhe_hip_runtime INTERFACE
+      ${CUFHE_HIP_RUNTIME_LIBRARY})
+  set(CUFHE_GPU_RUNTIME_TARGET cufhe_hip_runtime)
+  set(CUFHE_GPU_INCLUDE_DIRECTORIES ${CUFHE_HIP_INCLUDE_DIR})
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
-find_package(CUDAToolkit REQUIRED)
-set(CMAKE_CUDA_FLAGS "--ptxas-options=-v")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_HIP_STANDARD 20)
+set(CMAKE_HIP_STANDARD_REQUIRED ON)
+
+function(cufhe_set_gpu_sources)
+  if(CUFHE_GPU_BACKEND STREQUAL "HIP")
+    set_source_files_properties(${ARGN} PROPERTIES LANGUAGE HIP)
+  endif()
+endfunction()
+
+function(cufhe_configure_gpu_target target)
+  if(CUFHE_GPU_BACKEND STREQUAL "HIP")
+    # Device globals are referenced across translation units, so HIP needs
+    # relocatable device code during both compilation and the final link.
+    target_compile_options(${target} PRIVATE
+        $<$<COMPILE_LANGUAGE:HIP>:-fgpu-rdc>
+        $<$<COMPILE_LANGUAGE:HIP>:-include>
+        $<$<COMPILE_LANGUAGE:HIP>:${PROJECT_SOURCE_DIR}/include/hip_compat_math.cuh>
+        $<$<COMPILE_LANGUAGE:HIP>:-Wno-unused-value>)
+    target_link_options(${target} PRIVATE
+        $<$<LINK_LANGUAGE:HIP>:--hip-link;-fgpu-rdc>)
+  else()
+    set_target_properties(${target} PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  endif()
+endfunction()
 
 option(USE_BLAKE3 "Use blake3 as CSPRNG" ON)
 option(USE_RANDEN "Use randen as CSPRNG" OFF)

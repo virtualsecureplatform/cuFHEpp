@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+#include <include/gpu_runtime.cuh>
 #include <cstdint>
 
 //=============================================================================
@@ -53,7 +53,7 @@ extern __device__ double2 negtwiddles[8192];
 // Complex number operations (from tfhe-rs types/complex/operations.cuh)
 //=============================================================================
 
-#ifdef __CUDACC__
+#ifdef CUFHE_GPU_DEVICE_COMPILER
 
 __device__ inline double2 conjugate(const double2 num) {
     return {num.x, -num.y};
@@ -110,7 +110,8 @@ __device__ inline double2 operator*(double a, double2 b) {
 }
 
 __device__ inline double2 shfl_xor_double2(double2 val, int laneMask,
-                                           unsigned mask = 0xFFFFFFFF) {
+                                           unsigned long long mask =
+                                               0xFFFFFFFFULL) {
     double re = __shfl_xor_sync(mask, val.x, laneMask);
     double im = __shfl_xor_sync(mask, val.y, laneMask);
     return make_double2(re, im);
@@ -211,7 +212,7 @@ template <class params> __device__ void NSMFFT_direct(double2 *A) {
         for (Index i = 0; i < BUTTERFLY_DEPTH; i++) {
             Index rank = tid & thread_mask;
             bool u_stays_in_register = rank < lane_mask;
-            w = shfl_xor_double2(reg_A[i], 1 << (l - 1), 0xFFFFFFFF);
+            w = shfl_xor_double2(reg_A[i], 1 << (l - 1), 0xFFFFFFFFULL);
             u[i] = (u_stays_in_register) ? u[i] : w;
             v[i] = (u_stays_in_register) ? w : v[i];
             w = negtwiddles[tid / lane_mask + twiddle_shift];
@@ -293,7 +294,7 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
         for (Index i = 0; i < BUTTERFLY_DEPTH; ++i) {
             Index rank = tid & thread_mask;
             bool u_stays_in_register = rank < lane_mask;
-            w = shfl_xor_double2(reg_A[i], 1 << (l - 1), 0xFFFFFFFF);
+            w = shfl_xor_double2(reg_A[i], 1 << (l - 1), 0xFFFFFFFFULL);
             u[i] = (u_stays_in_register) ? u[i] : w;
             v[i] = (u_stays_in_register) ? w : v[i];
 
@@ -355,4 +356,4 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
     __syncthreads();
 }
 
-#endif // __CUDACC__
+#endif // CUFHE_GPU_DEVICE_COMPILER

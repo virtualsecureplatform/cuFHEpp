@@ -1,5 +1,5 @@
 # cuFHEpp
-CUDA-accelerated Fully Homomorphic Encryption over the Torus Library.  
+CUDA- and ROCm-accelerated Fully Homomorphic Encryption over the Torus Library.
 This includes some bug fixes and performance improvements. 
 
 # Citation 
@@ -14,7 +14,7 @@ We provide the BibTeX for citing this library, but since this is a forked versio
 
 
 ## What is cuFHEpp?
-The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (FHE) on CUDA-enabled GPUs. It implements the TFHE scheme [CGGI16][CGGI17] proposed by Chillotti et al. in CUDA C++. Compared to the [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp), which reports the fastest gate-by-gate bootstrapping performance on CPUs, the cuFHEpp library yields almost the same performance per SM. Since the GPU has many SMs (128 in the A100), cuFHEpp delivers better performance when there are enough parallelizable tasks.
+The cuFHEpp library is an open-source library for Fully Homomorphic Encryption (FHE) on NVIDIA CUDA and AMD ROCm GPUs. It implements the TFHE scheme [CGGI16][CGGI17] proposed by Chillotti et al. in GPU C++. Compared to the [TFHEpp](https://github.com/virtualsecureplatform/TFHEpp), which reports the fastest gate-by-gate bootstrapping performance on CPUs, the cuFHEpp library yields almost the same performance per SM. Since GPUs have many parallel compute units, cuFHEpp delivers better performance when there are enough parallelizable tasks.
 
 By default, cuFHEpp uses a negacyclic FFT over double-precision complex numbers (FFNT algorithm from [OS23]). The half-size FFT trick packs N real coefficients into N/2 complex values, eliminating modular reduction overhead and leveraging native FMA instructions. Root and twist tables are generated internally using standard C++ `<complex>` math, and the FFT itself runs as custom shared-memory Cooley-Tukey/Gentleman-Sande butterfly kernels optimized for N=512, N=1024, and N=2048. An alternative FFT backend adapted from the [tfhe-rs](https://github.com/zama-ai/tfhe-rs) CUDA backend is available via `-DUSE_GPU_FFT=OFF`. A custom small-modulus NTT path is also available via `-DUSE_FFT=OFF`.
 
@@ -45,6 +45,10 @@ Each benchmark ran exclusively on the GPU — no concurrent workloads.
 NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) with no bootstrapping.
 
 **Note on methodology**: tfhe-rs GPU latency is single-stream (one gate at a time). cuFHEpp throughput exploits all 108 SMs simultaneously; its latency is measured on one stream out of 108.
+
+### ROCm validation — AMD Radeon AI PRO R9700
+
+The ROCm backend was validated on an R9700 (`gfx1201`) with ROCm 7.14, using the default lvl1 parameters, KeyBundle, 32 streams, and 1024 encrypted gates per test. All Boolean gate correctness tests passed. The default custom GPU-FFT backend reached about 3.53 ms/gate throughput for binary gates and 6.98 ms/gate for MUX/NMUX. The small-modulus NTT backend reached about 5.17 ms/gate and 10.48 ms/gate respectively, making GPU-FFT approximately 1.5x faster on this GPU.
 
 ### All gates — cuFHEpp GPU, lvl1 (N=1024), FFT + KeyBundle
 
@@ -79,8 +83,13 @@ NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) wi
 | NOT / COPY | ~1.1 ms | ~0.01 ms/gate |
 
 ### System Requirements
-**The library has been tested on Ubuntu Desktop 24.04 with NVIDIA A100 and NVIDIA GeForce RTX 4070.**
-GPU support requires NVIDIA Driver and NVIDIA CUDA Toolkit.
+**The library has been tested on Ubuntu Desktop 24.04 with NVIDIA A100, NVIDIA GeForce RTX 4070, and AMD Radeon AI PRO R9700 (`gfx1201`).**
+
+- NVIDIA builds require an NVIDIA driver and CUDA Toolkit.
+- AMD builds require a ROCm development installation containing the HIP Clang compiler, HIP headers, and `amdhip64` runtime library. The R9700 port was validated with ROCm 7.14.
+- The AMD kernels currently target 32-lane wavefront GPUs. The default HIP architecture is therefore `gfx1201` for the R9700.
+
+The R9700's 64 KiB per-workgroup LDS supports the lvl1 Boolean gate path. The existing lvl02 kernels require 80 KiB of dynamic shared memory (112 KiB for MUX/NMUX), so lvl02 execution is not supported on this GPU even though those targets compile.
 
 ### Installation (Linux)
 Do the standard CMake compilation process.
@@ -93,6 +102,21 @@ make
 
 The default CUDA architecture list is `80;89`, covering A100 and RTX 4070.
 For an RTX 4070-only build, pass `-DCMAKE_CUDA_ARCHITECTURES=89`.
+
+For ROCm on the Radeon AI PRO R9700:
+```
+cmake -S . -B build-rocm \
+    -DCUFHE_GPU_BACKEND=HIP \
+    -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+    -DENABLE_TEST=ON
+cmake --build build-rocm
+./build-rocm/test/test_fft_roundtrip
+./build-rocm/test/test_gate_gpu
+```
+
+If CMake cannot locate the ROCm compiler automatically, also pass
+`-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang++"`. `CUFHE_GPU_BACKEND=ROCM`
+is accepted as an alias for `HIP`.
 
 For a block-binary build:
 ```

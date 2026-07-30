@@ -24,9 +24,11 @@
 
 #include <stdint.h>
 
+#include "gpu_runtime.cuh"
+
 namespace cufhe {
 
-#ifdef __CUDACC__
+#ifdef CUFHE_GPU_DEVICE_COMPILER
 
 __device__ inline uint32_t ThisThreadRankInBlock()
 {
@@ -64,6 +66,6 @@ __device__ __forceinline__ uint64_t double_to_torus64(double d)
     return (i >> 63) ? -val : val;
 }
 
-#endif  // __CUDACC__
+#endif  // CUFHE_GPU_DEVICE_COMPILER
 
 }  // namespace cufhe

@@ -1,4 +1,4 @@
-#include <cuda_runtime.h>
+#include <include/gpu_runtime.cuh>
 
 #include <cmath>
 #include <cstdint>

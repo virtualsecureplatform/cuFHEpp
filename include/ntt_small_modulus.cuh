@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+#include "gpu_runtime.cuh"
 
 #include <cstdint>
 #include <include/utils_gpu.cuh>
@@ -425,7 +425,7 @@ ntt_mod_to_torus32(SmallNTTValue val)
     }
 }
 
-#ifdef __CUDACC__
+#ifdef CUFHE_GPU_DEVICE_COMPILER
 
 extern __constant__ uint32_t d_const_forward_root_31[TFHEpp::lvl1param::n];
 extern __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
@@ -708,7 +708,7 @@ __host__ __device__ constexpr int SmallInverseNTTSyncCount()
     return (static_cast<int>(SmallLog2<N>()) - 5) / 2 + 1;
 }
 
-#endif  // __CUDACC__
+#endif  // CUFHE_GPU_DEVICE_COMPILER
 
 //=============================================================================
 // Small Modulus NTT Handler
@@ -763,7 +763,7 @@ class CuSmallNTTHandler {
     __host__ static void Destroy();
     __host__ void SetDevicePointers(int device_id);
 
-#ifdef __CUDACC__
+#ifdef CUFHE_GPU_DEVICE_COMPILER
     /**
      * Forward NTT with modulus switching (torus -> NTT domain)
      *
@@ -920,7 +920,7 @@ class CuSmallNTTHandler {
         }
         __syncthreads();
     }
-#endif  // __CUDACC__
+#endif  // CUFHE_GPU_DEVICE_COMPILER
 };
 
 #ifdef USE_FFT
@@ -969,7 +969,7 @@ constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 // GPU-FFT mode: Custom shared-memory FFT using GPU-FFT's table generation
 //=============================================================================
 
-#ifdef __CUDACC__
+#ifdef CUFHE_GPU_DEVICE_COMPILER
 // double2 operator overloads for GPU-FFT path
 // (These match the tfhe-rs operators but are defined here when
 // fft_negacyclic.cuh is excluded)
@@ -1015,8 +1015,8 @@ __device__ __forceinline__ double shfl_xor_d(double val, int mask)
 {
     int lo = __double2loint(val);
     int hi = __double2hiint(val);
-    lo = __shfl_xor_sync(0xFFFFFFFF, lo, mask);
-    hi = __shfl_xor_sync(0xFFFFFFFF, hi, mask);
+    lo = __shfl_xor_sync(0xFFFFFFFFULL, lo, mask);
+    hi = __shfl_xor_sync(0xFFFFFFFFULL, hi, mask);
     return __hiloint2double(hi, lo);
 }
 
@@ -1680,7 +1680,7 @@ __device__ __forceinline__ void GPUFFTInverse(
                       "Unsupported GPU-FFT polynomial degree");
 }
 
-#endif  // __CUDACC__
+#endif  // CUFHE_GPU_DEVICE_COMPILER
 
 /**
  * CuGPUFFTHandler - handler for GPU-FFT library FFT

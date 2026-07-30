@@ -20,9 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <cuda.h>
-#include <cuda_device_runtime_api.h>
-#include <cuda_runtime.h>
+#include <include/gpu_runtime.cuh>
 
 #include <include/cufhe_gpu.cuh>
 
