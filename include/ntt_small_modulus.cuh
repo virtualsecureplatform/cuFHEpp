@@ -658,21 +658,26 @@ __device__ __forceinline__ void SmallForwardNTT(
 #if defined(CUFHE_USE_HIP)
     if constexpr (N == TFHEpp::lvl1param::n) {
         // Stride 32 is the boundary between shared-memory and wave-local
-        // stages on wave32.  The remaining five stages stay in registers;
-        // cross-thread butterfly partners are exchanged with shuffles.
+        // stages on wave32.  Keep its outputs in registers and shuffle the
+        // stride-16 pairs into place instead of round-tripping through LDS.
         current_root_index = m + (tid >> t_2);
-        SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
-                                      sh[in_shared_address + t],
-                                      __ldg(&root_table[current_root_index]));
+        auto boundary_u = sh[in_shared_address];
+        auto boundary_v = sh[in_shared_address + t];
+        SmallCooleyTukeyUnit<N_POWER>(
+            boundary_u, boundary_v,
+            __ldg(&root_table[current_root_index]));
+
+        const auto peer_u = SmallNTTShuffleXor(boundary_u, 16);
+        const auto peer_v = SmallNTTShuffleXor(boundary_v, 16);
+        const bool upper_half = (tid & 16) != 0;
+        auto reg_u = upper_half ? peer_v : boundary_u;
+        auto reg_v = upper_half ? boundary_v : peer_u;
 
         t >>= 1;
         --t_2;
         --t_;
         m <<= 1;
-        in_shared_address = ((tid >> t_) << t_) + tid;
 
-        auto reg_u = sh[in_shared_address];
-        auto reg_v = sh[in_shared_address + t];
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit<N_POWER>(
             reg_u, reg_v, __ldg(&root_table[current_root_index]));
@@ -774,17 +779,21 @@ __device__ __forceinline__ void SmallInverseNTT(
             m >>= 1;
         }
 
-        const int write_address = ((tid >> 4) << 4) + tid;
-        sh[write_address] = reg_u;
-        sh[write_address + 16] = reg_v;
+        // Reassemble the stride-32 butterfly pairs directly from registers.
+        // This avoids the stride-16 write/read handoff through LDS.
+        const auto peer_u = SmallNTTShuffleXor(reg_u, 16);
+        const auto peer_v = SmallNTTShuffleXor(reg_v, 16);
+        const bool upper_half = (tid & 16) != 0;
+        auto boundary_u = upper_half ? peer_v : reg_u;
+        auto boundary_v = upper_half ? reg_v : peer_u;
 
-        // Stride 32 is still wave-local but is most naturally expressed with
-        // the shared-memory layout consumed by the following radix-4 stage.
         in_shared_address = ((tid >> t_) << t_) + tid;
         current_root_index = m + (tid >> t_2);
         SmallGentlemanSandeUnit<N_POWER>(
-            sh[in_shared_address], sh[in_shared_address + t],
+            boundary_u, boundary_v,
             __ldg(&root_table[current_root_index]));
+        sh[in_shared_address] = boundary_u;
+        sh[in_shared_address + t] = boundary_v;
         t <<= 1;
         ++t_2;
         ++t_;
@@ -1147,12 +1156,25 @@ using NTTValueFor = NTTValue;
 // (FFT uses 256 active threads, decomposition uses all 512)
 constexpr uint32_t NTT_THREAD_UNITBIT = 1;
 
+// A lvl1 GPU FFT uses only half of the 512-thread gate block.  In the
+// KeyBundle path, use the other half for a second transform while retaining
+// enough LDS for two resident blocks on gfx1201.
+template <class P>
+constexpr bool USE_PAIRED_GPU_FFT =
+#if defined(CUFHE_USE_HIP) && defined(USE_GPU_FFT) && \
+    defined(USE_KEY_BUNDLE) && !defined(USE_BLOCK_BINARY)
+    P::n == TFHEpp::lvl1param::n;
+#else
+    false;
+#endif
+
 // Shared memory size per gate:
 // sh_fft[N/2] = 512 × double2 = 8 KB (FFT working buffer)
 // sh_accum[(k+1) × N/2] = (k+1) × 512 × double2 = 16 KB (for k=1)
 // Total: 24 KB for k=1
 template <class P = TFHEpp::lvl1param>
-constexpr uint32_t MEM4HOMGATE_WORK = (P::n / 2) * sizeof(double2);
+constexpr uint32_t MEM4HOMGATE_WORK =
+    (P::n / 2) * (USE_PAIRED_GPU_FFT<P> ? 2 : 1) * sizeof(double2);
 
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_TLWE = (P::k * P::n + 1) * sizeof(typename P::T);
@@ -1206,6 +1228,15 @@ __device__ inline void operator+=(double2& lh, const double2 rh)
 {
     lh.x = __dadd_rn(lh.x, rh.x);
     lh.y = __dadd_rn(lh.y, rh.y);
+}
+
+__device__ __forceinline__ void complex_madd(double2& accum, const double2 a,
+                                              const double2 b)
+{
+    accum.x = __fma_rn(a.x, b.x, accum.x);
+    accum.x = __fma_rn(-a.y, b.y, accum.x);
+    accum.y = __fma_rn(a.x, b.y, accum.y);
+    accum.y = __fma_rn(a.y, b.x, accum.y);
 }
 
 __device__ inline double2 operator*(const double2 a, const double2 b)
@@ -1408,20 +1439,17 @@ __device__ __forceinline__ void GPUFFTForward512(
         double2 c = sh[tid + 256];
         double2 d = sh[tid + 384];
 
-        double2 w0 =
-            __ldg(&root_table[0]);  // coarse (stride 256) + fine first pair
         double2 w1b = __ldg(&root_table[1]);  // fine (stride 128), second pair
 
         // Step 1: coarse stage (stride 256)
-        double2 cw = c * w0;
-        double2 dw = d * w0;
-        double2 a1 = a + cw;
-        double2 c1 = a - cw;
-        double2 b1 = b + dw;
-        double2 d1 = b - dw;
+        // root_table[0] is exactly 1 + 0i.
+        double2 a1 = a + c;
+        double2 c1 = a - c;
+        double2 b1 = b + d;
+        double2 d1 = b - d;
 
         // Step 2: fine stage (stride 128)
-        double2 b1w = b1 * w0;  // w1a = w0 = root_table[0]
+        double2 b1w = b1;
         double2 d1w = d1 * w1b;
         sh[tid] = a1 + b1w;
         sh[tid + 128] = a1 - b1w;
@@ -1585,21 +1613,19 @@ __device__ __forceinline__ void GPUFFTInverse512(
         double2 c = sh[tid + 256];
         double2 d = sh[tid + 384];
 
-        double2 w_s =
-            __ldg(&root_table[0]);  // stride 128, first pair + stride 256
         double2 w_s2 = __ldg(&root_table[1]);  // stride 128, second pair
 
         // Step 1: GS at stride 128
         double2 t0 = a + b;
-        double2 t1 = (a - b) * w_s;  // w_s1 = root_table[0]
+        double2 t1 = a - b;  // root_table[0] is exactly 1 + 0i
         double2 t2 = c + d;
         double2 t3 = (c - d) * w_s2;
 
         // Step 2: GS at stride 256
         sh[tid] = t0 + t2;
-        sh[tid + 256] = (t0 - t2) * w_s;  // w_2s = root_table[0]
+        sh[tid + 256] = t0 - t2;
         sh[tid + 128] = t1 + t3;
-        sh[tid + 384] = (t1 - t3) * w_s;  // w_2s = root_table[0]
+        sh[tid + 384] = t1 - t3;
     }
     __syncthreads();
 }
