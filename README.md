@@ -52,12 +52,12 @@ The ROCm backend was validated on an R9700 (`gfx1201`) with ROCm 7.14, KeyBundle
 
 | Parameters | Backend | Binary gates | MUX / NMUX | Faster backend |
 |---|---|---:|---:|---|
-| lvl1 (N=1024) | GPU-FFT | ~3.53 ms/gate | ~6.98 ms/gate | **GPU-FFT (~1.5x)** |
-| lvl1 (N=1024) | NTT | ~5.17 ms/gate | ~10.48 ms/gate | |
+| lvl1 (N=1024) | GPU-FFT | ~3.53 ms/gate | ~6.98 ms/gate | |
+| lvl1 (N=1024) | NTT | **~3.26 ms/gate** | **~6.97 ms/gate** | **NTT (~1.08x for binary gates)** |
 | lvl02 (N=2048) | GPU-FFT | ~6.4 ms/gate | ~12.1 ms/gate | |
 | lvl02 (N=2048) | NTT | **~5.6 ms/gate** | **~10.4 ms/gate** | **NTT (~1.15x)** |
 
-These figures are throughput measurements from the encrypted correctness suite, not single-stream latency. The preferred transform depends on the parameter level: GPU-FFT is faster for lvl1, while NTT is faster for lvl02 on this GPU.
+These figures are throughput measurements from the encrypted correctness suite, not single-stream latency. NTT is slightly faster for lvl1 binary gates and approximately tied for lvl1 MUX/NMUX, while it remains faster for lvl02 on this GPU. In the separate saturated NAND benchmark (`test_backend_gate_bench`), which uses two resident lvl1 NTT blocks per compute unit, median NTT throughput was ~2.71 ms/gate versus ~3.23 ms/gate for GPU-FFT (about 1.19x faster).
 
 ### All gates — cuFHEpp GPU, lvl1 (N=1024), FFT + KeyBundle
 
@@ -98,7 +98,7 @@ These figures are throughput measurements from the encrypted correctness suite, 
 - AMD builds require a ROCm development installation containing the HIP Clang compiler, HIP headers, and `amdhip64` runtime library. The R9700 port was validated with ROCm 7.14.
 - The AMD kernels currently target 32-lane wavefront GPUs. The default HIP architecture is therefore `gfx1201` for the R9700.
 
-The R9700's 64 KiB per-workgroup LDS supports lvl1 directly. For lvl02, the HIP kernels use a 49,160-byte low-LDS layout: transform accumulators stay in registers, the transform area is reused for extracted-TLWE scratch, and MUX/NMUX reuse a single TRLWE buffer. This path supports the default custom GPU-FFT backend and the NTT backend. The optional tfhe-rs-style FFT (`-DUSE_GPU_FFT=OFF`) remains limited to lvl1 on this GPU.
+The R9700's 64 KiB per-workgroup LDS supports lvl1 directly. The optimized lvl1 NTT keeps its final five butterfly stages and pointwise accumulators in registers, using wave32 shuffles for cross-thread partners. For lvl02, the HIP kernels use a 49,160-byte low-LDS layout: transform accumulators stay in registers, the transform area is reused for extracted-TLWE scratch, and MUX/NMUX reuse a single TRLWE buffer. This path supports the default custom GPU-FFT backend and the NTT backend. The optional tfhe-rs-style FFT (`-DUSE_GPU_FFT=OFF`) remains limited to lvl1 on this GPU.
 
 ### Installation (Linux)
 Do the standard CMake compilation process.
@@ -124,8 +124,8 @@ cmake --build build-rocm
 ./build-rocm/test/test_gate_gpu_lvl02
 ```
 
-For lvl02 with the faster NTT backend on R9700, configure with
-`-DUSE_FFT=OFF` and run the same `test_gate_gpu_lvl02` executable.
+For the optimized NTT backend on R9700, configure with `-DUSE_FFT=OFF` and run
+`test_gate_gpu` for lvl1 or `test_gate_gpu_lvl02` for lvl02.
 
 If CMake cannot locate the ROCm compiler automatically, also pass
 `-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang++"`. `CUFHE_GPU_BACKEND=ROCM`

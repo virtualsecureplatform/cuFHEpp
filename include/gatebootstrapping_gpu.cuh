@@ -551,7 +551,8 @@ __device__ inline void Accumulate(
 
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t NUM_THREADS = N >> 1;  // 512 for N=1024
-    constexpr bool LOW_LDS = USE_LOW_LDS_BOOTSTRAP<typename P::targetP>;
+    constexpr bool REGISTER_ACCUM =
+        USE_REGISTER_NTT_ACCUM<typename P::targetP>;
 
     // Aliases for clarity
     NTTValueFor<P::targetP::n>* const sh_work =
@@ -564,7 +565,7 @@ __device__ inline void Accumulate(
     if (tid < NUM_THREADS) {
 #pragma unroll
         for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-            if constexpr (LOW_LDS) {
+            if constexpr (REGISTER_ACCUM) {
                 local_accum[k_idx][0] = 0;
                 local_accum[k_idx][1] = 0;
             }
@@ -644,7 +645,7 @@ __device__ inline void Accumulate(
                                         out_k)
                                        << P::targetP::nbit) +
                                       i]);
-                        if constexpr (LOW_LDS)
+                        if constexpr (REGISTER_ACCUM)
                             local_accum[out_k][e] = small_mod_madd<N>(
                                 ntt_val, bk_val, local_accum[out_k][e]);
                         else
@@ -664,7 +665,7 @@ __device__ inline void Accumulate(
     // Operate directly on sh_accum to avoid copying to sh_work
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         NTTValueFor<P::targetP::n>* sh_ntt_buf;
-        if constexpr (LOW_LDS) {
+        if constexpr (REGISTER_ACCUM) {
             if (tid < NUM_THREADS) {
                 sh_work[tid] = local_accum[k_idx][0];
                 sh_work[tid + NUM_THREADS] = local_accum[k_idx][1];
@@ -701,7 +702,7 @@ __device__ inline void Accumulate(
                 }
             }
         }
-        if constexpr (LOW_LDS) __syncthreads();
+        if constexpr (REGISTER_ACCUM) __syncthreads();
     }
     __syncthreads();
 }
@@ -1278,7 +1279,8 @@ __device__ inline void AccumulateKeyBundle(
 
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t NUM_THREADS = N >> 1;
-    constexpr bool LOW_LDS = USE_LOW_LDS_BOOTSTRAP<typename P::targetP>;
+    constexpr bool REGISTER_ACCUM =
+        USE_REGISTER_NTT_ACCUM<typename P::targetP>;
 
     NTTValueFor<P::targetP::n>* const sh_work = &sh_acc_ntt[0];
     NTTValueFor<P::targetP::n>* const sh_accum = &sh_acc_ntt[N];
@@ -1288,7 +1290,7 @@ __device__ inline void AccumulateKeyBundle(
     if (tid < NUM_THREADS) {
 #pragma unroll
         for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-            if constexpr (LOW_LDS) {
+            if constexpr (REGISTER_ACCUM) {
                 local_accum[k_idx][0] = 0;
                 local_accum[k_idx][1] = 0;
             }
@@ -1377,14 +1379,11 @@ __device__ inline void AccumulateKeyBundle(
 
                         // combined = one + bk2*xai1 + bk1*xai0 + bk0*xai01
                         NTTValueFor<P::targetP::n> combined =
-                            small_mod_madd<N>(bk2_val, xai1, one_val);
-                        combined =
-                            small_mod_madd<N>(bk1_val, xai0, combined);
-                        combined =
-                            small_mod_madd<N>(bk0_val, xai01, combined);
+                            small_mod_madd3<N>(bk2_val, xai1, bk1_val, xai0,
+                                               bk0_val, xai01, one_val);
 
                         // Accumulate: decomp_ntt * combined
-                        if constexpr (LOW_LDS)
+                        if constexpr (REGISTER_ACCUM)
                             local_accum[out_k][e] = small_mod_madd<N>(
                                 ntt_val, combined, local_accum[out_k][e]);
                         else
@@ -1403,7 +1402,7 @@ __device__ inline void AccumulateKeyBundle(
     // Step 4: Inverse NTT and REPLACE trlwe (not add)
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
         NTTValueFor<P::targetP::n>* sh_ntt_buf;
-        if constexpr (LOW_LDS) {
+        if constexpr (REGISTER_ACCUM) {
             if (tid < NUM_THREADS) {
                 sh_work[tid] = local_accum[k_idx][0];
                 sh_work[tid + NUM_THREADS] = local_accum[k_idx][1];
@@ -1438,7 +1437,7 @@ __device__ inline void AccumulateKeyBundle(
                 }
             }
         }
-        if constexpr (LOW_LDS) __syncthreads();
+        if constexpr (REGISTER_ACCUM) __syncthreads();
     }
     __syncthreads();
 }

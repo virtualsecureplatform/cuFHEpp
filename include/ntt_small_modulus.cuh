@@ -56,6 +56,19 @@ constexpr Value FOLD_FACTOR = (1U << FOLD_BITS) - P;
 constexpr uint64_t MAX_SECOND_FOLD =
     static_cast<uint64_t>(FOLD_MASK) +
     static_cast<uint64_t>(FOLD_FACTOR) * FOLD_FACTOR;
+constexpr uint64_t MAX_PRODUCT =
+    static_cast<uint64_t>(P_MINUS_ONE) * P_MINUS_ONE;
+static_assert(MAX_PRODUCT <=
+                  (std::numeric_limits<uint64_t>::max() - P_MINUS_ONE) / 3ULL,
+              "Three lvl1 products and one addend must fit in uint64_t");
+constexpr uint64_t MAX_MADD3_SUM =
+    3ULL * MAX_PRODUCT + P_MINUS_ONE;
+constexpr uint64_t MAX_MADD3_FIRST_FOLD =
+    static_cast<uint64_t>(FOLD_MASK) +
+    (MAX_MADD3_SUM >> FOLD_BITS) * FOLD_FACTOR;
+constexpr uint64_t MAX_MADD3_SECOND_FOLD =
+    static_cast<uint64_t>(FOLD_MASK) +
+    (MAX_MADD3_FIRST_FOLD >> FOLD_BITS) * FOLD_FACTOR;
 constexpr uint64_t INV_MODSWITCH_MUL = (1ULL << 63) / P;
 
 static_assert(FOLD_FACTOR == 10239U, "Unexpected lvl1 NTT fold factor");
@@ -63,6 +76,10 @@ static_assert(MAX_SECOND_FOLD < 2ULL * P,
               "Two folds must leave at most one conditional subtraction");
 static_assert(MAX_SECOND_FOLD < (1ULL << 32),
               "Second fold must fit in a uint32_t");
+static_assert(MAX_MADD3_SECOND_FOLD < 2ULL * P,
+              "Fused madd fold must need at most one subtraction");
+static_assert(MAX_MADD3_SECOND_FOLD < (1ULL << 32),
+              "Fused madd fold must fit in a uint32_t");
 
 }  // namespace small_ntt31
 
@@ -286,6 +303,33 @@ small_mod31_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
     return (result >= p) ? (result - p) : result;
 }
 
+// Reduce three products and an addend together.  For the 31-bit modulus the
+// unreduced sum still fits in uint64_t, saving two pseudo-Mersenne reductions
+// in the key-bundle inner loop.
+__host__ __device__ __forceinline__ SmallNTTValue small_mod31_madd3(
+    SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1, SmallNTTValue b1,
+    SmallNTTValue a2, SmallNTTValue b2, SmallNTTValue c)
+{
+    constexpr uint32_t p = small_ntt31::P;
+    constexpr uint32_t mask = small_ntt31::FOLD_MASK;
+    constexpr uint32_t factor = small_ntt31::FOLD_FACTOR;
+    const uint64_t z =
+        static_cast<uint64_t>(static_cast<uint32_t>(a0)) *
+            static_cast<uint32_t>(b0) +
+        static_cast<uint64_t>(static_cast<uint32_t>(a1)) *
+            static_cast<uint32_t>(b1) +
+        static_cast<uint64_t>(static_cast<uint32_t>(a2)) *
+            static_cast<uint32_t>(b2) +
+        static_cast<uint32_t>(c);
+
+    const uint64_t folded =
+        (z & mask) + static_cast<uint64_t>(z >> 31) * factor;
+    const uint32_t result =
+        static_cast<uint32_t>(folded & mask) +
+        static_cast<uint32_t>(folded >> 31) * factor;
+    return (result >= p) ? (result - p) : result;
+}
+
 template <uint32_t N>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod_normalize(SmallNTTValue a)
@@ -343,6 +387,21 @@ small_mod_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
     }
     else {
         return small_mod64_madd(a, b, c);
+    }
+}
+
+template <uint32_t N>
+__host__ __device__ __forceinline__ SmallNTTValue small_mod_madd3(
+    SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1, SmallNTTValue b1,
+    SmallNTTValue a2, SmallNTTValue b2, SmallNTTValue c)
+{
+    if constexpr (N == TFHEpp::lvl1param::n) {
+        return small_mod31_madd3(a0, b0, a1, b1, a2, b2, c);
+    }
+    else {
+        SmallNTTValue result = small_mod64_madd(a0, b0, c);
+        result = small_mod64_madd(a1, b1, result);
+        return small_mod64_madd(a2, b2, result);
     }
 }
 
@@ -432,6 +491,25 @@ extern __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
 extern __constant__ uint64_t d_const_forward_root_64[TFHEpp::lvl2param::n];
 extern __constant__ uint64_t d_const_inverse_root_64[TFHEpp::lvl2param::n];
 
+template <class T>
+__device__ __forceinline__ T SmallNTTShuffleXor(const T value,
+                                                const int lane_mask)
+{
+    if constexpr (sizeof(T) == sizeof(uint32_t)) {
+        return static_cast<T>(__shfl_xor_sync(
+            0xFFFFFFFFULL, static_cast<uint32_t>(value), lane_mask));
+    }
+    else {
+        static_assert(sizeof(T) == sizeof(uint64_t),
+                      "Unsupported NTT shuffle value width");
+        uint32_t lo = static_cast<uint32_t>(value);
+        uint32_t hi = static_cast<uint32_t>(value >> 32);
+        lo = __shfl_xor_sync(0xFFFFFFFFULL, lo, lane_mask);
+        hi = __shfl_xor_sync(0xFFFFFFFFULL, hi, lane_mask);
+        return static_cast<T>((static_cast<uint64_t>(hi) << 32) | lo);
+    }
+}
+
 // Cooley-Tukey butterfly for forward NTT
 template <int N_POWER>
 __device__ __forceinline__ void SmallCooleyTukeyUnit(
@@ -496,6 +574,9 @@ __device__ __forceinline__ void SmallForwardNTT(
     const SmallNTTValueFor<1U << N_POWER>* root_table, int tid)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
+#if defined(CUFHE_USE_HIP)
+    constexpr uint32_t N = 1U << N_POWER;
+#endif
 
     int t_2 = N_POWER - 1;
     int t_ = N_POWER - 1;
@@ -574,18 +655,71 @@ __device__ __forceinline__ void SmallForwardNTT(
         __syncthreads();
     }
 
-#pragma unroll 1
-    for (int lp = 0; lp < 6; lp++) {
+#if defined(CUFHE_USE_HIP)
+    if constexpr (N == TFHEpp::lvl1param::n) {
+        // Stride 32 is the boundary between shared-memory and wave-local
+        // stages on wave32.  The remaining five stages stay in registers;
+        // cross-thread butterfly partners are exchanged with shuffles.
         current_root_index = m + (tid >> t_2);
         SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
                                       sh[in_shared_address + t],
                                       __ldg(&root_table[current_root_index]));
 
-        t = t >> 1;
-        t_2 -= 1;
-        t_ -= 1;
+        t >>= 1;
+        --t_2;
+        --t_;
         m <<= 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
+
+        auto reg_u = sh[in_shared_address];
+        auto reg_v = sh[in_shared_address + t];
+        current_root_index = m + (tid >> t_2);
+        SmallCooleyTukeyUnit<N_POWER>(
+            reg_u, reg_v, __ldg(&root_table[current_root_index]));
+
+        t >>= 1;
+        --t_2;
+        --t_;
+        m <<= 1;
+
+#pragma unroll
+        for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
+            const bool is_upper = (tid & xor_mask) != 0;
+            const auto sent = is_upper ? reg_u : reg_v;
+            const auto received = SmallNTTShuffleXor(sent, xor_mask);
+            if (is_upper)
+                reg_u = received;
+            else
+                reg_v = received;
+
+            current_root_index = m + (tid >> t_2);
+            SmallCooleyTukeyUnit<N_POWER>(
+                reg_u, reg_v, __ldg(&root_table[current_root_index]));
+            t >>= 1;
+            --t_2;
+            --t_;
+            m <<= 1;
+        }
+
+        sh[2 * tid] = reg_u;
+        sh[2 * tid + 1] = reg_v;
+    }
+    else
+#endif
+    {
+#pragma unroll 1
+        for (int lp = 0; lp < 6; lp++) {
+            current_root_index = m + (tid >> t_2);
+            SmallCooleyTukeyUnit<N_POWER>(
+                sh[in_shared_address], sh[in_shared_address + t],
+                __ldg(&root_table[current_root_index]));
+
+            t >>= 1;
+            --t_2;
+            --t_;
+            m <<= 1;
+            in_shared_address = ((tid >> t_) << t_) + tid;
+        }
     }
     __syncthreads();
 }
@@ -597,6 +731,7 @@ __device__ __forceinline__ void SmallInverseNTT(
     SmallNTTValueFor<1U << N_POWER> n_inverse, int tid)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
+    constexpr uint32_t N = 1U << N_POWER;
     constexpr int NUM_THREADS = 1 << (N_POWER - 1);
 
     int t_2 = 0;
@@ -607,18 +742,71 @@ __device__ __forceinline__ void SmallInverseNTT(
     int in_shared_address = ((tid >> t_) << t_) + tid;
     int current_root_index;
 
-#pragma unroll 1
-    for (int lp = 0; lp < 6; lp++) {
+#if defined(CUFHE_USE_HIP)
+    if constexpr (N == TFHEpp::lvl1param::n) {
+        auto reg_u = sh[2 * tid];
+        auto reg_v = sh[2 * tid + 1];
+        current_root_index = m + (tid >> t_2);
+        SmallGentlemanSandeUnit<N_POWER>(
+            reg_u, reg_v, __ldg(&root_table[current_root_index]));
+
+        t <<= 1;
+        ++t_2;
+        ++t_;
+        m >>= 1;
+
+#pragma unroll
+        for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
+            const bool is_upper = (tid & xor_mask) != 0;
+            const auto sent = is_upper ? reg_u : reg_v;
+            const auto received = SmallNTTShuffleXor(sent, xor_mask);
+            if (is_upper)
+                reg_u = received;
+            else
+                reg_v = received;
+
+            current_root_index = m + (tid >> t_2);
+            SmallGentlemanSandeUnit<N_POWER>(
+                reg_u, reg_v, __ldg(&root_table[current_root_index]));
+            t <<= 1;
+            ++t_2;
+            ++t_;
+            m >>= 1;
+        }
+
+        const int write_address = ((tid >> 4) << 4) + tid;
+        sh[write_address] = reg_u;
+        sh[write_address + 16] = reg_v;
+
+        // Stride 32 is still wave-local but is most naturally expressed with
+        // the shared-memory layout consumed by the following radix-4 stage.
+        in_shared_address = ((tid >> t_) << t_) + tid;
         current_root_index = m + (tid >> t_2);
         SmallGentlemanSandeUnit<N_POWER>(
             sh[in_shared_address], sh[in_shared_address + t],
             __ldg(&root_table[current_root_index]));
-
-        t = t << 1;
-        t_2 += 1;
-        t_ += 1;
+        t <<= 1;
+        ++t_2;
+        ++t_;
         m >>= 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
+    }
+    else
+#endif
+    {
+#pragma unroll 1
+        for (int lp = 0; lp < 6; lp++) {
+            current_root_index = m + (tid >> t_2);
+            SmallGentlemanSandeUnit<N_POWER>(
+                sh[in_shared_address], sh[in_shared_address + t],
+                __ldg(&root_table[current_root_index]));
+
+            t <<= 1;
+            ++t_2;
+            ++t_;
+            m >>= 1;
+            in_shared_address = ((tid >> t_) << t_) + tid;
+        }
     }
     __syncthreads();
 
@@ -689,7 +877,6 @@ __device__ __forceinline__ void SmallInverseNTT(
         __syncthreads();
     }
 
-    constexpr uint32_t N = 1U << N_POWER;
     // Scaling is coefficient-local. Callers synchronize only when the shared
     // buffer is handed to another phase.
     sh[tid] = small_mod_mult<N>(sh[tid], n_inverse);
@@ -1800,9 +1987,21 @@ template <uint32_t N>
 using NTTValueFor = SmallNTTValueFor<N>;
 using NTTValue = NTTValueFor<TFHEpp::lvl1param::n>;
 
+// The lvl02 low-LDS path requires register-resident accumulators to fit the
+// R9700's per-workgroup LDS limit.  lvl01 does not require them for capacity,
+// but benefits from avoiding an LDS read/write for every pointwise MAC.  Keep
+// CUDA and block-binary builds on their established shared-memory layout.
+template <class P>
+constexpr bool USE_REGISTER_NTT_ACCUM =
+#if defined(CUFHE_USE_HIP) && !defined(USE_BLOCK_BINARY)
+    P::n == TFHEpp::lvl1param::n || USE_LOW_LDS_BOOTSTRAP<P>;
+#else
+    USE_LOW_LDS_BOOTSTRAP<P>;
+#endif
+
 // Shared memory size per gate: (k+2) * N field elements normally.  The
-// low-LDS path needs one N-element transform buffer plus extracted-TLWE
-// scratch, with the larger of those two determining the reusable prefix.
+// register-accumulator path needs one N-element transform buffer plus
+// extracted-TLWE scratch, with the larger determining the reusable prefix.
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_WORK = P::n * sizeof(NTTValueFor<P::n>);
 
@@ -1811,7 +2010,7 @@ constexpr uint32_t MEM4HOMGATE_TLWE = (P::k * P::n + 1) * sizeof(typename P::T);
 
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE =
-    USE_LOW_LDS_BOOTSTRAP<P>
+    USE_REGISTER_NTT_ACCUM<P>
         ? (MEM4HOMGATE_WORK<P> > MEM4HOMGATE_TLWE<P> ? MEM4HOMGATE_WORK<P>
                                                      : MEM4HOMGATE_TLWE<P>)
         : (P::k + 2) * P::n * sizeof(NTTValueFor<P::n>);
