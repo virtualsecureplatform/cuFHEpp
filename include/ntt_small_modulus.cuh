@@ -244,6 +244,66 @@ small_mod64_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
     return small_mod64_normalize(res);
 }
 
+__host__ __device__ __forceinline__ void small_mod64_accumulate_product(
+    SmallNTTValue a, SmallNTTValue b, SmallNTTValue& limb0,
+    SmallNTTValue& limb1, SmallNTTValue& limb2)
+{
+    const unsigned __int128 product =
+        static_cast<unsigned __int128>(a) * b;
+    const SmallNTTValue product0 = static_cast<SmallNTTValue>(product);
+    const SmallNTTValue product1 =
+        static_cast<SmallNTTValue>(product >> 64);
+
+    const SmallNTTValue old0 = limb0;
+    limb0 += product0;
+    const SmallNTTValue carry0 = limb0 < old0;
+
+    const SmallNTTValue old1 = limb1;
+    limb1 += product1;
+    const SmallNTTValue carry1 = limb1 < old1;
+
+    const SmallNTTValue old1_carry = limb1;
+    limb1 += carry0;
+    limb2 += carry1 + static_cast<SmallNTTValue>(limb1 < old1_carry);
+}
+
+// Accumulate three 64x64-bit products and one addend into three limbs, then
+// reduce once using x^2 = x - 1 for x=2^32 and
+// p=x^2-x+1 (the Goldilocks prime).
+__host__ __device__ __forceinline__ SmallNTTValue small_mod64_madd3(
+    SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1,
+    SmallNTTValue b1, SmallNTTValue a2, SmallNTTValue b2,
+    SmallNTTValue c)
+{
+    SmallNTTValue limb0 = c;
+    SmallNTTValue limb1 = 0;
+    SmallNTTValue limb2 = 0;
+    small_mod64_accumulate_product(a0, b0, limb0, limb1, limb2);
+    small_mod64_accumulate_product(a1, b1, limb0, limb1, limb2);
+    small_mod64_accumulate_product(a2, b2, limb0, limb1, limb2);
+
+    const int64_t coeff0 =
+        static_cast<int64_t>(static_cast<uint32_t>(limb0)) -
+        static_cast<int64_t>(static_cast<uint32_t>(limb1)) -
+        static_cast<int64_t>(static_cast<uint32_t>(limb1 >> 32)) +
+        static_cast<int64_t>(static_cast<uint32_t>(limb2 >> 32));
+    const int64_t coeff1 =
+        static_cast<int64_t>(static_cast<uint32_t>(limb0 >> 32)) +
+        static_cast<int64_t>(static_cast<uint32_t>(limb1)) -
+        static_cast<int64_t>(static_cast<uint32_t>(limb2)) -
+        static_cast<int64_t>(static_cast<uint32_t>(limb2 >> 32));
+
+    constexpr __int128 radix = static_cast<__int128>(1) << 32;
+    constexpr __int128 modulus = static_cast<__int128>(small_ntt::P);
+    __int128 reduced = static_cast<__int128>(coeff0) +
+                       static_cast<__int128>(coeff1) * radix + 2 * modulus;
+#pragma unroll
+    for (int i = 0; i < 3; i++) {
+        if (reduced >= modulus) reduced -= modulus;
+    }
+    return static_cast<SmallNTTValue>(reduced);
+}
+
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod31_normalize(SmallNTTValue a)
 {
@@ -399,9 +459,7 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod_madd3(
         return small_mod31_madd3(a0, b0, a1, b1, a2, b2, c);
     }
     else {
-        SmallNTTValue result = small_mod64_madd(a0, b0, c);
-        result = small_mod64_madd(a1, b1, result);
-        return small_mod64_madd(a2, b2, result);
+        return small_mod64_madd3(a0, b0, a1, b1, a2, b2, c);
     }
 }
 
@@ -1653,20 +1711,17 @@ __device__ __forceinline__ void GPUFFTForward1024(
         double2 c = sh[tid + 512];
         double2 d = sh[tid + 768];
 
-        double2 w0 =
-            __ldg(&root_table[0]);  // coarse (stride 512) + fine first pair
         double2 w1b = __ldg(&root_table[1]);  // fine (stride 256), second pair
 
         // Step 1: coarse stage (stride 512)
-        double2 cw = c * w0;
-        double2 dw = d * w0;
-        double2 a1 = a + cw;
-        double2 c1 = a - cw;
-        double2 b1 = b + dw;
-        double2 d1 = b - dw;
+        // root_table[0] is exactly 1 + 0i.
+        double2 a1 = a + c;
+        double2 c1 = a - c;
+        double2 b1 = b + d;
+        double2 d1 = b - d;
 
         // Step 2: fine stage (stride 256)
-        double2 b1w = b1 * w0;  // w1a = w0 = root_table[0]
+        double2 b1w = b1;
         double2 d1w = d1 * w1b;
         sh[tid] = a1 + b1w;
         sh[tid + 256] = a1 - b1w;
@@ -1869,21 +1924,19 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         double2 c = sh[tid + 512];
         double2 d = sh[tid + 768];
 
-        double2 w_s =
-            __ldg(&root_table[0]);  // stride 256, first pair + stride 512
         double2 w_s2 = __ldg(&root_table[1]);  // stride 256, second pair
 
         // Step 1: GS at stride 256
         double2 t0 = a + b;
-        double2 t1 = (a - b) * w_s;  // w_s1 = root_table[0]
+        double2 t1 = a - b;  // root_table[0] is exactly 1 + 0i
         double2 t2 = c + d;
         double2 t3 = (c - d) * w_s2;
 
         // Step 2: GS at stride 512
         sh[tid] = t0 + t2;
-        sh[tid + 512] = (t0 - t2) * w_s;  // w_2s = root_table[0]
+        sh[tid + 512] = t0 - t2;
         sh[tid + 256] = t1 + t3;
-        sh[tid + 768] = (t1 - t3) * w_s;  // w_2s = root_table[0]
+        sh[tid + 768] = t1 - t3;
     }
     __syncthreads();
 }
