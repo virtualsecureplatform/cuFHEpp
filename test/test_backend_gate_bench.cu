@@ -217,7 +217,10 @@ int main()
     {
         using Param = TFHEpp::lvl1param;
 #ifdef USE_FFT
-        constexpr uint32_t streams_per_sm = 1;
+        // The low-LDS custom FFT can keep two lvl1 gate blocks resident. Give
+        // each slot an independent stream, as is already done for lvl1 NTT.
+        constexpr uint32_t streams_per_sm =
+            cufhe::USE_LOW_LDS_BOOTSTRAP<Param> ? 2 : 1;
 #else
         // The 32-bit lvl1 NTT gate fits two resident blocks per SM. Give each
         // block an independent stream so one stream's sequential gate chain

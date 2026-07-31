@@ -1112,15 +1112,21 @@ class CuSmallNTTHandler {
 
 // gfx1201 exposes 64 KiB of LDS per workgroup.  A lvl02 bootstrap using the
 // traditional layout needs 80 KiB (112 KiB for Mux), even though the
-// transform itself only needs 16 KiB.  On HIP's 64-bit-capable custom FFT and
-// NTT paths, keep lvl02 accumulators in registers and reuse the transform area
-// as TLWE scratch after blind rotate.  CUDA retains the existing shared-memory
-// fast path; the 32-bit-only tfhe-rs-style FFT retains its original layout.
+// transform itself only needs 16 KiB.  Lvl01's custom FFT also benefits from
+// keeping its accumulators in registers: doing so drops the block below half
+// the available LDS and removes the LDS limit on a second resident block.  On
+// HIP's custom FFT and NTT paths, reuse the transform area as TLWE scratch
+// after blind rotate.  CUDA retains the existing shared-memory fast path; the
+// 32-bit-only tfhe-rs-style FFT retains its original layout.
 template <class P>
 constexpr bool USE_LOW_LDS_BOOTSTRAP =
 #if defined(CUFHE_USE_HIP) && !defined(USE_BLOCK_BINARY) && \
     (!defined(USE_FFT) || defined(USE_GPU_FFT))
+#if defined(USE_FFT) && defined(USE_GPU_FFT)
+    P::n == TFHEpp::lvl1param::n || P::n == TFHEpp::lvl2param::n;
+#else
     P::n == TFHEpp::lvl2param::n;
+#endif
 #else
     false;
 #endif
