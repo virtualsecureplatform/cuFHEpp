@@ -203,45 +203,40 @@ small_mod64_sub(SmallNTTValue a, SmallNTTValue b)
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_reduce_wide(unsigned __int128 value)
+{
+    const SmallNTTValue lo = static_cast<SmallNTTValue>(value);
+    const SmallNTTValue hi = static_cast<SmallNTTValue>(value >> 64);
+    const SmallNTTValue hi_lo = static_cast<uint32_t>(hi);
+    const SmallNTTValue hi_hi = hi >> 32;
+
+    // With B=2^32 and p=B^2-B+1, B^2 = B-1 (mod p).  Therefore
+    // lo + hi*B^2 = lo + hi_lo*(B-1) - hi_hi (mod p).
+    const SmallNTTValue folded_hi = (hi_lo << 32) - hi_lo;
+    const SmallNTTValue folded = small_mod64_add(
+        small_mod64_normalize(lo), folded_hi);
+    return small_mod64_sub(folded, hi_hi);
+}
+
+__host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_mult(SmallNTTValue a, SmallNTTValue b)
 {
-    unsigned __int128 prod = static_cast<unsigned __int128>(a) * b;
-    const SmallNTTValue lo = static_cast<SmallNTTValue>(prod);
+    return small_mod64_reduce_wide(static_cast<unsigned __int128>(a) * b);
+}
 
-    const uint32_t limb0 = static_cast<uint32_t>(prod);
-    prod >>= 32;
-    const uint32_t limb1 = static_cast<uint32_t>(prod);
-    prod >>= 32;
-    const uint32_t limb2 = static_cast<uint32_t>(prod);
-    prod >>= 32;
-    const uint32_t limb3 = static_cast<uint32_t>(prod);
-
-    SmallNTTValue res = ((static_cast<SmallNTTValue>(limb1) + limb2) << 32) +
-                        limb0 - limb3 - limb2;
-    res -= static_cast<uint32_t>(-((res > lo) && (limb2 == 0)));
-    res += static_cast<uint32_t>(-((res < lo) && (limb2 != 0)));
-    return small_mod64_normalize(res);
+// In the bit-reversed Goldilocks root table, entry 1 is 2^48, a square root
+// of -1.  Keeping the operand constant lets the device compiler replace the
+// general 64x64 multiply with shifts while retaining exact field arithmetic.
+__host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_mult_root1(SmallNTTValue a)
+{
+    return small_mod64_mult(a, SmallNTTValue{1} << 48);
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
 {
-    unsigned __int128 sum = static_cast<unsigned __int128>(a) * b + c;
-    const SmallNTTValue lo = static_cast<SmallNTTValue>(sum);
-
-    const uint32_t limb0 = static_cast<uint32_t>(sum);
-    sum >>= 32;
-    const uint32_t limb1 = static_cast<uint32_t>(sum);
-    sum >>= 32;
-    const uint32_t limb2 = static_cast<uint32_t>(sum);
-    sum >>= 32;
-    const uint32_t limb3 = static_cast<uint32_t>(sum);
-
-    SmallNTTValue res = ((static_cast<SmallNTTValue>(limb1) + limb2) << 32) +
-                        limb0 - limb3 - limb2;
-    res -= static_cast<uint32_t>(-((res > lo) && (limb2 == 0)));
-    res += static_cast<uint32_t>(-((res < lo) && (limb2 != 0)));
-    return small_mod64_normalize(res);
+    return small_mod64_reduce_wide(static_cast<unsigned __int128>(a) * b + c);
 }
 
 __host__ __device__ __forceinline__ void small_mod64_accumulate_product(
@@ -594,6 +589,29 @@ __device__ __forceinline__ void SmallGentlemanSandeUnit(
     V = small_mod_mult<N>(small_mod_sub<N>(u, v), root);
 }
 
+__device__ __forceinline__ void SmallCooleyTukeyGoldilocksRoot1Unit(
+    uint64_t& U, uint64_t& V)
+{
+    const uint64_t u = U;
+    const uint64_t v = small_mod64_mult_root1(V);
+    U = small_mod64_add(u, v);
+    V = small_mod64_sub(u, v);
+}
+
+template <int N_POWER>
+__device__ __forceinline__ void SmallGentlemanSandeScaledUnit(
+    SmallNTTValueFor<1U << N_POWER>& U,
+    SmallNTTValueFor<1U << N_POWER>& V,
+    SmallNTTValueFor<1U << N_POWER> scaled_root,
+    SmallNTTValueFor<1U << N_POWER> n_inverse)
+{
+    constexpr uint32_t N = 1U << N_POWER;
+    const SmallNTTValue u = U;
+    const SmallNTTValue v = V;
+    U = small_mod_mult<N>(small_mod_add<N>(u, v), n_inverse);
+    V = small_mod_mult<N>(small_mod_sub<N>(u, v), scaled_root);
+}
+
 template <int N_POWER>
 __device__ __forceinline__ void SmallCooleyTukeyRadix4Unit(
     SmallNTTValueFor<1U << N_POWER>& a,
@@ -655,19 +673,15 @@ __device__ __forceinline__ void SmallForwardNTT(
             const int root0_index = m + group;
             const int root1_lo_index = (m << 1) + (group << 1);
             const int root1_hi_index = root1_lo_index + 1;
-            SmallNTTValueFor<1U << N_POWER> root0 =
-                __ldg(&root_table[root0_index]);
             SmallNTTValueFor<1U << N_POWER> root1_lo =
                 __ldg(&root_table[root1_lo_index]);
             SmallNTTValueFor<1U << N_POWER> root1_hi =
                 __ldg(&root_table[root1_hi_index]);
             if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
-                root0 = d_const_forward_root_31[root0_index];
                 root1_lo = d_const_forward_root_31[root1_lo_index];
                 root1_hi = d_const_forward_root_31[root1_hi_index];
             }
             else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
-                root0 = d_const_forward_root_64[root0_index];
                 root1_lo = d_const_forward_root_64[root1_lo_index];
                 root1_hi = d_const_forward_root_64[root1_hi_index];
             }
@@ -677,8 +691,24 @@ __device__ __forceinline__ void SmallForwardNTT(
             SmallNTTValueFor<1U << N_POWER> c = sh[address + t];
             SmallNTTValueFor<1U << N_POWER> d =
                 sh[address + t + radix_t];
-            SmallCooleyTukeyRadix4Unit<N_POWER>(a, b, c, d, root0,
-                                                 root1_lo, root1_hi);
+            if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+                if (lp == 0) {
+                    SmallCooleyTukeyGoldilocksRoot1Unit(a, c);
+                    SmallCooleyTukeyGoldilocksRoot1Unit(b, d);
+                    SmallCooleyTukeyUnit<N_POWER>(a, b, root1_lo);
+                    SmallCooleyTukeyUnit<N_POWER>(c, d, root1_hi);
+                }
+                else {
+                    const auto root0 = d_const_forward_root_64[root0_index];
+                    SmallCooleyTukeyRadix4Unit<N_POWER>(
+                        a, b, c, d, root0, root1_lo, root1_hi);
+                }
+            }
+            else {
+                const auto root0 = d_const_forward_root_31[root0_index];
+                SmallCooleyTukeyRadix4Unit<N_POWER>(a, b, c, d, root0,
+                                                     root1_lo, root1_hi);
+            }
             sh[address] = a;
             sh[address + radix_t] = b;
             sh[address + t] = c;
@@ -796,7 +826,6 @@ __device__ __forceinline__ void SmallInverseNTT(
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
     constexpr uint32_t N = 1U << N_POWER;
-    constexpr int NUM_THREADS = 1 << (N_POWER - 1);
 
     int t_2 = 0;
     int t_ = 0;
@@ -910,8 +939,27 @@ __device__ __forceinline__ void SmallInverseNTT(
             SmallNTTValueFor<1U << N_POWER> b = sh[address + t];
             SmallNTTValueFor<1U << N_POWER> c = sh[address + 2 * t];
             SmallNTTValueFor<1U << N_POWER> d = sh[address + 3 * t];
-            SmallGentlemanSandeRadix4Unit<N_POWER>(
-                a, b, c, d, root0_lo, root0_hi, root1);
+            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+                if (lp == (N_POWER - 6) / 2 - 1) {
+                    // The final inverse root is pre-scaled by 1/N.  Apply
+                    // normalization as part of the final two butterflies,
+                    // saving one modular multiplication per pair.
+                    SmallGentlemanSandeUnit<N_POWER>(a, b, root0_lo);
+                    SmallGentlemanSandeUnit<N_POWER>(c, d, root0_hi);
+                    SmallGentlemanSandeScaledUnit<N_POWER>(a, c, root1,
+                                                            n_inverse);
+                    SmallGentlemanSandeScaledUnit<N_POWER>(b, d, root1,
+                                                            n_inverse);
+                }
+                else {
+                    SmallGentlemanSandeRadix4Unit<N_POWER>(
+                        a, b, c, d, root0_lo, root0_hi, root1);
+                }
+            }
+            else {
+                SmallGentlemanSandeRadix4Unit<N_POWER>(
+                    a, b, c, d, root0_lo, root0_hi, root1);
+            }
             sh[address] = a;
             sh[address + t] = b;
             sh[address + 2 * t] = c;
@@ -927,17 +975,19 @@ __device__ __forceinline__ void SmallInverseNTT(
     }
 
     if constexpr ((N_POWER - 6) % 2 != 0) {
-        current_root_index = m + (tid >> t_2);
-        SmallNTTValueFor<1U << N_POWER> root =
-            __ldg(&root_table[current_root_index]);
-        if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
-            root = d_const_inverse_root_31[current_root_index];
+        if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+            // Entry 1 is pre-scaled by 1/N, so this final butterfly also
+            // performs the inverse normalization.
+            SmallGentlemanSandeScaledUnit<N_POWER>(
+                sh[in_shared_address], sh[in_shared_address + t],
+                d_const_inverse_root_64[1], n_inverse);
         }
-        else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
-            root = d_const_inverse_root_64[current_root_index];
+        else {
+            current_root_index = m + (tid >> t_2);
+            auto root = d_const_inverse_root_31[current_root_index];
+            SmallGentlemanSandeUnit<N_POWER>(
+                sh[in_shared_address], sh[in_shared_address + t], root);
         }
-        SmallGentlemanSandeUnit<N_POWER>(sh[in_shared_address],
-                                         sh[in_shared_address + t], root);
         t <<= 1;
         t_2 += 1;
         t_ += 1;
@@ -946,10 +996,6 @@ __device__ __forceinline__ void SmallInverseNTT(
         __syncthreads();
     }
 
-    // Scaling is coefficient-local. Callers synchronize only when the shared
-    // buffer is handed to another phase.
-    sh[tid] = small_mod_mult<N>(sh[tid], n_inverse);
-    sh[tid + NUM_THREADS] = small_mod_mult<N>(sh[tid + NUM_THREADS], n_inverse);
 }
 
 template <uint32_t N>
@@ -1290,6 +1336,16 @@ __device__ inline void operator+=(double2& lh, const double2 rh)
     lh.y = __dadd_rn(lh.y, rh.y);
 }
 
+__device__ __forceinline__ double2 complex_mul_i(const double2 value)
+{
+    return {-value.y, value.x};
+}
+
+__device__ __forceinline__ double2 complex_mul_minus_i(const double2 value)
+{
+    return {value.y, -value.x};
+}
+
 __device__ __forceinline__ void complex_madd(double2& accum, const double2 a,
                                               const double2 b)
 {
@@ -1499,8 +1555,6 @@ __device__ __forceinline__ void GPUFFTForward512(
         double2 c = sh[tid + 256];
         double2 d = sh[tid + 384];
 
-        double2 w1b = __ldg(&root_table[1]);  // fine (stride 128), second pair
-
         // Step 1: coarse stage (stride 256)
         // root_table[0] is exactly 1 + 0i.
         double2 a1 = a + c;
@@ -1510,7 +1564,7 @@ __device__ __forceinline__ void GPUFFTForward512(
 
         // Step 2: fine stage (stride 128)
         double2 b1w = b1;
-        double2 d1w = d1 * w1b;
+        double2 d1w = complex_mul_i(d1);
         sh[tid] = a1 + b1w;
         sh[tid + 128] = a1 - b1w;
         sh[tid + 256] = c1 + d1w;
@@ -1673,13 +1727,11 @@ __device__ __forceinline__ void GPUFFTInverse512(
         double2 c = sh[tid + 256];
         double2 d = sh[tid + 384];
 
-        double2 w_s2 = __ldg(&root_table[1]);  // stride 128, second pair
-
         // Step 1: GS at stride 128
         double2 t0 = a + b;
         double2 t1 = a - b;  // root_table[0] is exactly 1 + 0i
         double2 t2 = c + d;
-        double2 t3 = (c - d) * w_s2;
+        double2 t3 = complex_mul_minus_i(c - d);
 
         // Step 2: GS at stride 256
         sh[tid] = t0 + t2;
@@ -1711,8 +1763,6 @@ __device__ __forceinline__ void GPUFFTForward1024(
         double2 c = sh[tid + 512];
         double2 d = sh[tid + 768];
 
-        double2 w1b = __ldg(&root_table[1]);  // fine (stride 256), second pair
-
         // Step 1: coarse stage (stride 512)
         // root_table[0] is exactly 1 + 0i.
         double2 a1 = a + c;
@@ -1722,7 +1772,7 @@ __device__ __forceinline__ void GPUFFTForward1024(
 
         // Step 2: fine stage (stride 256)
         double2 b1w = b1;
-        double2 d1w = d1 * w1b;
+        double2 d1w = complex_mul_i(d1);
         sh[tid] = a1 + b1w;
         sh[tid + 256] = a1 - b1w;
         sh[tid + 512] = c1 + d1w;
@@ -1924,13 +1974,11 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         double2 c = sh[tid + 512];
         double2 d = sh[tid + 768];
 
-        double2 w_s2 = __ldg(&root_table[1]);  // stride 256, second pair
-
         // Step 1: GS at stride 256
         double2 t0 = a + b;
         double2 t1 = a - b;  // root_table[0] is exactly 1 + 0i
         double2 t2 = c + d;
-        double2 t3 = (c - d) * w_s2;
+        double2 t3 = complex_mul_minus_i(c - d);
 
         // Step 2: GS at stride 512
         sh[tid] = t0 + t2;

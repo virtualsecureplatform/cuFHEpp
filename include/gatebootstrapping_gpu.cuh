@@ -1485,29 +1485,29 @@ __device__ inline void AccumulateKeyBundle(
     // Precompute combined bara for bk0 (a0+a1 mod 2N)
     const uint32_t bara01 = (bara0 + bara1) & (2 * N - 1);
 
-    // On lvl02, process two consecutive decomposition polynomials while
-    // retaining their common xai coefficients in registers.  The 64-bit path
-    // benefits from halving these loads; lvl01 keeps its shorter live ranges.
+    // xai is common to every row and decomposition digit.  On lvl02, keep the
+    // six coefficients owned by each thread in registers for the complete
+    // external product.  lvl01 keeps its shorter live ranges.
+    NTTValueFor<P::targetP::n> cached_xai0[2];
+    NTTValueFor<P::targetP::n> cached_xai1[2];
+    NTTValueFor<P::targetP::n> cached_xai01[2];
+    if constexpr (N == TFHEpp::lvl2param::n) {
+        if (tid < NUM_THREADS) {
+#pragma unroll
+            for (int e = 0; e < 2; e++) {
+                const int i = tid + e * NUM_THREADS;
+                cached_xai0[e] = __ldg(&xai_ntt[bara0 * N + i]);
+                cached_xai1[e] = __ldg(&xai_ntt[bara1 * N + i]);
+                cached_xai01[e] = __ldg(&xai_ntt[bara01 * N + i]);
+            }
+        }
+    }
+
     constexpr int REUSE_DIGITS = N == TFHEpp::lvl2param::n ? 2 : 1;
     static_assert(P::targetP::l % REUSE_DIGITS == 0);
     for (int j = 0; j <= P::targetP::k; j++) {
         for (int digit_group = 0; digit_group < P::targetP::l / REUSE_DIGITS;
              digit_group++) {
-            NTTValueFor<P::targetP::n> cached_xai0[2];
-            NTTValueFor<P::targetP::n> cached_xai1[2];
-            NTTValueFor<P::targetP::n> cached_xai01[2];
-            if constexpr (N == TFHEpp::lvl2param::n) {
-                if (tid < NUM_THREADS) {
-#pragma unroll
-                    for (int e = 0; e < 2; e++) {
-                        const int i = tid + e * NUM_THREADS;
-                        cached_xai0[e] = __ldg(&xai_ntt[bara0 * N + i]);
-                        cached_xai1[e] = __ldg(&xai_ntt[bara1 * N + i]);
-                        cached_xai01[e] = __ldg(&xai_ntt[bara01 * N + i]);
-                    }
-                }
-            }
-
 #pragma unroll
             for (int slot = 0; slot < REUSE_DIGITS; slot++) {
                 const int digit = REUSE_DIGITS * digit_group + slot;

@@ -196,6 +196,12 @@ void GenerateSmallRootTables(SmallRootTableState& state)
     state.forward_table = std::move(br_forward);
     state.inverse_table = std::move(br_inverse);
 
+    // Bit-reversed entry 1 is used only by the last inverse stage.  Folding
+    // 1/N into that root lets the last butterfly normalize both outputs with
+    // two products instead of doing a root product plus two scale products.
+    state.inverse_table[1] =
+        small_mod_mult<length>(state.inverse_table[1], state.n_inverse);
+
     state.log_n = log_n;
 }
 
