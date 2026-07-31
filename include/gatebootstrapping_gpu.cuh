@@ -953,9 +953,10 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t FFT_THREADS = HALF_N >> 1;
-    static_assert(N == TFHEpp::lvl1param::n);
+    static_assert(N == TFHEpp::lvl1param::n ||
+                  N == TFHEpp::lvl2param::n);
     static_assert(P::targetP::k == 1);
-    static_assert(P::targetP::l == 3);
+    static_assert(((P::targetP::k + 1) * P::targetP::l) % 2 == 0);
 
     const uint32_t tid = ThisThreadRankInBlock();
     double2* const sh_fft0 = &sh_acc_ntt[0];
@@ -974,13 +975,20 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
                  P::targetP::l * P::targetP::Bgbit - 1);
     const uint32_t bara01 = (bara0 + bara1) & (2 * N - 1);
 
-    for (int j = 0; j <= P::targetP::k; j++) {
-        // Transform the first two decomposition digits concurrently.  Both
-        // 256-thread halves execute the same barrier schedule on disjoint LDS
-        // buffers.
+    // Flatten the TRLWE components and decomposition digits into independent
+    // transforms, then pair across component boundaries.
+    constexpr int FFT_PAIRS =
+        (P::targetP::k + 1) * P::targetP::l / 2;
 #pragma unroll
-        for (int digit = 0; digit < 2; digit++) {
-            if (tid < HALF_N) {
+    for (int pair = 0; pair < FFT_PAIRS; pair++) {
+        if (tid < HALF_N) {
+            const double2 tw = __ldg(&ntt.twist_[tid]);
+#pragma unroll
+            for (int slot = 0; slot < 2; slot++) {
+                const int digit_linear = 2 * pair + slot;
+                const int j = digit_linear / P::targetP::l;
+                const int digit = digit_linear - j * P::targetP::l;
+
                 typename P::targetP::T temp_re = trlwe[j * N + tid];
                 temp_re += decomp_offset + roundoffset;
                 const int32_t digit_re = static_cast<int32_t>(
@@ -1002,8 +1010,7 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
 
                 const double2 folded = {static_cast<double>(digit_re),
                                         static_cast<double>(digit_im)};
-                const double2 tw = __ldg(&ntt.twist_[tid]);
-                double2* const sh_fft = digit == 0 ? sh_fft0 : sh_fft1;
+                double2* const sh_fft = slot == 0 ? sh_fft0 : sh_fft1;
                 sh_fft[tid] = folded * tw;
             }
         }
@@ -1019,15 +1026,17 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
             const double2 xai01 = __ldg(&xai_fft[bara01 * HALF_N + tid]);
 
 #pragma unroll
-            for (int digit = 0; digit < 2; digit++) {
-                double2* const sh_fft = digit == 0 ? sh_fft0 : sh_fft1;
+            for (int slot = 0; slot < 2; slot++) {
+                const int digit_linear = 2 * pair + slot;
+                const int j = digit_linear / P::targetP::l;
+                const int digit = digit_linear - j * P::targetP::l;
+                double2* const sh_fft = slot == 0 ? sh_fft0 : sh_fft1;
                 const double2 fft_val = sh_fft[tid];
-                const int digit_linear = j * P::targetP::l + digit;
                 // The identity TRGSW contains a diagonal delta polynomial.
                 // Its normalized FFT is this real constant at every bin.
                 const double gadget =
                     1.0 / static_cast<double>(
-                              1u << ((digit + 1) * P::targetP::Bgbit));
+                              1ULL << ((digit + 1) * P::targetP::Bgbit));
 
 #pragma unroll
                 for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
@@ -1051,74 +1060,6 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
             }
         }
         __syncthreads();
-
-        // The active parameter set has one remaining decomposition digit.
-        constexpr int digit = P::targetP::l - 1;
-        if (tid < HALF_N) {
-            typename P::targetP::T temp_re = trlwe[j * N + tid];
-            temp_re += decomp_offset + roundoffset;
-            const int32_t digit_re = static_cast<int32_t>(
-                ((temp_re >>
-                  (std::numeric_limits<typename P::targetP::T>::digits -
-                   (digit + 1) * P::targetP::Bgbit)) &
-                 decomp_mask) -
-                decomp_half);
-
-            typename P::targetP::T temp_im =
-                trlwe[j * N + tid + HALF_N];
-            temp_im += decomp_offset + roundoffset;
-            const int32_t digit_im = static_cast<int32_t>(
-                ((temp_im >>
-                  (std::numeric_limits<typename P::targetP::T>::digits -
-                   (digit + 1) * P::targetP::Bgbit)) &
-                 decomp_mask) -
-                decomp_half);
-
-            const double2 folded = {static_cast<double>(digit_re),
-                                    static_cast<double>(digit_im)};
-            const double2 tw = __ldg(&ntt.twist_[tid]);
-            sh_fft0[tid] = folded * tw;
-        }
-        __syncthreads();
-
-        if (tid < FFT_THREADS) {
-            GPUFFTForward<N>(sh_fft0, ntt.forward_root_, tid);
-        }
-        else {
-            for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
-                __syncthreads();
-        }
-
-        if (tid < HALF_N) {
-            const double2 fft_val = sh_fft0[tid];
-            const double2 xai0 = __ldg(&xai_fft[bara0 * HALF_N + tid]);
-            const double2 xai1 = __ldg(&xai_fft[bara1 * HALF_N + tid]);
-            const double2 xai01 = __ldg(&xai_fft[bara01 * HALF_N + tid]);
-            const int digit_linear = j * P::targetP::l + digit;
-            constexpr double gadget =
-                1.0 / static_cast<double>(
-                          1u << ((digit + 1) * P::targetP::Bgbit));
-
-#pragma unroll
-            for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
-                const uint32_t bk_offset =
-                    ((P::targetP::k + 1) * digit_linear + out_k) * HALF_N +
-                    tid;
-                const double2 one_val =
-                    out_k == j ? double2{gadget, 0.0}
-                               : double2{0.0, 0.0};
-                const double2 bk0_val = __ldg(&bk0_fft[bk_offset]);
-                const double2 bk1_val = __ldg(&bk1_fft[bk_offset]);
-                const double2 bk2_val = __ldg(&bk2_fft[bk_offset]);
-
-                double2 combined = one_val;
-                complex_madd(combined, bk2_val, xai1);
-                complex_madd(combined, bk1_val, xai0);
-                complex_madd(combined, bk0_val, xai01);
-                complex_madd(local_accum[out_k], fft_val, combined);
-            }
-        }
-        __syncthreads();
     }
 
     if (tid < HALF_N) {
@@ -1132,19 +1073,33 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
     GPUFFTInverse<N>(thread_inverse, ntt.inverse_root_,
                      tid & (FFT_THREADS - 1));
 
-    constexpr double denorm = 4294967296.0;
+    constexpr double denorm = (sizeof(typename P::targetP::T) == 4)
+                                  ? 4294967296.0
+                                  : 18446744073709551616.0;
     if (tid < HALF_N) {
         const double2 utw = __ldg(&ntt.untwist_[tid]);
         double2 val0 = sh_fft0[tid] * utw;
         double2 val1 = sh_fft1[tid] * utw;
-        trlwe[tid] = static_cast<typename P::targetP::T>(
-            static_cast<int32_t>(llrint(val0.x * denorm)));
-        trlwe[tid + HALF_N] = static_cast<typename P::targetP::T>(
-            static_cast<int32_t>(llrint(val0.y * denorm)));
-        trlwe[N + tid] = static_cast<typename P::targetP::T>(
-            static_cast<int32_t>(llrint(val1.x * denorm)));
-        trlwe[N + tid + HALF_N] = static_cast<typename P::targetP::T>(
-            static_cast<int32_t>(llrint(val1.y * denorm)));
+        if constexpr (sizeof(typename P::targetP::T) == 4) {
+            trlwe[tid] = static_cast<typename P::targetP::T>(
+                static_cast<int32_t>(llrint(val0.x * denorm)));
+            trlwe[tid + HALF_N] = static_cast<typename P::targetP::T>(
+                static_cast<int32_t>(llrint(val0.y * denorm)));
+            trlwe[N + tid] = static_cast<typename P::targetP::T>(
+                static_cast<int32_t>(llrint(val1.x * denorm)));
+            trlwe[N + tid + HALF_N] = static_cast<typename P::targetP::T>(
+                static_cast<int32_t>(llrint(val1.y * denorm)));
+        }
+        else {
+            trlwe[tid] = static_cast<typename P::targetP::T>(
+                double_to_torus64(val0.x * denorm));
+            trlwe[tid + HALF_N] = static_cast<typename P::targetP::T>(
+                double_to_torus64(val0.y * denorm));
+            trlwe[N + tid] = static_cast<typename P::targetP::T>(
+                double_to_torus64(val1.x * denorm));
+            trlwe[N + tid + HALF_N] = static_cast<typename P::targetP::T>(
+                double_to_torus64(val1.y * denorm));
+        }
     }
     __syncthreads();
 }

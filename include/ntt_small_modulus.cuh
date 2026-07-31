@@ -656,7 +656,8 @@ __device__ __forceinline__ void SmallForwardNTT(
     }
 
 #if defined(CUFHE_USE_HIP)
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (N == TFHEpp::lvl1param::n ||
+                  N == TFHEpp::lvl2param::n) {
         // Stride 32 is the boundary between shared-memory and wave-local
         // stages on wave32.  Keep its outputs in registers and shuffle the
         // stride-16 pairs into place instead of round-tripping through LDS.
@@ -748,7 +749,8 @@ __device__ __forceinline__ void SmallInverseNTT(
     int current_root_index;
 
 #if defined(CUFHE_USE_HIP)
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (N == TFHEpp::lvl1param::n ||
+                  N == TFHEpp::lvl2param::n) {
         auto reg_u = sh[2 * tid];
         auto reg_v = sh[2 * tid + 1];
         current_root_index = m + (tid >> t_2);
@@ -1156,14 +1158,14 @@ using NTTValueFor = NTTValue;
 // (FFT uses 256 active threads, decomposition uses all 512)
 constexpr uint32_t NTT_THREAD_UNITBIT = 1;
 
-// A lvl1 GPU FFT uses only half of the 512-thread gate block.  In the
-// KeyBundle path, use the other half for a second transform while retaining
-// enough LDS for two resident blocks on gfx1201.
+// A GPU FFT uses only half of its gate block.  In the KeyBundle path, use the
+// other half for a second transform.  lvl1 retains two resident blocks while
+// lvl2 already runs with one block per CU.
 template <class P>
 constexpr bool USE_PAIRED_GPU_FFT =
 #if defined(CUFHE_USE_HIP) && defined(USE_GPU_FFT) && \
     defined(USE_KEY_BUNDLE) && !defined(USE_BLOCK_BINARY)
-    P::n == TFHEpp::lvl1param::n;
+    P::n == TFHEpp::lvl1param::n || P::n == TFHEpp::lvl2param::n;
 #else
     false;
 #endif
