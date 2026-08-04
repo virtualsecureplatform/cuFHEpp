@@ -138,6 +138,28 @@ if(USE_BLOCK_BINARY AND USE_FFT AND NOT USE_GPU_FFT)
       "Block-binary FFT builds require USE_GPU_FFT=ON; use USE_FFT=OFF for NTT")
 endif()
 
+# Ports of the ROCm-tuned transform paths to CUDA builds.  Always active on
+# HIP.  Defaults follow RTX 4070 (sm_89) benchmarks: the paired FFT is ~20%
+# faster, register accumulators are a modest NTT win, and the low-LDS layout is
+# required for lvl02 MUX on GPUs with a ~99 KiB shared-memory cap (Ada).  The
+# warp-shuffle tail stays off: NVIDIA's 64-register ceiling for 1024-thread
+# blocks makes it spill and lose occupancy.
+option(USE_CUDA_WARP_TRANSFORM
+       "Run the final NTT butterfly stages in registers via warp shuffles" OFF)
+option(USE_CUDA_REGISTER_NTT_ACCUM
+       "Keep pointwise multiply-accumulate results in registers" ON)
+option(USE_CUDA_LOW_LDS_BOOTSTRAP
+       "Use the low-shared-memory bootstrap scratch layout" ON)
+option(USE_CUDA_PAIRED_GPU_FFT
+       "Run two GPU-FFT transforms per block in the KeyBundle path" ON)
+foreach(cuda_transform_opt
+        USE_CUDA_WARP_TRANSFORM USE_CUDA_REGISTER_NTT_ACCUM
+        USE_CUDA_LOW_LDS_BOOTSTRAP USE_CUDA_PAIRED_GPU_FFT)
+  if(${cuda_transform_opt})
+    add_compile_definitions(${cuda_transform_opt})
+  endif()
+endforeach()
+
 if(USE_80BIT_SECURITY)
   add_compile_definitions(USE_80BIT_SECURITY)
 elseif(USE_CGGI19)

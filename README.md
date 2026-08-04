@@ -112,6 +112,27 @@ make
 The default CUDA architecture list is `80;89`, covering A100 and RTX 4070.
 For an RTX 4070-only build, pass `-DCMAKE_CUDA_ARCHITECTURES=89`.
 
+The ROCm-tuned transform paths are also available on CUDA builds (always
+active on HIP builds); defaults reflect RTX 4070 benchmarks:
+
+- `USE_CUDA_PAIRED_GPU_FFT` (default ON) — run two GPU-FFT transforms per
+  block in the KeyBundle path instead of idling half of the gate block.
+  ~20% faster gNAND throughput on lvl1 and lvl02.
+- `USE_CUDA_REGISTER_NTT_ACCUM` (default ON) — keep pointwise
+  multiply-accumulate results in registers (NTT backend). Small lvl1 win.
+- `USE_CUDA_LOW_LDS_BOOTSTRAP` (default ON) — use the low-shared-memory
+  bootstrap layout that reuses the transform area as extracted-TLWE scratch
+  and a single TRLWE buffer for MUX/NMUX. Performance-neutral, but required
+  for lvl02 MUX/NMUX on GPUs with a ~99 KiB dynamic shared memory cap such as
+  Ada (RTX 4070); the traditional layout requests 112 KiB and fails to launch.
+- `-DUSE_CUDA_WARP_TRANSFORM=ON` (default OFF) — run the final NTT butterfly
+  stages in registers with warp shuffles instead of shared-memory round trips.
+  A win on RDNA4 but a regression on NVIDIA, where the 64-register ceiling for
+  1024-thread blocks forces spills and lvl1 loses a resident block.
+
+`./bench_rocm_ports.sh build && ./bench_rocm_ports.sh run` builds and
+benchmarks these combinations for `CMAKE_CUDA_ARCHITECTURES=89`.
+
 For ROCm on the Radeon AI PRO R9700:
 ```
 cmake -S . -B build-rocm \

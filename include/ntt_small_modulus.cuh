@@ -25,6 +25,23 @@
 #endif
 #endif
 
+// The ROCm port keeps tail butterfly stages, pointwise accumulators, and (for
+// lvl02) the bootstrap scratch layout in registers to fit gfx1201's LDS.  The
+// same code paths are valid CUDA; these opt-in flags let CUDA builds adopt
+// each of them independently without disturbing the established defaults.
+#if defined(CUFHE_USE_HIP) || defined(USE_CUDA_WARP_TRANSFORM)
+#define CUFHE_WARP_TRANSFORM_TAIL 1
+#endif
+#if defined(CUFHE_USE_HIP) || defined(USE_CUDA_REGISTER_NTT_ACCUM)
+#define CUFHE_REGISTER_NTT_ACCUM_PLATFORM 1
+#endif
+#if defined(CUFHE_USE_HIP) || defined(USE_CUDA_LOW_LDS_BOOTSTRAP)
+#define CUFHE_LOW_LDS_PLATFORM 1
+#endif
+#if defined(CUFHE_USE_HIP) || defined(USE_CUDA_PAIRED_GPU_FFT)
+#define CUFHE_PAIRED_GPU_FFT_PLATFORM 1
+#endif
+
 namespace cufhe {
 
 template <class P>
@@ -650,7 +667,7 @@ __device__ __forceinline__ void SmallForwardNTT(
     const SmallNTTValueFor<1U << N_POWER>* root_table, int tid)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
-#if defined(CUFHE_USE_HIP)
+#if defined(CUFHE_WARP_TRANSFORM_TAIL)
     constexpr uint32_t N = 1U << N_POWER;
 #endif
 
@@ -743,7 +760,7 @@ __device__ __forceinline__ void SmallForwardNTT(
         __syncthreads();
     }
 
-#if defined(CUFHE_USE_HIP)
+#if defined(CUFHE_WARP_TRANSFORM_TAIL)
     if constexpr (N == TFHEpp::lvl1param::n ||
                   N == TFHEpp::lvl2param::n) {
         // Stride 32 is the boundary between shared-memory and wave-local
@@ -835,7 +852,7 @@ __device__ __forceinline__ void SmallInverseNTT(
     int in_shared_address = ((tid >> t_) << t_) + tid;
     int current_root_index;
 
-#if defined(CUFHE_USE_HIP)
+#if defined(CUFHE_WARP_TRANSFORM_TAIL)
     if constexpr (N == TFHEpp::lvl1param::n ||
                   N == TFHEpp::lvl2param::n) {
         auto reg_u = sh[2 * tid];
@@ -1235,7 +1252,7 @@ class CuSmallNTTHandler {
 // 32-bit-only tfhe-rs-style FFT retains its original layout.
 template <class P>
 constexpr bool USE_LOW_LDS_BOOTSTRAP =
-#if defined(CUFHE_USE_HIP) && !defined(USE_BLOCK_BINARY) && \
+#if defined(CUFHE_LOW_LDS_PLATFORM) && !defined(USE_BLOCK_BINARY) && \
     (!defined(USE_FFT) || defined(USE_GPU_FFT))
 #if defined(USE_FFT) && defined(USE_GPU_FFT)
     P::n == TFHEpp::lvl1param::n || P::n == TFHEpp::lvl2param::n;
@@ -1267,7 +1284,7 @@ constexpr uint32_t NTT_THREAD_UNITBIT = 1;
 // lvl2 already runs with one block per CU.
 template <class P>
 constexpr bool USE_PAIRED_GPU_FFT =
-#if defined(CUFHE_USE_HIP) && defined(USE_GPU_FFT) && \
+#if defined(CUFHE_PAIRED_GPU_FFT_PLATFORM) && defined(USE_GPU_FFT) && \
     defined(USE_KEY_BUNDLE) && !defined(USE_BLOCK_BINARY)
     P::n == TFHEpp::lvl1param::n || P::n == TFHEpp::lvl2param::n;
 #else
@@ -2128,7 +2145,7 @@ using NTTValue = NTTValueFor<TFHEpp::lvl1param::n>;
 // CUDA and block-binary builds on their established shared-memory layout.
 template <class P>
 constexpr bool USE_REGISTER_NTT_ACCUM =
-#if defined(CUFHE_USE_HIP) && !defined(USE_BLOCK_BINARY)
+#if defined(CUFHE_REGISTER_NTT_ACCUM_PLATFORM) && !defined(USE_BLOCK_BINARY)
     P::n == TFHEpp::lvl1param::n || USE_LOW_LDS_BOOTSTRAP<P>;
 #else
     USE_LOW_LDS_BOOTSTRAP<P>;
