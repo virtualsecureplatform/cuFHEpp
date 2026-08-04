@@ -152,9 +152,22 @@ option(USE_CUDA_LOW_LDS_BOOTSTRAP
        "Use the low-shared-memory bootstrap scratch layout" ON)
 option(USE_CUDA_PAIRED_GPU_FFT
        "Run two GPU-FFT transforms per block in the KeyBundle path" ON)
+# Second-generation lvl1 NTT optimizations (RTX 4070 tuning): together they
+# cut lvl1 gate time by ~29%.  MIN_BLOCKS only pays off when at least three
+# streams per SM feed the GPU, and is free otherwise once SHOUP shrinks the
+# butterflies below the 42-register cap.
+option(USE_CUDA_PAIRED_NTT
+       "Transform two decomposition digits per lvl1 NTT pass" ON)
+option(USE_CUDA_SHOUP_NTT
+       "Use Shoup precomputed-quotient twiddle multiplication in the lvl1 NTT"
+       ON)
+option(USE_CUDA_MIN_BLOCKS
+       "Force three resident lvl1 NTT gate blocks per SM via launch bounds"
+       ON)
 foreach(cuda_transform_opt
         USE_CUDA_WARP_TRANSFORM USE_CUDA_REGISTER_NTT_ACCUM
-        USE_CUDA_LOW_LDS_BOOTSTRAP USE_CUDA_PAIRED_GPU_FFT)
+        USE_CUDA_LOW_LDS_BOOTSTRAP USE_CUDA_PAIRED_GPU_FFT
+        USE_CUDA_PAIRED_NTT USE_CUDA_SHOUP_NTT USE_CUDA_MIN_BLOCKS)
   if(${cuda_transform_opt})
     add_compile_definitions(${cuda_transform_opt})
   endif()

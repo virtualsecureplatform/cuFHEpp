@@ -1423,6 +1423,191 @@ __device__ inline void AccumulateKeyBundle(
 }
 #endif  // USE_GPU_FFT
 #else   // !USE_FFT
+
+/**
+ * NTT Key-bundle accumulator with paired transforms
+ *
+ * Flattens the (component, digit) loop into pairs and transforms two
+ * decomposed polynomials per SmallForwardNTTPair pass, so the radix-4 stages
+ * occupy the whole block.  The two output components share one
+ * SmallInverseNTTPair pass at the end.
+ */
+template <class P>
+__device__ inline void AccumulateKeyBundlePairedNTT(
+    typename P::targetP::T* const trlwe,
+    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t bara0,
+    const uint32_t bara1,
+    const NTTValueFor<P::targetP::n>* const bk0_ntt,
+    const NTTValueFor<P::targetP::n>* const bk1_ntt,
+    const NTTValueFor<P::targetP::n>* const bk2_ntt,
+    const NTTValueFor<P::targetP::n>* const xai_ntt,
+    const CuNTTHandler<P::targetP::n> ntt)
+{
+    const uint32_t tid = ThisThreadRankInBlock();
+
+    constexpr uint32_t N = P::targetP::n;
+    constexpr uint32_t NUM_THREADS = N >> 1;
+    static_assert(P::targetP::k == 1);
+    static_assert(((P::targetP::k + 1) * P::targetP::l) % 2 == 0);
+
+    NTTValueFor<P::targetP::n>* const sh_work0 = &sh_acc_ntt[0];
+    NTTValueFor<P::targetP::n>* const sh_work1 = &sh_acc_ntt[N];
+    NTTValueFor<P::targetP::n> local_accum[P::targetP::k + 1][2];
+
+    if (tid < NUM_THREADS) {
+#pragma unroll
+        for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
+            local_accum[k_idx][0] = 0;
+            local_accum[k_idx][1] = 0;
+        }
+    }
+
+    constexpr uint32_t decomp_mask = (1 << P::targetP::Bgbit) - 1;
+    constexpr int32_t decomp_half = 1 << (P::targetP::Bgbit - 1);
+    constexpr typename P::targetP::T decomp_offset =
+        offsetgen<typename P::targetP>();
+    constexpr typename P::targetP::T roundoffset =
+        1ULL << (std::numeric_limits<typename P::targetP::T>::digits -
+                 P::targetP::l * P::targetP::Bgbit - 1);
+
+    const uint32_t bara01 = (bara0 + bara1) & (2 * N - 1);
+
+    constexpr int NTT_PAIRS = (P::targetP::k + 1) * P::targetP::l / 2;
+    for (int pair = 0; pair < NTT_PAIRS; pair++) {
+        // Step 1: Decompose both slots' digits
+        if (tid < NUM_THREADS) {
+#pragma unroll
+            for (int slot = 0; slot < 2; slot++) {
+                const int digit_linear = 2 * pair + slot;
+                const int j = digit_linear / P::targetP::l;
+                const int digit = digit_linear - j * P::targetP::l;
+                NTTValueFor<P::targetP::n>* const sh_work =
+                    slot == 0 ? sh_work0 : sh_work1;
+#pragma unroll
+                for (int e = 0; e < 2; e++) {
+                    const int i = tid + e * NUM_THREADS;
+                    typename P::targetP::T temp = trlwe[j * N + i];
+                    temp += decomp_offset + roundoffset;
+                    const int32_t digit_val = static_cast<int32_t>(
+                        ((temp >>
+                          (std::numeric_limits<
+                               typename P::targetP::T>::digits -
+                           (digit + 1) * P::targetP::Bgbit)) &
+                         decomp_mask) -
+                        decomp_half);
+                    sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
+                }
+            }
+        }
+        __syncthreads();
+
+        // Step 2: One paired forward NTT for both digits
+        if (tid < NUM_THREADS) {
+            SmallForwardNTTPair<P::targetP::nbit>(sh_work0, sh_work1,
+                                                  ntt.forward_root_, tid);
+        }
+        else {
+            for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
+                __syncthreads();
+        }
+
+        // Step 3: Multiply with on-the-fly keybundle and accumulate.  The
+        // xai coefficients are shared by both slots.
+        if (tid < NUM_THREADS) {
+#pragma unroll
+            for (int e = 0; e < 2; e++) {
+                const int i = tid + e * NUM_THREADS;
+                const NTTValueFor<P::targetP::n> xai0 =
+                    __ldg(&xai_ntt[bara0 * N + i]);
+                const NTTValueFor<P::targetP::n> xai1 =
+                    __ldg(&xai_ntt[bara1 * N + i]);
+                const NTTValueFor<P::targetP::n> xai01 =
+                    __ldg(&xai_ntt[bara01 * N + i]);
+
+#pragma unroll
+                for (int slot = 0; slot < 2; slot++) {
+                    const int digit_linear = 2 * pair + slot;
+                    const int j = digit_linear / P::targetP::l;
+                    const int digit = digit_linear - j * P::targetP::l;
+                    const int gadget_shift = (digit + 1) * P::targetP::Bgbit;
+                    const SmallNTTValue gadget_quotient =
+                        SmallNTTModulus<N>::P >> gadget_shift;
+                    const SmallNTTValue gadget_round =
+                        (SmallNTTModulus<N>::P >> (gadget_shift - 1)) & 1;
+                    const NTTValueFor<P::targetP::n> gadget =
+                        static_cast<NTTValueFor<P::targetP::n> >(
+                            gadget_quotient + gadget_round);
+                    const NTTValueFor<P::targetP::n> ntt_val =
+                        (slot == 0 ? sh_work0 : sh_work1)[i];
+
+#pragma unroll
+                    for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
+                        const uint32_t bk_offset =
+                            (((P::targetP::k + 1) * digit_linear + out_k)
+                             << P::targetP::nbit) +
+                            i;
+                        const NTTValueFor<P::targetP::n> one_val =
+                            out_k == j ? gadget : 0;
+                        const NTTValueFor<P::targetP::n> bk0_val =
+                            __ldg(&bk0_ntt[bk_offset]);
+                        const NTTValueFor<P::targetP::n> bk1_val =
+                            __ldg(&bk1_ntt[bk_offset]);
+                        const NTTValueFor<P::targetP::n> bk2_val =
+                            __ldg(&bk2_ntt[bk_offset]);
+
+                        const NTTValueFor<P::targetP::n> combined =
+                            small_mod_madd3<N>(bk2_val, xai1, bk1_val, xai0,
+                                               bk0_val, xai01, one_val);
+                        local_accum[out_k][e] = small_mod_madd<N>(
+                            ntt_val, combined, local_accum[out_k][e]);
+                    }
+                }
+            }
+        }
+    }
+
+    __syncthreads();
+
+    // Step 4: One paired inverse NTT covers both output components.
+    if (tid < NUM_THREADS) {
+        sh_work0[tid] = local_accum[0][0];
+        sh_work0[tid + NUM_THREADS] = local_accum[0][1];
+        sh_work1[tid] = local_accum[1][0];
+        sh_work1[tid + NUM_THREADS] = local_accum[1][1];
+    }
+    __syncthreads();
+    if (tid < NUM_THREADS) {
+        SmallInverseNTTPair<P::targetP::nbit>(sh_work0, sh_work1,
+                                              ntt.inverse_root_,
+                                              ntt.n_inverse_, tid);
+    }
+    else {
+        for (int s = 0; s < SmallInverseNTTSyncCount<N>(); s++)
+            __syncthreads();
+    }
+
+    if (tid < NUM_THREADS) {
+#pragma unroll
+        for (int e = 0; e < 2; e++) {
+            const int i = tid + e * NUM_THREADS;
+            if constexpr (std::numeric_limits<
+                              typename P::targetP::T>::digits == 64) {
+                trlwe[i] = static_cast<typename P::targetP::T>(
+                    ntt_mod_to_torus64<N>(sh_work0[i]));
+                trlwe[N + i] = static_cast<typename P::targetP::T>(
+                    ntt_mod_to_torus64<N>(sh_work1[i]));
+            }
+            else {
+                trlwe[i] = static_cast<typename P::targetP::T>(
+                    ntt_mod_to_torus32<N>(sh_work0[i]));
+                trlwe[N + i] = static_cast<typename P::targetP::T>(
+                    ntt_mod_to_torus32<N>(sh_work1[i]));
+            }
+        }
+    }
+    __syncthreads();
+}
+
 /**
  * NTT Key-bundle ExternalProduct accumulator
  *
@@ -1446,8 +1631,15 @@ __device__ inline void AccumulateKeyBundle(
     const NTTValueFor<P::targetP::n>* const xai_ntt,
     const CuNTTHandler<P::targetP::n> ntt)
 {
-    const uint32_t tid = ThisThreadRankInBlock();
     (void)one_trgsw_ntt;
+    if constexpr (USE_PAIRED_NTT<typename P::targetP>) {
+        AccumulateKeyBundlePairedNTT<P>(trlwe, sh_acc_ntt, bara0, bara1,
+                                        bk0_ntt, bk1_ntt, bk2_ntt, xai_ntt,
+                                        ntt);
+        return;
+    }
+
+    const uint32_t tid = ThisThreadRankInBlock();
 
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t NUM_THREADS = N >> 1;

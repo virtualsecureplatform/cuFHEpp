@@ -17,7 +17,7 @@ OUT=build-bench
 
 # Pin every port flag explicitly so variant names stay meaningful regardless
 # of the project's defaults.
-ALL_OFF="-DUSE_CUDA_WARP_TRANSFORM=OFF -DUSE_CUDA_REGISTER_NTT_ACCUM=OFF -DUSE_CUDA_LOW_LDS_BOOTSTRAP=OFF -DUSE_CUDA_PAIRED_GPU_FFT=OFF"
+ALL_OFF="-DUSE_CUDA_WARP_TRANSFORM=OFF -DUSE_CUDA_REGISTER_NTT_ACCUM=OFF -DUSE_CUDA_LOW_LDS_BOOTSTRAP=OFF -DUSE_CUDA_PAIRED_GPU_FFT=OFF -DUSE_CUDA_PAIRED_NTT=OFF -DUSE_CUDA_SHOUP_NTT=OFF -DUSE_CUDA_MIN_BLOCKS=OFF"
 FFT="-DUSE_FFT=ON -DUSE_GPU_FFT=ON"
 NTT="-DUSE_FFT=OFF -DUSE_GPU_FFT=OFF"
 declare -A VARIANTS=(
@@ -31,8 +31,9 @@ declare -A VARIANTS=(
     [ntt-warp-regaccum]="$NTT $ALL_OFF -DUSE_CUDA_WARP_TRANSFORM=ON -DUSE_CUDA_REGISTER_NTT_ACCUM=ON"
     [ntt-regaccum-lowlds]="$NTT $ALL_OFF -DUSE_CUDA_REGISTER_NTT_ACCUM=ON -DUSE_CUDA_LOW_LDS_BOOTSTRAP=ON"
     [ntt-all]="$NTT $ALL_OFF -DUSE_CUDA_WARP_TRANSFORM=ON -DUSE_CUDA_REGISTER_NTT_ACCUM=ON -DUSE_CUDA_LOW_LDS_BOOTSTRAP=ON"
+    [ntt-gen2]="$NTT $ALL_OFF -DUSE_CUDA_REGISTER_NTT_ACCUM=ON -DUSE_CUDA_LOW_LDS_BOOTSTRAP=ON -DUSE_CUDA_PAIRED_NTT=ON -DUSE_CUDA_SHOUP_NTT=ON -DUSE_CUDA_MIN_BLOCKS=ON"
 )
-ORDER="fft-base fft-lowlds fft-paired fft-lowlds-paired ntt-base ntt-warp ntt-regaccum ntt-warp-regaccum ntt-regaccum-lowlds ntt-all"
+ORDER="fft-base fft-lowlds fft-paired fft-lowlds-paired ntt-base ntt-warp ntt-regaccum ntt-warp-regaccum ntt-regaccum-lowlds ntt-all ntt-gen2"
 
 cmd=${1:-build}
 

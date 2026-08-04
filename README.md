@@ -130,6 +130,20 @@ active on HIP builds); defaults reflect RTX 4070 benchmarks:
   A win on RDNA4 but a regression on NVIDIA, where the 64-register ceiling for
   1024-thread blocks forces spills and lvl1 loses a resident block.
 
+Three further lvl1 NTT optimizations (default ON, CUDA only) together cut
+lvl1 gate time by ~29% on the RTX 4070 (0.0735 → 0.0522 ms/gate gNAND):
+
+- `USE_CUDA_PAIRED_NTT` — transform two decomposition digits per forward pass
+  and both output components per inverse pass, so the radix-4 stages occupy
+  the whole block instead of idling half of it. −16% alone.
+- `USE_CUDA_SHOUP_NTT` — Shoup precomputed-quotient multiplication for
+  twiddle factors (stored alongside the root tables), replacing the two-fold
+  pseudo-Mersenne reduction. −14% alone.
+- `USE_CUDA_MIN_BLOCKS` — request three resident lvl1 gate blocks per SM via
+  launch bounds. Pays another ~7% when at least three streams per SM feed the
+  GPU, and is neutral otherwise once `USE_CUDA_SHOUP_NTT` keeps the kernel
+  under the 42-register cap.
+
 `./bench_rocm_ports.sh build && ./bench_rocm_ports.sh run` builds and
 benchmarks these combinations for `CMAKE_CUDA_ARCHITECTURES=89`.
 

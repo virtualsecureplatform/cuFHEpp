@@ -558,6 +558,10 @@ ntt_mod_to_torus32(SmallNTTValue val)
 
 extern __constant__ uint32_t d_const_forward_root_31[TFHEpp::lvl1param::n];
 extern __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
+extern __constant__ uint32_t
+    d_const_forward_root_31_shoup[TFHEpp::lvl1param::n];
+extern __constant__ uint32_t
+    d_const_inverse_root_31_shoup[TFHEpp::lvl1param::n];
 extern __constant__ uint64_t d_const_forward_root_64[TFHEpp::lvl2param::n];
 extern __constant__ uint64_t d_const_inverse_root_64[TFHEpp::lvl2param::n];
 
@@ -604,6 +608,77 @@ __device__ __forceinline__ void SmallGentlemanSandeUnit(
     SmallNTTValue v = V;
     U = small_mod_add<N>(u, v);
     V = small_mod_mult<N>(small_mod_sub<N>(u, v), root);
+}
+
+// Shoup modular multiplication by a fixed operand with precomputed quotient
+// w_shoup = floor(w << 32 / P).  Valid for any 32-bit v and w < P; the result
+// lands in [0, 2P) before the final correction.  Replaces the two-fold
+// pseudo-Mersenne reduction with two 32-bit low multiplies and one high
+// multiply when the multiplicand is a table constant.
+__device__ __forceinline__ uint32_t small_mod31_mult_shoup(uint32_t v,
+                                                           uint32_t w,
+                                                           uint32_t w_shoup)
+{
+    const uint32_t q = __umulhi(v, w_shoup);
+    const uint32_t r = v * w - q * small_ntt31::P;
+    return (r >= small_ntt31::P) ? (r - small_ntt31::P) : r;
+}
+
+__device__ __forceinline__ void SmallCooleyTukeyShoupUnit(uint32_t& U,
+                                                          uint32_t& V,
+                                                          uint32_t root,
+                                                          uint32_t root_shoup)
+{
+    const uint32_t u = U;
+    const uint32_t v = small_mod31_mult_shoup(V, root, root_shoup);
+    U = small_mod31_add(u, v);
+    V = small_mod31_sub(u, v);
+}
+
+__device__ __forceinline__ void SmallGentlemanSandeShoupUnit(uint32_t& U,
+                                                             uint32_t& V,
+                                                             uint32_t root,
+                                                             uint32_t root_shoup)
+{
+    const uint32_t u = U;
+    const uint32_t v = V;
+    U = small_mod31_add(u, v);
+    V = small_mod31_mult_shoup(small_mod31_sub(u, v), root, root_shoup);
+}
+
+__device__ __forceinline__ void SmallCooleyTukeyRadix4ShoupUnit(
+    uint32_t& a, uint32_t& b, uint32_t& c, uint32_t& d, uint32_t root0,
+    uint32_t root0_shoup, uint32_t root1_lo, uint32_t root1_lo_shoup,
+    uint32_t root1_hi, uint32_t root1_hi_shoup)
+{
+    SmallCooleyTukeyShoupUnit(a, c, root0, root0_shoup);
+    SmallCooleyTukeyShoupUnit(b, d, root0, root0_shoup);
+    SmallCooleyTukeyShoupUnit(a, b, root1_lo, root1_lo_shoup);
+    SmallCooleyTukeyShoupUnit(c, d, root1_hi, root1_hi_shoup);
+}
+
+__device__ __forceinline__ void SmallGentlemanSandeRadix4ShoupUnit(
+    uint32_t& a, uint32_t& b, uint32_t& c, uint32_t& d, uint32_t root0_lo,
+    uint32_t root0_lo_shoup, uint32_t root0_hi, uint32_t root0_hi_shoup,
+    uint32_t root1, uint32_t root1_shoup)
+{
+    SmallGentlemanSandeShoupUnit(a, b, root0_lo, root0_lo_shoup);
+    SmallGentlemanSandeShoupUnit(c, d, root0_hi, root0_hi_shoup);
+    SmallGentlemanSandeShoupUnit(a, c, root1, root1_shoup);
+    SmallGentlemanSandeShoupUnit(b, d, root1, root1_shoup);
+}
+
+// Scaled variant of the final inverse stage: the root multiply uses Shoup,
+// the 1/N normalization keeps the generic multiply.
+__device__ __forceinline__ void SmallGentlemanSandeScaledShoupUnit(
+    uint32_t& U, uint32_t& V, uint32_t scaled_root, uint32_t scaled_root_shoup,
+    uint32_t n_inverse)
+{
+    const uint32_t u = U;
+    const uint32_t v = V;
+    U = small_mod31_mult(small_mod31_add(u, v), n_inverse);
+    V = small_mod31_mult_shoup(small_mod31_sub(u, v), scaled_root,
+                               scaled_root_shoup);
 }
 
 __device__ __forceinline__ void SmallCooleyTukeyGoldilocksRoot1Unit(
@@ -723,8 +798,16 @@ __device__ __forceinline__ void SmallForwardNTT(
             }
             else {
                 const auto root0 = d_const_forward_root_31[root0_index];
+#if defined(USE_CUDA_SHOUP_NTT)
+                SmallCooleyTukeyRadix4ShoupUnit(
+                    a, b, c, d, root0,
+                    d_const_forward_root_31_shoup[root0_index], root1_lo,
+                    d_const_forward_root_31_shoup[root1_lo_index], root1_hi,
+                    d_const_forward_root_31_shoup[root1_hi_index]);
+#else
                 SmallCooleyTukeyRadix4Unit<N_POWER>(a, b, c, d, root0,
                                                      root1_lo, root1_hi);
+#endif
             }
             sh[address] = a;
             sh[address + radix_t] = b;
@@ -821,9 +904,23 @@ __device__ __forceinline__ void SmallForwardNTT(
 #pragma unroll 1
         for (int lp = 0; lp < 6; lp++) {
             current_root_index = m + (tid >> t_2);
+#if defined(USE_CUDA_SHOUP_NTT)
+            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+                SmallCooleyTukeyShoupUnit(
+                    sh[in_shared_address], sh[in_shared_address + t],
+                    __ldg(&root_table[current_root_index]),
+                    __ldg(&root_table[(1U << N_POWER) + current_root_index]));
+            }
+            else {
+                SmallCooleyTukeyUnit<N_POWER>(
+                    sh[in_shared_address], sh[in_shared_address + t],
+                    __ldg(&root_table[current_root_index]));
+            }
+#else
             SmallCooleyTukeyUnit<N_POWER>(
                 sh[in_shared_address], sh[in_shared_address + t],
                 __ldg(&root_table[current_root_index]));
+#endif
 
             t >>= 1;
             --t_2;
@@ -912,9 +1009,23 @@ __device__ __forceinline__ void SmallInverseNTT(
 #pragma unroll 1
         for (int lp = 0; lp < 6; lp++) {
             current_root_index = m + (tid >> t_2);
+#if defined(USE_CUDA_SHOUP_NTT)
+            if constexpr (N == TFHEpp::lvl1param::n) {
+                SmallGentlemanSandeShoupUnit(
+                    sh[in_shared_address], sh[in_shared_address + t],
+                    __ldg(&root_table[current_root_index]),
+                    __ldg(&root_table[N + current_root_index]));
+            }
+            else {
+                SmallGentlemanSandeUnit<N_POWER>(
+                    sh[in_shared_address], sh[in_shared_address + t],
+                    __ldg(&root_table[current_root_index]));
+            }
+#else
             SmallGentlemanSandeUnit<N_POWER>(
                 sh[in_shared_address], sh[in_shared_address + t],
                 __ldg(&root_table[current_root_index]));
+#endif
 
             t <<= 1;
             ++t_2;
@@ -957,6 +1068,32 @@ __device__ __forceinline__ void SmallInverseNTT(
             SmallNTTValueFor<1U << N_POWER> c = sh[address + 2 * t];
             SmallNTTValueFor<1U << N_POWER> d = sh[address + 3 * t];
             if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+#if defined(USE_CUDA_SHOUP_NTT)
+                const uint32_t root0_lo_shoup =
+                    d_const_inverse_root_31_shoup[root0_lo_index];
+                const uint32_t root0_hi_shoup =
+                    d_const_inverse_root_31_shoup[root0_hi_index];
+                const uint32_t root1_shoup =
+                    d_const_inverse_root_31_shoup[root1_index];
+                if (lp == (N_POWER - 6) / 2 - 1) {
+                    // The final inverse root is pre-scaled by 1/N.  Apply
+                    // normalization as part of the final two butterflies,
+                    // saving one modular multiplication per pair.
+                    SmallGentlemanSandeShoupUnit(a, b, root0_lo,
+                                                 root0_lo_shoup);
+                    SmallGentlemanSandeShoupUnit(c, d, root0_hi,
+                                                 root0_hi_shoup);
+                    SmallGentlemanSandeScaledShoupUnit(a, c, root1,
+                                                       root1_shoup, n_inverse);
+                    SmallGentlemanSandeScaledShoupUnit(b, d, root1,
+                                                       root1_shoup, n_inverse);
+                }
+                else {
+                    SmallGentlemanSandeRadix4ShoupUnit(
+                        a, b, c, d, root0_lo, root0_lo_shoup, root0_hi,
+                        root0_hi_shoup, root1, root1_shoup);
+                }
+#else
                 if (lp == (N_POWER - 6) / 2 - 1) {
                     // The final inverse root is pre-scaled by 1/N.  Apply
                     // normalization as part of the final two butterflies,
@@ -972,6 +1109,7 @@ __device__ __forceinline__ void SmallInverseNTT(
                     SmallGentlemanSandeRadix4Unit<N_POWER>(
                         a, b, c, d, root0_lo, root0_hi, root1);
                 }
+#endif
             }
             else {
                 SmallGentlemanSandeRadix4Unit<N_POWER>(
@@ -1013,6 +1151,215 @@ __device__ __forceinline__ void SmallInverseNTT(
         __syncthreads();
     }
 
+}
+
+// Transform two independent polynomials with one barrier schedule.  The
+// radix-4 stages only occupy N/4 of the block's N/2 threads; pairing gives
+// each 256-thread half its own buffer there, and the warp-local tail stages
+// process both buffers per thread.  Restricted to the 31-bit lvl1 layout
+// (even stage count, no Goldilocks special cases).
+template <int N_POWER>
+__device__ __forceinline__ void SmallForwardNTTPair(
+    SmallNTTValueFor<1U << N_POWER>* sh0,
+    SmallNTTValueFor<1U << N_POWER>* sh1,
+    const SmallNTTValueFor<1U << N_POWER>* root_table, int tid)
+{
+    constexpr uint32_t N = 1U << N_POWER;
+    static_assert(N == TFHEpp::lvl1param::n && (N_POWER - 6) % 2 == 0,
+                  "Paired NTT supports the lvl1 layout only");
+
+    int t_2 = N_POWER - 1;
+    int t_ = N_POWER - 1;
+    int m = 1;
+    int t = 1 << t_;
+
+    constexpr int QUARTER = 1 << (N_POWER - 2);
+    SmallNTTValueFor<N>* const my_sh = tid < QUARTER ? sh0 : sh1;
+    const int ptid = tid & (QUARTER - 1);
+
+#pragma unroll
+    for (int lp = 0; lp < (N_POWER - 6) / 2; lp++) {
+        {
+            const int radix_t = t >> 1;
+            const int group = ptid >> (t_ - 1);
+            const int offset = ptid & (radix_t - 1);
+            const int address = (group << (t_ + 1)) + offset;
+
+            const int root0_index = m + group;
+            const int root1_lo_index = (m << 1) + (group << 1);
+            const int root1_hi_index = root1_lo_index + 1;
+            const auto root0 = d_const_forward_root_31[root0_index];
+            const auto root1_lo = d_const_forward_root_31[root1_lo_index];
+            const auto root1_hi = d_const_forward_root_31[root1_hi_index];
+
+            SmallNTTValueFor<N> a = my_sh[address];
+            SmallNTTValueFor<N> b = my_sh[address + radix_t];
+            SmallNTTValueFor<N> c = my_sh[address + t];
+            SmallNTTValueFor<N> d = my_sh[address + t + radix_t];
+#if defined(USE_CUDA_SHOUP_NTT)
+            SmallCooleyTukeyRadix4ShoupUnit(
+                a, b, c, d, root0, d_const_forward_root_31_shoup[root0_index],
+                root1_lo, d_const_forward_root_31_shoup[root1_lo_index],
+                root1_hi, d_const_forward_root_31_shoup[root1_hi_index]);
+#else
+            SmallCooleyTukeyRadix4Unit<N_POWER>(a, b, c, d, root0, root1_lo,
+                                                root1_hi);
+#endif
+            my_sh[address] = a;
+            my_sh[address + radix_t] = b;
+            my_sh[address + t] = c;
+            my_sh[address + t + radix_t] = d;
+        }
+
+        t >>= 2;
+        t_2 -= 2;
+        t_ -= 2;
+        m <<= 2;
+        __syncthreads();
+    }
+
+    int in_shared_address = ((tid >> t_) << t_) + tid;
+#pragma unroll 1
+    for (int lp = 0; lp < 6; lp++) {
+        const int current_root_index = m + (tid >> t_2);
+        const auto root = __ldg(&root_table[current_root_index]);
+#if defined(USE_CUDA_SHOUP_NTT)
+        const auto root_shoup = __ldg(&root_table[N + current_root_index]);
+        SmallCooleyTukeyShoupUnit(sh0[in_shared_address],
+                                  sh0[in_shared_address + t], root, root_shoup);
+        SmallCooleyTukeyShoupUnit(sh1[in_shared_address],
+                                  sh1[in_shared_address + t], root, root_shoup);
+#else
+        SmallCooleyTukeyUnit<N_POWER>(sh0[in_shared_address],
+                                      sh0[in_shared_address + t], root);
+        SmallCooleyTukeyUnit<N_POWER>(sh1[in_shared_address],
+                                      sh1[in_shared_address + t], root);
+#endif
+
+        t >>= 1;
+        --t_2;
+        --t_;
+        m <<= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+    }
+    __syncthreads();
+}
+
+template <int N_POWER>
+__device__ __forceinline__ void SmallInverseNTTPair(
+    SmallNTTValueFor<1U << N_POWER>* sh0,
+    SmallNTTValueFor<1U << N_POWER>* sh1,
+    const SmallNTTValueFor<1U << N_POWER>* root_table,
+    SmallNTTValueFor<1U << N_POWER> n_inverse, int tid)
+{
+    constexpr uint32_t N = 1U << N_POWER;
+    static_assert(N == TFHEpp::lvl1param::n && (N_POWER - 6) % 2 == 0,
+                  "Paired NTT supports the lvl1 layout only");
+
+    int t_2 = 0;
+    int t_ = 0;
+    int m = 1 << (N_POWER - 1);
+    int t = 1;
+
+    int in_shared_address = ((tid >> t_) << t_) + tid;
+#pragma unroll 1
+    for (int lp = 0; lp < 6; lp++) {
+        const int current_root_index = m + (tid >> t_2);
+        const auto root = __ldg(&root_table[current_root_index]);
+#if defined(USE_CUDA_SHOUP_NTT)
+        const auto root_shoup = __ldg(&root_table[N + current_root_index]);
+        SmallGentlemanSandeShoupUnit(sh0[in_shared_address],
+                                     sh0[in_shared_address + t], root,
+                                     root_shoup);
+        SmallGentlemanSandeShoupUnit(sh1[in_shared_address],
+                                     sh1[in_shared_address + t], root,
+                                     root_shoup);
+#else
+        SmallGentlemanSandeUnit<N_POWER>(sh0[in_shared_address],
+                                         sh0[in_shared_address + t], root);
+        SmallGentlemanSandeUnit<N_POWER>(sh1[in_shared_address],
+                                         sh1[in_shared_address + t], root);
+#endif
+
+        t <<= 1;
+        ++t_2;
+        ++t_;
+        m >>= 1;
+        in_shared_address = ((tid >> t_) << t_) + tid;
+    }
+    __syncthreads();
+
+    constexpr int QUARTER = 1 << (N_POWER - 2);
+    SmallNTTValueFor<N>* const my_sh = tid < QUARTER ? sh0 : sh1;
+    const int ptid = tid & (QUARTER - 1);
+
+#pragma unroll
+    for (int lp = 0; lp < (N_POWER - 6) / 2; lp++) {
+        {
+            const int group = ptid >> t_;
+            const int offset = ptid & (t - 1);
+            const int address = (group << (t_ + 2)) + offset;
+
+            const int root0_lo_index = m + (group << 1);
+            const int root0_hi_index = root0_lo_index + 1;
+            const int root1_index = (m >> 1) + group;
+            const auto root0_lo = d_const_inverse_root_31[root0_lo_index];
+            const auto root0_hi = d_const_inverse_root_31[root0_hi_index];
+            const auto root1 = d_const_inverse_root_31[root1_index];
+
+            SmallNTTValueFor<N> a = my_sh[address];
+            SmallNTTValueFor<N> b = my_sh[address + t];
+            SmallNTTValueFor<N> c = my_sh[address + 2 * t];
+            SmallNTTValueFor<N> d = my_sh[address + 3 * t];
+#if defined(USE_CUDA_SHOUP_NTT)
+            const uint32_t root0_lo_shoup =
+                d_const_inverse_root_31_shoup[root0_lo_index];
+            const uint32_t root0_hi_shoup =
+                d_const_inverse_root_31_shoup[root0_hi_index];
+            const uint32_t root1_shoup =
+                d_const_inverse_root_31_shoup[root1_index];
+            if (lp == (N_POWER - 6) / 2 - 1) {
+                // The final inverse root is pre-scaled by 1/N; fold the
+                // normalization into the last two butterflies.
+                SmallGentlemanSandeShoupUnit(a, b, root0_lo, root0_lo_shoup);
+                SmallGentlemanSandeShoupUnit(c, d, root0_hi, root0_hi_shoup);
+                SmallGentlemanSandeScaledShoupUnit(a, c, root1, root1_shoup,
+                                                   n_inverse);
+                SmallGentlemanSandeScaledShoupUnit(b, d, root1, root1_shoup,
+                                                   n_inverse);
+            }
+            else {
+                SmallGentlemanSandeRadix4ShoupUnit(a, b, c, d, root0_lo,
+                                                   root0_lo_shoup, root0_hi,
+                                                   root0_hi_shoup, root1,
+                                                   root1_shoup);
+            }
+#else
+            if (lp == (N_POWER - 6) / 2 - 1) {
+                // The final inverse root is pre-scaled by 1/N; fold the
+                // normalization into the last two butterflies.
+                SmallGentlemanSandeUnit<N_POWER>(a, b, root0_lo);
+                SmallGentlemanSandeUnit<N_POWER>(c, d, root0_hi);
+                SmallGentlemanSandeScaledUnit<N_POWER>(a, c, root1, n_inverse);
+                SmallGentlemanSandeScaledUnit<N_POWER>(b, d, root1, n_inverse);
+            }
+            else {
+                SmallGentlemanSandeRadix4Unit<N_POWER>(a, b, c, d, root0_lo,
+                                                       root0_hi, root1);
+            }
+#endif
+            my_sh[address] = a;
+            my_sh[address + t] = b;
+            my_sh[address + 2 * t] = c;
+            my_sh[address + 3 * t] = d;
+        }
+
+        t <<= 2;
+        t_2 += 2;
+        t_ += 2;
+        m >>= 2;
+        __syncthreads();
+    }
 }
 
 template <uint32_t N>
@@ -1261,6 +1608,18 @@ constexpr bool USE_LOW_LDS_BOOTSTRAP =
 #endif
 #else
     false;
+#endif
+
+// Minimum resident blocks requested from the compiler for gate kernels.  The
+// lvl1 NTT kernel sits at ~50 registers, allowing only two resident 512-thread
+// blocks per SM; requesting three forces it down to 42.  Experiment flag for
+// CUDA NTT builds; FFT lvl1 needs ~100 registers so it stays at the default.
+template <class P>
+constexpr uint32_t MIN_BLOCKS4HOMGATE =
+#if defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && !defined(USE_FFT)
+    P::n == TFHEpp::lvl1param::n ? 3 : 1;
+#else
+    1;
 #endif
 
 #ifdef USE_FFT
@@ -2151,11 +2510,24 @@ constexpr bool USE_REGISTER_NTT_ACCUM =
     USE_LOW_LDS_BOOTSTRAP<P>;
 #endif
 
+// Transform two decomposition digits (and both output components) per pass so
+// the radix-4 NTT stages fill the whole block.  Requires the
+// register-accumulator layout and a second N-element transform buffer.
+template <class P>
+constexpr bool USE_PAIRED_NTT =
+#if defined(USE_CUDA_PAIRED_NTT) && !defined(CUFHE_USE_HIP)
+    P::n == TFHEpp::lvl1param::n && USE_REGISTER_NTT_ACCUM<P> && P::k == 1 &&
+    (((P::k + 1) * P::l) % 2 == 0);
+#else
+    false;
+#endif
+
 // Shared memory size per gate: (k+2) * N field elements normally.  The
 // register-accumulator path needs one N-element transform buffer plus
 // extracted-TLWE scratch, with the larger determining the reusable prefix.
 template <class P = TFHEpp::lvl1param>
-constexpr uint32_t MEM4HOMGATE_WORK = P::n * sizeof(NTTValueFor<P::n>);
+constexpr uint32_t MEM4HOMGATE_WORK =
+    (USE_PAIRED_NTT<P> ? 2 : 1) * P::n * sizeof(NTTValueFor<P::n>);
 
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_TLWE = (P::k * P::n + 1) * sizeof(typename P::T);

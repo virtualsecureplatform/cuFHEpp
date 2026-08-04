@@ -16,6 +16,8 @@ namespace cufhe {
 
 __constant__ uint32_t d_const_forward_root_31[TFHEpp::lvl1param::n];
 __constant__ uint32_t d_const_inverse_root_31[TFHEpp::lvl1param::n];
+__constant__ uint32_t d_const_forward_root_31_shoup[TFHEpp::lvl1param::n];
+__constant__ uint32_t d_const_inverse_root_31_shoup[TFHEpp::lvl1param::n];
 __constant__ uint64_t d_const_forward_root_64[TFHEpp::lvl2param::n];
 __constant__ uint64_t d_const_inverse_root_64[TFHEpp::lvl2param::n];
 
@@ -304,22 +306,40 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
 
     // Initialize if not already done
     if (!params.initialized) {
-        // Allocate device memory for root tables
-        CuSafeCall(cudaMalloc(&params.forward_root, sizeof(Value) * kLength));
-        CuSafeCall(cudaMalloc(&params.inverse_root, sizeof(Value) * kLength));
+        // lvl1 root tables carry a Shoup precomputed-quotient companion in
+        // the upper half of the allocation: table[kLength + i] =
+        // floor(table[i] << 32 / P).
+        constexpr bool with_shoup = length == TFHEpp::lvl1param::n;
+        const uint32_t table_len = with_shoup ? 2 * kLength : kLength;
 
-        std::vector<Value> forward_root(kLength);
-        std::vector<Value> inverse_root(kLength);
+        // Allocate device memory for root tables
+        CuSafeCall(cudaMalloc(&params.forward_root, sizeof(Value) * table_len));
+        CuSafeCall(cudaMalloc(&params.inverse_root, sizeof(Value) * table_len));
+
+        std::vector<Value> forward_root(table_len);
+        std::vector<Value> inverse_root(table_len);
         for (uint32_t i = 0; i < kLength; i++) {
             forward_root[i] = static_cast<Value>(tables.forward_table[i]);
             inverse_root[i] = static_cast<Value>(tables.inverse_table[i]);
         }
+        if constexpr (with_shoup) {
+            for (uint32_t i = 0; i < kLength; i++) {
+                forward_root[kLength + i] = static_cast<Value>(
+                    (static_cast<uint64_t>(forward_root[i]) << 32) /
+                    small_ntt31::P);
+                inverse_root[kLength + i] = static_cast<Value>(
+                    (static_cast<uint64_t>(inverse_root[i]) << 32) /
+                    small_ntt31::P);
+            }
+        }
 
         // Copy root tables to device
         CuSafeCall(cudaMemcpy(params.forward_root, forward_root.data(),
-                              sizeof(Value) * kLength, cudaMemcpyHostToDevice));
+                              sizeof(Value) * table_len,
+                              cudaMemcpyHostToDevice));
         CuSafeCall(cudaMemcpy(params.inverse_root, inverse_root.data(),
-                              sizeof(Value) * kLength, cudaMemcpyHostToDevice));
+                              sizeof(Value) * table_len,
+                              cudaMemcpyHostToDevice));
 
         if constexpr (length == TFHEpp::lvl1param::n) {
             CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root_31,
@@ -327,6 +347,12 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
                                           sizeof(uint32_t) * kLength));
             CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root_31,
                                           inverse_root.data(),
+                                          sizeof(uint32_t) * kLength));
+            CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root_31_shoup,
+                                          forward_root.data() + kLength,
+                                          sizeof(uint32_t) * kLength));
+            CuSafeCall(cudaMemcpyToSymbol(d_const_inverse_root_31_shoup,
+                                          inverse_root.data() + kLength,
                                           sizeof(uint32_t) * kLength));
         }
         else if constexpr (length == TFHEpp::lvl2param::n) {

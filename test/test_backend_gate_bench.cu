@@ -222,10 +222,15 @@ int main()
         constexpr uint32_t streams_per_sm =
             cufhe::USE_LOW_LDS_BOOTSTRAP<Param> ? 2 : 1;
 #else
-        // The 32-bit lvl1 NTT gate fits two resident blocks per SM. Give each
-        // block an independent stream so one stream's sequential gate chain
-        // does not leave the second slot idle.
+        // The 32-bit lvl1 NTT gate fits two resident blocks per SM (three
+        // when USE_CUDA_MIN_BLOCKS squeezes registers). Give each block an
+        // independent stream so one stream's sequential gate chain does not
+        // leave a slot idle.
+#if defined(USE_CUDA_MIN_BLOCKS)
+        constexpr uint32_t streams_per_sm = 3;
+#else
         constexpr uint32_t streams_per_sm = 2;
+#endif
 #endif
         const uint32_t num_streams = prop.multiProcessorCount * streams_per_sm;
         const uint32_t num_tests = num_streams * gates_per_stream;
