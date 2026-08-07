@@ -140,9 +140,10 @@ lvl1 gate time by ~29% on the RTX 4070 (0.0735 → 0.0522 ms/gate gNAND):
   twiddle factors (stored alongside the root tables), replacing the two-fold
   pseudo-Mersenne reduction. −14% alone.
 - `USE_CUDA_MIN_BLOCKS` — request three resident lvl1 gate blocks per SM via
-  launch bounds. Pays another ~7% when at least three streams per SM feed the
-  GPU, and is neutral otherwise once `USE_CUDA_SHOUP_NTT` keeps the kernel
-  under the 42-register cap.
+  launch bounds on Ada (`sm_89`) and newer architectures. Pays another ~7% on
+  the RTX 4070 when at least three streams per SM feed the GPU. Ampere
+  (`sm_80`) keeps unconstrained register allocation because the 42-register
+  cap reduces A100 throughput.
 
 `./bench_rocm_ports.sh build && ./bench_rocm_ports.sh run` builds and
 benchmarks these combinations for `CMAKE_CUDA_ARCHITECTURES=89`.

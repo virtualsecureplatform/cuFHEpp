@@ -979,7 +979,7 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
     // transforms, then pair across component boundaries.
     constexpr int FFT_PAIRS =
         (P::targetP::k + 1) * P::targetP::l / 2;
-#pragma unroll
+#pragma unroll 1
     for (int pair = 0; pair < FFT_PAIRS; pair++) {
         if (tid < HALF_N) {
             const double2 tw = __ldg(&ntt.twist_[tid]);
@@ -1047,14 +1047,10 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
                     const double2 one_val =
                         out_k == j ? double2{gadget, 0.0}
                                    : double2{0.0, 0.0};
-                    const double2 bk0_val = __ldg(&bk0_fft[bk_offset]);
-                    const double2 bk1_val = __ldg(&bk1_fft[bk_offset]);
-                    const double2 bk2_val = __ldg(&bk2_fft[bk_offset]);
-
                     double2 combined = one_val;
-                    complex_madd(combined, bk2_val, xai1);
-                    complex_madd(combined, bk1_val, xai0);
-                    complex_madd(combined, bk0_val, xai01);
+                    complex_madd(combined, __ldg(&bk2_fft[bk_offset]), xai1);
+                    complex_madd(combined, __ldg(&bk1_fft[bk_offset]), xai0);
+                    complex_madd(combined, __ldg(&bk0_fft[bk_offset]), xai01);
                     complex_madd(local_accum[out_k], fft_val, combined);
                 }
             }

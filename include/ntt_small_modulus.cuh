@@ -1612,12 +1612,18 @@ constexpr bool USE_LOW_LDS_BOOTSTRAP =
 
 // Minimum resident blocks requested from the compiler for gate kernels.  The
 // lvl1 NTT kernel sits at ~50 registers, allowing only two resident 512-thread
-// blocks per SM; requesting three forces it down to 42.  Experiment flag for
-// CUDA NTT builds; FFT lvl1 needs ~100 registers so it stays at the default.
+// blocks per SM; requesting three forces it down to 42.  That trade is a win
+// on Ada (sm_89), but the extra register pressure is a throughput regression
+// on Ampere (sm_80).  Keep Ampere unconstrained while preserving the Ada
+// tuning.  FFT lvl1 needs ~100 registers so it stays at the default.
 template <class P>
 constexpr uint32_t MIN_BLOCKS4HOMGATE =
 #if defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && !defined(USE_FFT)
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
     P::n == TFHEpp::lvl1param::n ? 3 : 1;
+#else
+    1;
+#endif
 #else
     1;
 #endif
