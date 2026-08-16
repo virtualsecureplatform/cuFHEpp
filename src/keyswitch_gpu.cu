@@ -15,7 +15,7 @@ void KeySwitchingKeyToDevice(
     ksk_devs.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
-        cudaMalloc((void**)&ksk_devs[i], sizeof(ksk));
+        CuSafeCall(cudaMalloc((void**)&ksk_devs[i], sizeof(ksk)));
         CuSafeCall(cudaMemcpy(ksk_devs[i], ksk.data(), sizeof(ksk),
                               cudaMemcpyHostToDevice));
     }
@@ -35,7 +35,7 @@ void KeySwitchingKeyToDevice_lvl20(
     ksk_devs_lvl20.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
-        cudaMalloc((void**)&ksk_devs_lvl20[i], sizeof(ksk));
+        CuSafeCall(cudaMalloc((void**)&ksk_devs_lvl20[i], sizeof(ksk)));
         CuSafeCall(cudaMemcpy(ksk_devs_lvl20[i], ksk.data(), sizeof(ksk),
                               cudaMemcpyHostToDevice));
     }
