@@ -19,7 +19,7 @@
 namespace cufhe {
 
 extern std::vector<CuNTTHandler<>*> ntt_handlers;
-extern std::vector<CuNTTHandler<TFHEpp::lvl2param::n>*> ntt_handlers_lvl02;
+extern std::vector<CuNTTHandler<TFHEpp::lvl2param::n, 64>*> ntt_handlers_lvl02;
 
 namespace {
 
@@ -30,17 +30,17 @@ constexpr bool is_lvl1_ring_v =
 
 template <class P>
 constexpr bool is_lvl2_ring_v =
-    P::n == TFHEpp::lvl2param::n &&
+    sizeof(typename P::T) == 8 &&
     sizeof(typename P::T) == sizeof(typename TFHEpp::lvl2param::T);
 
 template <class P>
-CuNTTHandler<P::n>* RingHandler(const int gpuNum)
+CuNTTHandler<P::n, sizeof(typename P::T) * 8>* RingHandler(const int gpuNum)
 {
     if constexpr (is_lvl1_ring_v<P>) {
-        return reinterpret_cast<CuNTTHandler<P::n>*>(ntt_handlers[gpuNum]);
+        return reinterpret_cast<CuNTTHandler<P::n, sizeof(typename P::T) * 8>*>(ntt_handlers[gpuNum]);
     }
     else if constexpr (is_lvl2_ring_v<P>) {
-        return reinterpret_cast<CuNTTHandler<P::n>*>(
+        return reinterpret_cast<CuNTTHandler<P::n, sizeof(typename P::T) * 8>*>(
             ntt_handlers_lvl02[gpuNum]);
     }
     else {
@@ -113,7 +113,7 @@ __global__ void __IdentityKeySwitchBatchKernel__(
 template <class P>
 __global__ void __TRGSWToFFTKernel__(NTTValue* const out,
                                      const typename P::T* const in,
-                                     CuNTTHandler<P::n> ntt)
+                                     CuNTTHandler<P::n, sizeof(typename P::T) * 8> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t half_n = N / 2;
@@ -204,7 +204,7 @@ template <class P>
 __device__ inline void ExternalProductTRLWE_TRGSWFFT_ASCON(
     typename P::T* const out, const typename P::T* const in,
     const NTTValue* const trgswfft, NTTValue* const sh_acc_ntt,
-    const CuNTTHandler<P::n> ntt)
+    const CuNTTHandler<P::n, sizeof(typename P::T) * 8> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
     constexpr uint32_t N = P::n;
@@ -343,7 +343,7 @@ __global__ __launch_bounds__(
                                                      const size_t
                                                          address_stride,
                                                      const uint32_t address_bit,
-                                                     const CuNTTHandler<P::n>
+                                                     const CuNTTHandler<P::n, sizeof(typename P::T) * 8>
                                                          ntt,
                                                      const size_t batch_count)
 {
@@ -715,7 +715,7 @@ template <class brP>
 void InitializeBRKey(const TFHEpp::EvalKey& ek)
 {
     using targetP = typename brP::targetP;
-    if constexpr (targetP::n == TFHEpp::lvl2param::n) {
+    if constexpr (sizeof(typename targetP::T) == 8) {
         InitializeNTThandlers_lvl02(_gpuNum);
 #if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         InitializeXaiNTT_lvl02(_gpuNum);
@@ -745,7 +745,7 @@ template <class brP>
 void DeleteBRKey()
 {
     using targetP = typename brP::targetP;
-    if constexpr (targetP::n == TFHEpp::lvl2param::n) {
+    if constexpr (sizeof(typename targetP::T) == 8) {
 #if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         DeleteXaiNTT_lvl02();
 #endif

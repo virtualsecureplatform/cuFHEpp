@@ -69,9 +69,9 @@ __device__ inline void RotatedTestVector(typename P::T* tlwe, const int32_t bar,
 template <class P>
 __device__ inline void Accumulate(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t a_bar,
-    const NTTValueFor<P::targetP::n>* const tgsw_fft,
-    const CuNTTHandler<P::targetP::n> ntt)
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t a_bar,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const tgsw_fft,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -244,9 +244,9 @@ __device__ inline void Accumulate(
 template <class P>
 __device__ inline void AccumulateBlockBinary(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t block,
-    const uint32_t* const bara, const NTTValueFor<P::targetP::n>* const bk,
-    const CuNTTHandler<P::targetP::n> ntt)
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t block,
+    const uint32_t* const bara, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     using targetP = typename P::targetP;
     using T = typename targetP::T;
@@ -262,7 +262,7 @@ __device__ inline void AccumulateBlockBinary(
         "Block-binary GPU bootstrapping requires single decomposition");
 
     const uint32_t tid = ThisThreadRankInBlock();
-    const NTTValueFor<P::targetP::n>* const xai_fft =
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_fft =
         N == TFHEpp::lvl1param::n ? block_xai_fft : block_xai_fft_lvl02;
     double2* const sh_fft = &sh_acc_ntt[0];
     double2* const sh_accum = &sh_acc_ntt[HALF_N];
@@ -388,9 +388,9 @@ __device__ inline void AccumulateBlockBinary(
 template <class P>
 __device__ inline void Accumulate(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t a_bar,
-    const NTTValueFor<P::targetP::n>* const tgsw_fft,
-    const CuNTTHandler<P::targetP::n> ntt)
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t a_bar,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const tgsw_fft,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -543,9 +543,9 @@ __device__ inline void Accumulate(
 template <class P>
 __device__ inline void Accumulate(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t a_bar,
-    const NTTValueFor<P::targetP::n>* const tgsw_ntt,
-    const CuNTTHandler<P::targetP::n> ntt)
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t a_bar,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const tgsw_ntt,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -555,11 +555,11 @@ __device__ inline void Accumulate(
         USE_REGISTER_NTT_ACCUM<typename P::targetP>;
 
     // Aliases for clarity
-    NTTValueFor<P::targetP::n>* const sh_work =
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_work =
         &sh_acc_ntt[0];  // Working buffer for NTT
-    NTTValueFor<P::targetP::n>* const sh_accum =
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_accum =
         &sh_acc_ntt[N];  // Accumulated results (k+1 polynomials)
-    NTTValueFor<P::targetP::n> local_accum[P::targetP::k + 1][2];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> local_accum[P::targetP::k + 1][2];
 
     // Initialize accumulated results to zero
     if (tid < NUM_THREADS) {
@@ -635,12 +635,12 @@ __device__ inline void Accumulate(
 #pragma unroll
                 for (int e = 0; e < 2; e++) {
                     int i = tid + e * NUM_THREADS;
-                    NTTValueFor<P::targetP::n> ntt_val = sh_work[i];
+                    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt_val = sh_work[i];
 
 // Accumulate into each output component
 #pragma unroll
                     for (int out_k = 0; out_k <= P::targetP::k; out_k++) {
-                        NTTValueFor<P::targetP::n> bk_val = __ldg(
+                        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk_val = __ldg(
                             &tgsw_ntt[(((P::targetP::k + 1) * digit_linear +
                                         out_k)
                                        << P::targetP::nbit) +
@@ -664,7 +664,7 @@ __device__ inline void Accumulate(
     // Step 4: Inverse NTT on accumulated results and add to trlwe
     // Operate directly on sh_accum to avoid copying to sh_work
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-        NTTValueFor<P::targetP::n>* sh_ntt_buf;
+        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* sh_ntt_buf;
         if constexpr (REGISTER_ACCUM) {
             if (tid < NUM_THREADS) {
                 sh_work[tid] = local_accum[k_idx][0];
@@ -711,9 +711,9 @@ __device__ inline void Accumulate(
 template <class P>
 __device__ inline void AccumulateBlockBinary(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t block,
-    const uint32_t* const bara, const NTTValueFor<P::targetP::n>* const bk,
-    const CuNTTHandler<P::targetP::n> ntt)
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t block,
+    const uint32_t* const bara, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     using targetP = typename P::targetP;
     using T = typename targetP::T;
@@ -727,13 +727,13 @@ __device__ inline void AccumulateBlockBinary(
         "Block-binary GPU bootstrapping requires single decomposition");
 
     const uint32_t tid = ThisThreadRankInBlock();
-    const NTTValueFor<P::targetP::n>* xai_ntt;
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* xai_ntt;
     if constexpr (N == TFHEpp::lvl1param::n)
         xai_ntt = block_xai_fft;
     else
         xai_ntt = block_xai_fft_lvl02;
-    NTTValueFor<P::targetP::n>* const sh_work = &sh_acc_ntt[0];
-    NTTValueFor<P::targetP::n>* const sh_accum = &sh_acc_ntt[N];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_work = &sh_acc_ntt[0];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_accum = &sh_acc_ntt[N];
 
     if (tid < NUM_THREADS) {
         for (int component = 0; component <= targetP::k; component++) {
@@ -790,11 +790,11 @@ __device__ inline void AccumulateBlockBinary(
 #pragma unroll
                 for (int e = 0; e < 2; e++) {
                     const int i = tid + e * NUM_THREADS;
-                    const NTTValueFor<P::targetP::n> decomposition = sh_work[i];
+                    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> decomposition = sh_work[i];
 #pragma unroll
                     for (int out_component = 0; out_component <= targetP::k;
                          out_component++) {
-                        NTTValueFor<P::targetP::n> block_product = 0;
+                        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> block_product = 0;
 #pragma unroll
                         for (uint32_t offset = 0; offset < P::domainP::ell;
                              offset++) {
@@ -803,9 +803,9 @@ __device__ inline void AccumulateBlockBinary(
                             const size_t poly_index =
                                 (row * (targetP::k + 1) + out_component) * N +
                                 i;
-                            const NTTValueFor<P::targetP::n> bk_value =
+                            const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk_value =
                                 __ldg(&bk[key_index * TRGSW_SIZE + poly_index]);
-                            const NTTValueFor<P::targetP::n> xai =
+                            const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> xai =
                                 __ldg(&xai_ntt[bara[offset] * N + i]);
                             block_product =
                                 small_mod_madd<N>(bk_value, xai, block_product);
@@ -824,7 +824,7 @@ __device__ inline void AccumulateBlockBinary(
     __syncthreads();
 
     for (int component = 0; component <= targetP::k; component++) {
-        NTTValueFor<P::targetP::n>* const sh_result = &sh_accum[component * N];
+        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_result = &sh_accum[component * N];
         if (tid < NUM_THREADS) {
             SmallInverseNTT<targetP::nbit>(sh_result, ntt.inverse_root_,
                                            ntt.n_inverse_, tid);
@@ -855,12 +855,12 @@ __device__ inline void AccumulateBlockBinary(
 template <class P>
 __device__ inline void __BlindRotate__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in,
-    const typename P::targetP::T mu, const NTTValueFor<P::targetP::n>* const bk,
-    CuNTTHandler<P::targetP::n> ntt)
+    const typename P::targetP::T mu, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
+    CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     extern __shared__ unsigned char dynamic_shared[];
     auto* const sh_acc_ntt =
-        reinterpret_cast<NTTValueFor<P::targetP::n>*>(dynamic_shared);
+        reinterpret_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>*>(dynamic_shared);
 
     // test vector: acc.a = 0; acc.b = vec(mu) * x ^ mod_switch(in.b)
     {
@@ -943,12 +943,12 @@ __device__ inline void __BlindRotate__(
 template <class P>
 __device__ inline void AccumulateKeyBundlePairedFFT(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t bara0,
-    const uint32_t bara1, const NTTValueFor<P::targetP::n>* const bk0_fft,
-    const NTTValueFor<P::targetP::n>* const bk1_fft,
-    const NTTValueFor<P::targetP::n>* const bk2_fft,
-    const NTTValueFor<P::targetP::n>* const xai_fft,
-    const CuNTTHandler<P::targetP::n> ntt)
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t bara0,
+    const uint32_t bara1, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk0_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk1_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk2_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_fft,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t HALF_N = N >> 1;
@@ -1109,13 +1109,13 @@ __device__ inline void AccumulateKeyBundlePairedFFT(
 template <class P>
 __device__ inline void AccumulateKeyBundle(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t bara0,
-    const uint32_t bara1, const NTTValueFor<P::targetP::n>* const bk0_fft,
-    const NTTValueFor<P::targetP::n>* const bk1_fft,
-    const NTTValueFor<P::targetP::n>* const bk2_fft,
-    const NTTValueFor<P::targetP::n>* const one_trgsw_fft,
-    const NTTValueFor<P::targetP::n>* const xai_fft,
-    const CuNTTHandler<P::targetP::n> ntt)
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t bara0,
+    const uint32_t bara1, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk0_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk1_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk2_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const one_trgsw_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_fft,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     if constexpr (USE_PAIRED_GPU_FFT<typename P::targetP>) {
         AccumulateKeyBundlePairedFFT<P>(
@@ -1288,14 +1288,14 @@ __device__ inline void AccumulateKeyBundle(
 template <class P>
 __device__ inline void AccumulateKeyBundle(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t bara0,
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t bara0,
     const uint32_t bara1,
-    const NTTValueFor<P::targetP::n>* const bk0_fft,  // Enc(s0*s1)
-    const NTTValueFor<P::targetP::n>* const bk1_fft,  // Enc(s0*(1-s1))
-    const NTTValueFor<P::targetP::n>* const bk2_fft,  // Enc((1-s0)*s1)
-    const NTTValueFor<P::targetP::n>* const one_trgsw_fft,
-    const NTTValueFor<P::targetP::n>* const xai_fft,
-    const CuNTTHandler<P::targetP::n> ntt)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk0_fft,  // Enc(s0*s1)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk1_fft,  // Enc(s0*(1-s1))
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk2_fft,  // Enc((1-s0)*s1)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const one_trgsw_fft,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_fft,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -1431,13 +1431,13 @@ __device__ inline void AccumulateKeyBundle(
 template <class P>
 __device__ inline void AccumulateKeyBundlePairedNTT(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t bara0,
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t bara0,
     const uint32_t bara1,
-    const NTTValueFor<P::targetP::n>* const bk0_ntt,
-    const NTTValueFor<P::targetP::n>* const bk1_ntt,
-    const NTTValueFor<P::targetP::n>* const bk2_ntt,
-    const NTTValueFor<P::targetP::n>* const xai_ntt,
-    const CuNTTHandler<P::targetP::n> ntt)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk0_ntt,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk1_ntt,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk2_ntt,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_ntt,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     const uint32_t tid = ThisThreadRankInBlock();
 
@@ -1446,9 +1446,9 @@ __device__ inline void AccumulateKeyBundlePairedNTT(
     static_assert(P::targetP::k == 1);
     static_assert(((P::targetP::k + 1) * P::targetP::l) % 2 == 0);
 
-    NTTValueFor<P::targetP::n>* const sh_work0 = &sh_acc_ntt[0];
-    NTTValueFor<P::targetP::n>* const sh_work1 = &sh_acc_ntt[N];
-    NTTValueFor<P::targetP::n> local_accum[P::targetP::k + 1][2];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_work0 = &sh_acc_ntt[0];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_work1 = &sh_acc_ntt[N];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> local_accum[P::targetP::k + 1][2];
 
     if (tid < NUM_THREADS) {
 #pragma unroll
@@ -1477,7 +1477,7 @@ __device__ inline void AccumulateKeyBundlePairedNTT(
                 const int digit_linear = 2 * pair + slot;
                 const int j = digit_linear / P::targetP::l;
                 const int digit = digit_linear - j * P::targetP::l;
-                NTTValueFor<P::targetP::n>* const sh_work =
+                NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_work =
                     slot == 0 ? sh_work0 : sh_work1;
 #pragma unroll
                 for (int e = 0; e < 2; e++) {
@@ -1513,11 +1513,11 @@ __device__ inline void AccumulateKeyBundlePairedNTT(
 #pragma unroll
             for (int e = 0; e < 2; e++) {
                 const int i = tid + e * NUM_THREADS;
-                const NTTValueFor<P::targetP::n> xai0 =
+                const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> xai0 =
                     __ldg(&xai_ntt[bara0 * N + i]);
-                const NTTValueFor<P::targetP::n> xai1 =
+                const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> xai1 =
                     __ldg(&xai_ntt[bara1 * N + i]);
-                const NTTValueFor<P::targetP::n> xai01 =
+                const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> xai01 =
                     __ldg(&xai_ntt[bara01 * N + i]);
 
 #pragma unroll
@@ -1530,10 +1530,10 @@ __device__ inline void AccumulateKeyBundlePairedNTT(
                         SmallNTTModulus<N>::P >> gadget_shift;
                     const SmallNTTValue gadget_round =
                         (SmallNTTModulus<N>::P >> (gadget_shift - 1)) & 1;
-                    const NTTValueFor<P::targetP::n> gadget =
-                        static_cast<NTTValueFor<P::targetP::n> >(
+                    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> gadget =
+                        static_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> >(
                             gadget_quotient + gadget_round);
-                    const NTTValueFor<P::targetP::n> ntt_val =
+                    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt_val =
                         (slot == 0 ? sh_work0 : sh_work1)[i];
 
 #pragma unroll
@@ -1542,16 +1542,16 @@ __device__ inline void AccumulateKeyBundlePairedNTT(
                             (((P::targetP::k + 1) * digit_linear + out_k)
                              << P::targetP::nbit) +
                             i;
-                        const NTTValueFor<P::targetP::n> one_val =
+                        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> one_val =
                             out_k == j ? gadget : 0;
-                        const NTTValueFor<P::targetP::n> bk0_val =
+                        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk0_val =
                             __ldg(&bk0_ntt[bk_offset]);
-                        const NTTValueFor<P::targetP::n> bk1_val =
+                        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk1_val =
                             __ldg(&bk1_ntt[bk_offset]);
-                        const NTTValueFor<P::targetP::n> bk2_val =
+                        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk2_val =
                             __ldg(&bk2_ntt[bk_offset]);
 
-                        const NTTValueFor<P::targetP::n> combined =
+                        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> combined =
                             small_mod_madd3<N>(bk2_val, xai1, bk1_val, xai0,
                                                bk0_val, xai01, one_val);
                         local_accum[out_k][e] = small_mod_madd<N>(
@@ -1618,14 +1618,14 @@ __device__ inline void AccumulateKeyBundlePairedNTT(
 template <class P>
 __device__ inline void AccumulateKeyBundle(
     typename P::targetP::T* const trlwe,
-    NTTValueFor<P::targetP::n>* const sh_acc_ntt, const uint32_t bara0,
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t bara0,
     const uint32_t bara1,
-    const NTTValueFor<P::targetP::n>* const bk0_ntt,  // Enc(s0*s1)
-    const NTTValueFor<P::targetP::n>* const bk1_ntt,  // Enc(s0*(1-s1))
-    const NTTValueFor<P::targetP::n>* const bk2_ntt,  // Enc((1-s0)*s1)
-    const NTTValueFor<P::targetP::n>* const one_trgsw_ntt,
-    const NTTValueFor<P::targetP::n>* const xai_ntt,
-    const CuNTTHandler<P::targetP::n> ntt)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk0_ntt,  // Enc(s0*s1)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk1_ntt,  // Enc(s0*(1-s1))
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk2_ntt,  // Enc((1-s0)*s1)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const one_trgsw_ntt,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_ntt,
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     (void)one_trgsw_ntt;
     if constexpr (USE_PAIRED_NTT<typename P::targetP>) {
@@ -1642,9 +1642,9 @@ __device__ inline void AccumulateKeyBundle(
     constexpr bool REGISTER_ACCUM =
         USE_REGISTER_NTT_ACCUM<typename P::targetP>;
 
-    NTTValueFor<P::targetP::n>* const sh_work = &sh_acc_ntt[0];
-    NTTValueFor<P::targetP::n>* const sh_accum = &sh_acc_ntt[N];
-    NTTValueFor<P::targetP::n> local_accum[P::targetP::k + 1][2];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_work = &sh_acc_ntt[0];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_accum = &sh_acc_ntt[N];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> local_accum[P::targetP::k + 1][2];
 
     // Initialize accumulated results to zero
     if (tid < NUM_THREADS) {
@@ -1676,9 +1676,9 @@ __device__ inline void AccumulateKeyBundle(
     // xai is common to every row and decomposition digit.  On lvl02, keep the
     // six coefficients owned by each thread in registers for the complete
     // external product.  lvl01 keeps its shorter live ranges.
-    NTTValueFor<P::targetP::n> cached_xai0[2];
-    NTTValueFor<P::targetP::n> cached_xai1[2];
-    NTTValueFor<P::targetP::n> cached_xai01[2];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> cached_xai0[2];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> cached_xai1[2];
+    NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> cached_xai01[2];
     if constexpr (N == TFHEpp::lvl2param::n) {
         if (tid < NUM_THREADS) {
 #pragma unroll
@@ -1735,17 +1735,17 @@ __device__ inline void AccumulateKeyBundle(
                     SmallNTTModulus<N>::P >> gadget_shift;
                 const SmallNTTValue gadget_round =
                     (SmallNTTModulus<N>::P >> (gadget_shift - 1)) & 1;
-                const NTTValueFor<P::targetP::n> gadget =
-                    static_cast<NTTValueFor<P::targetP::n> >(gadget_quotient +
+                const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> gadget =
+                    static_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> >(gadget_quotient +
                                                              gadget_round);
                 if (tid < NUM_THREADS) {
 #pragma unroll
                     for (int e = 0; e < 2; e++) {
                         int i = tid + e * NUM_THREADS;
-                        NTTValueFor<P::targetP::n> ntt_val = sh_work[i];
-                        NTTValueFor<P::targetP::n> xai0;
-                        NTTValueFor<P::targetP::n> xai1;
-                        NTTValueFor<P::targetP::n> xai01;
+                        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt_val = sh_work[i];
+                        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> xai0;
+                        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> xai1;
+                        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> xai01;
                         if constexpr (N == TFHEpp::lvl2param::n) {
                             xai0 = cached_xai0[e];
                             xai1 = cached_xai1[e];
@@ -1767,17 +1767,17 @@ __device__ inline void AccumulateKeyBundle(
                             // NTT(delta * h[digit]) is the same gadget scalar
                             // at every frequency, on the matching diagonal
                             // only.
-                            NTTValueFor<P::targetP::n> one_val =
+                            NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> one_val =
                                 out_k == j ? gadget : 0;
-                            NTTValueFor<P::targetP::n> bk0_val =
+                            NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk0_val =
                                 __ldg(&bk0_ntt[bk_offset]);
-                            NTTValueFor<P::targetP::n> bk1_val =
+                            NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk1_val =
                                 __ldg(&bk1_ntt[bk_offset]);
-                            NTTValueFor<P::targetP::n> bk2_val =
+                            NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> bk2_val =
                                 __ldg(&bk2_ntt[bk_offset]);
 
                             // combined = one + bk2*xai1 + bk1*xai0 + bk0*xai01
-                            NTTValueFor<P::targetP::n> combined =
+                            NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8> combined =
                                 small_mod_madd3<N>(bk2_val, xai1, bk1_val, xai0,
                                                    bk0_val, xai01, one_val);
 
@@ -1801,7 +1801,7 @@ __device__ inline void AccumulateKeyBundle(
 
     // Step 4: Inverse NTT and REPLACE trlwe (not add)
     for (int k_idx = 0; k_idx <= P::targetP::k; k_idx++) {
-        NTTValueFor<P::targetP::n>* sh_ntt_buf;
+        NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* sh_ntt_buf;
         if constexpr (REGISTER_ACCUM) {
             if (tid < NUM_THREADS) {
                 sh_work[tid] = local_accum[k_idx][0];
@@ -1846,14 +1846,14 @@ __device__ inline void AccumulateKeyBundle(
 template <class P>
 __device__ inline void __BlindRotateKeyBundle__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in,
-    const typename P::targetP::T mu, const NTTValueFor<P::targetP::n>* const bk,
-    const NTTValueFor<P::targetP::n>* const one_trgsw_ntt,
-    const NTTValueFor<P::targetP::n>* const xai_ntt,
-    CuNTTHandler<P::targetP::n> ntt)
+    const typename P::targetP::T mu, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const one_trgsw_ntt,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_ntt,
+    CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     extern __shared__ unsigned char dynamic_shared[];
     auto* const sh_acc_ntt =
-        reinterpret_cast<NTTValueFor<P::targetP::n>*>(dynamic_shared);
+        reinterpret_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>*>(dynamic_shared);
 
     // test vector: acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
     {
@@ -1883,9 +1883,9 @@ __device__ inline void __BlindRotateKeyBundle__(
             modSwitchFromTorus<P>(in[2 * i + 1] + roundoffset);
 
         // Each key bundle group has 3 TRGSW elements: bk[0], bk[1], bk[2]
-        const NTTValueFor<P::targetP::n>* bk0 = bk + i * 3 * trgsw_size;
-        const NTTValueFor<P::targetP::n>* bk1 = bk + (i * 3 + 1) * trgsw_size;
-        const NTTValueFor<P::targetP::n>* bk2 = bk + (i * 3 + 2) * trgsw_size;
+        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* bk0 = bk + i * 3 * trgsw_size;
+        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* bk1 = bk + (i * 3 + 1) * trgsw_size;
+        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* bk2 = bk + (i * 3 + 2) * trgsw_size;
 
         AccumulateKeyBundle<P>(out, sh_acc_ntt, bara0, bara1, bk0, bk1, bk2,
                                one_trgsw_ntt, xai_ntt, ntt);
@@ -1896,14 +1896,14 @@ template <class P, int casign, int cbsign, auto offset>
 __device__ inline void __BlindRotatePreAddKeyBundle__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
     const typename P::domainP::T* const in1,
-    const NTTValueFor<P::targetP::n>* const bk,
-    const NTTValueFor<P::targetP::n>* const one_trgsw_ntt,
-    const NTTValueFor<P::targetP::n>* const xai_ntt,
-    CuNTTHandler<P::targetP::n> ntt)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const one_trgsw_ntt,
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const xai_ntt,
+    CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     extern __shared__ unsigned char dynamic_shared[];
     auto* const sh_acc_ntt =
-        reinterpret_cast<NTTValueFor<P::targetP::n>*>(dynamic_shared);
+        reinterpret_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>*>(dynamic_shared);
 
     // test vector: acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
     {
@@ -1935,9 +1935,9 @@ __device__ inline void __BlindRotatePreAddKeyBundle__(
         const uint32_t bara1 = modSwitchFromTorus<P>(
             casign * in0[2 * i + 1] + cbsign * in1[2 * i + 1] + roundoffset);
 
-        const NTTValueFor<P::targetP::n>* bk0 = bk + i * 3 * trgsw_size;
-        const NTTValueFor<P::targetP::n>* bk1 = bk + (i * 3 + 1) * trgsw_size;
-        const NTTValueFor<P::targetP::n>* bk2 = bk + (i * 3 + 2) * trgsw_size;
+        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* bk0 = bk + i * 3 * trgsw_size;
+        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* bk1 = bk + (i * 3 + 1) * trgsw_size;
+        const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* bk2 = bk + (i * 3 + 2) * trgsw_size;
 
         AccumulateKeyBundle<P>(out, sh_acc_ntt, bara0, bara1, bk0, bk1, bk2,
                                one_trgsw_ntt, xai_ntt, ntt);
@@ -1949,11 +1949,11 @@ template <class P, int casign, int cbsign, auto offset>
 __device__ inline void __BlindRotatePreAdd__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
     const typename P::domainP::T* const in1,
-    const NTTValueFor<P::targetP::n>* const bk, CuNTTHandler<P::targetP::n> ntt)
+    const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk, CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     extern __shared__ unsigned char dynamic_shared[];
     auto* const sh_acc_ntt =
-        reinterpret_cast<NTTValueFor<P::targetP::n>*>(dynamic_shared);
+        reinterpret_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>*>(dynamic_shared);
 
     // test vector: acc.a = 0; acc.b = vec(mu) * x ^ mod_switch(in.b)
     {

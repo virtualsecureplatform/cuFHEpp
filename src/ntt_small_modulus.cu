@@ -22,8 +22,8 @@ __constant__ uint64_t d_const_forward_root_64[TFHEpp::lvl2param::n];
 __constant__ uint64_t d_const_inverse_root_64[TFHEpp::lvl2param::n];
 
 // Host-side storage for NTT parameters per GPU
-std::vector<SmallNTTParams<TFHEpp::lvl1param::n>> g_small_ntt_params;
-std::vector<SmallNTTParams<TFHEpp::lvl2param::n>> g_small_ntt_params_lvl02;
+std::vector<SmallNTTParams<TFHEpp::lvl1param::n, 32>> g_small_ntt_params;
+std::vector<SmallNTTParams<TFHEpp::lvl2param::n, 64>> g_small_ntt_params_lvl02;
 
 namespace {
 
@@ -39,44 +39,45 @@ int bitreverse(int index, int n_power)
     return res;
 }
 
-template <uint32_t length>
+template <uint32_t length, uint32_t Q_BITS>
 SmallNTTValue mod_exp(SmallNTTValue base, uint64_t exp)
 {
     SmallNTTValue result = 1;
-    base = small_mod_normalize<length>(base);
+    base = small_mod_normalize<length, Q_BITS>(base);
     while (exp > 0) {
         if (exp & 1) {
-            result = small_mod_mult<length>(result, base);
+            result = small_mod_mult<length, Q_BITS>(result, base);
         }
         exp >>= 1;
-        base = small_mod_mult<length>(base, base);
+        base = small_mod_mult<length, Q_BITS>(base, base);
     }
     return result;
 }
 
-template <uint32_t length>
+template <uint32_t length, uint32_t Q_BITS>
 SmallNTTValue mod_inv(SmallNTTValue a)
 {
-    return mod_exp<length>(a, SmallNTTModulus<length>::P - 2);
+    return mod_exp<length, Q_BITS>(a,
+                                   SmallNTTModulus<length, Q_BITS>::P - 2);
 }
 
 /**
  * Find a primitive 2N-th root of unity for negacyclic NTT
  */
-template <uint32_t length>
+template <uint32_t length, uint32_t Q_BITS>
 SmallNTTValue find_primitive_root()
 {
     constexpr uint32_t log_n = SmallLog2<length>();
 
-    if constexpr (length == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         constexpr uint32_t p_minus_1 = small_ntt31::P_MINUS_ONE;
         constexpr uint32_t two_n = 1U << (log_n + 1);
 
         uint32_t g = 3;
         while (true) {
             bool is_generator = true;
-            if (mod_exp<length>(g, p_minus_1 / 2) == 1) is_generator = false;
-            if (mod_exp<length>(g, p_minus_1 / small_ntt31::K) == 1)
+            if (mod_exp<length, Q_BITS>(g, p_minus_1 / 2) == 1) is_generator = false;
+            if (mod_exp<length, Q_BITS>(g, p_minus_1 / small_ntt31::K) == 1)
                 is_generator = false;
 
             if (is_generator) break;
@@ -87,8 +88,8 @@ SmallNTTValue find_primitive_root()
             }
         }
 
-        SmallNTTValue psi = mod_exp<length>(g, p_minus_1 / two_n);
-        SmallNTTValue psi_N = mod_exp<length>(psi, 1U << log_n);
+        SmallNTTValue psi = mod_exp<length, Q_BITS>(g, p_minus_1 / two_n);
+        SmallNTTValue psi_N = mod_exp<length, Q_BITS>(psi, 1U << log_n);
         if (psi_N != small_ntt31::P_MINUS_ONE) {
             throw std::runtime_error(
                 "Computed lvl1 root does not satisfy psi^N = -1");
@@ -103,9 +104,9 @@ SmallNTTValue find_primitive_root()
         }
 
         const uint64_t exponent = 1ULL << (32 - (log_n + 1));
-        SmallNTTValue psi = mod_exp<length>(small_ntt::ROOT_2_32, exponent);
+        SmallNTTValue psi = mod_exp<length, Q_BITS>(small_ntt::ROOT_2_32, exponent);
 
-        SmallNTTValue psi_N = mod_exp<length>(psi, 1ULL << log_n);
+        SmallNTTValue psi_N = mod_exp<length, Q_BITS>(psi, 1ULL << log_n);
         if (psi_N != small_ntt::P_MINUS_ONE) {
             throw std::runtime_error(
                 "Computed lvl2 root does not satisfy psi^N = -1");
@@ -125,10 +126,10 @@ struct SmallRootTableState {
 SmallRootTableState g_small_tables_1024;
 SmallRootTableState g_small_tables_2048;
 
-template <uint32_t length>
+template <uint32_t length, uint32_t Q_BITS>
 SmallRootTableState& RootTablesForLength()
 {
-    if constexpr (length == TFHEpp::lvl2param::n) {
+    if constexpr (Q_BITS == 64) {
         return g_small_tables_2048;
     }
     else {
@@ -138,10 +139,10 @@ SmallRootTableState& RootTablesForLength()
     }
 }
 
-template <uint32_t length>
+template <uint32_t length, uint32_t Q_BITS>
 auto& ParamsForLength()
 {
-    if constexpr (length == TFHEpp::lvl2param::n) {
+    if constexpr (Q_BITS == 64) {
         return g_small_ntt_params_lvl02;
     }
     else {
@@ -154,7 +155,7 @@ auto& ParamsForLength()
 /**
  * Generate NTT root tables for the selected modulus.
  */
-template <uint32_t length>
+template <uint32_t length, uint32_t Q_BITS>
 void GenerateSmallRootTables(SmallRootTableState& state)
 {
     constexpr int log_n = SmallLog2<length>();
@@ -164,10 +165,10 @@ void GenerateSmallRootTables(SmallRootTableState& state)
 
     constexpr int n = length;
 
-    SmallNTTValue psi = find_primitive_root<length>();
-    SmallNTTValue psi_inv = mod_inv<length>(psi);
+    SmallNTTValue psi = find_primitive_root<length, Q_BITS>();
+    SmallNTTValue psi_inv = mod_inv<length, Q_BITS>(psi);
 
-    state.n_inverse = mod_inv<length>(static_cast<SmallNTTValue>(n));
+    state.n_inverse = mod_inv<length, Q_BITS>(static_cast<SmallNTTValue>(n));
 
     // Generate forward root table: psi^0, psi^1, ..., psi^(n-1) in bit-reversed
     // order For Cooley-Tukey, we need powers of psi^2 (omega = psi^2 is the
@@ -176,7 +177,7 @@ void GenerateSmallRootTables(SmallRootTableState& state)
     state.forward_table[0] = 1;
     for (int i = 1; i < n; i++) {
         state.forward_table[i] =
-            small_mod_mult<length>(state.forward_table[i - 1], psi);
+            small_mod_mult<length, Q_BITS>(state.forward_table[i - 1], psi);
     }
 
     // Generate inverse root table: psi_inv^0, psi_inv^1, ...
@@ -184,7 +185,7 @@ void GenerateSmallRootTables(SmallRootTableState& state)
     state.inverse_table[0] = 1;
     for (int i = 1; i < n; i++) {
         state.inverse_table[i] =
-            small_mod_mult<length>(state.inverse_table[i - 1], psi_inv);
+            small_mod_mult<length, Q_BITS>(state.inverse_table[i - 1], psi_inv);
     }
 
     // Convert to bit-reversed order for NTT algorithm
@@ -202,7 +203,7 @@ void GenerateSmallRootTables(SmallRootTableState& state)
     // 1/N into that root lets the last butterfly normalize both outputs with
     // two products instead of doing a root product plus two scale products.
     state.inverse_table[1] =
-        small_mod_mult<length>(state.inverse_table[1], state.n_inverse);
+        small_mod_mult<length, Q_BITS>(state.inverse_table[1], state.n_inverse);
 
     state.log_n = log_n;
 }
@@ -260,17 +261,18 @@ static void GenerateFFNTTables(int N, std::vector<double2>& forward_root,
 // Static host functions for initialization
 //=============================================================================
 
-template <uint32_t length>
-void CuSmallNTTHandler<length>::Create()
+template <uint32_t length, uint32_t Q_BITS>
+void CuSmallNTTHandler<length, Q_BITS>::Create()
 {
-    GenerateSmallRootTables<length>(RootTablesForLength<length>());
+    GenerateSmallRootTables<length, Q_BITS>(
+        RootTablesForLength<length, Q_BITS>());
 }
 
-template <uint32_t length>
-void CuSmallNTTHandler<length>::Destroy()
+template <uint32_t length, uint32_t Q_BITS>
+void CuSmallNTTHandler<length, Q_BITS>::Destroy()
 {
-    auto& params_vec = ParamsForLength<length>();
-    auto& tables = RootTablesForLength<length>();
+    auto& params_vec = ParamsForLength<length, Q_BITS>();
+    auto& tables = RootTablesForLength<length, Q_BITS>();
 
     for (auto& params : params_vec) {
         if (params.forward_root) {
@@ -290,26 +292,26 @@ void CuSmallNTTHandler<length>::Destroy()
     tables.log_n = 0;
 }
 
-template <uint32_t length>
-void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
+template <uint32_t length, uint32_t Q_BITS>
+void CuSmallNTTHandler<length, Q_BITS>::SetDevicePointers(int device_id)
 {
-    using Value = SmallNTTValueFor<length>;
-    auto& params_vec = ParamsForLength<length>();
-    auto& tables = RootTablesForLength<length>();
+    using Value = SmallNTTValueFor<length, Q_BITS>;
+    auto& params_vec = ParamsForLength<length, Q_BITS>();
+    auto& tables = RootTablesForLength<length, Q_BITS>();
 
     // Resize if needed
     if (params_vec.size() <= static_cast<size_t>(device_id)) {
         params_vec.resize(device_id + 1);
     }
 
-    SmallNTTParams<length>& params = params_vec[device_id];
+    SmallNTTParams<length, Q_BITS>& params = params_vec[device_id];
 
     // Initialize if not already done
     if (!params.initialized) {
         // lvl1 root tables carry a Shoup precomputed-quotient companion in
         // the upper half of the allocation: table[kLength + i] =
         // floor(table[i] << 32 / P).
-        constexpr bool with_shoup = length == TFHEpp::lvl1param::n;
+        constexpr bool with_shoup = Q_BITS == 32;
         const uint32_t table_len = with_shoup ? 2 * kLength : kLength;
 
         // Allocate device memory for root tables
@@ -341,7 +343,7 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
                               sizeof(Value) * table_len,
                               cudaMemcpyHostToDevice));
 
-        if constexpr (length == TFHEpp::lvl1param::n) {
+        if constexpr (Q_BITS == 32) {
             CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root_31,
                                           forward_root.data(),
                                           sizeof(uint32_t) * kLength));
@@ -355,7 +357,7 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
                                           inverse_root.data() + kLength,
                                           sizeof(uint32_t) * kLength));
         }
-        else if constexpr (length == TFHEpp::lvl2param::n) {
+        else if constexpr (Q_BITS == 64) {
             CuSafeCall(cudaMemcpyToSymbol(d_const_forward_root_64,
                                           forward_root.data(),
                                           sizeof(uint64_t) * kLength));
@@ -375,8 +377,10 @@ void CuSmallNTTHandler<length>::SetDevicePointers(int device_id)
 }
 
 // Explicit template instantiation
-template class CuSmallNTTHandler<TFHEpp::lvl1param::n>;
-template class CuSmallNTTHandler<TFHEpp::lvl2param::n>;
+#if !defined(USE_FFT)
+template class CuSmallNTTHandler<TFHEpp::lvl1param::n, 32>;
+template class CuSmallNTTHandler<TFHEpp::lvl2param::n, 64>;
+#endif
 
 //=============================================================================
 // GPU-FFT Handler implementation
@@ -405,7 +409,7 @@ std::vector<double2> g_gpufft_untwist;
 }  // anonymous namespace
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Create()
+void CuGPUFFTHandler<TFHEpp::lvl1param::n, 32>::Create()
 {
     if (!g_gpufft_forward_root.empty()) return;  // Already generated
 
@@ -415,7 +419,7 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Create()
 }
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Destroy()
+void CuGPUFFTHandler<TFHEpp::lvl1param::n, 32>::Destroy()
 {
     for (auto& params : g_gpufft_params) {
         if (params.forward_root) {
@@ -444,7 +448,7 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::Destroy()
 }
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id)
+void CuGPUFFTHandler<TFHEpp::lvl1param::n, 32>::SetDevicePointers(int device_id)
 {
     if (g_gpufft_params.size() <= static_cast<size_t>(device_id)) {
         g_gpufft_params.resize(device_id + 1);
@@ -478,7 +482,7 @@ void CuGPUFFTHandler<TFHEpp::lvl1param::n>::SetDevicePointers(int device_id)
     untwist_ = params.untwist;
 }
 
-template class CuGPUFFTHandler<TFHEpp::lvl1param::n>;
+template class CuGPUFFTHandler<TFHEpp::lvl1param::n, 32>;
 
 // =========================================================================
 // CuGPUFFTHandler<2048> for lvl2param (N=2048, HALF_N=1024)
@@ -495,7 +499,7 @@ std::vector<double2> g_gpufft2048_untwist;
 }  // anonymous namespace
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl2param::n>::Create()
+void CuGPUFFTHandler<TFHEpp::lvl2param::n, 64>::Create()
 {
     if (!g_gpufft2048_forward_root.empty()) return;
 
@@ -505,7 +509,7 @@ void CuGPUFFTHandler<TFHEpp::lvl2param::n>::Create()
 }
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl2param::n>::Destroy()
+void CuGPUFFTHandler<TFHEpp::lvl2param::n, 64>::Destroy()
 {
     for (auto& params : g_gpufft2048_params) {
         if (params.forward_root) {
@@ -534,7 +538,7 @@ void CuGPUFFTHandler<TFHEpp::lvl2param::n>::Destroy()
 }
 
 template <>
-void CuGPUFFTHandler<TFHEpp::lvl2param::n>::SetDevicePointers(int device_id)
+void CuGPUFFTHandler<TFHEpp::lvl2param::n, 64>::SetDevicePointers(int device_id)
 {
     if (g_gpufft2048_params.size() <= static_cast<size_t>(device_id)) {
         g_gpufft2048_params.resize(device_id + 1);
@@ -570,7 +574,7 @@ void CuGPUFFTHandler<TFHEpp::lvl2param::n>::SetDevicePointers(int device_id)
     untwist_ = params.untwist;
 }
 
-template class CuGPUFFTHandler<TFHEpp::lvl2param::n>;
+template class CuGPUFFTHandler<TFHEpp::lvl2param::n, 64>;
 
 #endif  // USE_FFT && USE_GPU_FFT
 
@@ -584,7 +588,7 @@ std::vector<NTTValue*> xai_ntt_devs;
 std::vector<NTTValue*> one_trgsw_ntt_devs;
 #ifdef USE_BLOCK_BINARY
 __device__ NTTValue* block_xai_fft;
-__device__ NTTValueFor<TFHEpp::lvl2param::n>* block_xai_fft_lvl02;
+__device__ NTTValueFor<TFHEpp::lvl2param::n, 64>* block_xai_fft_lvl02;
 #endif
 
 #ifdef USE_FFT
@@ -1019,7 +1023,7 @@ __global__ void __ComputeXaiNTT__(NTTValueFor<N>* const xai_ntt,
 }
 
 template <class P>
-void InitializeXaiNTTForLength(std::vector<NTTValueFor<P::n>*>& storage,
+void InitializeXaiNTTForLength(std::vector<NTTValueFor<P::n, sizeof(typename P::T) * 8>*>& storage,
                                std::vector<SmallNTTParams<P::n>>& params,
                                const int gpuNum)
 {
@@ -1059,7 +1063,7 @@ void InitializeXaiNTT(const int gpuNum)
 }
 
 template <class P>
-void InitializeOneTRGSWNTTForLength(std::vector<NTTValueFor<P::n>*>& storage,
+void InitializeOneTRGSWNTTForLength(std::vector<NTTValueFor<P::n, sizeof(typename P::T) * 8>*>& storage,
                                     std::vector<SmallNTTParams<P::n>>& params,
                                     const int gpuNum)
 {
@@ -1139,8 +1143,8 @@ void DeleteOneTRGSWNTT()
 // lvl02 key-bundle tables: xai and one_trgsw for the configured lvl2 FFT.
 //=============================================================================
 
-std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> xai_ntt_devs_lvl02;
-std::vector<NTTValueFor<TFHEpp::lvl2param::n>*> one_trgsw_ntt_devs_lvl02;
+std::vector<NTTValueFor<TFHEpp::lvl2param::n, 64>*> xai_ntt_devs_lvl02;
+std::vector<NTTValueFor<TFHEpp::lvl2param::n, 64>*> one_trgsw_ntt_devs_lvl02;
 
 #ifdef USE_FFT
 #ifdef USE_GPU_FFT
