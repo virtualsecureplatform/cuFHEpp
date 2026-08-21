@@ -684,8 +684,29 @@ void BootstrappingKeyFlatToNTT_lvl02(
 
 #ifdef USE_FFT
 
+template <bool tfhepp_format>
+__device__ __forceinline__ double2 CMUXFFTSelectorValue(
+    const NTTValue* const selector, const int polynomial, const int index)
+{
+    constexpr uint32_t N = lvl1param::n;
+    constexpr uint32_t HALF_N = N >> 1;
+    if constexpr (tfhepp_format) {
+        // TFHEpp/SPQLIOS uses [real_0..real_n, imag_0..imag_n] and retains
+        // the torus scale. cuFHEpp uses interleaved complex values scaled to
+        // the unit torus.
+        constexpr double norm = 1.0 / 4294967296.0;
+        const double* const planar =
+            reinterpret_cast<const double*>(selector) + polynomial * N;
+        return {planar[index] * norm, planar[index + HALF_N] * norm};
+    }
+    else {
+        return __ldg(&selector[polynomial * HALF_N + index]);
+    }
+}
+
 #ifdef USE_GPU_FFT
 
+template <bool tfhepp_format = false>
 __global__
 __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
     TFHEpp::lvl1param::T* out, const NTTValue* const tgsw_fft,
@@ -759,10 +780,10 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHE
                 double2 fft_val = sh_fft[tid];
 #pragma unroll
                 for (int out_k = 0; out_k <= lvl1param::k; out_k++) {
-                    double2 bk_val = __ldg(
-                        &tgsw_fft[((lvl1param::k + 1) * digit_linear + out_k) *
-                                      HALF_N +
-                                  tid]);
+                    const int polynomial =
+                        (lvl1param::k + 1) * digit_linear + out_k;
+                    double2 bk_val = CMUXFFTSelectorValue<tfhepp_format>(
+                        tgsw_fft, polynomial, tid);
                     sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
                 }
             }
@@ -799,6 +820,7 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHE
 
 #else  // !USE_GPU_FFT (tfhe-rs FFT CMUX)
 
+template <bool tfhepp_format = false>
 __global__
 __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHEpp::lvl1param>) void __CMUXNTT__(
     TFHEpp::lvl1param::T* out, const NTTValue* const tgsw_fft,
@@ -868,10 +890,10 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHE
                 double2 fft_val = sh_fft[tid];
 #pragma unroll
                 for (int out_k = 0; out_k <= lvl1param::k; out_k++) {
-                    double2 bk_val = __ldg(
-                        &tgsw_fft[((lvl1param::k + 1) * digit_linear + out_k) *
-                                      HALF_N +
-                                  tid]);
+                    const int polynomial =
+                        (lvl1param::k + 1) * digit_linear + out_k;
+                    double2 bk_val = CMUXFFTSelectorValue<tfhepp_format>(
+                        tgsw_fft, polynomial, tid);
                     sh_accum[out_k * HALF_N + tid] += fft_val * bk_val;
                 }
             }
@@ -2339,11 +2361,32 @@ void CMUXNTTkernel(TFHEpp::lvl1param::T* const res, const NTTValue* const cs,
     constexpr size_t shmem_size =
         (TFHEpp::lvl1param::k + 2) * TFHEpp::lvl1param::n * sizeof(NTTValue);
     cudaFuncSetAttribute(
-        __CMUXNTT__, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem_size);
-    __CMUXNTT__<<<1, NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, shmem_size, st>>>(
+        __CMUXNTT__<false>, cudaFuncAttributeMaxDynamicSharedMemorySize,
+        shmem_size);
+    __CMUXNTT__<false><<<1, NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, shmem_size,
+                         st>>>(
         res, cs, c1, c0, *ntt_handlers[gpuNum]);
     CuCheckError();
 }
+
+#ifdef USE_FFT
+void CMUXTFHEppFFTkernel(TFHEpp::lvl1param::T* const res,
+                         const double* const cs,
+                         TFHEpp::lvl1param::T* const c1,
+                         TFHEpp::lvl1param::T* const c0, cudaStream_t st,
+                         const int gpuNum)
+{
+    constexpr size_t shmem_size =
+        (TFHEpp::lvl1param::k + 2) * TFHEpp::lvl1param::n * sizeof(NTTValue);
+    cudaFuncSetAttribute(
+        __CMUXNTT__<true>, cudaFuncAttributeMaxDynamicSharedMemorySize,
+        shmem_size);
+    __CMUXNTT__<true><<<1, NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, shmem_size,
+                        st>>>(res, reinterpret_cast<const NTTValue*>(cs), c1,
+                             c0, *ntt_handlers[gpuNum]);
+    CuCheckError();
+}
+#endif
 
 void BootstrapTLWE2TRLWE(TFHEpp::lvl1param::T* const out,
                          const TFHEpp::lvl0param::T* const in,

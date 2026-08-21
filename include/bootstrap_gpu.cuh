@@ -57,6 +57,18 @@ void CMUXNTTkernel(TFHEpp::lvl1param::T* const res, const NTTValue* const cs,
                    TFHEpp::lvl1param::T* const c1,
                    TFHEpp::lvl1param::T* const c0, cudaStream_t st,
                    const int gpuNum);
+#ifdef USE_FFT
+// Evaluate a CMUX with a TFHEpp TRGSWFFT selector. TFHEpp stores each
+// frequency-domain polynomial as planar, unnormalised doubles, whereas the
+// native cuFHEpp FFT kernels use interleaved, torus-normalised double2 values.
+// Keeping this conversion at the kernel boundary lets CPU- and GPU-produced
+// ciphertexts share the same public representation.
+void CMUXTFHEppFFTkernel(TFHEpp::lvl1param::T* const res,
+                         const double* const cs,
+                         TFHEpp::lvl1param::T* const c1,
+                         TFHEpp::lvl1param::T* const c0, cudaStream_t st,
+                         const int gpuNum);
+#endif
 
 void Bootstrap(TFHEpp::lvl0param::T* const out,
                const TFHEpp::lvl0param::T* const in,
