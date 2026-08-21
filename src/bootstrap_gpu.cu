@@ -2483,7 +2483,6 @@ void CMUXTFHEppFFTkernel(TFHEpp::lvl1param::T* const res,
                              c0, *ntt_handlers[gpuNum]);
     CuCheckError();
 }
-
 void CMUXTFHEppFFTBatchKernel(
     TFHEpp::lvl1param::T* const* res, const double* const* cs,
     TFHEpp::lvl1param::T* const* c1, TFHEpp::lvl1param::T* const* c0,
