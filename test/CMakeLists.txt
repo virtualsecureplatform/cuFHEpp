@@ -75,6 +75,23 @@ if(USE_FFT AND USE_GPU_FFT AND NOT USE_BLOCK_BINARY)
     target_link_libraries(test_accumulate_diag cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 endif()
 
+# The Tangor/Iyokan integration passes TFHEpp's split-Fourier TRGSWFFT
+# representation directly to cuFHEpp. Keep a focused regression test for that
+# adapter separate from the native cuFHEpp CMUX tests.
+if(USE_FFT AND USE_GPU_FFT)
+    add_executable(test_tfhepp_cmux_cuda test_tfhepp_cmux_cuda.cu)
+    target_include_directories(test_tfhepp_cmux_cuda PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    cufhe_enable_cuda_separable_compilation(test_tfhepp_cmux_cuda)
+    target_link_libraries(test_tfhepp_cmux_cuda cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+    # This is the per-cell bootstrap used after a RAM/ROM CMUX update.  Keep
+    # it available in the block-binary configuration used by Iyokan/Tangor.
+    add_executable(test_tfhepp_ram_bootstrap_cuda test_tfhepp_ram_bootstrap_cuda.cu)
+    target_include_directories(test_tfhepp_ram_bootstrap_cuda PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    cufhe_enable_cuda_separable_compilation(test_tfhepp_ram_bootstrap_cuda)
+    target_link_libraries(test_tfhepp_ram_bootstrap_cuda cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+endif()
+
 if(NOT USE_CONCRETE)
     add_executable(test_annihilate_gpu test_annihilate_gpu.cu)
     target_include_directories(test_annihilate_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
