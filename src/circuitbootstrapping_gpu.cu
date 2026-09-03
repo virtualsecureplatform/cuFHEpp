@@ -1135,7 +1135,7 @@ template <class P>
 void CBswitchingKeyPolynomialGen(CBswitchingKeyPolynomial<P>& cbsk,
                                  const TFHEpp::SecretKey& sk)
 {
-    CBswitchingKeyPolynomialGen<P>(cbsk, sk.key.get<P>());
+    CBswitchingKeyPolynomialGen<P>(cbsk, sk.key.getIndependent<P>());
 }
 
 template <class P>

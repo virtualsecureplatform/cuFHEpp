@@ -625,7 +625,7 @@ template <class P>
 void AnnihilateKeyPolynomialGen(AnnihilateKeyPolynomial<P>& ahk,
                                 const TFHEpp::SecretKey& sk)
 {
-    AnnihilateKeyPolynomialGen<P>(ahk, sk.key.get<P>());
+    AnnihilateKeyPolynomialGen<P>(ahk, sk.key.getIndependent<P>());
 }
 
 template <class P>
