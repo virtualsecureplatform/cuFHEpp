@@ -25,6 +25,10 @@ add_executable(test_gate_gpu test_gate_gpu.cc)
 target_include_directories(test_gate_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
 target_link_libraries(test_gate_gpu cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 
+add_executable(test_mux_batch_gpu test_mux_batch_gpu.cc)
+target_include_directories(test_mux_batch_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_mux_batch_gpu cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
 if(USE_BLOCK_BINARY)
     add_executable(test_block_binary_gpu test_block_binary_gpu.cc)
     target_include_directories(test_block_binary_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})

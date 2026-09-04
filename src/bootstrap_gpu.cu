@@ -29,7 +29,42 @@
 #include <include/ntt_small_modulus.cuh>
 #include <include/utils_gpu.cuh>
 #include <limits>
+#include <unordered_set>
 #include <vector>
+
+// cudaFuncSetAttribute is a device-wide kernel configuration, not per-launch
+// state.  Calling into the CUDA runtime for every Boolean gate adds avoidable
+// serialization to Tangor's high-rate launch path.  Cache it per dispatcher
+// thread; Tangor pins each dispatcher to one device for its lifetime.
+template <class Kernel>
+cudaError_t cudaFuncSetAttributeOnce(Kernel* kernel,
+                                     cudaFuncAttribute attribute, int value)
+{
+    struct KernelDevice {
+        const void* kernel;
+        int device;
+        bool operator==(const KernelDevice& rhs) const
+        {
+            return kernel == rhs.kernel && device == rhs.device;
+        }
+    };
+    struct Hash {
+        size_t operator()(const KernelDevice& key) const
+        {
+            return std::hash<const void*>{}(key.kernel) ^
+                   (std::hash<int>{}(key.device) << 1);
+        }
+    };
+    thread_local std::unordered_set<KernelDevice, Hash> configured;
+    const void* const identity = reinterpret_cast<const void*>(kernel);
+    int device = 0;
+    const cudaError_t deviceStatus = cudaGetDevice(&device);
+    if (deviceStatus != cudaSuccess) return deviceStatus;
+    if (!configured.insert({identity, device}).second) return cudaSuccess;
+    return cudaFuncSetAttribute(kernel, attribute, value);
+}
+
+#define cudaFuncSetAttribute cudaFuncSetAttributeOnce
 
 namespace cufhe {
 
@@ -1666,7 +1701,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
 
 // Mux(inc,in1,in0) = inc?in1:in0 = inc&in1 + (!inc)&in0
 template <class brP, typename brP::targetP::T μ, class iksP>
-__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLOCKS4HOMGATE<typename brP:: targetP>) void __MuxBootstrap__(typename iksP::targetP::T* const
+__device__ __forceinline__ void __MuxBootstrapBody__(typename iksP::targetP::T* const
                                                 out,
                                             const typename brP::domainP::
                                                 T* const inc,
@@ -1678,9 +1713,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                             const typename iksP::targetP::
                                                 T* const ksk,
                                             const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
-                                                ntt)
+                                                ntt,
+                                            char* const dyn_sh)
 {
-    extern __shared__ char dyn_sh[];
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
     constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
@@ -1726,6 +1761,54 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
     }
 
     KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+}
+
+template <class brP, typename brP::targetP::T μ, class iksP>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>,
+                             MIN_BLOCKS4HOMGATE<typename brP::targetP>)
+void __MuxBootstrap__(typename iksP::targetP::T* const out,
+                      const typename brP::domainP::T* const inc,
+                      const typename brP::domainP::T* const in1,
+                      const typename brP::domainP::T* const in0,
+                      const NTTValueFor<brP::targetP::n,
+                                        sizeof(typename brP::targetP::T) * 8>*
+                          const bk,
+                      const typename iksP::targetP::T* const ksk,
+                      const CuNTTHandler<brP::targetP::n,
+                                         sizeof(typename brP::targetP::T) * 8>
+                          ntt)
+{
+    extern __shared__ char dyn_sh[];
+    __MuxBootstrapBody__<brP, μ, iksP>(out, inc, in1, in0, bk, ksk, ntt,
+                                         dyn_sh);
+}
+
+template <class brP, typename brP::targetP::T μ, class iksP>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>,
+                             MIN_BLOCKS4HOMGATE<typename brP::targetP>)
+void __MuxBootstrapBatch__(typename iksP::targetP::T* const out,
+                           const typename brP::domainP::T* const inc,
+                           const typename brP::domainP::T* const in1,
+                           const typename brP::domainP::T* const in0,
+                           const NTTValueFor<brP::targetP::n,
+                                             sizeof(typename brP::targetP::T) *
+                                                 8>* const bk,
+                           const typename iksP::targetP::T* const ksk,
+                           const CuNTTHandler<brP::targetP::n,
+                                              sizeof(typename brP::targetP::T) *
+                                                  8>
+                               ntt,
+                           const size_t count)
+{
+    const size_t batch = blockIdx.x;
+    if (batch >= count) return;
+    extern __shared__ char dyn_sh[];
+    constexpr size_t inputStride = brP::domainP::n + 1;
+    constexpr size_t outputStride = iksP::targetP::n + 1;
+    __MuxBootstrapBody__<brP, μ, iksP>(
+        out + batch * outputStride, inc + batch * inputStride,
+        in1 + batch * inputStride, in0 + batch * inputStride, bk, ksk, ntt,
+        dyn_sh);
 }
 
 // NMux(inc,in1,in0) = !(inc?in1:in0) = !(inc&in1 + (!inc)&in0)
@@ -3832,6 +3915,56 @@ void MuxBootstrap(typename iksP::targetP::T* const out,
 INST(TFHEpp::lvl01param, TFHEpp::lvl1param::μ, TFHEpp::lvl10param);
 INST(TFHEpp::lvl02param, TFHEpp::lvl2param::μ, TFHEpp::lvl20param);
 #undef INST
+
+template <class brP, typename brP::targetP::T μ, class iksP>
+void MuxBootstrapBatch(typename iksP::targetP::T* const out,
+                       const typename brP::domainP::T* const inc,
+                       const typename brP::domainP::T* const in1,
+                       const typename brP::domainP::T* const in0,
+                       const size_t count, const cudaStream_t st,
+                       const int gpuNum)
+{
+    if (count == 0) return;
+#ifdef USE_KEY_BUNDLE
+    constexpr size_t inputStride = brP::domainP::n + 1;
+    constexpr size_t outputStride = iksP::targetP::n + 1;
+    for (size_t i = 0; i < count; ++i)
+        MuxBootstrap<brP, μ, iksP>(
+            out + i * outputStride, inc + i * inputStride,
+            in1 + i * inputStride, in0 + i * inputStride, st, gpuNum);
+#else
+    cudaFuncSetAttribute(__MuxBootstrapBatch__<brP, μ, iksP>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         MEM4MUXGATE_DYN<typename brP::targetP>);
+    if constexpr (sizeof(typename brP::targetP::T) == 8) {
+        __MuxBootstrapBatch__<brP, μ, iksP>
+            <<<count, NUM_THREAD4HOMGATE<typename brP::targetP>,
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts_lvl02[gpuNum],
+                ksk_devs_lvl20[gpuNum], *ntt_handlers_lvl02[gpuNum], count);
+    }
+    else {
+        __MuxBootstrapBatch__<brP, μ, iksP>
+            <<<count, NUM_THREAD4HOMGATE<typename brP::targetP>,
+               MEM4MUXGATE_DYN<typename brP::targetP>, st>>>(
+                out, inc, in1, in0, bk_ntts[gpuNum], ksk_devs[gpuNum],
+                *ntt_handlers[gpuNum], count);
+    }
+    CuCheckError();
+#endif
+}
+
+#define INST_MUX_BATCH(brP, μ, iksP)                                      \
+    template void MuxBootstrapBatch<brP, μ, iksP>(                       \
+        typename iksP::targetP::T* const out,                              \
+        const typename brP::domainP::T* const inc,                         \
+        const typename brP::domainP::T* const in1,                         \
+        const typename brP::domainP::T* const in0, const size_t count,     \
+        const cudaStream_t st, const int gpuNum)
+INST_MUX_BATCH(TFHEpp::lvl01param, TFHEpp::lvl1param::μ,
+               TFHEpp::lvl10param);
+#undef INST_MUX_BATCH
+
 template <class iksP, class brP, typename brP::targetP::T μ>
 void MuxBootstrap(typename brP::targetP::T* const out,
                   const typename iksP::domainP::T* const inc,

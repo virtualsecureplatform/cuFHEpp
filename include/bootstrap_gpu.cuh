@@ -213,6 +213,15 @@ void MuxBootstrap(typename iksP::targetP::T* const out,
                   const typename brP::domainP::T* const in1,
                   const typename brP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum);
+// Contiguous batched variant. Each CUDA block evaluates one MUX with the
+// exact same two-blind-rotation algorithm as MuxBootstrap.
+template <class brP, typename brP::targetP::T μ, class iksP>
+void MuxBootstrapBatch(typename iksP::targetP::T* const out,
+                       const typename brP::domainP::T* const inc,
+                       const typename brP::domainP::T* const in1,
+                       const typename brP::domainP::T* const in0,
+                       const size_t count, const cudaStream_t st,
+                       const int gpuNum);
 template <class iksP, class brP, typename brP::targetP::T μ>
 void MuxBootstrap(typename brP::targetP::T* const out,
                   const typename iksP::domainP::T* const inc,
