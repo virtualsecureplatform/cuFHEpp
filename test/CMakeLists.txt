@@ -1,6 +1,9 @@
 set(CUFHE_TEST_GPU_SOURCES
     test_backend_gate_bench.cu
     test_small_modulus.cu
+    test_bootstrap_generic.cu
+    test_bootstrap_trlwe.cu
+    test_keyswitch_gpu.cu
     test_fft_roundtrip.cu
     test_accumulate_diag.cu
     test_annihilate_gpu.cu
@@ -24,6 +27,46 @@ endfunction()
 add_executable(test_gate_gpu test_gate_gpu.cc)
 target_include_directories(test_gate_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
 target_link_libraries(test_gate_gpu cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_gate_gpu_lvl01_br_iks test_gate_gpu.cc)
+target_compile_definitions(test_gate_gpu_lvl01_br_iks PRIVATE CUFHE_TEST_BR_IKS=1)
+target_include_directories(test_gate_gpu_lvl01_br_iks PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_gate_gpu_lvl01_br_iks cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_bench test_bootstrap_bench.cc)
+target_include_directories(test_bootstrap_bench PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_bench cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_bench_lvl02 test_bootstrap_bench.cc)
+target_compile_definitions(test_bootstrap_bench_lvl02 PRIVATE CUFHE_BENCH_LVL02=1)
+target_include_directories(test_bootstrap_bench_lvl02 PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_bench_lvl02 cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_bench_lvl01_br_iks test_bootstrap_bench.cc)
+target_compile_definitions(test_bootstrap_bench_lvl01_br_iks PRIVATE CUFHE_BENCH_BR_IKS=1)
+target_include_directories(test_bootstrap_bench_lvl01_br_iks PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_bench_lvl01_br_iks cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_bench_lvl02_br_iks test_bootstrap_bench.cc)
+target_compile_definitions(test_bootstrap_bench_lvl02_br_iks PRIVATE CUFHE_BENCH_LVL02=1 CUFHE_BENCH_BR_IKS=1)
+target_include_directories(test_bootstrap_bench_lvl02_br_iks PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_bench_lvl02_br_iks cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_public_batch test_bootstrap_public_batch.cc)
+target_include_directories(test_bootstrap_public_batch PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_public_batch cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_batch test_bootstrap_batch.cc)
+target_include_directories(test_bootstrap_batch PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_batch cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_mux test_bootstrap_mux.cc)
+target_include_directories(test_bootstrap_mux PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_mux cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_binary test_bootstrap_binary.cc)
+target_include_directories(test_bootstrap_binary PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_binary cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 
 if(USE_BLOCK_BINARY)
     add_executable(test_block_binary_gpu test_block_binary_gpu.cc)
@@ -50,7 +93,45 @@ if(NOT USE_BLOCK_BINARY)
     target_link_libraries(test_backend_gate_bench cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 endif()
 
+if(NOT USE_FFT AND USE_BLOCK_BINARY AND NOT USE_KEY_BUNDLE AND
+   CUFHE_GPU_BACKEND STREQUAL "CUDA" AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.4)
+    add_executable(test_bootstrap_cooperative test_bootstrap_cooperative.cc)
+    target_include_directories(test_bootstrap_cooperative PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    target_link_libraries(test_bootstrap_cooperative cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+endif()
+
 if(NOT USE_FFT)
+    add_executable(test_bootstrap_circuit_bench test_bootstrap_circuit_bench.cc)
+    target_include_directories(test_bootstrap_circuit_bench PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    target_link_libraries(test_bootstrap_circuit_bench cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+    if(NOT USE_KEY_BUNDLE)
+        add_executable(test_bootstrap_trlwe_bench test_bootstrap_trlwe_bench.cc)
+        target_include_directories(test_bootstrap_trlwe_bench PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+        target_link_libraries(test_bootstrap_trlwe_bench cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+        add_executable(test_bootstrap_trlwe test_bootstrap_trlwe.cu)
+        target_include_directories(test_bootstrap_trlwe PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+        cufhe_enable_cuda_separable_compilation(test_bootstrap_trlwe)
+        target_link_libraries(test_bootstrap_trlwe cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+    endif()
+
+    add_executable(test_bootstrap_generic test_bootstrap_generic.cu)
+    target_include_directories(test_bootstrap_generic PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    cufhe_enable_cuda_separable_compilation(test_bootstrap_generic)
+    target_link_libraries(test_bootstrap_generic cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+    add_executable(test_keyswitch_gpu test_keyswitch_gpu.cu)
+    target_include_directories(test_keyswitch_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    cufhe_enable_cuda_separable_compilation(test_keyswitch_gpu)
+    target_link_libraries(test_keyswitch_gpu cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+    add_executable(test_keyswitch_gpu_lvl20 test_keyswitch_gpu.cu)
+    target_compile_definitions(test_keyswitch_gpu_lvl20 PRIVATE CUFHE_TEST_COMPACT_LVL20=1)
+    target_include_directories(test_keyswitch_gpu_lvl20 PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    cufhe_enable_cuda_separable_compilation(test_keyswitch_gpu_lvl20)
+    target_link_libraries(test_keyswitch_gpu_lvl20 cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
     add_executable(test_small_modulus test_small_modulus.cu)
     target_include_directories(test_small_modulus PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
     cufhe_enable_cuda_separable_compilation(test_small_modulus)

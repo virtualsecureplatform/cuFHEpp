@@ -142,10 +142,12 @@ endif()
 # HIP.  Defaults follow RTX 4070 (sm_89) benchmarks: the paired FFT is ~20%
 # faster, register accumulators are a modest NTT win, and the low-LDS layout is
 # required for lvl02 MUX on GPUs with a ~99 KiB shared-memory cap (Ada).  The
-# warp-shuffle tail stays off: NVIDIA's 64-register ceiling for 1024-thread
-# blocks makes it spill and lose occupancy.
+# generic warp-shuffle path stays opt-in because its register pressure can
+# cause spills. The Torus64 option also relaxes the Ada register budget.
 option(USE_CUDA_WARP_TRANSFORM
        "Run the final NTT butterfly stages in registers via warp shuffles" OFF)
+option(USE_CUDA_WARP_TRANSFORM64
+       "Use register NTT tails and a larger Ada register budget for Torus64" OFF)
 option(USE_CUDA_REGISTER_NTT_ACCUM
        "Keep pointwise multiply-accumulate results in registers" ON)
 option(USE_CUDA_LOW_LDS_BOOTSTRAP
@@ -157,16 +159,40 @@ option(USE_CUDA_PAIRED_GPU_FFT
 # only to sm_89+; Ampere keeps unconstrained register allocation.
 option(USE_CUDA_PAIRED_NTT
        "Transform two decomposition digits per lvl1 NTT pass" ON)
+option(USE_CUDA_PAIRED_NTT_WARP
+       "Keep paired NTT tail stages in registers on sm_89+" OFF)
+option(USE_CUDA_PAIRED_NTT_MADD4
+       "Share paired decomposition products across both output polynomials" OFF)
+option(USE_CUDA_WARP_MODSWITCH_CORRECTION
+       "Compute the existing block-binary rounding correction with one warp" OFF)
+option(USE_CUDA_ASYNC_MONOMIALS
+       "Stage monomial tables once per paired block-binary external product" OFF)
+option(USE_CUDA_PACKED_PAIRED_ROOTS
+       "Load paired NTT twiddle/quotient pairs together" OFF)
+option(USE_CUDA_UNREDUCED_INVERSE_DIFF
+       "Feed the existing 31-bit inverse difference directly to Shoup reduction" OFF)
+option(USE_CUDA_WORD32_REDUCTION
+       "Use a native-word first fold for dynamic 31-bit modular arithmetic" OFF)
 option(USE_CUDA_SHOUP_NTT
        "Use Shoup precomputed-quotient twiddle multiplication in the lvl1 NTT"
        ON)
 option(USE_CUDA_MIN_BLOCKS
-       "Force three resident lvl1 NTT gate blocks on sm_89+ via launch bounds"
+       "Apply minimum-residency launch bounds to NTT gate blocks on sm_89+"
        ON)
+set(CUFHE_CUDA_NTT_MIN_BLOCKS "3" CACHE STRING
+    "Minimum resident lvl1 NTT blocks requested on sm_89+ (1, 2, or 3)")
+set_property(CACHE CUFHE_CUDA_NTT_MIN_BLOCKS PROPERTY STRINGS 1 2 3)
+if(NOT CUFHE_CUDA_NTT_MIN_BLOCKS MATCHES "^[123]$")
+  message(FATAL_ERROR "CUFHE_CUDA_NTT_MIN_BLOCKS must be 1, 2, or 3")
+endif()
+add_compile_definitions(CUFHE_CUDA_NTT_MIN_BLOCKS=${CUFHE_CUDA_NTT_MIN_BLOCKS})
 foreach(cuda_transform_opt
-        USE_CUDA_WARP_TRANSFORM USE_CUDA_REGISTER_NTT_ACCUM
+        USE_CUDA_WARP_TRANSFORM USE_CUDA_WARP_TRANSFORM64 USE_CUDA_REGISTER_NTT_ACCUM
         USE_CUDA_LOW_LDS_BOOTSTRAP USE_CUDA_PAIRED_GPU_FFT
-        USE_CUDA_PAIRED_NTT USE_CUDA_SHOUP_NTT USE_CUDA_MIN_BLOCKS)
+        USE_CUDA_PAIRED_NTT USE_CUDA_PAIRED_NTT_WARP USE_CUDA_PAIRED_NTT_MADD4
+        USE_CUDA_SHOUP_NTT USE_CUDA_MIN_BLOCKS USE_CUDA_WARP_MODSWITCH_CORRECTION
+        USE_CUDA_ASYNC_MONOMIALS USE_CUDA_PACKED_PAIRED_ROOTS
+        USE_CUDA_WORD32_REDUCTION USE_CUDA_UNREDUCED_INVERSE_DIFF)
   if(${cuda_transform_opt})
     add_compile_definitions(${cuda_transform_opt})
   endif()

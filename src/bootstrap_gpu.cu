@@ -29,9 +29,28 @@
 #include <include/ntt_small_modulus.cuh>
 #include <include/utils_gpu.cuh>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+#include <cooperative_groups.h>
+#endif
+
 namespace cufhe {
+
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+namespace {
+std::vector<cudaMemPool_t> cooperative_scratch_pools;
+void InitializeCooperativeScratchPools(int gpu_count);
+void DeleteCooperativeScratchPools();
+}
+#endif
 
 using namespace std;
 using namespace TFHEpp;
@@ -433,12 +452,12 @@ __global__ void __TRGSW2NTT__(NTTValueFor<P::n, sizeof(typename P::T) * 8>* cons
     const uint32_t bdim = blockDim.x;
     // Load and convert each element: Torus -> NTT mod
     for (int i = tid; i < P::n; i += bdim) {
-        sh_temp[i] = torus_to_ntt_mod<P::n>(bk[index + i]);
+        sh_temp[i] = torus_to_ntt_mod<P::n, sizeof(typename P::T) * 8>(bk[index + i]);
     }
     __syncthreads();
 
     // Forward NTT
-    SmallForwardNTT<P::nbit>(sh_temp, ntt.forward_root_, tid);
+    SmallForwardNTT<P::nbit, sizeof(typename P::T) * 8>(sh_temp, ntt.forward_root_, tid);
 
     // Store result
     for (int i = tid; i < P::n; i += bdim) {
@@ -490,14 +509,14 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
 {
     constexpr uint32_t N = P::targetP::n;
 
-    auto& bk_storage = BootstrappingKeyStorage<N>();
+    auto& bk_storage = BootstrappingKeyStorage<typename P::targetP>();
 
     bk_storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
 
         cudaMalloc((void**)&bk_storage[i],
-                   sizeof(NTTValueFor<N>) * P::domainP::n *
+                   sizeof(NTTValueFor<N, sizeof(typename P::targetP::T) * 8>) * P::domainP::n *
                        BootstrappingTRGSWRows<typename P::targetP> *
                        (P::targetP::k + 1) * N);
 
@@ -511,7 +530,7 @@ void BootstrappingKeyToNTT(const BootstrappingKey<P>& bk, const int gpuNum)
         dim3 grid(P::targetP::k + 1,
                   BootstrappingTRGSWRows<typename P::targetP>, P::domainP::n);
         dim3 block(N >> NTT_THREAD_UNITBIT);
-        if constexpr (N == TFHEpp::lvl2param::n) {
+        if constexpr (sizeof(typename P::targetP::T) == 8) {
             __TRGSW2NTT__<typename P::targetP>
                 <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
         }
@@ -551,14 +570,14 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
     constexpr size_t total_ntt_elems =
         static_cast<size_t>(num_pairs) * bk_elements_per_pair * trgsw_polys * N;
 
-    auto& bk_storage = BootstrappingKeyStorage<N>();
+    auto& bk_storage = BootstrappingKeyStorage<typename P::targetP>();
 
     bk_storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
 
         cudaMalloc((void**)&bk_storage[i],
-                   sizeof(NTTValueFor<N>) * total_ntt_elems);
+                   sizeof(NTTValueFor<N, sizeof(typename P::targetP::T) * 8>) * total_ntt_elems);
 
         typename P::targetP::T* d_bk;
         size_t bk_byte_size = sizeof(bk);
@@ -572,7 +591,7 @@ void BootstrappingKeyBundleToNTT(const BootstrappingKey<P>& bk,
                   BootstrappingTRGSWRows<typename P::targetP>,
                   num_pairs * bk_elements_per_pair);
         dim3 block(N >> NTT_THREAD_UNITBIT);
-        if constexpr (N == TFHEpp::lvl2param::n) {
+        if constexpr (sizeof(typename P::targetP::T) == 8) {
             __TRGSW2NTT__<typename P::targetP>
                 <<<grid, block>>>(bk_storage[i], d_bk, *ntt_handlers_lvl02[i]);
         }
@@ -614,6 +633,12 @@ void DeleteBootstrappingKeyNTT(const int gpuNum)
 void InitializeNTThandlers_lvl02(const int gpuNum)
 {
     CuNTTHandler<TFHEpp::lvl2param::n, 64>::Create();
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+    InitializeCooperativeScratchPools(gpuNum);
+#endif
     for (int i = 0; i < gpuNum; i++) {
         cudaSetDevice(i);
         ntt_handlers_lvl02.push_back(new CuNTTHandler<TFHEpp::lvl2param::n, 64>());
@@ -637,6 +662,12 @@ void DeleteBootstrappingKeyNTT_lvl02(const int gpuNum)
     }
     ntt_handlers_lvl02.clear();
     CuNTTHandler<TFHEpp::lvl2param::n, 64>::Destroy();
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+    DeleteCooperativeScratchPools();
+#endif
 }
 
 void BootstrappingKeyFlatToNTT_lvl02(
@@ -655,7 +686,7 @@ void BootstrappingKeyFlatToNTT_lvl02(
         cudaSetDevice(i);
 
         cudaMalloc((void**)&bk_ntts_lvl02[i],
-                   sizeof(NTTValueFor<N>) * ntt_elems);
+                   sizeof(NTTValueFor<N, 64>) * ntt_elems);
 
         size_t bk_bytes =
             static_cast<size_t>(num_elements) * sizeof(TFHEpp::TRGSW<tgtP>);
@@ -1038,8 +1069,25 @@ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>, MIN_BLOCKS4HOMGATE<
     __shared__
         typename brP::targetP::T tlwe[(brP::targetP::k + 1) * brP::targetP::n];
 
-    __BlindRotate__<brP>(tlwe, in, mu, bk, ntt);
-    KeySwitch<iksP>(out, tlwe, ksk);
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
+    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+    constexpr size_t prepared_bytes =
+        ((iksP::domainP::k * iksP::domainP::n -
+          (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) *
+             iksP::t + 1) * sizeof(uint32_t);
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl10param> &&
+                  prepared_bytes <= MEM4HOMGATE<typename brP::targetP>) {
+        extern __shared__ char generic_scratch[];
+        __BlindRotate__<brP, false, false, 0, true, /*KeySwitchAfter31=*/true>(
+            tlwe, in, mu, bk, ntt);
+        KeySwitchPrepared32<iksP, NUM_THREAD4HOMGATE<typename brP::targetP>, true>(
+            out, tlwe, ksk, reinterpret_cast<uint32_t*>(generic_scratch));
+    } else
+#endif
+    {
+        __BlindRotate__<brP>(tlwe, in, mu, bk, ntt);
+        KeySwitch<iksP>(out, tlwe, ksk);
+    }
 }
 
 // template <class iksP, class bkP>
@@ -1130,7 +1178,20 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp:: lvl1param>, MIN_BLOCKS4
                            lvl1param::n];
 #endif
 
-    KeySwitch<lvl10param>(tlwelvl0, in, ksk);
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && !defined(USE_KEY_BUNDLE) && \
+    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+    constexpr size_t prepared_bytes =
+        ((lvl10param::domainP::k * lvl10param::domainP::n -
+          (use_subset_key_switch<lvl10param> ? lvl10param::targetP::k * lvl10param::targetP::n : 0)) *
+             lvl10param::t + 1) * sizeof(uint32_t);
+    if constexpr (prepared_bytes <= (lvl1param::k + 2) * lvl1param::n * sizeof(NTTValue)) {
+        KeySwitchPrepared32<lvl10param, NUM_THREAD4HOMGATE<lvl1param>, true>(
+            tlwelvl0, in, ksk, reinterpret_cast<uint32_t*>(sh));
+    } else
+#endif
+    {
+        KeySwitch<lvl10param>(tlwelvl0, in, ksk);
+    }
     __syncthreads();
 
 #ifdef USE_KEY_BUNDLE
@@ -1160,7 +1221,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp:: lvl1param>, MIN_BLOCKS4
         Accumulate<lvl01param>(tlwe, sh_acc_ntt, bar, bk + i * trgsw_fft_size,
                                ntt);
 #else
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+        AccumulateLegacyPairedNTT<lvl01param>(tlwe, sh_acc_ntt, bar,
+#else
         Accumulate<lvl01param>(tlwe, sh_acc_ntt, bar,
+#endif
                                bk + (i << lvl1param::nbit) *
                                         (lvl1param::k + 1) *
                                         (lvl1param::k + 1) * lvl1param::l,
@@ -1244,8 +1309,89 @@ __device__ inline void __SampleExtractRegistersCombine__(
     }
 }
 
+// Reuse the blind-rotation workspace for prepared signed row addresses after
+// capturing its input, including the already-combined TLWE in MUX/NMux.
+template <class iksP, class brP, bool ExtractFromTRLWE>
+__device__ inline void __KeySwitchAfterBlindRotate__(
+    typename iksP::targetP::T* out, const typename iksP::domainP::T* input,
+    const typename iksP::targetP::T* ksk, char* dyn_sh)
+{
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
+    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+    constexpr size_t prepared_bytes =
+        (iksP::domainP::k * iksP::domainP::n * iksP::t + 1) * sizeof(uint16_t);
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                  prepared_bytes <= MEM4HOMGATE_DYN<typename brP::targetP>) {
+        KeySwitchPrepared16<iksP, NUM_THREAD4HOMGATE<typename brP::targetP>,
+                            ExtractFromTRLWE>(
+            out, input, ksk, reinterpret_cast<uint16_t*>(dyn_sh));
+    } else if constexpr (std::is_same_v<iksP, TFHEpp::lvl10param> &&
+        ((iksP::domainP::k * iksP::domainP::n -
+          (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) *
+             iksP::t + 1) * sizeof(uint32_t) <= MEM4HOMGATE_DYN<typename brP::targetP>) {
+        KeySwitchPrepared32<iksP, NUM_THREAD4HOMGATE<typename brP::targetP>, ExtractFromTRLWE>(
+            out, input, ksk, reinterpret_cast<uint32_t*>(dyn_sh));
+    } else
+#endif
+    {
+        const typename iksP::domainP::T* tlwe = input;
+        if constexpr (ExtractFromTRLWE) {
+            auto* extracted = reinterpret_cast<typename iksP::domainP::T*>(dyn_sh);
+            __SampleExtractIndex__<typename iksP::domainP, 0>(extracted, input);
+            __syncthreads();
+            tlwe = extracted;
+        }
+        KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+    }
+}
+
+// The MUX workspace prefix is dead before each blind rotation. Keep the
+// prepared key rows inside that prefix so neither TRLWE buffer is overwritten.
+template <class iksP, class brP, int Sign0, int Sign1, auto Offset>
+__device__ __forceinline__ void __KeySwitchMuxPreAdd__(
+    typename iksP::targetP::T* out, const typename iksP::domainP::T* in0,
+    const typename iksP::domainP::T* in1, const typename iksP::targetP::T* ksk,
+    char* scratch)
+{
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
+    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+    constexpr size_t count = (iksP::domainP::k * iksP::domainP::n -
+        (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) * iksP::t;
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl10param> &&
+                  count * sizeof(uint32_t) <= MEM4HOMGATE<typename brP::targetP>) {
+        IdentityKeySwitchPreAddPrepared<iksP, Sign0, Sign1, Offset>(
+            out, in0, in1, ksk, reinterpret_cast<uint32_t*>(scratch));
+    } else if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                         count * sizeof(uint16_t) <= MEM4HOMGATE<typename brP::targetP>) {
+        IdentityKeySwitchPreAddPrepared16<iksP, Sign0, Sign1, Offset>(
+            out, in0, in1, ksk, reinterpret_cast<uint16_t*>(scratch));
+    } else
+#endif
+    {
+        IdentityKeySwitchPreAdd<iksP, Sign0, Sign1, Offset>(out, in0, in1, ksk);
+    }
+}
+
+// Exact paired transforms for eligible raw binary gates; this is a hardware
+// schedule choice, with the cryptographic parameter types unchanged.
+template <class brP>
+constexpr bool USE_RAW_PAIRED_NTT64 =
+#ifndef USE_FFT
+    USE_PAIRED_NTT64<typename brP::targetP> && brP::domainP::ell == 2;
+#else
+    false;
+#endif
+
+template <class brP>
+constexpr size_t MEM4RAWBINARYGATE_DYN =
+#ifdef USE_FFT
+    MEM4HOMGATE_DYN<typename brP::targetP>;
+#else
+    MEM4HOMGATE_DYN<typename brP::targetP, false, USE_RAW_PAIRED_NTT64<brP>>;
+#endif
+
 template <class iksP, class brP, std::make_signed_t<typename brP::targetP::T> μ,
-          int casign, int cbsign, auto offset>
+          int casign, int cbsign, auto offset, bool StageMonomials64 = false, bool PairUnstaged64 = false>
 __device__ inline void __HomGate__(typename brP::targetP::T* const out,
                                    const typename iksP::domainP::T* const in0,
                                    const typename iksP::domainP::T* const in1,
@@ -1256,20 +1402,45 @@ __device__ inline void __HomGate__(typename brP::targetP::T* const out,
     __shared__
         typename iksP::targetP::T tlwe[iksP::targetP::k * iksP::targetP::n + 1];
 
-    IdentityKeySwitchPreAdd<iksP, casign, cbsign, offset>(tlwe, in0, in1, ksk);
+    extern __shared__ char dyn_sh[];
+    constexpr int prepared_count = (iksP::domainP::k * iksP::domainP::n -
+        (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) * iksP::t;
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
+    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl10param> &&
+                  prepared_count * sizeof(uint32_t) <= MEM4HOMGATE<typename brP::targetP>) {
+        IdentityKeySwitchPreAddPrepared<iksP, casign, cbsign, offset>(
+            tlwe, in0, in1, ksk, reinterpret_cast<uint32_t*>(dyn_sh));
+    } else if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                         prepared_count * sizeof(uint16_t) <=
+                             MEM4HOMGATE_DYN<typename brP::targetP>) {
+        IdentityKeySwitchPreAddPrepared16<iksP, casign, cbsign, offset>(
+            tlwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dyn_sh));
+    } else
+#endif
+    {
+        IdentityKeySwitchPreAdd<iksP, casign, cbsign, offset>(tlwe, in0, in1, ksk);
+    }
     __syncthreads();
 
-    extern __shared__ char dyn_sh[];
+#ifdef USE_FFT
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
+#else
+    constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP, StageMonomials64, PairUnstaged64>;
+#endif
     typename brP::targetP::T* trlwe =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
 
-    __BlindRotate__<brP>(trlwe, tlwe, μ, bk, ntt);
+#ifdef USE_FFT
+    __BlindRotate__<brP, StageMonomials64>(trlwe, tlwe, μ, bk, ntt);
+#else
+    __BlindRotate__<brP, StageMonomials64, PairUnstaged64, 0, true>(trlwe, tlwe, μ, bk, ntt);
+#endif
     __SampleExtractIndex__<typename brP::targetP, 0>(out, trlwe);
 }
 
 template <class brP, std::make_signed_t<typename brP::targetP::T> μ, class iksP,
-          int casign, int cbsign, auto offset>
+          int casign, int cbsign, auto offset, bool CacheOutputExponents = true>
 __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
                                    const typename brP::domainP::T* const in0,
                                    const typename brP::domainP::T* const in1,
@@ -1282,16 +1453,20 @@ __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
     typename brP::targetP::T* trlwe =
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
 
-    __BlindRotatePreAdd__<brP, casign, cbsign, offset>(trlwe, in0, in1, bk,
-                                                       ntt);
+    // Select the measured cache only for this single-blind-rotation binary schedule.
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+    if constexpr (CacheOutputExponents && std::is_same_v<brP, TFHEpp::lvl02param> &&
+                  std::is_same_v<typename iksP::targetP, typename brP::domainP>) {
+        __BlindRotatePreAdd__<brP, casign, cbsign, offset, true, true, true>(
+            trlwe, in0, in1, bk, ntt, out);
+    } else
+#endif
+    {
+        __BlindRotatePreAdd__<brP, casign, cbsign, offset, true, true>(
+            trlwe, in0, in1, bk, ntt);
+    }
 
-    // After BlindRotate, FFT workspace is free -- reuse for tlwe
-    typename brP::targetP::T* tlwe =
-        reinterpret_cast<typename brP::targetP::T*>(dyn_sh);
-    __SampleExtractIndex__<typename brP::targetP, 0>(tlwe, trlwe);
-    __syncthreads();
-
-    KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+    __KeySwitchAfterBlindRotate__<iksP, brP, true>(out, trlwe, ksk, dyn_sh);
 }
 
 #ifdef USE_KEY_BUNDLE
@@ -1562,6 +1737,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                                 ntt)
 {
     extern __shared__ char dyn_sh[];
+#if !defined(USE_FFT) && !defined(CUFHE_USE_HIP) &&     defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+    // Preserve all original inputs through both rotations; no output workspace.
+    constexpr bool adjacent64 =
+        std::is_same_v<brP, TFHEpp::lvl02param> && UseWarpNTTTail<64>;
+#else
+    constexpr bool adjacent64 = false;
+#endif
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
     constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
@@ -1573,8 +1755,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                 : reinterpret_cast<typename brP::targetP::T*>(
                       dyn_sh + fft_bytes + trlwe_bytes);
 
-    __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ>(trlwe1, inc, in1, bk,
-                                                       ntt);
+    __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ,
+                          adjacent64, false, false, adjacent64>(
+        trlwe1, inc, in1, bk, ntt);
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
     typename brP::targetP::T* tlwe =
@@ -1585,16 +1768,18 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
         __SampleExtractToRegisters__<typename brP::targetP, 0>(saved, trlwe1);
         __syncthreads();
 
-        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe1, inc, in0,
-                                                            bk, ntt);
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+                              adjacent64, false, false, adjacent64>(
+            trlwe1, inc, in0, bk, ntt);
         __SampleExtractRegistersCombine__<typename brP::targetP, 0, false>(
             tlwe, saved, trlwe1);
         if (tid == 0) tlwe[brP::targetP::k * brP::targetP::n] += μ;
         __syncthreads();
     }
     else {
-        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe0, inc, in0,
-                                                            bk, ntt);
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+                              adjacent64, false, false, adjacent64>(
+            trlwe0, inc, in0, bk, ntt);
 
         constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
 #pragma unroll
@@ -1606,7 +1791,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
         __syncthreads();
     }
 
-    KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+    __KeySwitchAfterBlindRotate__<iksP, brP, false>(out, tlwe, ksk, dyn_sh);
 }
 
 // NMux(inc,in1,in0) = !(inc?in1:in0) = !(inc&in1 + (!inc)&in0)
@@ -1626,6 +1811,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                                  ntt)
 {
     extern __shared__ char dyn_sh[];
+#if !defined(USE_FFT) && !defined(CUFHE_USE_HIP) &&     defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+    // Preserve all original inputs through both rotations; no output workspace.
+    constexpr bool adjacent64 =
+        std::is_same_v<brP, TFHEpp::lvl02param> && UseWarpNTTTail<64>;
+#else
+    constexpr bool adjacent64 = false;
+#endif
     constexpr size_t fft_bytes = MEM4HOMGATE<typename brP::targetP>;
     constexpr bool low_lds = USE_LOW_LDS_BOOTSTRAP<typename brP::targetP>;
     constexpr size_t trlwe_bytes = (brP::targetP::k + 1) * brP::targetP::n *
@@ -1637,8 +1829,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                 : reinterpret_cast<typename brP::targetP::T*>(
                       dyn_sh + fft_bytes + trlwe_bytes);
 
-    __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ>(trlwe1, inc, in1, bk,
-                                                       ntt);
+    __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ,
+                          adjacent64, false, false, adjacent64>(
+        trlwe1, inc, in1, bk, ntt);
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
     typename brP::targetP::T* tlwe =
@@ -1649,16 +1842,18 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
         __SampleExtractToRegisters__<typename brP::targetP, 0>(saved, trlwe1);
         __syncthreads();
 
-        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe1, inc, in0,
-                                                            bk, ntt);
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+                              adjacent64, false, false, adjacent64>(
+            trlwe1, inc, in0, bk, ntt);
         __SampleExtractRegistersCombine__<typename brP::targetP, 0, true>(
             tlwe, saved, trlwe1);
         if (tid == 0) tlwe[brP::targetP::k * brP::targetP::n] -= μ;
         __syncthreads();
     }
     else {
-        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ>(trlwe0, inc, in0,
-                                                            bk, ntt);
+        __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+                              adjacent64, false, false, adjacent64>(
+            trlwe0, inc, in0, bk, ntt);
 
         constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
 #pragma unroll
@@ -1671,7 +1866,65 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
         __syncthreads();
     }
 
-    KeySwitchFromTLWE<iksP>(out, tlwe, ksk);
+    __KeySwitchAfterBlindRotate__<iksP, brP, false>(out, tlwe, ksk, dyn_sh);
+}
+
+// Public NAND batch: each block runs the unchanged scalar fused operation.
+template <class brP, typename brP::targetP::T μ, class iksP>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>,
+                            MIN_BLOCKS4HOMGATE<typename brP::targetP>)
+void __NandBootstrapBatch__(
+    typename iksP::targetP::T* out, size_t out_stride,
+    const typename brP::domainP::T* in0, size_t in0_stride,
+    const typename brP::domainP::T* in1, size_t in1_stride,
+    const NTTValueFor<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>* bk,
+    const typename iksP::targetP::T* ksk,
+#ifdef USE_KEY_BUNDLE
+    const NTTValueFor<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>* one,
+    const NTTValueFor<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>* xai,
+#endif
+    CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8> ntt)
+{
+    const size_t i = blockIdx.x;
+#ifdef USE_KEY_BUNDLE
+    __HomGateKeyBundle__<brP, μ, iksP, -1, -1, brP::domainP::μ>(
+        out + i * out_stride, in0 + i * in0_stride, in1 + i * in1_stride,
+        bk, ksk, one, xai, ntt);
+#else
+    __HomGate__<brP, μ, iksP, -1, -1, brP::domainP::μ, false>(
+        out + i * out_stride, in0 + i * in0_stride, in1 + i * in1_stride,
+        bk, ksk, ntt);
+#endif
+}
+
+// All blocks share the evaluation key, while each block owns its TLWE/TRLWE
+// workspace and evaluates an independent ciphertext. No common-mask assumption.
+template <class iksP, class brP, typename brP::targetP::T μ, bool StageMonomials64 = false>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>,
+                            MIN_BLOCKS4HOMGATE<typename brP::targetP>)
+void __NandBootstrapBatch__(
+    typename brP::targetP::T* out, size_t out_stride,
+    const typename iksP::domainP::T* in0, size_t in0_stride,
+    const typename iksP::domainP::T* in1, size_t in1_stride,
+    const NTTValueFor<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>* bk,
+    const typename iksP::targetP::T* ksk,
+#ifdef USE_KEY_BUNDLE
+    const NTTValueFor<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>* one,
+    const NTTValueFor<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>* xai,
+#endif
+    CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8> ntt)
+{
+    const size_t i = blockIdx.x;
+#ifdef USE_KEY_BUNDLE
+    __HomGateKeyBundle__<iksP, brP, μ, -1, -1, iksP::domainP::μ>(
+        out + i * out_stride, in0 + i * in0_stride, in1 + i * in1_stride,
+        bk, ksk, one, xai, ntt);
+#else
+    __HomGate__<iksP, brP, μ, -1, -1, iksP::domainP::μ, StageMonomials64,
+                !StageMonomials64 && USE_RAW_PAIRED_NTT64<brP>>(
+        out + i * out_stride, in0 + i * in0_stride, in1 + i * in1_stride,
+        bk, ksk, ntt);
+#endif
 }
 
 // iks br ver.
@@ -1689,8 +1942,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                              const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                  ntt)
 {
-    __HomGate__<iksP, brP, μ, -1, -1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                        ntt);
+    __HomGate__<iksP, brP, μ, -1, -1, iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1706,8 +1960,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                             const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                 ntt)
 {
-    __HomGate__<iksP, brP, μ, -1, -1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                         ntt);
+    __HomGate__<iksP, brP, μ, -1, -1, -iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1724,8 +1979,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                              const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                  ntt)
 {
-    __HomGate__<iksP, brP, μ, -2, -2, -2 * iksP::domainP::μ>(out, in0, in1, bk,
-                                                             ksk, ntt);
+    __HomGate__<iksP, brP, μ, -2, -2, -2 * iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1741,8 +1997,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                             const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                 ntt)
 {
-    __HomGate__<iksP, brP, μ, 1, 1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                       ntt);
+    __HomGate__<iksP, brP, μ, 1, 1, -iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1758,8 +2015,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                            const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                ntt)
 {
-    __HomGate__<iksP, brP, μ, 1, 1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                      ntt);
+    __HomGate__<iksP, brP, μ, 1, 1, iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1775,8 +2033,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                             const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                 ntt)
 {
-    __HomGate__<iksP, brP, μ, 2, 2, 2 * iksP::domainP::μ>(out, in0, in1, bk,
-                                                          ksk, ntt);
+    __HomGate__<iksP, brP, μ, 2, 2, 2 * iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1793,8 +2052,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                               const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                   ntt)
 {
-    __HomGate__<iksP, brP, μ, -1, 1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                        ntt);
+    __HomGate__<iksP, brP, μ, -1, 1, -iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1811,8 +2071,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                               const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                   ntt)
 {
-    __HomGate__<iksP, brP, μ, 1, -1, -iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                        ntt);
+    __HomGate__<iksP, brP, μ, 1, -1, -iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1829,8 +2090,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                              const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                  ntt)
 {
-    __HomGate__<iksP, brP, μ, -1, 1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                       ntt);
+    __HomGate__<iksP, brP, μ, -1, 1, iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 template <class iksP = TFHEpp::lvl10param, class brP = TFHEpp::lvl01param,
@@ -1847,8 +2109,9 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                              const CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>
                                                  ntt)
 {
-    __HomGate__<iksP, brP, μ, 1, -1, iksP::domainP::μ>(out, in0, in1, bk, ksk,
-                                                       ntt);
+    __HomGate__<iksP, brP, μ, 1, -1, iksP::domainP::μ, false,
+                USE_RAW_PAIRED_NTT64<brP>>(
+        out, in0, in1, bk, ksk, ntt);
 }
 
 #ifdef USE_KEY_BUNDLE
@@ -2205,6 +2468,36 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHE
     __syncthreads();
 }
 
+// Finish raw MUX/NMux after an AND has written the first partial output.
+// A separate CTA launch keeps each blind rotation's register lifetime local.
+template <class iksP, class brP, typename brP::targetP::T mu, bool Negate>
+__global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP::targetP>,
+                            MIN_BLOCKS4HOMGATE<typename brP::targetP>)
+void __RawMuxCombine__(typename brP::targetP::T* out,
+    const typename iksP::domainP::T* selector,
+    const typename iksP::domainP::T* data_zero,
+    const NTTValueFor<brP::targetP::n, sizeof(typename brP::targetP::T) * 8>* bk,
+    const typename iksP::targetP::T* ksk,
+    CuNTTHandler<brP::targetP::n, sizeof(typename brP::targetP::T) * 8> ntt)
+{
+    using P = typename brP::targetP;
+    __shared__ typename iksP::targetP::T tlwe[iksP::targetP::k * iksP::targetP::n + 1];
+    extern __shared__ char dyn_sh[];
+    constexpr size_t prefix = MEM4RAWBINARYGATE_DYN<brP> -
+        (P::k + 1) * P::n * sizeof(typename P::T);
+    auto* trlwe = reinterpret_cast<typename P::T*>(dyn_sh + prefix);
+    __KeySwitchMuxPreAdd__<iksP, brP, -1, 1, -iksP::domainP::μ>(
+        tlwe, selector, data_zero, ksk, dyn_sh);
+    __syncthreads();
+    __BlindRotate__<brP, false, USE_RAW_PAIRED_NTT64<brP>>(
+        trlwe, tlwe, mu, bk, ntt);
+    __SampleExtractCombine__<P, 0, Negate>(out, trlwe);
+    if (threadIdx.x == 0) {
+        if constexpr (Negate) out[P::k * P::n] -= mu;
+        else out[P::k * P::n] += mu;
+    }
+}
+
 // Mux(inc,in1,in0) = inc?in1:in0 = inc&in1 + (!inc)&in0
 template <class iksP, class brP, typename brP::targetP::T μ>
 __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLOCKS4HOMGATE<typename brP:: targetP>) void __MuxBootstrap__(typename brP::targetP::T* const out,
@@ -2235,16 +2528,22 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                 : reinterpret_cast<typename brP::targetP::T*>(
                       dyn_sh + fft_bytes + trlwe_bytes);
 
-    IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
-                                                           ksk);
+    __KeySwitchMuxPreAdd__<iksP, brP, 1, 1, -iksP::domainP::μ>(
+        tlwelvl0, inc, in1, ksk, dyn_sh);
     __syncthreads();
-    __BlindRotate__<brP>(tlwe1, tlwelvl0, μ, bk, ntt);
-    __SampleExtractIndex__<typename brP::targetP, 0>(out, tlwe1);
+    // Exact carry lowering benefits this scalar 64-bit MUX schedule.
+    __BlindRotate__<brP, false, false,
+                    sizeof(typename brP::targetP::T) == 8>(tlwe1, tlwelvl0, μ, bk, ntt);
 
-    IdentityKeySwitchPreAdd<iksP, -1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in0,
-                                                            ksk);
+    __KeySwitchMuxPreAdd__<iksP, brP, -1, 1, -iksP::domainP::μ>(
+        tlwelvl0, inc, in0, ksk, dyn_sh);
     __syncthreads();
-    __BlindRotate__<brP>(tlwe0, tlwelvl0, μ, bk, ntt);
+    // Both key switches have consumed their inputs before any aliased write.
+    __SampleExtractIndex__<typename brP::targetP, 0>(out, tlwe1);
+    // The low-LDS layout reuses tlwe1 for the second blind rotation.
+    __syncthreads();
+    __BlindRotate__<brP, false, false,
+                    sizeof(typename brP::targetP::T) == 8>(tlwe0, tlwelvl0, μ, bk, ntt);
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
@@ -2293,16 +2592,22 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                 : reinterpret_cast<typename brP::targetP::T*>(
                       dyn_sh + fft_bytes + trlwe_bytes);
 
-    IdentityKeySwitchPreAdd<iksP, 1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in1,
-                                                           ksk);
+    __KeySwitchMuxPreAdd__<iksP, brP, 1, 1, -iksP::domainP::μ>(
+        tlwelvl0, inc, in1, ksk, dyn_sh);
     __syncthreads();
-    __BlindRotate__<brP>(tlwe1, tlwelvl0, μ, bk, ntt);
-    __SampleExtractIndex__<typename brP::targetP, 0>(out, tlwe1);
+    // Exact carry lowering benefits this scalar 64-bit MUX schedule.
+    __BlindRotate__<brP, false, false,
+                    sizeof(typename brP::targetP::T) == 8>(tlwe1, tlwelvl0, μ, bk, ntt);
 
-    IdentityKeySwitchPreAdd<iksP, -1, 1, -iksP::domainP::μ>(tlwelvl0, inc, in0,
-                                                            ksk);
+    __KeySwitchMuxPreAdd__<iksP, brP, -1, 1, -iksP::domainP::μ>(
+        tlwelvl0, inc, in0, ksk, dyn_sh);
     __syncthreads();
-    __BlindRotate__<brP>(tlwe0, tlwelvl0, μ, bk, ntt);
+    // Both key switches have consumed their inputs before any aliased write.
+    __SampleExtractIndex__<typename brP::targetP, 0>(out, tlwe1);
+    // The low-LDS layout reuses tlwe1 for the second blind rotation.
+    __syncthreads();
+    __BlindRotate__<brP, false, false,
+                    sizeof(typename brP::targetP::T) == 8>(tlwe0, tlwelvl0, μ, bk, ntt);
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
@@ -2324,8 +2629,11 @@ void Bootstrap(TFHEpp::lvl0param::T* const out,
                const TFHEpp::lvl0param::T* const in, const lvl1param::T mu,
                const cudaStream_t st, const int gpuNum)
 {
+    constexpr size_t shared_bytes = MEM4HOMGATE<TFHEpp::lvl1param>;
+    CuSafeCall(cudaFuncSetAttribute(__Bootstrap__<lvl01param, lvl10param>,
+        cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
     __Bootstrap__<lvl01param, lvl10param>
-        <<<1, NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, 0, st>>>(
+        <<<1, NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, shared_bytes, st>>>(
             out, in, mu, bk_ntts[gpuNum], ksk_devs[gpuNum],
             *ntt_handlers[gpuNum]);
     CuCheckError();
@@ -2481,18 +2789,18 @@ void NandBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__NandBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __NandBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __NandBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -2508,6 +2816,932 @@ void NandBootstrap(typename brP::targetP::T* const out,
 INST(TFHEpp::lvl10param, TFHEpp::lvl01param, TFHEpp::lvl1param::μ);
 INST(TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::lvl2param::μ);
 #undef INST
+
+template <class brP, typename brP::targetP::T μ, class iksP>
+void NandBootstrapBatch(
+    typename iksP::targetP::T* out, size_t out_stride,
+    const typename brP::domainP::T* in0, size_t in0_stride,
+    const typename brP::domainP::T* in1, size_t in1_stride,
+    uint32_t count, cudaStream_t st, int gpuNum)
+{
+    if (count == 0) return;
+    constexpr size_t out_elements = iksP::targetP::k * iksP::targetP::n + 1;
+    constexpr size_t in_elements = brP::domainP::k * brP::domainP::n + 1;
+    if (out_stride < out_elements || in0_stride < in_elements ||
+        in1_stride < in_elements)
+        throw std::invalid_argument("NandBootstrapBatch: TLWE stride is too small");
+    CuSafeCall(cudaSetDevice(gpuNum));
+    if (count == 1) {
+        NandBootstrap<brP, μ, iksP>(out, in0, in1, st, gpuNum);
+        return;
+    }
+    auto& handlers = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return ntt_handlers_lvl02;
+        else
+            return ntt_handlers;
+    }();
+    auto& keys = BootstrappingKeyStorage<typename brP::targetP>();
+    auto& switching_keys = sizeof(typename brP::targetP::T) == 8
+                               ? ksk_devs_lvl20 : ksk_devs;
+#ifdef USE_KEY_BUNDLE
+    auto& ones = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return one_trgsw_ntt_devs_lvl02;
+        else
+            return one_trgsw_ntt_devs;
+    }();
+    auto& monomials = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return xai_ntt_devs_lvl02;
+        else
+            return xai_ntt_devs;
+    }();
+#endif
+    constexpr size_t shared_bytes = MEM4HOMGATE_DYN<typename brP::targetP>;
+    CuSafeCall(cudaFuncSetAttribute(__NandBootstrapBatch__<brP, μ, iksP>,
+        cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
+    __NandBootstrapBatch__<brP, μ, iksP>
+        <<<count, NUM_THREAD4HOMGATE<typename brP::targetP>, shared_bytes, st>>>(
+            out, out_stride, in0, in0_stride, in1, in1_stride,
+            keys[gpuNum], switching_keys[gpuNum],
+#ifdef USE_KEY_BUNDLE
+            ones[gpuNum], monomials[gpuNum],
+#endif
+            *handlers[gpuNum]);
+    CuCheckError();
+}
+
+template void NandBootstrapBatch<TFHEpp::lvl01param, TFHEpp::lvl1param::μ, TFHEpp::lvl10param>(
+    TFHEpp::lvl0param::T*, size_t, const TFHEpp::lvl0param::T*, size_t,
+    const TFHEpp::lvl0param::T*, size_t, uint32_t, cudaStream_t, int);
+template void NandBootstrapBatch<TFHEpp::lvl02param, TFHEpp::lvl2param::μ, TFHEpp::lvl20param>(
+    TFHEpp::lvl0param::T*, size_t, const TFHEpp::lvl0param::T*, size_t,
+    const TFHEpp::lvl0param::T*, size_t, uint32_t, cudaStream_t, int);
+
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+namespace {
+namespace cg = cooperative_groups;
+using CoopBR = TFHEpp::lvl02param;
+using CoopKS = TFHEpp::lvl20param;
+using CoopTarget = CoopBR::targetP;
+using CoopWord = CoopTarget::T;
+constexpr int CoopN = CoopTarget::n;
+constexpr int CoopRows = BootstrappingTRGSWRows<CoopTarget>;
+constexpr int CoopThreads = CoopN / 2;
+constexpr size_t CoopKeyWords = size_t(CoopRows) * (CoopTarget::k + 1) * CoopN;
+constexpr size_t CoopScratchBytes =
+    (CoopRows + 1) * (CoopTarget::k + 1) * CoopN * sizeof(CoopWord) +
+    CoopBR::domainP::n * sizeof(CoopBR::domainP::T);
+// Exponents are uint16_t; round the next sample's state up to uint64_t alignment.
+constexpr size_t CoopScratchWords =
+    (CoopScratchBytes + sizeof(CoopWord) - 1) / sizeof(CoopWord);
+constexpr size_t CoopSharedBytes = 65536;
+static_assert(CoopN == 1024 && CoopTarget::k == 2 && CoopRows == 9 &&
+              CoopBR::domainP::ell == 2);
+static_assert(CoopTarget::l == CoopTarget::lₐ &&
+              CoopTarget::Bgbit == CoopTarget::Bgₐbit);
+
+// Small independent batches trade extra SMs and global partial sums for latency.
+// Every sample has nine row CTAs. All CTAs participate in every grid barrier;
+// the host only launches a grid that can be resident in full.
+__global__ __launch_bounds__(CoopThreads, 1)
+void CooperativeNandBatchKernel(
+    CoopWord* out, size_t out_stride,
+    const CoopWord* in0, size_t in0_stride,
+    const CoopWord* in1, size_t in1_stride,
+    const uint64_t* bk, const CoopKS::targetP::T* ksk,
+    CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
+{
+    auto grid = cg::this_grid();
+    const int tid = threadIdx.x;
+    const int row = blockIdx.x % CoopRows, sample = blockIdx.x / CoopRows;
+    out += sample * out_stride;
+    in0 += sample * in0_stride;
+    in1 += sample * in1_stride;
+    scratch += sample * CoopScratchWords;
+    extern __shared__ __align__(16) unsigned char dynamic_shared[];
+    auto* work = reinterpret_cast<uint64_t*>(dynamic_shared);
+    __shared__ CoopBR::domainP::T lwe[CoopBR::domainP::n + 1];
+    auto* state = scratch;
+    auto* partial = state + (CoopTarget::k + 1) * CoopN;
+    auto* powers = reinterpret_cast<CoopBR::domainP::T*>(
+        partial + CoopRows * (CoopTarget::k + 1) * CoopN);
+    // Mutable cross-CTA state must not use the read-only cache (__ldg).
+    volatile CoopWord* state_read = state;
+    volatile CoopWord* partial_rw = partial;
+    volatile CoopBR::domainP::T* power_read = powers;
+    if (row == 0) {
+        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        __syncthreads();
+        const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
+        constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
+            (std::numeric_limits<CoopBR::domainP::T>::digits - 2 - CoopTarget::nbit);
+        const CoopBR::domainP::T corrected =
+            lwe[CoopBR::domainP::n] - correction / 2 + roundoffset;
+        const uint32_t bar = 2 * CoopN - modSwitchFromTorus<CoopBR>(corrected);
+        RotatedTestVector<CoopTarget>(state, bar, CoopTarget::μ);
+        for (int i = tid; i < CoopBR::domainP::n; i += CoopThreads)
+            powers[i] = modSwitchFromTorus<CoopBR>(lwe[i] + roundoffset);
+    }
+    grid.sync();
+    constexpr CoopWord offset = offsetgen<CoopTarget>() +
+        (CoopWord{1} << (64 - CoopTarget::l * CoopTarget::Bgbit - 1));
+    for (uint32_t block = 0;
+         block < CoopBR::domainP::n / CoopBR::domainP::ell; ++block) {
+        const uint32_t a0 = power_read[2 * block], a1 = power_read[2 * block + 1];
+        const int component = row / CoopTarget::l, digit = row % CoopTarget::l;
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+            const CoopWord value = state_read[component * CoopN + i] + offset;
+            const int32_t decomp = int32_t((value >>
+                (64 - (digit + 1) * CoopTarget::Bgbit)) & (CoopTarget::Bg - 1)) -
+                CoopTarget::Bg / 2;
+            work[i] = signed_int_to_ntt_mod<CoopN, 64>(decomp);
+        }
+        __syncthreads();
+        SmallForwardNTT<CoopTarget::nbit, 64, false, 2>(work, ntt.forward_root_, tid);
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+            const auto x0 = __ldg(block_xai_fft_lvl02 + a0 * CoopN + i);
+            const auto x1 = __ldg(block_xai_fft_lvl02 + a1 * CoopN + i);
+            const auto d0 = small_mod64_mult<2>(work[i], x0);
+            const auto d1 = small_mod64_mult<2>(work[i], x1);
+#pragma unroll
+            for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly) {
+                const size_t local = (row * (CoopTarget::k + 1) + outpoly) * CoopN + i;
+                const size_t index = block * 2 * CoopKeyWords + local;
+                partial_rw[local] = small_mod64_madd2<2>(
+                    d0, __ldg(bk + index), d1, __ldg(bk + index + CoopKeyWords), 0);
+            }
+        }
+        grid.sync();
+        if (row <= CoopTarget::k) {
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                uint64_t sum = 0;
+#pragma unroll
+                for (int source = 0; source < CoopRows; ++source)
+                    sum = small_mod64_add<2>(sum,
+                        partial_rw[(source * (CoopTarget::k + 1) + row) * CoopN + i]);
+                work[i] = sum;
+            }
+            __syncthreads();
+            SmallInverseNTT<CoopTarget::nbit, 64, 2>(
+                work, ntt.inverse_root_, ntt.n_inverse_, tid);
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                state[row * CoopN + i] = state_read[row * CoopN + i] +
+                    ntt_mod_to_torus64<CoopN, 64, true>(work[i]);
+            }
+        }
+        grid.sync();
+    }
+    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+}
+
+// Three row groups reduce cross-block partial storage for medium batches.
+constexpr int CoopThreeGroups = 3;
+constexpr size_t CoopThreeScratchBytes =
+    (CoopThreeGroups + 1) * (CoopTarget::k + 1) * CoopN * sizeof(CoopWord) +
+    CoopBR::domainP::n * sizeof(CoopBR::domainP::T);
+constexpr size_t CoopThreeScratchWords =
+    (CoopThreeScratchBytes + sizeof(CoopWord) - 1) / sizeof(CoopWord);
+
+__global__ __launch_bounds__(CoopThreads, 1)
+void CooperativeNandBatchThreeKernel(
+    CoopWord* out, size_t out_stride,
+    const CoopWord* in0, size_t in0_stride,
+    const CoopWord* in1, size_t in1_stride,
+    const uint64_t* bk, const CoopKS::targetP::T* ksk,
+    CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
+{
+    auto grid = cg::this_grid();
+    const int tid = threadIdx.x;
+    const int row = blockIdx.x % CoopThreeGroups, sample = blockIdx.x / CoopThreeGroups;
+    out += sample * out_stride;
+    in0 += sample * in0_stride;
+    in1 += sample * in1_stride;
+    scratch += sample * CoopThreeScratchWords;
+    extern __shared__ __align__(16) unsigned char dynamic_shared[];
+    auto* work = reinterpret_cast<uint64_t*>(dynamic_shared);
+    __shared__ CoopBR::domainP::T lwe[CoopBR::domainP::n + 1];
+    auto* state = scratch;
+    auto* partial = state + (CoopTarget::k + 1) * CoopN;
+    auto* powers = reinterpret_cast<CoopBR::domainP::T*>(
+        partial + CoopThreeGroups * (CoopTarget::k + 1) * CoopN);
+    // Mutable cross-CTA state must not use the read-only cache (__ldg).
+    volatile CoopWord* state_read = state;
+    volatile CoopWord* partial_rw = partial;
+    volatile CoopBR::domainP::T* power_read = powers;
+    if (row == 0) {
+        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        __syncthreads();
+        const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
+        constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
+            (std::numeric_limits<CoopBR::domainP::T>::digits - 2 - CoopTarget::nbit);
+        const CoopBR::domainP::T corrected =
+            lwe[CoopBR::domainP::n] - correction / 2 + roundoffset;
+        const uint32_t bar = 2 * CoopN - modSwitchFromTorus<CoopBR>(corrected);
+        RotatedTestVector<CoopTarget>(state, bar, CoopTarget::μ);
+        for (int i = tid; i < CoopBR::domainP::n; i += CoopThreads)
+            powers[i] = modSwitchFromTorus<CoopBR>(lwe[i] + roundoffset);
+    }
+    grid.sync();
+    constexpr CoopWord offset = offsetgen<CoopTarget>() +
+        (CoopWord{1} << (64 - CoopTarget::l * CoopTarget::Bgbit - 1));
+    for (uint32_t block = 0;
+         block < CoopBR::domainP::n / CoopBR::domainP::ell; ++block) {
+        const uint32_t a0 = power_read[2 * block], a1 = power_read[2 * block + 1];
+        auto* sums = work + 2 * CoopN;
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+#pragma unroll
+            for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly)
+                sums[outpoly * CoopN + i] = 0;
+        }
+#pragma unroll
+        for (int step = 0; step < 2; ++step) {
+            const int first = row * CoopRows / CoopThreeGroups + 2 * step;
+            const int limit = (row + 1) * CoopRows / CoopThreeGroups;
+            if (first < limit) {
+                const bool paired = first + 1 < limit;
+#pragma unroll
+                for (int which = 0; which < 2; ++which) {
+                    if (which == 0 || paired) {
+                        const int source_row = first + which;
+                        const int component = source_row / CoopTarget::l;
+                        const int digit = source_row % CoopTarget::l;
+#pragma unroll
+                        for (int e = 0; e < 2; ++e) {
+                            const int i = tid + e * CoopThreads;
+                            const CoopWord value = state_read[component * CoopN + i] + offset;
+                            const int32_t decomp = int32_t((value >>
+                                (64 - (digit + 1) * CoopTarget::Bgbit)) & (CoopTarget::Bg - 1)) -
+                                CoopTarget::Bg / 2;
+                            work[which * CoopN + i] = signed_int_to_ntt_mod<CoopN, 64>(decomp);
+                        }
+                    }
+                }
+                __syncthreads();
+                if (paired)
+                    SmallForwardNTTPair64<CoopTarget::nbit, false, 2, false>(
+                        work, work + CoopN, ntt.forward_root_, tid);
+                else
+                    SmallForwardNTT<CoopTarget::nbit, 64, false, 2>(work, ntt.forward_root_, tid);
+#pragma unroll
+                for (int e = 0; e < 2; ++e) {
+                    const int i = tid + e * CoopThreads;
+                    const auto x0 = __ldg(block_xai_fft_lvl02 + a0 * CoopN + i);
+                    const auto x1 = __ldg(block_xai_fft_lvl02 + a1 * CoopN + i);
+                    const auto d0 = small_mod64_mult<2>(work[i], x0);
+                    const auto d1 = small_mod64_mult<2>(work[i], x1);
+                    if (paired) {
+                        const auto d2 = small_mod64_mult<2>(work[CoopN + i], x0);
+                        const auto d3 = small_mod64_mult<2>(work[CoopN + i], x1);
+#pragma unroll
+                        for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly) {
+                            const size_t index = block * 2 * CoopKeyWords +
+                                (first * (CoopTarget::k + 1) + outpoly) * CoopN + i;
+                            sums[outpoly * CoopN + i] = small_mod64_madd4<2>(
+                                d0, __ldg(bk + index), d1, __ldg(bk + index + CoopKeyWords),
+                                d2, __ldg(bk + index + (CoopTarget::k + 1) * CoopN),
+                                d3, __ldg(bk + index + CoopKeyWords + (CoopTarget::k + 1) * CoopN),
+                                sums[outpoly * CoopN + i]);
+                        }
+                    } else {
+#pragma unroll
+                        for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly) {
+                            const size_t index = block * 2 * CoopKeyWords +
+                                (first * (CoopTarget::k + 1) + outpoly) * CoopN + i;
+                            sums[outpoly * CoopN + i] = small_mod64_madd2<2>(
+                                d0, __ldg(bk + index), d1, __ldg(bk + index + CoopKeyWords),
+                                sums[outpoly * CoopN + i]);
+                        }
+                    }
+                }
+                __syncthreads();
+            }
+        }
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+#pragma unroll
+            for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly)
+                partial_rw[(row * (CoopTarget::k + 1) + outpoly) * CoopN + i] =
+                    sums[outpoly * CoopN + i];
+        }
+        grid.sync();
+        if (row <= CoopTarget::k) {
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                uint64_t sum = 0;
+#pragma unroll
+                for (int source = 0; source < CoopThreeGroups; ++source)
+                    sum = small_mod64_add<2>(sum,
+                        partial_rw[(source * (CoopTarget::k + 1) + row) * CoopN + i]);
+                work[i] = sum;
+            }
+            __syncthreads();
+            SmallInverseNTT<CoopTarget::nbit, 64, 2>(
+                work, ntt.inverse_root_, ntt.n_inverse_, tid);
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                state[row * CoopN + i] = state_read[row * CoopN + i] +
+                    ntt_mod_to_torus64<CoopN, 64, true>(work[i]);
+            }
+        }
+        grid.sync();
+    }
+    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+}
+
+// Two blocks cover batches beyond the three-block resident limit. Rows 0..3
+// use two forward pairs and own inverse polynomials 0/1; rows 4..8 use two
+// forward pairs plus one scalar transform and own inverse polynomial 2.
+constexpr int CoopTwoGroups = 2;
+constexpr size_t CoopTwoScratchBytes =
+    (CoopTwoGroups + 1) * (CoopTarget::k + 1) * CoopN * sizeof(CoopWord) +
+    CoopBR::domainP::n * sizeof(CoopBR::domainP::T);
+constexpr size_t CoopTwoScratchWords =
+    (CoopTwoScratchBytes + sizeof(CoopWord) - 1) / sizeof(CoopWord);
+
+__global__ __launch_bounds__(CoopThreads, 1)
+void CooperativeNandBatchTwoKernel(
+    CoopWord* out, size_t out_stride,
+    const CoopWord* in0, size_t in0_stride,
+    const CoopWord* in1, size_t in1_stride,
+    const uint64_t* bk, const CoopKS::targetP::T* ksk,
+    CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
+{
+    auto grid = cg::this_grid();
+    const int tid = threadIdx.x;
+    const int row = blockIdx.x % CoopTwoGroups, sample = blockIdx.x / CoopTwoGroups;
+    out += sample * out_stride;
+    in0 += sample * in0_stride;
+    in1 += sample * in1_stride;
+    scratch += sample * CoopTwoScratchWords;
+    extern __shared__ __align__(16) unsigned char dynamic_shared[];
+    auto* work = reinterpret_cast<uint64_t*>(dynamic_shared);
+    __shared__ CoopBR::domainP::T lwe[CoopBR::domainP::n + 1];
+    auto* state = scratch;
+    auto* partial = state + (CoopTarget::k + 1) * CoopN;
+    auto* powers = reinterpret_cast<CoopBR::domainP::T*>(
+        partial + CoopTwoGroups * (CoopTarget::k + 1) * CoopN);
+    // Mutable cross-CTA state must not use the read-only cache (__ldg).
+    volatile CoopWord* state_read = state;
+    volatile CoopWord* partial_rw = partial;
+    volatile CoopBR::domainP::T* power_read = powers;
+    if (row == 0) {
+        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        __syncthreads();
+        const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
+        constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
+            (std::numeric_limits<CoopBR::domainP::T>::digits - 2 - CoopTarget::nbit);
+        const CoopBR::domainP::T corrected =
+            lwe[CoopBR::domainP::n] - correction / 2 + roundoffset;
+        const uint32_t bar = 2 * CoopN - modSwitchFromTorus<CoopBR>(corrected);
+        RotatedTestVector<CoopTarget>(state, bar, CoopTarget::μ);
+        for (int i = tid; i < CoopBR::domainP::n; i += CoopThreads)
+            powers[i] = modSwitchFromTorus<CoopBR>(lwe[i] + roundoffset);
+    }
+    grid.sync();
+    constexpr CoopWord offset = offsetgen<CoopTarget>() +
+        (CoopWord{1} << (64 - CoopTarget::l * CoopTarget::Bgbit - 1));
+    for (uint32_t block = 0;
+         block < CoopBR::domainP::n / CoopBR::domainP::ell; ++block) {
+        const uint32_t a0 = power_read[2 * block], a1 = power_read[2 * block + 1];
+        auto* sums = work + 2 * CoopN;
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+#pragma unroll
+            for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly)
+                sums[outpoly * CoopN + i] = 0;
+        }
+#pragma unroll
+        for (int step = 0; step < 3; ++step) {
+            const int first = row * CoopRows / CoopTwoGroups + 2 * step;
+            const int limit = (row + 1) * CoopRows / CoopTwoGroups;
+            if (first < limit) {
+                const bool paired = first + 1 < limit;
+#pragma unroll
+                for (int which = 0; which < 2; ++which) {
+                    if (which == 0 || paired) {
+                        const int source_row = first + which;
+                        const int component = source_row / CoopTarget::l;
+                        const int digit = source_row % CoopTarget::l;
+#pragma unroll
+                        for (int e = 0; e < 2; ++e) {
+                            const int i = tid + e * CoopThreads;
+                            const CoopWord value = state_read[component * CoopN + i] + offset;
+                            const int32_t decomp = int32_t((value >>
+                                (64 - (digit + 1) * CoopTarget::Bgbit)) & (CoopTarget::Bg - 1)) -
+                                CoopTarget::Bg / 2;
+                            work[which * CoopN + i] = signed_int_to_ntt_mod<CoopN, 64>(decomp);
+                        }
+                    }
+                }
+                __syncthreads();
+                if (paired)
+                    SmallForwardNTTPair64<CoopTarget::nbit, false, 2, false>(
+                        work, work + CoopN, ntt.forward_root_, tid);
+                else
+                    SmallForwardNTT<CoopTarget::nbit, 64, false, 2>(work, ntt.forward_root_, tid);
+#pragma unroll
+                for (int e = 0; e < 2; ++e) {
+                    const int i = tid + e * CoopThreads;
+                    const auto x0 = __ldg(block_xai_fft_lvl02 + a0 * CoopN + i);
+                    const auto x1 = __ldg(block_xai_fft_lvl02 + a1 * CoopN + i);
+                    const auto d0 = small_mod64_mult<2>(work[i], x0);
+                    const auto d1 = small_mod64_mult<2>(work[i], x1);
+                    if (paired) {
+                        const auto d2 = small_mod64_mult<2>(work[CoopN + i], x0);
+                        const auto d3 = small_mod64_mult<2>(work[CoopN + i], x1);
+#pragma unroll
+                        for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly) {
+                            const size_t index = block * 2 * CoopKeyWords +
+                                (first * (CoopTarget::k + 1) + outpoly) * CoopN + i;
+                            sums[outpoly * CoopN + i] = small_mod64_madd4<2>(
+                                d0, __ldg(bk + index), d1, __ldg(bk + index + CoopKeyWords),
+                                d2, __ldg(bk + index + (CoopTarget::k + 1) * CoopN),
+                                d3, __ldg(bk + index + CoopKeyWords + (CoopTarget::k + 1) * CoopN),
+                                sums[outpoly * CoopN + i]);
+                        }
+                    } else {
+#pragma unroll
+                        for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly) {
+                            const size_t index = block * 2 * CoopKeyWords +
+                                (first * (CoopTarget::k + 1) + outpoly) * CoopN + i;
+                            sums[outpoly * CoopN + i] = small_mod64_madd2<2>(
+                                d0, __ldg(bk + index), d1, __ldg(bk + index + CoopKeyWords),
+                                sums[outpoly * CoopN + i]);
+                        }
+                    }
+                }
+                __syncthreads();
+            }
+        }
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+#pragma unroll
+            for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly)
+                partial_rw[(row * (CoopTarget::k + 1) + outpoly) * CoopN + i] =
+                    sums[outpoly * CoopN + i];
+        }
+        grid.sync();
+        if (row == 0) {
+#pragma unroll
+            for (int poly = 0; poly < 2; ++poly) {
+#pragma unroll
+                for (int e = 0; e < 2; ++e) {
+                    const int i = tid + e * CoopThreads;
+                    uint64_t sum = 0;
+#pragma unroll
+                    for (int source = 0; source < CoopTwoGroups; ++source)
+                        sum = small_mod64_add<2>(sum,
+                            partial_rw[(source * (CoopTarget::k + 1) + poly) * CoopN + i]);
+                    work[poly * CoopN + i] = sum;
+                }
+            }
+            __syncthreads();
+            SmallInverseNTTPair64<CoopTarget::nbit, 2, false>(
+                work, work + CoopN, ntt.inverse_root_, ntt.n_inverse_, tid);
+#pragma unroll
+            for (int poly = 0; poly < 2; ++poly) {
+#pragma unroll
+                for (int e = 0; e < 2; ++e) {
+                    const int i = tid + e * CoopThreads;
+                    state[poly * CoopN + i] = state_read[poly * CoopN + i] +
+                        ntt_mod_to_torus64<CoopN, 64, true>(work[poly * CoopN + i]);
+                }
+            }
+        } else {
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                uint64_t sum = 0;
+#pragma unroll
+                for (int source = 0; source < CoopTwoGroups; ++source)
+                    sum = small_mod64_add<2>(sum,
+                        partial_rw[(source * (CoopTarget::k + 1) + 2) * CoopN + i]);
+                work[i] = sum;
+            }
+            __syncthreads();
+            SmallInverseNTT<CoopTarget::nbit, 64, 2>(
+                work, ntt.inverse_root_, ntt.n_inverse_, tid);
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                state[2 * CoopN + i] = state_read[2 * CoopN + i] +
+                    ntt_mod_to_torus64<CoopN, 64, true>(work[i]);
+            }
+        }
+        grid.sync();
+    }
+    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+}
+
+// Five groups partition the nine existing rows into groups of one or two.
+constexpr int CoopFiveGroups = 5;
+constexpr size_t CoopFiveScratchBytes =
+    (CoopFiveGroups + 1) * (CoopTarget::k + 1) * CoopN * sizeof(CoopWord) +
+    CoopBR::domainP::n * sizeof(CoopBR::domainP::T);
+constexpr size_t CoopFiveScratchWords =
+    (CoopFiveScratchBytes + sizeof(CoopWord) - 1) / sizeof(CoopWord);
+
+__global__ __launch_bounds__(CoopThreads, 1)
+void CooperativeNandBatchFiveKernel(
+    CoopWord* out, size_t out_stride,
+    const CoopWord* in0, size_t in0_stride,
+    const CoopWord* in1, size_t in1_stride,
+    const uint64_t* bk, const CoopKS::targetP::T* ksk,
+    CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
+{
+    auto grid = cg::this_grid();
+    const int tid = threadIdx.x;
+    const int row = blockIdx.x % CoopFiveGroups, sample = blockIdx.x / CoopFiveGroups;
+    out += sample * out_stride;
+    in0 += sample * in0_stride;
+    in1 += sample * in1_stride;
+    scratch += sample * CoopFiveScratchWords;
+    extern __shared__ __align__(16) unsigned char dynamic_shared[];
+    auto* work = reinterpret_cast<uint64_t*>(dynamic_shared);
+    __shared__ CoopBR::domainP::T lwe[CoopBR::domainP::n + 1];
+    auto* state = scratch;
+    auto* partial = state + (CoopTarget::k + 1) * CoopN;
+    auto* powers = reinterpret_cast<CoopBR::domainP::T*>(
+        partial + CoopFiveGroups * (CoopTarget::k + 1) * CoopN);
+    // Mutable cross-CTA state must not use the read-only cache (__ldg).
+    volatile CoopWord* state_read = state;
+    volatile CoopWord* partial_rw = partial;
+    volatile CoopBR::domainP::T* power_read = powers;
+    if (row == 0) {
+        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        __syncthreads();
+        const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
+        constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
+            (std::numeric_limits<CoopBR::domainP::T>::digits - 2 - CoopTarget::nbit);
+        const CoopBR::domainP::T corrected =
+            lwe[CoopBR::domainP::n] - correction / 2 + roundoffset;
+        const uint32_t bar = 2 * CoopN - modSwitchFromTorus<CoopBR>(corrected);
+        RotatedTestVector<CoopTarget>(state, bar, CoopTarget::μ);
+        for (int i = tid; i < CoopBR::domainP::n; i += CoopThreads)
+            powers[i] = modSwitchFromTorus<CoopBR>(lwe[i] + roundoffset);
+    }
+    grid.sync();
+    constexpr CoopWord offset = offsetgen<CoopTarget>() +
+        (CoopWord{1} << (64 - CoopTarget::l * CoopTarget::Bgbit - 1));
+    for (uint32_t block = 0;
+         block < CoopBR::domainP::n / CoopBR::domainP::ell; ++block) {
+        const uint32_t a0 = power_read[2 * block], a1 = power_read[2 * block + 1];
+        auto* sums = work + 2 * CoopN;
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+#pragma unroll
+            for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly)
+                sums[outpoly * CoopN + i] = 0;
+        }
+#pragma unroll
+        for (int step = 0; step < 1; ++step) {
+            const int first = row * CoopRows / CoopFiveGroups + 2 * step;
+            const int limit = (row + 1) * CoopRows / CoopFiveGroups;
+            if (first < limit) {
+                const bool paired = first + 1 < limit;
+#pragma unroll
+                for (int which = 0; which < 2; ++which) {
+                    if (which == 0 || paired) {
+                        const int source_row = first + which;
+                        const int component = source_row / CoopTarget::l;
+                        const int digit = source_row % CoopTarget::l;
+#pragma unroll
+                        for (int e = 0; e < 2; ++e) {
+                            const int i = tid + e * CoopThreads;
+                            const CoopWord value = state_read[component * CoopN + i] + offset;
+                            const int32_t decomp = int32_t((value >>
+                                (64 - (digit + 1) * CoopTarget::Bgbit)) & (CoopTarget::Bg - 1)) -
+                                CoopTarget::Bg / 2;
+                            work[which * CoopN + i] = signed_int_to_ntt_mod<CoopN, 64>(decomp);
+                        }
+                    }
+                }
+                __syncthreads();
+                if (paired)
+                    SmallForwardNTTPair64<CoopTarget::nbit, false, 2, false>(
+                        work, work + CoopN, ntt.forward_root_, tid);
+                else
+                    SmallForwardNTT<CoopTarget::nbit, 64, false, 2>(work, ntt.forward_root_, tid);
+#pragma unroll
+                for (int e = 0; e < 2; ++e) {
+                    const int i = tid + e * CoopThreads;
+                    const auto x0 = __ldg(block_xai_fft_lvl02 + a0 * CoopN + i);
+                    const auto x1 = __ldg(block_xai_fft_lvl02 + a1 * CoopN + i);
+                    const auto d0 = small_mod64_mult<2>(work[i], x0);
+                    const auto d1 = small_mod64_mult<2>(work[i], x1);
+                    if (paired) {
+                        const auto d2 = small_mod64_mult<2>(work[CoopN + i], x0);
+                        const auto d3 = small_mod64_mult<2>(work[CoopN + i], x1);
+#pragma unroll
+                        for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly) {
+                            const size_t index = block * 2 * CoopKeyWords +
+                                (first * (CoopTarget::k + 1) + outpoly) * CoopN + i;
+                            sums[outpoly * CoopN + i] = small_mod64_madd4<2>(
+                                d0, __ldg(bk + index), d1, __ldg(bk + index + CoopKeyWords),
+                                d2, __ldg(bk + index + (CoopTarget::k + 1) * CoopN),
+                                d3, __ldg(bk + index + CoopKeyWords + (CoopTarget::k + 1) * CoopN),
+                                sums[outpoly * CoopN + i]);
+                        }
+                    } else {
+#pragma unroll
+                        for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly) {
+                            const size_t index = block * 2 * CoopKeyWords +
+                                (first * (CoopTarget::k + 1) + outpoly) * CoopN + i;
+                            sums[outpoly * CoopN + i] = small_mod64_madd2<2>(
+                                d0, __ldg(bk + index), d1, __ldg(bk + index + CoopKeyWords),
+                                sums[outpoly * CoopN + i]);
+                        }
+                    }
+                }
+                __syncthreads();
+            }
+        }
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * CoopThreads;
+#pragma unroll
+            for (int outpoly = 0; outpoly <= CoopTarget::k; ++outpoly)
+                partial_rw[(row * (CoopTarget::k + 1) + outpoly) * CoopN + i] =
+                    sums[outpoly * CoopN + i];
+        }
+        grid.sync();
+        if (row <= CoopTarget::k) {
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                uint64_t sum = 0;
+#pragma unroll
+                for (int source = 0; source < CoopFiveGroups; ++source)
+                    sum = small_mod64_add<2>(sum,
+                        partial_rw[(source * (CoopTarget::k + 1) + row) * CoopN + i]);
+                work[i] = sum;
+            }
+            __syncthreads();
+            SmallInverseNTT<CoopTarget::nbit, 64, 2>(
+                work, ntt.inverse_root_, ntt.n_inverse_, tid);
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const int i = tid + e * CoopThreads;
+                state[row * CoopN + i] = state_read[row * CoopN + i] +
+                    ntt_mod_to_torus64<CoopN, 64, true>(work[i]);
+            }
+        }
+        grid.sync();
+    }
+    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+}
+
+// Keep a bounded cache for this implementation without changing the caller's
+// current/default CUDA memory pool. Scratch allocations remain stream ordered.
+void InitializeCooperativeScratchPools(int gpu_count)
+{
+    cooperative_scratch_pools.resize(gpu_count, nullptr);
+    for (int gpu = 0; gpu < gpu_count; ++gpu) {
+        CuSafeCall(cudaSetDevice(gpu));
+        cudaDeviceProp prop{};
+        CuSafeCall(cudaGetDeviceProperties(&prop, gpu));
+        if (prop.major != 8 || prop.minor != 9 || !prop.cooperativeLaunch) continue;
+        int supported = 0;
+        CuSafeCall(cudaDeviceGetAttribute(
+            &supported, cudaDevAttrMemoryPoolsSupported, gpu));
+        if (!supported || cooperative_scratch_pools[gpu]) continue;
+        cudaMemPoolProps properties{};
+        properties.allocType = cudaMemAllocationTypePinned;
+        properties.handleTypes = cudaMemHandleTypeNone;
+        properties.location.type = cudaMemLocationTypeDevice;
+        properties.location.id = gpu;
+        cudaMemPool_t pool = nullptr;
+        CuSafeCall(cudaMemPoolCreate(&pool, &properties));
+        const uint64_t max_scratch = std::max(
+            uint64_t(prop.multiProcessorCount / CoopRows) * CoopScratchWords,
+            std::max(uint64_t(prop.multiProcessorCount / CoopThreeGroups) * CoopThreeScratchWords,
+                     uint64_t(prop.multiProcessorCount / CoopTwoGroups) * CoopTwoScratchWords)) *
+            sizeof(CoopWord);
+        // CUDA may reserve much more backing memory than the requested scratch.
+        // Learn that reservation while priming one maximum-size call, rather
+        // than assuming an allocator granularity or modifying the caller pool.
+        void* priming = nullptr;
+        CuSafeCall(cudaMallocFromPoolAsync(&priming, max_scratch, pool, nullptr));
+        CuSafeCall(cudaStreamSynchronize(nullptr));
+        uint64_t retained_bytes = 0;
+        CuSafeCall(cudaMemPoolGetAttribute(
+            pool, cudaMemPoolAttrReservedMemCurrent, &retained_bytes));
+        CuSafeCall(cudaMemPoolSetAttribute(
+            pool, cudaMemPoolAttrReleaseThreshold, &retained_bytes));
+        CuSafeCall(cudaFreeAsync(priming, nullptr));
+        CuSafeCall(cudaStreamSynchronize(nullptr));
+        cooperative_scratch_pools[gpu] = pool;
+    }
+}
+
+void DeleteCooperativeScratchPools()
+{
+    for (size_t gpu = 0; gpu < cooperative_scratch_pools.size(); ++gpu) {
+        if (!cooperative_scratch_pools[gpu]) continue;
+        CuSafeCall(cudaSetDevice(gpu));
+        CuSafeCall(cudaMemPoolDestroy(cooperative_scratch_pools[gpu]));
+    }
+    cooperative_scratch_pools.clear();
+}
+
+bool TryCooperativeNandBatch(
+    CoopWord* out, size_t out_stride,
+    const CoopWord* in0, size_t in0_stride,
+    const CoopWord* in1, size_t in1_stride,
+    uint32_t count, cudaStream_t stream, int gpu)
+{
+    cudaDeviceProp prop{};
+    CuSafeCall(cudaGetDeviceProperties(&prop, gpu));
+    // Only the measured SM89 configuration selects this latency schedule.
+    if (prop.major != 8 || prop.minor != 9 || !prop.cooperativeLaunch ||
+        count > uint32_t(prop.multiProcessorCount / CoopTwoGroups))
+        return false;
+    int pools = 0;
+    CuSafeCall(cudaDeviceGetAttribute(&pools, cudaDevAttrMemoryPoolsSupported, gpu));
+    if (!pools) return false;
+    const bool five_groups = count > uint32_t(prop.multiProcessorCount / CoopRows) &&
+                            count <= uint32_t(prop.multiProcessorCount / CoopFiveGroups);
+    const bool three_groups = count > uint32_t(prop.multiProcessorCount / CoopFiveGroups) &&
+                             count <= uint32_t(prop.multiProcessorCount / CoopThreeGroups);
+    const bool two_groups = count > uint32_t(prop.multiProcessorCount / CoopThreeGroups);
+    const int groups = two_groups ? CoopTwoGroups : three_groups ? CoopThreeGroups :
+                       five_groups ? CoopFiveGroups : CoopRows;
+    const size_t scratch_words = two_groups ? CoopTwoScratchWords :
+                                 three_groups ? CoopThreeScratchWords :
+                                 five_groups ? CoopFiveScratchWords : CoopScratchWords;
+    const void* kernel = two_groups ? (const void*)CooperativeNandBatchTwoKernel :
+                         three_groups ? (const void*)CooperativeNandBatchThreeKernel :
+                         five_groups ? (const void*)CooperativeNandBatchFiveKernel :
+                                      (const void*)CooperativeNandBatchKernel;
+    // Reserve enough shared memory to place each row CTA on a separate SM.
+    CuSafeCall(cudaFuncSetAttribute(kernel,
+        cudaFuncAttributeMaxDynamicSharedMemorySize, CoopSharedBytes));
+    int active = 0;
+    CuSafeCall(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+        &active, kernel, CoopThreads, CoopSharedBytes));
+    if (count > uint32_t(active * prop.multiProcessorCount / groups)) return false;
+
+    // Stream-ordered allocation/free gives concurrent calls independent state
+    // and becomes allocation/free graph nodes during stream capture.
+    CoopWord* workspace = nullptr;
+    CuSafeCall(cudaMallocFromPoolAsync(&workspace,
+        count * scratch_words * sizeof(CoopWord),
+        cooperative_scratch_pools.at(gpu), stream));
+    auto* bk = bk_ntts_lvl02[gpu];
+    auto* ksk = ksk_devs_lvl20[gpu];
+    auto ntt = *ntt_handlers_lvl02[gpu];
+    void* args[] = {&out, &out_stride, &in0, &in0_stride, &in1, &in1_stride,
+                    &bk, &ksk, &ntt, &workspace};
+    const auto launch = cudaLaunchCooperativeKernel(
+        kernel, dim3(groups * count),
+        dim3(CoopThreads), args, CoopSharedBytes, stream);
+    const auto release = cudaFreeAsync(workspace, stream);
+    CuSafeCall(launch);
+    CuSafeCall(release);
+    return true;
+}
+}  // namespace
+#endif
+
+template <class iksP, class brP, typename brP::targetP::T μ>
+void NandBootstrapBatch(
+    typename brP::targetP::T* out, size_t out_stride,
+    const typename iksP::domainP::T* in0, size_t in0_stride,
+    const typename iksP::domainP::T* in1, size_t in1_stride,
+    uint32_t count, cudaStream_t st, int gpuNum)
+{
+    if (count == 0) return;
+    constexpr size_t out_elements = brP::targetP::k * brP::targetP::n + 1;
+    constexpr size_t in_elements = iksP::domainP::k * iksP::domainP::n + 1;
+    if (out_stride < out_elements || in0_stride < in_elements ||
+        in1_stride < in_elements)
+        throw std::invalid_argument("NandBootstrapBatch: TLWE stride is too small");
+    CuSafeCall(cudaSetDevice(gpuNum));
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                  std::is_same_v<brP, TFHEpp::lvl02param> &&
+                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+        if (TryCooperativeNandBatch(out, out_stride, in0, in0_stride,
+                                   in1, in1_stride, count, st, gpuNum))
+            return;
+    }
+#endif
+
+    auto& handlers = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return ntt_handlers_lvl02;
+        else
+            return ntt_handlers;
+    }();
+    auto& keys = BootstrappingKeyStorage<typename brP::targetP>();
+    auto& switching_keys = sizeof(typename brP::targetP::T) == 8
+                               ? ksk_devs_lvl20 : ksk_devs;
+#ifdef USE_KEY_BUNDLE
+    auto& ones = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return one_trgsw_ntt_devs_lvl02;
+        else
+            return one_trgsw_ntt_devs;
+    }();
+    auto& monomials = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return xai_ntt_devs_lvl02;
+        else
+            return xai_ntt_devs;
+    }();
+#endif
+    auto launch = [&](auto stage_tag) {
+        constexpr bool staged = decltype(stage_tag)::value;
+#ifdef USE_FFT
+        constexpr size_t shared_bytes = MEM4HOMGATE_DYN<typename brP::targetP>;
+#else
+        constexpr size_t shared_bytes = MEM4HOMGATE_DYN<typename brP::targetP, staged,
+            !staged && USE_RAW_PAIRED_NTT64<brP>>;
+#endif
+        CuSafeCall(cudaFuncSetAttribute(
+            __NandBootstrapBatch__<iksP, brP, μ, staged>,
+            cudaFuncAttributeMaxDynamicSharedMemorySize,
+            shared_bytes));
+        __NandBootstrapBatch__<iksP, brP, μ, staged>
+            <<<count, NUM_THREAD4HOMGATE<typename brP::targetP>,
+               shared_bytes, st>>>(
+                out, out_stride, in0, in0_stride, in1, in1_stride,
+                keys[gpuNum], switching_keys[gpuNum],
+#ifdef USE_KEY_BUNDLE
+                ones[gpuNum], monomials[gpuNum],
+#endif
+                *handlers[gpuNum]);
+    };
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE)
+    if constexpr (USE_ASYNC_MONOMIALS64<typename brP::targetP> &&
+                  brP::domainP::ell == 2) {
+        int multiprocessors = 0;
+        CuSafeCall(cudaDeviceGetAttribute(&multiprocessors,
+            cudaDevAttrMultiProcessorCount, gpuNum));
+        // Retain staging outside the measured SM89 raw-pair configuration.
+        if (count >= static_cast<uint32_t>(multiprocessors)) {
+            bool prefer_raw_pair = false;
+            if constexpr (USE_RAW_PAIRED_NTT64<brP>) {
+                int major = 0, minor = 0;
+                CuSafeCall(cudaDeviceGetAttribute(&major,
+                    cudaDevAttrComputeCapabilityMajor, gpuNum));
+                CuSafeCall(cudaDeviceGetAttribute(&minor,
+                    cudaDevAttrComputeCapabilityMinor, gpuNum));
+                // On SM89 the cached raw pair wins even at full occupancy.
+                prefer_raw_pair = major == 8 && minor == 9;
+            }
+            if (!prefer_raw_pair) {
+                launch(std::true_type{});
+                CuCheckError();
+                return;
+            }
+        }
+    }
+#endif
+    launch(std::false_type{});
+    CuCheckError();
+}
+
+#define INST(iksP, brP, mu)                                                \
+    template void NandBootstrapBatch<iksP, brP, mu>(                         \
+        typename brP::targetP::T*, size_t,                                  \
+        const typename iksP::domainP::T*, size_t,                            \
+        const typename iksP::domainP::T*, size_t,                            \
+        uint32_t, cudaStream_t, int)
+INST(TFHEpp::lvl10param, TFHEpp::lvl01param, TFHEpp::lvl1param::μ);
+INST(TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::lvl2param::μ);
+#undef INST
+
+
 
 template <class brP, typename brP::targetP::T μ, class iksP>
 void OrBootstrap(typename iksP::targetP::T* const out,
@@ -2600,18 +3834,18 @@ void OrBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__OrBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __OrBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __OrBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -2719,18 +3953,18 @@ void OrYNBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__OrYNBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __OrYNBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __OrYNBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -2838,18 +4072,18 @@ void OrNYBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__OrNYBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __OrNYBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __OrNYBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -2957,18 +4191,18 @@ void AndBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__AndBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __AndBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __AndBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -3076,18 +4310,18 @@ void AndYNBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__AndYNBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __AndYNBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __AndYNBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -3195,18 +4429,18 @@ void AndNYBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__AndNYBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __AndNYBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __AndNYBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -3314,18 +4548,18 @@ void NorBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__NorBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __NorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __NorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -3433,18 +4667,18 @@ void XorBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__XorBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __XorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __XorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -3552,18 +4786,18 @@ void XnorBootstrap(typename brP::targetP::T* const out,
 #else
     cudaFuncSetAttribute(__XnorBootstrap__<iksP, brP, brP::targetP::μ>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         MEM4HOMGATE_DYN<typename brP::targetP>);
+                         MEM4RAWBINARYGATE_DYN<brP>);
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         __XnorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
                 *ntt_handlers_lvl02[gpuNum]);
     }
     else {
         __XnorBootstrap__<iksP, brP, μ>
             <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>,
-               MEM4HOMGATE_DYN<typename brP::targetP>, st>>>(
+               MEM4RAWBINARYGATE_DYN<brP>, st>>>(
                 out, in0, in1, bk_ntts[gpuNum], ksk_devs[gpuNum],
                 *ntt_handlers[gpuNum]);
     }
@@ -3682,6 +4916,27 @@ void MuxBootstrap(typename brP::targetP::T* const out,
                   const typename iksP::domainP::T* const in0,
                   const cudaStream_t st, const int gpuNum)
 {
+#if !defined(USE_KEY_BUNDLE) && !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 10000
+    if constexpr (USE_RAW_PAIRED_NTT64<brP>) {
+        cudaStreamCaptureStatus capture_status;
+        CuSafeCall(cudaStreamIsCapturing(st, &capture_status));
+        // The first graph node writes out before the second reads these inputs.
+        if (capture_status == cudaStreamCaptureStatusActive &&
+            out != inc && out != in0) {
+            AndBootstrap<iksP, brP, μ>(out, inc, in1, st, gpuNum);
+            constexpr size_t shared_bytes = MEM4RAWBINARYGATE_DYN<brP>;
+            CuSafeCall(cudaFuncSetAttribute(__RawMuxCombine__<iksP, brP, μ, false>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
+            __RawMuxCombine__<iksP, brP, μ, false>
+                <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, shared_bytes, st>>>(
+                    out, inc, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                    *ntt_handlers_lvl02[gpuNum]);
+            CuCheckError();
+            return;
+        }
+    }
+#endif
+
 #ifdef USE_KEY_BUNDLE
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         cudaFuncSetAttribute(__MuxBootstrapKB__<iksP, brP, μ>,
@@ -3744,6 +4999,27 @@ void NMuxBootstrap(typename brP::targetP::T* const out,
                    const typename iksP::domainP::T* const in0,
                    const cudaStream_t st, const int gpuNum)
 {
+#if !defined(USE_KEY_BUNDLE) && !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 10000
+    if constexpr (USE_RAW_PAIRED_NTT64<brP>) {
+        cudaStreamCaptureStatus capture_status;
+        CuSafeCall(cudaStreamIsCapturing(st, &capture_status));
+        // The first graph node writes out before the second reads these inputs.
+        if (capture_status == cudaStreamCaptureStatusActive &&
+            out != inc && out != in0) {
+            AndBootstrap<iksP, brP, μ>(out, inc, in1, st, gpuNum);
+            constexpr size_t shared_bytes = MEM4RAWBINARYGATE_DYN<brP>;
+            CuSafeCall(cudaFuncSetAttribute(__RawMuxCombine__<iksP, brP, μ, true>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
+            __RawMuxCombine__<iksP, brP, μ, true>
+                <<<1, NUM_THREAD4HOMGATE<typename brP::targetP>, shared_bytes, st>>>(
+                    out, inc, in0, bk_ntts_lvl02[gpuNum], ksk_devs_lvl20[gpuNum],
+                    *ntt_handlers_lvl02[gpuNum]);
+            CuCheckError();
+            return;
+        }
+    }
+#endif
+
 #ifdef USE_KEY_BUNDLE
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         cudaFuncSetAttribute(__NMuxBootstrapKB__<iksP, brP, μ>,

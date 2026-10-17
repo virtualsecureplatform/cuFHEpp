@@ -308,11 +308,11 @@ void CuSmallNTTHandler<length, Q_BITS>::SetDevicePointers(int device_id)
 
     // Initialize if not already done
     if (!params.initialized) {
-        // lvl1 root tables carry a Shoup precomputed-quotient companion in
-        // the upper half of the allocation: table[kLength + i] =
-        // floor(table[i] << 32 / P).
+        // Preserve the legacy roots/quotients prefix, then append packed
+        // pairs so paired transforms can fetch both words in one load.
+        // table[kLength + i] = floor(table[i] << 32 / P).
         constexpr bool with_shoup = Q_BITS == 32;
-        const uint32_t table_len = with_shoup ? 2 * kLength : kLength;
+        const uint32_t table_len = with_shoup ? 4 * kLength : kLength;
 
         // Allocate device memory for root tables
         CuSafeCall(cudaMalloc(&params.forward_root, sizeof(Value) * table_len));
@@ -332,6 +332,10 @@ void CuSmallNTTHandler<length, Q_BITS>::SetDevicePointers(int device_id)
                 inverse_root[kLength + i] = static_cast<Value>(
                     (static_cast<uint64_t>(inverse_root[i]) << 32) /
                     small_ntt31::P);
+                forward_root[2 * kLength + 2 * i] = forward_root[i];
+                forward_root[2 * kLength + 2 * i + 1] = forward_root[kLength + i];
+                inverse_root[2 * kLength + 2 * i] = inverse_root[i];
+                inverse_root[2 * kLength + 2 * i + 1] = inverse_root[kLength + i];
             }
         }
 
@@ -933,13 +937,13 @@ void InitializeOneTRGSWNTT(const int gpuNum)
 //=============================================================================
 
 // GPU kernel to NTT multiple polynomials
-template <uint32_t N>
-__global__ void __NTTPolynomials__(NTTValueFor<N>* const out,
-                                   const NTTValueFor<N>* const in,
-                                   const NTTValueFor<N>* const forward_root)
+template <uint32_t N, uint32_t Q_BITS>
+__global__ void __NTTPolynomials__(NTTValueFor<N, Q_BITS>* const out,
+                                   const NTTValueFor<N, Q_BITS>* const in,
+                                   const NTTValueFor<N, Q_BITS>* const forward_root)
 {
     constexpr uint32_t LOG_N = SmallLog2<N>();
-    __shared__ NTTValueFor<N> sh_temp[N];
+    __shared__ NTTValueFor<N, Q_BITS> sh_temp[N];
 
     const uint32_t poly_idx = blockIdx.x;
     const uint32_t tid = threadIdx.x;
@@ -954,7 +958,7 @@ __global__ void __NTTPolynomials__(NTTValueFor<N>* const out,
 
     // Forward NTT
     if (tid < NUM_THREADS) {
-        SmallForwardNTT<LOG_N>(sh_temp, forward_root, tid);
+        SmallForwardNTT<LOG_N, Q_BITS>(sh_temp, forward_root, tid);
     }
     else {
         for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++) __syncthreads();
@@ -967,12 +971,12 @@ __global__ void __NTTPolynomials__(NTTValueFor<N>* const out,
     }
 }
 
-template <uint32_t N>
-__global__ void __ComputeXaiNTT__(NTTValueFor<N>* const xai_ntt,
-                                  const NTTValueFor<N>* const forward_root)
+template <uint32_t N, uint32_t Q_BITS>
+__global__ void __ComputeXaiNTT__(NTTValueFor<N, Q_BITS>* const xai_ntt,
+                                  const NTTValueFor<N, Q_BITS>* const forward_root)
 {
     constexpr uint32_t LOG_N = SmallLog2<N>();
-    __shared__ NTTValueFor<N> poly[N];
+    __shared__ NTTValueFor<N, Q_BITS> poly[N];
 
     const uint32_t a = blockIdx.x;  // 0..2N-1
     const uint32_t tid = threadIdx.x;
@@ -994,22 +998,22 @@ __global__ void __ComputeXaiNTT__(NTTValueFor<N>* const xai_ntt,
     // Set poly = (X^a - 1) mod (X^N + 1)
     if (tid == 0) {
         // Start with -1 at constant term
-        poly[0] = SmallNTTModulus<N>::P_MINUS_ONE;  // -1 mod P
+        poly[0] = SmallNTTModulus<N, Q_BITS>::P_MINUS_ONE;  // -1 mod P
         if (!negate) {
             // a < N: add 1 to coefficient a_mod
-            poly[a_mod] = small_mod_add<N>(poly[a_mod], 1);
+            poly[a_mod] = small_mod_add<N, Q_BITS>(poly[a_mod], 1);
         }
         else {
             // a >= N: subtract 1 from coefficient a_mod
             poly[a_mod] =
-                small_mod_add<N>(poly[a_mod], SmallNTTModulus<N>::P_MINUS_ONE);
+                small_mod_add<N, Q_BITS>(poly[a_mod], SmallNTTModulus<N, Q_BITS>::P_MINUS_ONE);
         }
     }
     __syncthreads();
 
     // Forward NTT
     if (tid < NUM_THREADS) {
-        SmallForwardNTT<LOG_N>(poly, forward_root, tid);
+        SmallForwardNTT<LOG_N, Q_BITS>(poly, forward_root, tid);
     }
     else {
         for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++) __syncthreads();
@@ -1024,12 +1028,13 @@ __global__ void __ComputeXaiNTT__(NTTValueFor<N>* const xai_ntt,
 
 template <class P>
 void InitializeXaiNTTForLength(std::vector<NTTValueFor<P::n, sizeof(typename P::T) * 8>*>& storage,
-                               std::vector<SmallNTTParams<P::n>>& params,
+                               std::vector<SmallNTTParams<P::n, sizeof(typename P::T) * 8>>& params,
                                const int gpuNum)
 {
     constexpr uint32_t N = P::n;
+    constexpr uint32_t Q_BITS = sizeof(typename P::T) * 8;
     constexpr uint32_t table_entries = 2 * N;
-    constexpr size_t table_size = table_entries * N * sizeof(NTTValueFor<N>);
+    constexpr size_t table_size = table_entries * N * sizeof(NTTValueFor<N, Q_BITS>);
 
     storage.resize(gpuNum);
     for (int i = 0; i < gpuNum; i++) {
@@ -1038,13 +1043,13 @@ void InitializeXaiNTTForLength(std::vector<NTTValueFor<P::n, sizeof(typename P::
 
         dim3 grid(table_entries);
         dim3 block(N >> 1);
-        __ComputeXaiNTT__<N>
+        __ComputeXaiNTT__<N, Q_BITS>
             <<<grid, block>>>(storage[i], params[i].forward_root);
         cudaDeviceSynchronize();
         CuCheckError();
 #ifdef USE_BLOCK_BINARY
-        NTTValueFor<N>* const xai_ptr = storage[i];
-        if constexpr (N == TFHEpp::lvl1param::n) {
+        NTTValueFor<N, Q_BITS>* const xai_ptr = storage[i];
+        if constexpr (Q_BITS == 32) {
             CuSafeCall(
                 cudaMemcpyToSymbol(block_xai_fft, &xai_ptr, sizeof(xai_ptr)));
         }
@@ -1064,15 +1069,16 @@ void InitializeXaiNTT(const int gpuNum)
 
 template <class P>
 void InitializeOneTRGSWNTTForLength(std::vector<NTTValueFor<P::n, sizeof(typename P::T) * 8>*>& storage,
-                                    std::vector<SmallNTTParams<P::n>>& params,
+                                    std::vector<SmallNTTParams<P::n, sizeof(typename P::T) * 8>>& params,
                                     const int gpuNum)
 {
     constexpr uint32_t N = P::n;
+    constexpr uint32_t Q_BITS = sizeof(typename P::T) * 8;
     constexpr uint32_t k = P::k;
     constexpr uint32_t l = P::l;
     constexpr uint32_t Bgbit = P::Bgbit;
     constexpr uint32_t num_polys = (k + 1) * l * (k + 1);
-    constexpr size_t total_size = num_polys * N * sizeof(NTTValueFor<N>);
+    constexpr size_t total_size = num_polys * N * sizeof(NTTValueFor<N, Q_BITS>);
 
     std::vector<typename P::T> h(l);
     for (uint32_t i = 0; i < l; i++) {
@@ -1081,12 +1087,12 @@ void InitializeOneTRGSWNTTForLength(std::vector<NTTValueFor<P::n, sizeof(typenam
             << (std::numeric_limits<typename P::T>::digits - (i + 1) * Bgbit);
     }
 
-    std::vector<NTTValueFor<N>> host_polys(num_polys * N, 0);
+    std::vector<NTTValueFor<N, Q_BITS>> host_polys(num_polys * N, 0);
     for (uint32_t j = 0; j <= k; j++) {
         for (uint32_t digit = 0; digit < l; digit++) {
             uint32_t row = j * l + digit;
             uint32_t poly_idx = row * (k + 1) + j;
-            host_polys[poly_idx * N] = torus_to_ntt_mod<N>(h[digit]);
+            host_polys[poly_idx * N] = torus_to_ntt_mod<N, Q_BITS>(h[digit]);
         }
     }
 
@@ -1095,16 +1101,16 @@ void InitializeOneTRGSWNTTForLength(std::vector<NTTValueFor<P::n, sizeof(typenam
         cudaSetDevice(i);
         CuSafeCall(cudaMalloc(&storage[i], total_size));
 
-        NTTValueFor<N>* d_polys;
+        NTTValueFor<N, Q_BITS>* d_polys;
         CuSafeCall(
-            cudaMalloc(&d_polys, num_polys * N * sizeof(NTTValueFor<N>)));
+            cudaMalloc(&d_polys, num_polys * N * sizeof(NTTValueFor<N, Q_BITS>)));
         CuSafeCall(cudaMemcpy(d_polys, host_polys.data(),
-                              num_polys * N * sizeof(NTTValueFor<N>),
+                              num_polys * N * sizeof(NTTValueFor<N, Q_BITS>),
                               cudaMemcpyHostToDevice));
 
         dim3 grid(num_polys);
         dim3 block(N >> 1);
-        __NTTPolynomials__<N>
+        __NTTPolynomials__<N, Q_BITS>
             <<<grid, block>>>(storage[i], d_polys, params[i].forward_root);
         cudaDeviceSynchronize();
         CuCheckError();

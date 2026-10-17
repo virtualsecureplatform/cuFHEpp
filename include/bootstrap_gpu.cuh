@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <params.hpp>
 
 #include "ntt_small_modulus.cuh"
@@ -81,6 +82,28 @@ void NandBootstrap(typename brP::targetP::T* const out,
                    const typename iksP::domainP::T* const in0,
                    const typename iksP::domainP::T* const in1,
                    const cudaStream_t st, const int gpuNum);
+
+// GPU-resident independent NANDs in one grid. Small raw lvl02 batches on SM89
+// use cooperative row CTAs; other batches use one ciphertext per block.
+// Cooperative scratch is allocated/freed in stream order and supports capture.
+// Strides count torus coefficients and must fit a complete TLWE. Input/output
+// transfers are caller-owned. Distinct outputs must not overlap; in-place
+// operation is supported when each output aliases only its corresponding input.
+// count == 0 is a no-op, including when pointers are null and strides are zero.
+template <class iksP, class brP, typename brP::targetP::T μ>
+void NandBootstrapBatch(
+    typename brP::targetP::T* out, std::size_t out_stride,
+    const typename iksP::domainP::T* in0, std::size_t in0_stride,
+    const typename iksP::domainP::T* in1, std::size_t in1_stride,
+    uint32_t count, cudaStream_t st, int gpuNum);
+
+// Public BR-to-IKS order: the same independent-grid and stride contract.
+template <class brP, typename brP::targetP::T μ, class iksP>
+void NandBootstrapBatch(
+    typename iksP::targetP::T* out, std::size_t out_stride,
+    const typename brP::domainP::T* in0, std::size_t in0_stride,
+    const typename brP::domainP::T* in1, std::size_t in1_stride,
+    uint32_t count, cudaStream_t st, int gpuNum);
 
 template <class brP, typename brP::targetP::T μ, class iksP>
 void OrBootstrap(typename iksP::targetP::T* const out,

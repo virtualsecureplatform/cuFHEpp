@@ -48,6 +48,11 @@ if(CUFHE_GPU_BACKEND STREQUAL "CUDA")
         INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 cufhe_configure_gpu_target(cufhe_gpu)
+if(CUFHE_GPU_BACKEND STREQUAL "CUDA")
+    # Consumers can instantiate transform kernels that reference our device
+    # root tables. Resolve those symbols together at the executable link.
+    set_target_properties(cufhe_gpu PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS OFF)
+endif()
 if(CUFHE_GPU_BACKEND STREQUAL "HIP")
     target_link_options(cufhe_gpu INTERFACE
         $<$<LINK_LANGUAGE:HIP>:--hip-link;-fgpu-rdc>)

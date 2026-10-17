@@ -1,9 +1,9 @@
 /**
  * Small-modulus NTT implementation for cuFHE
  *
- * The modulus is selected by ring size:
- * - lvl1/N=1024 uses the original 31-bit prime for faster gate evaluation
- * - lvl2/N=2048 uses the Goldilocks prime to preserve Torus64 precision
+ * The modulus is selected by torus width:
+ * - Torus32 uses the original 31-bit prime for faster gate evaluation
+ * - Torus64 uses the Goldilocks prime to preserve precision
  */
 
 #pragma once
@@ -29,7 +29,8 @@
 // lvl02) the bootstrap scratch layout in registers to fit gfx1201's LDS.  The
 // same code paths are valid CUDA; these opt-in flags let CUDA builds adopt
 // each of them independently without disturbing the established defaults.
-#if defined(CUFHE_USE_HIP) || defined(USE_CUDA_WARP_TRANSFORM)
+#if defined(CUFHE_USE_HIP) || defined(USE_CUDA_WARP_TRANSFORM) || \
+    defined(USE_CUDA_WARP_TRANSFORM64)
 #define CUFHE_WARP_TRANSFORM_TAIL 1
 #endif
 #if defined(CUFHE_USE_HIP) || defined(USE_CUDA_REGISTER_NTT_ACCUM)
@@ -43,6 +44,17 @@
 #endif
 
 namespace cufhe {
+
+// The 64-bit CUDA option leaves all 31-bit transform schedules unchanged.
+template <uint32_t Q_BITS>
+inline constexpr bool UseWarpNTTTail =
+#if defined(CUFHE_USE_HIP) || defined(USE_CUDA_WARP_TRANSFORM)
+    Q_BITS == 32 || Q_BITS == 64;
+#elif defined(USE_CUDA_WARP_TRANSFORM64)
+    Q_BITS == 64;
+#else
+    false;
+#endif
 
 template <class P>
 inline constexpr uint32_t BootstrappingTRGSWRows =
@@ -199,11 +211,45 @@ small_mod64_normalize(SmallNTTValue a)
     return a + static_cast<uint32_t>(-(a >= small_ntt::P));
 }
 
+// Internal instruction schedules: 0 = legacy, 1 = carry/select, 2 = carry/compare.
+// Every schedule preserves the same field operation and full-word behavior.
+template <int NativeAdd = 0>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_add(SmallNTTValue a, SmallNTTValue b)
 {
-    SmallNTTValue tmp = a + b;
-    return tmp + static_cast<uint32_t>(-(tmp < b || tmp >= small_ntt::P));
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+    if constexpr (NativeAdd == 1) {
+        uint32_t lo, hi;
+        // The second carry is exactly sum >= p, since 2^64-p = UINT32_MAX.
+        // Select the existing correction on either carry; inputs are consumed
+        // before publishing outputs, including for the full-word legacy range.
+        asm("{.reg .u32 l,h,ll,hh,c,d; .reg .pred p,q,r;\n\t"
+            "add.cc.u32 l,%2,%4;\n\taddc.cc.u32 h,%3,%5;\n\taddc.u32 c,0,0;\n\t"
+            "add.cc.u32 ll,l,0xffffffff;\n\taddc.cc.u32 hh,h,0;\n\taddc.u32 d,0,0;\n\t"
+            "setp.ne.u32 p,c,0;\n\tsetp.ne.u32 q,d,0;\n\tor.pred r,p,q;\n\t"
+            "selp.u32 %0,ll,l,r;\n\tselp.u32 %1,hh,h,r;\n\t}"
+            : "=r"(lo), "=r"(hi)
+            : "r"(static_cast<uint32_t>(a)), "r"(static_cast<uint32_t>(a >> 32)),
+              "r"(static_cast<uint32_t>(b)), "r"(static_cast<uint32_t>(b >> 32)));
+        return (static_cast<uint64_t>(hi) << 32) | lo;
+    } else if constexpr (NativeAdd == 2) {
+        // For the wrapped sum, >= p is high == UINT32_MAX and low != 0.
+        uint32_t lo, hi;
+        asm("{.reg .u32 l,h,c,k; .reg .pred p,q,r;\n\t"
+            "add.cc.u32 l,%2,%4;\n\taddc.cc.u32 h,%3,%5;\n\taddc.u32 c,0,0;\n\t"
+            "setp.eq.u32 p,h,0xffffffff;\n\tsetp.ne.and.u32 q,l,0,p;\n\tsetp.ne.or.u32 r,c,0,q;\n\t"
+            "selp.u32 k,0xffffffff,0,r;\n\tadd.cc.u32 l,l,k;\n\taddc.u32 h,h,0;\n\t"
+            "mov.u32 %0,l;\n\tmov.u32 %1,h;\n\t}"
+            : "=r"(lo), "=r"(hi)
+            : "r"(static_cast<uint32_t>(a)), "r"(static_cast<uint32_t>(a >> 32)),
+              "r"(static_cast<uint32_t>(b)), "r"(static_cast<uint32_t>(b >> 32)));
+        return (static_cast<uint64_t>(hi) << 32) | lo;
+    } else
+#endif
+    {
+        SmallNTTValue tmp = a + b;
+        return tmp + static_cast<uint32_t>(-(tmp < b || tmp >= small_ntt::P));
+    }
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
@@ -214,6 +260,27 @@ small_mod64_sub(SmallNTTValue a, SmallNTTValue b)
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
+small_mod64_sub_borrow(SmallNTTValue a, SmallNTTValue b)
+{
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+    uint32_t lo, hi;
+    // Export the full-width borrow directly, then subtract its existing
+    // Goldilocks correction. Publish outputs after consuming every input.
+    asm("{.reg .u32 l,h,m;\n\t"
+        "sub.cc.u32 l,%2,%4;\n\tsubc.cc.u32 h,%3,%5;\n\tsubc.u32 m,0,0;\n\t"
+        "sub.cc.u32 l,l,m;\n\tsubc.u32 h,h,0;\n\tmov.u32 %0,l;\n\tmov.u32 %1,h;\n\t}"
+        : "=r"(lo), "=r"(hi)
+        : "r"(static_cast<uint32_t>(a)), "r"(static_cast<uint32_t>(a >> 32)),
+          "r"(static_cast<uint32_t>(b)), "r"(static_cast<uint32_t>(b >> 32)));
+    return (static_cast<uint64_t>(hi) << 32) | lo;
+#else
+    SmallNTTValue tmp = a - b;
+    return tmp - static_cast<uint32_t>(-(tmp > a));
+#endif
+}
+
+template <int NativeAdd = 0>
+__host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_reduce_wide(unsigned __int128 value)
 {
     const SmallNTTValue lo = static_cast<SmallNTTValue>(value);
@@ -223,31 +290,85 @@ small_mod64_reduce_wide(unsigned __int128 value)
 
     // With B=2^32 and p=B^2-B+1, B^2 = B-1 (mod p).  Therefore
     // lo + hi*B^2 = lo + hi_lo*(B-1) - hi_hi (mod p).
+    // Subtract hi_hi first. If it borrows, subtracting B-1 from the
+    // wrapped difference adds p instead of 2^64. Otherwise the difference
+    // can be noncanonical, but remains below 2^64. Since folded_hi <= p-B,
+    // a carried sum wraps to at most p-B-1: its B-1 correction stays below p.
+    // A sum without carry uses the usual >=p correction.
+    const SmallNTTValue difference = lo - hi_hi;
+    const SmallNTTValue corrected = difference -
+        (lo < hi_hi ? SmallNTTValue{UINT32_MAX} : 0);
     const SmallNTTValue folded_hi = (hi_lo << 32) - hi_lo;
-    const SmallNTTValue folded = small_mod64_add(
-        small_mod64_normalize(lo), folded_hi);
-    return small_mod64_sub(folded, hi_hi);
+    return small_mod64_add<NativeAdd>(corrected, folded_hi);
 }
 
+template <int NativeAdd = 0>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_mult(SmallNTTValue a, SmallNTTValue b)
 {
-    return small_mod64_reduce_wide(static_cast<unsigned __int128>(a) * b);
+    return small_mod64_reduce_wide<NativeAdd>(static_cast<unsigned __int128>(a) * b);
 }
 
 // In the bit-reversed Goldilocks root table, entry 1 is 2^48, a square root
 // of -1.  Keeping the operand constant lets the device compiler replace the
 // general 64x64 multiply with shifts while retaining exact field arithmetic.
+template <int NativeAdd = 0>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_mult_root1(SmallNTTValue a)
 {
-    return small_mod64_mult(a, SmallNTTValue{1} << 48);
+    return small_mod64_mult<NativeAdd>(a, SmallNTTValue{1} << 48);
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
 {
     return small_mod64_reduce_wide(static_cast<unsigned __int128>(a) * b + c);
+}
+
+// Two products and an addend need 129 bits. Each carry contributes
+// 2^128 = -2^32 (mod the unchanged Goldilocks prime); combine this term
+// with the high-high limb's subtraction to perform only one reduction.
+template <int NativeAdd = 0>
+__host__ __device__ __forceinline__ SmallNTTValue small_mod64_madd2(
+    SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1,
+    SmallNTTValue b1, SmallNTTValue c)
+{
+    // Even at UINT64_MAX, a0*b0+c <= 2^128-2^64, so the first sum
+    // cannot carry. Only the following product addition needs a carry bit.
+    const unsigned __int128 first = static_cast<unsigned __int128>(a0) * b0 + c;
+    const unsigned __int128 product1 = static_cast<unsigned __int128>(a1) * b1;
+#if defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP)
+    uint64_t lo, hi;
+    uint32_t carry_word;
+    // Export the carry from the addition instead of comparing 128-bit sums.
+    // Local temporaries consume every input before writing any output operand.
+    asm("{\n\t"
+        ".reg .u64 sum_lo, sum_hi;\n\t"
+        ".reg .u32 sum_carry;\n\t"
+        "add.cc.u64 sum_lo, %3, %5;\n\t"
+        "addc.cc.u64 sum_hi, %4, %6;\n\t"
+        "addc.u32 sum_carry, 0, 0;\n\t"
+        "mov.u64 %0, sum_lo;\n\t"
+        "mov.u64 %1, sum_hi;\n\t"
+        "mov.u32 %2, sum_carry;\n\t"
+        "}"
+        : "=l"(lo), "=l"(hi), "=r"(carry_word)
+        : "l"(static_cast<uint64_t>(first)),
+          "l"(static_cast<uint64_t>(first >> 64)),
+          "l"(static_cast<uint64_t>(product1)),
+          "l"(static_cast<uint64_t>(product1 >> 64)));
+    const uint64_t carry = carry_word;
+#else
+    const unsigned __int128 with_addend = first + product1;
+    const uint64_t carry = with_addend < first;
+    const uint64_t lo = static_cast<uint64_t>(with_addend);
+    const uint64_t hi = static_cast<uint64_t>(with_addend >> 64);
+#endif
+    const uint64_t subtraction = (hi >> 32) | (carry << 32);
+    const uint64_t difference = lo - subtraction;
+    const uint64_t corrected = difference - (lo < subtraction ? uint64_t{UINT32_MAX} : 0);
+    const uint64_t hi_lo = static_cast<uint32_t>(hi);
+    return small_mod64_add<NativeAdd>(corrected, (hi_lo << 32) - hi_lo);
 }
 
 __host__ __device__ __forceinline__ void small_mod64_accumulate_product(
@@ -332,9 +453,30 @@ small_mod31_sub(SmallNTTValue a, SmallNTTValue b)
     return (diff >= small_ntt31::P) ? (diff - small_ntt31::P) : diff;
 }
 
+// p = 2^31 - factor, hence 2^32 = 2*factor (mod p). Split at
+// the native word boundary first, then fold at bit 31. This bound covers
+// every uint64_t input, including sums of four canonical products.
+__host__ __device__ __forceinline__ uint32_t small_mod31_reduce64(uint64_t z)
+{
+    constexpr uint32_t p = small_ntt31::P;
+    constexpr uint32_t mask = small_ntt31::FOLD_MASK;
+    constexpr uint32_t factor = small_ntt31::FOLD_FACTOR;
+    constexpr uint64_t max_first = uint64_t(UINT32_MAX) * (2ULL * factor + 1);
+    constexpr uint64_t max_second = mask + (max_first >> 31) * factor;
+    static_assert(max_second < 2ULL * p && max_second <= UINT32_MAX);
+    const uint64_t folded = uint64_t(uint32_t(z)) +
+                            uint64_t(uint32_t(z >> 32)) * (2 * factor);
+    const uint32_t result = uint32_t(folded & mask) +
+                            uint32_t(folded >> 31) * factor;
+    return result >= p ? result - p : result;
+}
+
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod31_mult(SmallNTTValue a, SmallNTTValue b)
 {
+#if defined(USE_CUDA_WORD32_REDUCTION)
+    return small_mod31_reduce64(uint64_t(uint32_t(a)) * uint32_t(b));
+#else
     constexpr uint32_t p = small_ntt31::P;
     const uint64_t z = static_cast<uint64_t>(static_cast<uint32_t>(a)) *
                        static_cast<uint32_t>(b);
@@ -349,11 +491,15 @@ small_mod31_mult(SmallNTTValue a, SmallNTTValue b)
     const uint32_t result = (static_cast<uint32_t>(folded) & mask) +
                             static_cast<uint32_t>(folded >> 31) * factor;
     return (result >= p) ? (result - p) : result;
+#endif
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod31_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
 {
+#if defined(USE_CUDA_WORD32_REDUCTION)
+    return small_mod31_reduce64(uint64_t(uint32_t(a)) * uint32_t(b) + uint32_t(c));
+#else
     constexpr uint32_t p = small_ntt31::P;
     const uint64_t z = static_cast<uint64_t>(static_cast<uint32_t>(a)) *
                            static_cast<uint32_t>(b) +
@@ -367,15 +513,20 @@ small_mod31_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
     const uint32_t result = (static_cast<uint32_t>(folded) & mask) +
                             static_cast<uint32_t>(folded >> 31) * factor;
     return (result >= p) ? (result - p) : result;
+#endif
 }
 
-// Reduce three products and an addend together.  For the 31-bit modulus the
-// unreduced sum still fits in uint64_t, saving two pseudo-Mersenne reductions
-// in the key-bundle inner loop.
+// Canonical inputs keep these fused sums below 2^64.
 __host__ __device__ __forceinline__ SmallNTTValue small_mod31_madd3(
     SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1, SmallNTTValue b1,
     SmallNTTValue a2, SmallNTTValue b2, SmallNTTValue c)
 {
+#if defined(USE_CUDA_WORD32_REDUCTION)
+    const uint64_t z = uint64_t(uint32_t(a0)) * uint32_t(b0) +
+                       uint64_t(uint32_t(a1)) * uint32_t(b1) +
+                       uint64_t(uint32_t(a2)) * uint32_t(b2) + uint32_t(c);
+    return small_mod31_reduce64(z);
+#else
     constexpr uint32_t p = small_ntt31::P;
     constexpr uint32_t mask = small_ntt31::FOLD_MASK;
     constexpr uint32_t factor = small_ntt31::FOLD_FACTOR;
@@ -394,13 +545,43 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod31_madd3(
         static_cast<uint32_t>(folded & mask) +
         static_cast<uint32_t>(folded >> 31) * factor;
     return (result >= p) ? (result - p) : result;
+#endif
 }
 
-template <uint32_t N>
+__host__ __device__ __forceinline__ SmallNTTValue small_mod31_madd4(
+    SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1, SmallNTTValue b1,
+    SmallNTTValue a2, SmallNTTValue b2, SmallNTTValue a3, SmallNTTValue b3,
+    SmallNTTValue c)
+{
+#if defined(USE_CUDA_WORD32_REDUCTION)
+    constexpr uint32_t p = small_ntt31::P;
+    static_assert(uint64_t(p - 1) * (p - 1) <= (UINT64_MAX - (p - 1)) / 4);
+    const uint64_t z = uint64_t(uint32_t(a0)) * uint32_t(b0) +
+                       uint64_t(uint32_t(a1)) * uint32_t(b1) +
+                       uint64_t(uint32_t(a2)) * uint32_t(b2) +
+                       uint64_t(uint32_t(a3)) * uint32_t(b3) + uint32_t(c);
+    return small_mod31_reduce64(z);
+#else
+    constexpr uint32_t p = small_ntt31::P;
+    constexpr uint32_t mask = small_ntt31::FOLD_MASK;
+    constexpr uint32_t factor = small_ntt31::FOLD_FACTOR;
+    static_assert(uint64_t(p - 1) * (p - 1) <= (UINT64_MAX - (p - 1)) / 4);
+    static_assert(uint64_t(mask) + uint64_t(4) * factor * factor < uint64_t(2) * p);
+    const uint64_t z = uint64_t(uint32_t(a0)) * uint32_t(b0) +
+                       uint64_t(uint32_t(a1)) * uint32_t(b1) +
+                       uint64_t(uint32_t(a2)) * uint32_t(b2) +
+                       uint64_t(uint32_t(a3)) * uint32_t(b3) + uint32_t(c);
+    const uint64_t folded = (z & mask) + (z >> 31) * factor;
+    const uint32_t result = uint32_t(folded & mask) + uint32_t(folded >> 31) * factor;
+    return result >= p ? result - p : result;
+#endif
+}
+
+template <uint32_t N, uint32_t Q_BITS = 32>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod_normalize(SmallNTTValue a)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         return small_mod31_normalize(a);
     }
     else {
@@ -408,23 +589,23 @@ small_mod_normalize(SmallNTTValue a)
     }
 }
 
-template <uint32_t N>
+template <uint32_t N, uint32_t Q_BITS = 32, int NativeAdd = 0>
 __host__ __device__ __forceinline__ SmallNTTValue small_mod_add(SmallNTTValue a,
                                                                 SmallNTTValue b)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         return small_mod31_add(a, b);
     }
     else {
-        return small_mod64_add(a, b);
+        return small_mod64_add<NativeAdd>(a, b);
     }
 }
 
-template <uint32_t N>
+template <uint32_t N, uint32_t Q_BITS = 32>
 __host__ __device__ __forceinline__ SmallNTTValue small_mod_sub(SmallNTTValue a,
                                                                 SmallNTTValue b)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         return small_mod31_sub(a, b);
     }
     else {
@@ -432,23 +613,23 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod_sub(SmallNTTValue a,
     }
 }
 
-template <uint32_t N>
+template <uint32_t N, uint32_t Q_BITS = 32, int NativeAdd = 0>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod_mult(SmallNTTValue a, SmallNTTValue b)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         return small_mod31_mult(a, b);
     }
     else {
-        return small_mod64_mult(a, b);
+        return small_mod64_mult<NativeAdd>(a, b);
     }
 }
 
-template <uint32_t N>
+template <uint32_t N, uint32_t Q_BITS = 32>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         return small_mod31_madd(a, b, c);
     }
     else {
@@ -456,12 +637,12 @@ small_mod_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
     }
 }
 
-template <uint32_t N>
+template <uint32_t N, uint32_t Q_BITS = 32>
 __host__ __device__ __forceinline__ SmallNTTValue small_mod_madd3(
     SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1, SmallNTTValue b1,
     SmallNTTValue a2, SmallNTTValue b2, SmallNTTValue c)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         return small_mod31_madd3(a0, b0, a1, b1, a2, b2, c);
     }
     else {
@@ -469,7 +650,7 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod_madd3(
     }
 }
 
-template <uint32_t N, typename TorusT>
+template <uint32_t N, uint32_t Q_BITS = 32, typename TorusT>
 __host__ __device__ __forceinline__ SmallNTTValue
 torus_to_ntt_mod(TorusT torus_val)
 {
@@ -477,17 +658,17 @@ torus_to_ntt_mod(TorusT torus_val)
     constexpr int bits = std::numeric_limits<UnsignedT>::digits;
     const auto a = static_cast<UnsignedT>(torus_val);
     unsigned __int128 prod =
-        static_cast<unsigned __int128>(a) * SmallNTTModulus<N>::P;
+        static_cast<unsigned __int128>(a) * SmallNTTModulus<N, Q_BITS>::P;
     prod += static_cast<unsigned __int128>(1) << (bits - 1);
     return static_cast<SmallNTTValue>(prod >> bits);
 }
 
-template <uint32_t N>
+template <uint32_t N, uint32_t Q_BITS = 32>
 __host__ __device__ __forceinline__ SmallNTTValue
 signed_int_to_ntt_mod(int32_t val)
 {
     if (val < 0) {
-        return small_mod_sub<N>(
+        return small_mod_sub<N, Q_BITS>(
             0, static_cast<SmallNTTValue>(-static_cast<int64_t>(val)));
     }
     return static_cast<SmallNTTValue>(val);
@@ -502,11 +683,26 @@ ntt_abs_to_torus64_goldilocks(SmallNTTValue val)
                                  64);
 }
 
-template <uint32_t N>
+// The signed conversion supplies a canonical magnitude v <= (p-1)/2.
+// With v=h*2^32+l, the existing rounded uint128 expression is exactly
+// v+h+(l>h+2^31). The strict comparison preserves its rounding threshold.
+__host__ __device__ __forceinline__ uint64_t
+ntt_magnitude_to_torus64_goldilocks(SmallNTTValue val)
+{
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+    const uint32_t hi = static_cast<uint32_t>(val >> 32);
+    const uint32_t lo = static_cast<uint32_t>(val);
+    return val + hi + static_cast<uint64_t>(lo > hi + 0x80000000u);
+#else
+    return ntt_abs_to_torus64_goldilocks(val);
+#endif
+}
+
+template <uint32_t N, uint32_t Q_BITS = 32, bool DirectSigned = false>
 __host__ __device__ __forceinline__ uint64_t
 ntt_mod_to_torus64(SmallNTTValue val)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         const bool neg = val > small_ntt31::HALF_P;
         const SmallNTTValue mag = neg ? (small_ntt31::P - val) : val;
         const unsigned __int128 scaled =
@@ -515,20 +711,32 @@ ntt_mod_to_torus64(SmallNTTValue val)
         return neg ? static_cast<uint64_t>(-torus64) : torus64;
     }
     else {
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+        if constexpr (DirectSigned) {
+            // For a canonical residue v=h*2^32+l, combine the existing signed
+            // magnitude conversion into v+h+(l>threshold), modulo 2^64.
+            // The negative half adds two to the wrapping 32-bit threshold.
+            const uint32_t hi = static_cast<uint32_t>(val >> 32);
+            const uint32_t lo = static_cast<uint32_t>(val);
+            const uint32_t threshold = hi + 0x80000000u +
+                (val > small_ntt::HALF_P ? 2u : 0u);
+            return val + hi + static_cast<uint64_t>(lo > threshold);
+        }
+#endif
         if (val > small_ntt::HALF_P) {
             const uint64_t mag =
-                ntt_abs_to_torus64_goldilocks(small_ntt::P - val);
+                ntt_magnitude_to_torus64_goldilocks(small_ntt::P - val);
             return static_cast<uint64_t>(-mag);
         }
-        return ntt_abs_to_torus64_goldilocks(val);
+        return ntt_magnitude_to_torus64_goldilocks(val);
     }
 }
 
-template <uint32_t N>
+template <uint32_t N, uint32_t Q_BITS = 32>
 __host__ __device__ __forceinline__ uint32_t
 ntt_mod_to_torus32(SmallNTTValue val)
 {
-    if constexpr (N == TFHEpp::lvl1param::n) {
+    if constexpr (Q_BITS == 32) {
         const bool neg = val > small_ntt31::HALF_P;
         const uint32_t mag =
             static_cast<uint32_t>(neg ? (small_ntt31::P - val) : val);
@@ -540,7 +748,7 @@ ntt_mod_to_torus32(SmallNTTValue val)
     else {
         const bool neg = val > small_ntt::HALF_P;
         const uint64_t torus64 =
-            ntt_abs_to_torus64_goldilocks(neg ? (small_ntt::P - val) : val);
+            ntt_magnitude_to_torus64_goldilocks(neg ? (small_ntt::P - val) : val);
         uint32_t torus32 = static_cast<uint32_t>(torus64 >> 32);
         torus32 +=
             static_cast<uint32_t>((torus64 & 0xFFFFFFFFULL) >= 0x80000000ULL);
@@ -579,29 +787,32 @@ __device__ __forceinline__ T SmallNTTShuffleXor(const T value,
 }
 
 // Cooley-Tukey butterfly for forward NTT
-template <int N_POWER>
+template <int N_POWER, uint32_t Q_BITS = 32, bool NativeSubtract = false, int NativeAdd = 0>
 __device__ __forceinline__ void SmallCooleyTukeyUnit(
-    SmallNTTValueFor<1U << N_POWER>& U, SmallNTTValueFor<1U << N_POWER>& V,
-    SmallNTTValueFor<1U << N_POWER> root)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& U, SmallNTTValueFor<1U << N_POWER, Q_BITS>& V,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS> root)
 {
     constexpr uint32_t N = 1U << N_POWER;
     SmallNTTValue u = U;
-    SmallNTTValue v = small_mod_mult<N>(V, root);
-    U = small_mod_add<N>(u, v);
-    V = small_mod_sub<N>(u, v);
+    SmallNTTValue v = small_mod_mult<N, Q_BITS, NativeAdd>(V, root);
+    U = small_mod_add<N, Q_BITS, NativeAdd>(u, v);
+    if constexpr (NativeSubtract && Q_BITS == 64)
+        V = small_mod64_sub_borrow(u, v);
+    else
+        V = small_mod_sub<N, Q_BITS>(u, v);
 }
 
 // Gentleman-Sande butterfly for inverse NTT
-template <int N_POWER>
+template <int N_POWER, uint32_t Q_BITS = 32, int NativeAdd = 0>
 __device__ __forceinline__ void SmallGentlemanSandeUnit(
-    SmallNTTValueFor<1U << N_POWER>& U, SmallNTTValueFor<1U << N_POWER>& V,
-    SmallNTTValueFor<1U << N_POWER> root)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& U, SmallNTTValueFor<1U << N_POWER, Q_BITS>& V,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS> root)
 {
     constexpr uint32_t N = 1U << N_POWER;
     SmallNTTValue u = U;
     SmallNTTValue v = V;
-    U = small_mod_add<N>(u, v);
-    V = small_mod_mult<N>(small_mod_sub<N>(u, v), root);
+    U = small_mod_add<N, Q_BITS, NativeAdd>(u, v);
+    V = small_mod_mult<N, Q_BITS, NativeAdd>(small_mod_sub<N, Q_BITS>(u, v), root);
 }
 
 // Shoup modular multiplication by a fixed operand with precomputed quotient
@@ -629,6 +840,21 @@ __device__ __forceinline__ void SmallCooleyTukeyShoupUnit(uint32_t& U,
     V = small_mod31_sub(u, v);
 }
 
+// Both inputs and outputs are in [0, 2p). Shoup multiplication accepts any
+// uint32 input. Normalize only the untwiddled input; 2p fits in uint32, so
+// both output expressions are exact without overflow. Consumers must normalize
+// before arithmetic that requires canonical values.
+__device__ __forceinline__ void SmallCooleyTukeyLazyShoupUnit(
+    uint32_t& U, uint32_t& V, uint32_t root, uint32_t root_shoup)
+{
+    constexpr uint32_t p = small_ntt31::P;
+    static_assert(uint64_t(p) * 2 <= UINT32_MAX);
+    const uint32_t u = U >= p ? U - p : U;
+    const uint32_t v = small_mod31_mult_shoup(V, root, root_shoup);
+    U = u + v;
+    V = u + p - v;
+}
+
 __device__ __forceinline__ void SmallGentlemanSandeShoupUnit(uint32_t& U,
                                                              uint32_t& V,
                                                              uint32_t root,
@@ -637,7 +863,13 @@ __device__ __forceinline__ void SmallGentlemanSandeShoupUnit(uint32_t& U,
     const uint32_t u = U;
     const uint32_t v = V;
     U = small_mod31_add(u, v);
+#if defined(USE_CUDA_UNREDUCED_INVERSE_DIFF)
+    // Canonical inputs give u + p - v < 2p < 2^32. Shoup accepts this
+    // unreduced difference and returns the same canonical product.
+    V = small_mod31_mult_shoup(u + small_ntt31::P - v, root, root_shoup);
+#else
     V = small_mod31_mult_shoup(small_mod31_sub(u, v), root, root_shoup);
+#endif
 }
 
 __device__ __forceinline__ void SmallCooleyTukeyRadix4ShoupUnit(
@@ -671,69 +903,120 @@ __device__ __forceinline__ void SmallGentlemanSandeScaledShoupUnit(
     const uint32_t u = U;
     const uint32_t v = V;
     U = small_mod31_mult(small_mod31_add(u, v), n_inverse);
+#if defined(USE_CUDA_UNREDUCED_INVERSE_DIFF)
+    V = small_mod31_mult_shoup(u + small_ntt31::P - v, scaled_root,
+                               scaled_root_shoup);
+#else
     V = small_mod31_mult_shoup(small_mod31_sub(u, v), scaled_root,
                                scaled_root_shoup);
+#endif
 }
 
+template <int NativeAdd = 0>
 __device__ __forceinline__ void SmallCooleyTukeyGoldilocksRoot1Unit(
     uint64_t& U, uint64_t& V)
 {
     const uint64_t u = U;
-    const uint64_t v = small_mod64_mult_root1(V);
-    U = small_mod64_add(u, v);
+    const uint64_t v = small_mod64_mult_root1<NativeAdd>(V);
+    U = small_mod64_add<NativeAdd>(u, v);
     V = small_mod64_sub(u, v);
 }
 
-template <int N_POWER>
+// Exact division by 2^Power in the unchanged Goldilocks field, for a < p.
+// With a = h*2^Power + low and t = -low mod 2^Power,
+// (a+t*p)/2^Power = h + (t<<(64-Power)) - (t<<(32-Power)) + (low!=0).
+// Since a<p and t<2^Power, the result is already canonical.
+template <int Power>
+__host__ __device__ __forceinline__ uint64_t small_mod64_div_pow2(uint64_t a)
+{
+    static_assert(Power > 0 && Power < 32);
+    constexpr uint32_t mask = (uint32_t{1} << Power) - 1;
+    const uint32_t low = static_cast<uint32_t>(a) & mask;
+    const uint64_t t = (-low) & mask;
+#if defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP)
+    const uint32_t shifted = static_cast<uint32_t>(t) << (32 - Power);
+    // shifted is zero iff low is zero, so this correction never underflows.
+    const uint32_t correction = shifted - static_cast<uint32_t>(low != 0);
+    const uint32_t low_base = static_cast<uint32_t>(a >> Power);
+    const uint32_t high_base = static_cast<uint32_t>(a >> (32 + Power)) + shifted;
+    uint32_t result_low, result_high;
+    asm("sub.cc.u32 %0, %2, %3;\n\t"
+        "subc.u32 %1, %4, 0;\n\t"
+        : "=&r"(result_low), "=&r"(result_high)
+        : "r"(low_base), "r"(correction), "r"(high_base));
+    return (uint64_t{result_high} << 32) | result_low;
+#else
+    return (a >> Power) + (t << (64 - Power)) -
+           (t << (32 - Power)) + (low != 0);
+#endif
+}
+
+// Fixed 1/N normalization for the final inverse stage. The difference
+// retains its supplied pre-scaled root; the sum uses exact modular division.
+// Inputs and outputs are canonical Goldilocks residues.
+template <int Power, int NativeAdd = 0>
+__host__ __device__ __forceinline__ void SmallGentlemanSandeGoldilocksScaledUnit(
+    uint64_t& U, uint64_t& V, uint64_t scaled_root)
+{
+    static_assert(Power > 0 && Power < 32);
+    const uint64_t u = U, v = V;
+    U = small_mod64_div_pow2<Power>(small_mod64_add<NativeAdd>(u, v));
+    const uint64_t difference = small_mod64_sub(u, v);
+    V = small_mod64_mult<NativeAdd>(difference, scaled_root);
+}
+
+template <int N_POWER, uint32_t Q_BITS = 32, int NativeAdd = 0>
 __device__ __forceinline__ void SmallGentlemanSandeScaledUnit(
-    SmallNTTValueFor<1U << N_POWER>& U,
-    SmallNTTValueFor<1U << N_POWER>& V,
-    SmallNTTValueFor<1U << N_POWER> scaled_root,
-    SmallNTTValueFor<1U << N_POWER> n_inverse)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& U,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& V,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS> scaled_root,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS> n_inverse)
 {
     constexpr uint32_t N = 1U << N_POWER;
     const SmallNTTValue u = U;
     const SmallNTTValue v = V;
-    U = small_mod_mult<N>(small_mod_add<N>(u, v), n_inverse);
-    V = small_mod_mult<N>(small_mod_sub<N>(u, v), scaled_root);
+    U = small_mod_mult<N, Q_BITS, NativeAdd>(small_mod_add<N, Q_BITS, NativeAdd>(u, v), n_inverse);
+    V = small_mod_mult<N, Q_BITS, NativeAdd>(small_mod_sub<N, Q_BITS>(u, v), scaled_root);
 }
 
-template <int N_POWER>
+template <int N_POWER, uint32_t Q_BITS = 32, bool NativeSubtract = false, int NativeAdd = 0>
 __device__ __forceinline__ void SmallCooleyTukeyRadix4Unit(
-    SmallNTTValueFor<1U << N_POWER>& a,
-    SmallNTTValueFor<1U << N_POWER>& b,
-    SmallNTTValueFor<1U << N_POWER>& c,
-    SmallNTTValueFor<1U << N_POWER>& d,
-    const SmallNTTValueFor<1U << N_POWER> root_stage0,
-    const SmallNTTValueFor<1U << N_POWER> root_stage1_lo,
-    const SmallNTTValueFor<1U << N_POWER> root_stage1_hi)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& a,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& b,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& c,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& d,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS> root_stage0,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS> root_stage1_lo,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS> root_stage1_hi)
 {
-    SmallCooleyTukeyUnit<N_POWER>(a, c, root_stage0);
-    SmallCooleyTukeyUnit<N_POWER>(b, d, root_stage0);
-    SmallCooleyTukeyUnit<N_POWER>(a, b, root_stage1_lo);
-    SmallCooleyTukeyUnit<N_POWER>(c, d, root_stage1_hi);
+    SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(a, c, root_stage0);
+    SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(b, d, root_stage0);
+    SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(a, b, root_stage1_lo);
+    SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(c, d, root_stage1_hi);
 }
 
-template <int N_POWER>
+template <int N_POWER, uint32_t Q_BITS = 32, int NativeAdd = 0>
 __device__ __forceinline__ void SmallGentlemanSandeRadix4Unit(
-    SmallNTTValueFor<1U << N_POWER>& a,
-    SmallNTTValueFor<1U << N_POWER>& b,
-    SmallNTTValueFor<1U << N_POWER>& c,
-    SmallNTTValueFor<1U << N_POWER>& d,
-    const SmallNTTValueFor<1U << N_POWER> root_stage0_lo,
-    const SmallNTTValueFor<1U << N_POWER> root_stage0_hi,
-    const SmallNTTValueFor<1U << N_POWER> root_stage1)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& a,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& b,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& c,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>& d,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS> root_stage0_lo,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS> root_stage0_hi,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS> root_stage1)
 {
-    SmallGentlemanSandeUnit<N_POWER>(a, b, root_stage0_lo);
-    SmallGentlemanSandeUnit<N_POWER>(c, d, root_stage0_hi);
-    SmallGentlemanSandeUnit<N_POWER>(a, c, root_stage1);
-    SmallGentlemanSandeUnit<N_POWER>(b, d, root_stage1);
+    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(a, b, root_stage0_lo);
+    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(c, d, root_stage0_hi);
+    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(a, c, root_stage1);
+    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(b, d, root_stage1);
 }
 
-template <int N_POWER>
+template <int N_POWER, uint32_t Q_BITS = 32, bool NativeSubtract = false, int NativeAdd = 0,
+          bool ExportAdjacent = false>
 __device__ __forceinline__ void SmallForwardNTT(
-    SmallNTTValueFor<1U << N_POWER>* sh,
-    const SmallNTTValueFor<1U << N_POWER>* root_table, int tid)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>* sh,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS>* root_table, int tid,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>* output_pair = nullptr)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
 #if defined(CUFHE_WARP_TRANSFORM_TAIL)
@@ -759,34 +1042,39 @@ __device__ __forceinline__ void SmallForwardNTT(
             const int root0_index = m + group;
             const int root1_lo_index = (m << 1) + (group << 1);
             const int root1_hi_index = root1_lo_index + 1;
-            SmallNTTValueFor<1U << N_POWER> root1_lo =
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> root1_lo =
                 __ldg(&root_table[root1_lo_index]);
-            SmallNTTValueFor<1U << N_POWER> root1_hi =
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> root1_hi =
                 __ldg(&root_table[root1_hi_index]);
-            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+            if constexpr (Q_BITS == 32) {
                 root1_lo = d_const_forward_root_31[root1_lo_index];
                 root1_hi = d_const_forward_root_31[root1_hi_index];
             }
-            else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+            else if constexpr (Q_BITS == 64) {
                 root1_lo = d_const_forward_root_64[root1_lo_index];
                 root1_hi = d_const_forward_root_64[root1_hi_index];
             }
 
-            SmallNTTValueFor<1U << N_POWER> a = sh[address];
-            SmallNTTValueFor<1U << N_POWER> b = sh[address + radix_t];
-            SmallNTTValueFor<1U << N_POWER> c = sh[address + t];
-            SmallNTTValueFor<1U << N_POWER> d =
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> a = sh[address];
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> b = sh[address + radix_t];
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> c = sh[address + t];
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> d =
                 sh[address + t + radix_t];
-            if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+            if constexpr (Q_BITS == 64) {
                 if (lp == 0) {
-                    SmallCooleyTukeyGoldilocksRoot1Unit(a, c);
-                    SmallCooleyTukeyGoldilocksRoot1Unit(b, d);
-                    SmallCooleyTukeyUnit<N_POWER>(a, b, root1_lo);
-                    SmallCooleyTukeyUnit<N_POWER>(c, d, root1_hi);
+                    if constexpr (NativeSubtract) {
+                        SmallCooleyTukeyUnit<N_POWER, 64, true>(a, c, uint64_t{1} << 48);
+                        SmallCooleyTukeyUnit<N_POWER, 64, true>(b, d, uint64_t{1} << 48);
+                    } else {
+                        SmallCooleyTukeyGoldilocksRoot1Unit<NativeAdd>(a, c);
+                        SmallCooleyTukeyGoldilocksRoot1Unit<NativeAdd>(b, d);
+                    }
+                    SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(a, b, root1_lo);
+                    SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(c, d, root1_hi);
                 }
                 else {
                     const auto root0 = d_const_forward_root_64[root0_index];
-                    SmallCooleyTukeyRadix4Unit<N_POWER>(
+                    SmallCooleyTukeyRadix4Unit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(
                         a, b, c, d, root0, root1_lo, root1_hi);
                 }
             }
@@ -799,7 +1087,7 @@ __device__ __forceinline__ void SmallForwardNTT(
                     d_const_forward_root_31_shoup[root1_lo_index], root1_hi,
                     d_const_forward_root_31_shoup[root1_hi_index]);
 #else
-                SmallCooleyTukeyRadix4Unit<N_POWER>(a, b, c, d, root0,
+                SmallCooleyTukeyRadix4Unit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(a, b, c, d, root0,
                                                      root1_lo, root1_hi);
 #endif
             }
@@ -819,15 +1107,15 @@ __device__ __forceinline__ void SmallForwardNTT(
 
     if constexpr ((N_POWER - 6) % 2 != 0) {
         current_root_index = m + (tid >> t_2);
-        SmallNTTValueFor<1U << N_POWER> root =
+        SmallNTTValueFor<1U << N_POWER, Q_BITS> root =
             __ldg(&root_table[current_root_index]);
-        if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+        if constexpr (Q_BITS == 32) {
             root = d_const_forward_root_31[current_root_index];
         }
-        else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+        else if constexpr (Q_BITS == 64) {
             root = d_const_forward_root_64[current_root_index];
         }
-        SmallCooleyTukeyUnit<N_POWER>(sh[in_shared_address],
+        SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(sh[in_shared_address],
                                       sh[in_shared_address + t], root);
         t >>= 1;
         t_2 -= 1;
@@ -838,15 +1126,14 @@ __device__ __forceinline__ void SmallForwardNTT(
     }
 
 #if defined(CUFHE_WARP_TRANSFORM_TAIL)
-    if constexpr (N == TFHEpp::lvl1param::n ||
-                  N == TFHEpp::lvl2param::n) {
+    if constexpr (UseWarpNTTTail<Q_BITS>) {
         // Stride 32 is the boundary between shared-memory and wave-local
         // stages on wave32.  Keep its outputs in registers and shuffle the
         // stride-16 pairs into place instead of round-tripping through LDS.
         current_root_index = m + (tid >> t_2);
         auto boundary_u = sh[in_shared_address];
         auto boundary_v = sh[in_shared_address + t];
-        SmallCooleyTukeyUnit<N_POWER>(
+        SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(
             boundary_u, boundary_v,
             __ldg(&root_table[current_root_index]));
 
@@ -862,7 +1149,7 @@ __device__ __forceinline__ void SmallForwardNTT(
         m <<= 1;
 
         current_root_index = m + (tid >> t_2);
-        SmallCooleyTukeyUnit<N_POWER>(
+        SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(
             reg_u, reg_v, __ldg(&root_table[current_root_index]));
 
         t >>= 1;
@@ -881,7 +1168,7 @@ __device__ __forceinline__ void SmallForwardNTT(
                 reg_v = received;
 
             current_root_index = m + (tid >> t_2);
-            SmallCooleyTukeyUnit<N_POWER>(
+            SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(
                 reg_u, reg_v, __ldg(&root_table[current_root_index]));
             t >>= 1;
             --t_2;
@@ -889,29 +1176,39 @@ __device__ __forceinline__ void SmallForwardNTT(
             m <<= 1;
         }
 
-        sh[2 * tid] = reg_u;
-        sh[2 * tid + 1] = reg_v;
+#if !defined(CUFHE_USE_HIP)
+        // Finish all shared loads before publishing the permuted register tail.
+        __syncwarp();
+#endif
+        if constexpr (ExportAdjacent) {
+            output_pair[0] = reg_u;
+            output_pair[1] = reg_v;
+        } else {
+            sh[2 * tid] = reg_u;
+            sh[2 * tid + 1] = reg_v;
+        }
     }
     else
 #endif
     {
+        static_assert(!ExportAdjacent, "Adjacent export requires the warp transform tail");
 #pragma unroll 1
         for (int lp = 0; lp < 6; lp++) {
             current_root_index = m + (tid >> t_2);
 #if defined(USE_CUDA_SHOUP_NTT)
-            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+            if constexpr (Q_BITS == 32) {
                 SmallCooleyTukeyShoupUnit(
                     sh[in_shared_address], sh[in_shared_address + t],
                     __ldg(&root_table[current_root_index]),
                     __ldg(&root_table[(1U << N_POWER) + current_root_index]));
             }
             else {
-                SmallCooleyTukeyUnit<N_POWER>(
+                SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(
                     sh[in_shared_address], sh[in_shared_address + t],
                     __ldg(&root_table[current_root_index]));
             }
 #else
-            SmallCooleyTukeyUnit<N_POWER>(
+            SmallCooleyTukeyUnit<N_POWER, Q_BITS, NativeSubtract, NativeAdd>(
                 sh[in_shared_address], sh[in_shared_address + t],
                 __ldg(&root_table[current_root_index]));
 #endif
@@ -921,16 +1218,19 @@ __device__ __forceinline__ void SmallForwardNTT(
             --t_;
             m <<= 1;
             in_shared_address = ((tid >> t_) << t_) + tid;
+#if !defined(CUFHE_USE_HIP)
+            __syncwarp();
+#endif
         }
     }
     __syncthreads();
 }
 
-template <int N_POWER>
+template <int N_POWER, uint32_t Q_BITS = 32, int NativeAdd = 0>
 __device__ __forceinline__ void SmallInverseNTT(
-    SmallNTTValueFor<1U << N_POWER>* sh,
-    const SmallNTTValueFor<1U << N_POWER>* root_table,
-    SmallNTTValueFor<1U << N_POWER> n_inverse, int tid)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>* sh,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS>* root_table,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS> n_inverse, int tid)
 {
     static_assert(N_POWER >= 6, "NTT length must be at least 64");
     constexpr uint32_t N = 1U << N_POWER;
@@ -944,12 +1244,11 @@ __device__ __forceinline__ void SmallInverseNTT(
     int current_root_index;
 
 #if defined(CUFHE_WARP_TRANSFORM_TAIL)
-    if constexpr (N == TFHEpp::lvl1param::n ||
-                  N == TFHEpp::lvl2param::n) {
+    if constexpr (UseWarpNTTTail<Q_BITS>) {
         auto reg_u = sh[2 * tid];
         auto reg_v = sh[2 * tid + 1];
         current_root_index = m + (tid >> t_2);
-        SmallGentlemanSandeUnit<N_POWER>(
+        SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(
             reg_u, reg_v, __ldg(&root_table[current_root_index]));
 
         t <<= 1;
@@ -968,7 +1267,7 @@ __device__ __forceinline__ void SmallInverseNTT(
                 reg_v = received;
 
             current_root_index = m + (tid >> t_2);
-            SmallGentlemanSandeUnit<N_POWER>(
+            SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(
                 reg_u, reg_v, __ldg(&root_table[current_root_index]));
             t <<= 1;
             ++t_2;
@@ -986,9 +1285,13 @@ __device__ __forceinline__ void SmallInverseNTT(
 
         in_shared_address = ((tid >> t_) << t_) + tid;
         current_root_index = m + (tid >> t_2);
-        SmallGentlemanSandeUnit<N_POWER>(
+        SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(
             boundary_u, boundary_v,
             __ldg(&root_table[current_root_index]));
+#if !defined(CUFHE_USE_HIP)
+        // The boundary stores can reuse locations loaded by another warp lane.
+        __syncwarp();
+#endif
         sh[in_shared_address] = boundary_u;
         sh[in_shared_address + t] = boundary_v;
         t <<= 1;
@@ -1004,19 +1307,19 @@ __device__ __forceinline__ void SmallInverseNTT(
         for (int lp = 0; lp < 6; lp++) {
             current_root_index = m + (tid >> t_2);
 #if defined(USE_CUDA_SHOUP_NTT)
-            if constexpr (N == TFHEpp::lvl1param::n) {
+            if constexpr (Q_BITS == 32) {
                 SmallGentlemanSandeShoupUnit(
                     sh[in_shared_address], sh[in_shared_address + t],
                     __ldg(&root_table[current_root_index]),
                     __ldg(&root_table[N + current_root_index]));
             }
             else {
-                SmallGentlemanSandeUnit<N_POWER>(
+                SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(
                     sh[in_shared_address], sh[in_shared_address + t],
                     __ldg(&root_table[current_root_index]));
             }
 #else
-            SmallGentlemanSandeUnit<N_POWER>(
+            SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(
                 sh[in_shared_address], sh[in_shared_address + t],
                 __ldg(&root_table[current_root_index]));
 #endif
@@ -1026,6 +1329,9 @@ __device__ __forceinline__ void SmallInverseNTT(
             ++t_;
             m >>= 1;
             in_shared_address = ((tid >> t_) << t_) + tid;
+#if !defined(CUFHE_USE_HIP)
+            __syncwarp();
+#endif
         }
     }
     __syncthreads();
@@ -1040,28 +1346,28 @@ __device__ __forceinline__ void SmallInverseNTT(
             const int root0_lo_index = m + (group << 1);
             const int root0_hi_index = root0_lo_index + 1;
             const int root1_index = (m >> 1) + group;
-            SmallNTTValueFor<1U << N_POWER> root0_lo =
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> root0_lo =
                 __ldg(&root_table[root0_lo_index]);
-            SmallNTTValueFor<1U << N_POWER> root0_hi =
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> root0_hi =
                 __ldg(&root_table[root0_hi_index]);
-            SmallNTTValueFor<1U << N_POWER> root1 =
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> root1 =
                 __ldg(&root_table[root1_index]);
-            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+            if constexpr (Q_BITS == 32) {
                 root0_lo = d_const_inverse_root_31[root0_lo_index];
                 root0_hi = d_const_inverse_root_31[root0_hi_index];
                 root1 = d_const_inverse_root_31[root1_index];
             }
-            else if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+            else if constexpr (Q_BITS == 64) {
                 root0_lo = d_const_inverse_root_64[root0_lo_index];
                 root0_hi = d_const_inverse_root_64[root0_hi_index];
                 root1 = d_const_inverse_root_64[root1_index];
             }
 
-            SmallNTTValueFor<1U << N_POWER> a = sh[address];
-            SmallNTTValueFor<1U << N_POWER> b = sh[address + t];
-            SmallNTTValueFor<1U << N_POWER> c = sh[address + 2 * t];
-            SmallNTTValueFor<1U << N_POWER> d = sh[address + 3 * t];
-            if constexpr ((1U << N_POWER) == TFHEpp::lvl1param::n) {
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> a = sh[address];
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> b = sh[address + t];
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> c = sh[address + 2 * t];
+            SmallNTTValueFor<1U << N_POWER, Q_BITS> d = sh[address + 3 * t];
+            if constexpr (Q_BITS == 32) {
 #if defined(USE_CUDA_SHOUP_NTT)
                 const uint32_t root0_lo_shoup =
                     d_const_inverse_root_31_shoup[root0_lo_index];
@@ -1069,7 +1375,7 @@ __device__ __forceinline__ void SmallInverseNTT(
                     d_const_inverse_root_31_shoup[root0_hi_index];
                 const uint32_t root1_shoup =
                     d_const_inverse_root_31_shoup[root1_index];
-                if (lp == (N_POWER - 6) / 2 - 1) {
+                if ((N_POWER - 6) % 2 == 0 && lp == (N_POWER - 6) / 2 - 1) {
                     // The final inverse root is pre-scaled by 1/N.  Apply
                     // normalization as part of the final two butterflies,
                     // saving one modular multiplication per pair.
@@ -1088,26 +1394,41 @@ __device__ __forceinline__ void SmallInverseNTT(
                         root0_hi_shoup, root1, root1_shoup);
                 }
 #else
-                if (lp == (N_POWER - 6) / 2 - 1) {
+                if ((N_POWER - 6) % 2 == 0 && lp == (N_POWER - 6) / 2 - 1) {
                     // The final inverse root is pre-scaled by 1/N.  Apply
                     // normalization as part of the final two butterflies,
                     // saving one modular multiplication per pair.
-                    SmallGentlemanSandeUnit<N_POWER>(a, b, root0_lo);
-                    SmallGentlemanSandeUnit<N_POWER>(c, d, root0_hi);
-                    SmallGentlemanSandeScaledUnit<N_POWER>(a, c, root1,
+                    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(a, b, root0_lo);
+                    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(c, d, root0_hi);
+                    SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS, NativeAdd>(a, c, root1,
                                                             n_inverse);
-                    SmallGentlemanSandeScaledUnit<N_POWER>(b, d, root1,
+                    SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS, NativeAdd>(b, d, root1,
                                                             n_inverse);
                 }
                 else {
-                    SmallGentlemanSandeRadix4Unit<N_POWER>(
+                    SmallGentlemanSandeRadix4Unit<N_POWER, Q_BITS, NativeAdd>(
                         a, b, c, d, root0_lo, root0_hi, root1);
                 }
 #endif
             }
             else {
-                SmallGentlemanSandeRadix4Unit<N_POWER>(
-                    a, b, c, d, root0_lo, root0_hi, root1);
+                if ((N_POWER - 6) % 2 == 0 && lp == (N_POWER - 6) / 2 - 1) {
+                    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(a, b, root0_lo);
+                    SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(c, d, root0_hi);
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+                    SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(a, c, root1);
+                    SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(b, d, root1);
+#else
+                    SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS, NativeAdd>(a, c, root1,
+                                                                  n_inverse);
+                    SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS, NativeAdd>(b, d, root1,
+                                                                  n_inverse);
+#endif
+                }
+                else {
+                    SmallGentlemanSandeRadix4Unit<N_POWER, Q_BITS, NativeAdd>(
+                        a, b, c, d, root0_lo, root0_hi, root1);
+                }
             }
             sh[address] = a;
             sh[address + t] = b;
@@ -1124,18 +1445,25 @@ __device__ __forceinline__ void SmallInverseNTT(
     }
 
     if constexpr ((N_POWER - 6) % 2 != 0) {
-        if constexpr ((1U << N_POWER) == TFHEpp::lvl2param::n) {
+        if constexpr (Q_BITS == 64) {
             // Entry 1 is pre-scaled by 1/N, so this final butterfly also
             // performs the inverse normalization.
-            SmallGentlemanSandeScaledUnit<N_POWER>(
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+            SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(
+                sh[in_shared_address], sh[in_shared_address + t],
+                d_const_inverse_root_64[1]);
+#else
+            SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS, NativeAdd>(
                 sh[in_shared_address], sh[in_shared_address + t],
                 d_const_inverse_root_64[1], n_inverse);
+#endif
         }
         else {
             current_root_index = m + (tid >> t_2);
             auto root = d_const_inverse_root_31[current_root_index];
-            SmallGentlemanSandeUnit<N_POWER>(
-                sh[in_shared_address], sh[in_shared_address + t], root);
+            SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS, NativeAdd>(
+                sh[in_shared_address], sh[in_shared_address + t], root,
+                n_inverse);
         }
         t <<= 1;
         t_2 += 1;
@@ -1147,19 +1475,173 @@ __device__ __forceinline__ void SmallInverseNTT(
 
 }
 
+// Both polynomials use the same root at each stage. Load each twiddle and
+// its quotient once, then apply it to both coefficient pairs in registers.
+template <int N_POWER, bool Inverse, bool UniformRoot = false, bool Lazy = false>
+__device__ __forceinline__ void SmallNTTPairButterfly31(
+    uint32_t& u0, uint32_t& v0, uint32_t& u1, uint32_t& v1,
+    const uint32_t* roots, int index)
+{
+    uint32_t root;
+#if defined(USE_CUDA_SHOUP_NTT)
+    uint32_t quotient;
+#endif
+    // Constant memory broadcasts the one root shared by all lanes. Keep
+    // generic sizes on their supplied tables, as in the existing loader.
+    if constexpr (UniformRoot && N_POWER == TFHEpp::lvl1param::nbit) {
+        root = Inverse ? d_const_inverse_root_31[index]
+                       : d_const_forward_root_31[index];
+#if defined(USE_CUDA_SHOUP_NTT)
+        quotient = Inverse ? d_const_inverse_root_31_shoup[index]
+                           : d_const_forward_root_31_shoup[index];
+#endif
+    } else {
+#if defined(USE_CUDA_PACKED_PAIRED_ROOTS) && defined(USE_CUDA_SHOUP_NTT)
+        const uint2 pair = __ldg(
+            reinterpret_cast<const uint2*>(roots + (2U << N_POWER)) + index);
+        root = pair.x;
+#else
+        root = __ldg(&roots[index]);
+#endif
+#if defined(USE_CUDA_SHOUP_NTT)
+#if defined(USE_CUDA_PACKED_PAIRED_ROOTS)
+        quotient = pair.y;
+#else
+        quotient = __ldg(&roots[(1U << N_POWER) + index]);
+#endif
+#endif
+    }
+#if defined(USE_CUDA_SHOUP_NTT)
+    if constexpr (Inverse) {
+        SmallGentlemanSandeShoupUnit(u0, v0, root, quotient);
+        SmallGentlemanSandeShoupUnit(u1, v1, root, quotient);
+    }
+    else if constexpr (Lazy) {
+        SmallCooleyTukeyLazyShoupUnit(u0, v0, root, quotient);
+        SmallCooleyTukeyLazyShoupUnit(u1, v1, root, quotient);
+    }
+    else {
+        SmallCooleyTukeyShoupUnit(u0, v0, root, quotient);
+        SmallCooleyTukeyShoupUnit(u1, v1, root, quotient);
+    }
+#else
+    if constexpr (Inverse) {
+        SmallGentlemanSandeUnit<N_POWER, 32>(u0, v0, root);
+        SmallGentlemanSandeUnit<N_POWER, 32>(u1, v1, root);
+    }
+    else {
+        SmallCooleyTukeyUnit<N_POWER, 32>(u0, v0, root);
+        SmallCooleyTukeyUnit<N_POWER, 32>(u1, v1, root);
+    }
+#endif
+}
+
+template <int N_POWER, bool CanonicalOutput = true>
+__device__ __forceinline__ void SmallForwardNTTWarpPair31(
+    uint32_t* sh0, uint32_t* sh1, const uint32_t* roots, int tid)
+{
+    const int address = ((tid >> 5) << 5) + tid;
+    uint32_t u0 = sh0[address], v0 = sh0[address + 32];
+    uint32_t u1 = sh1[address], v1 = sh1[address + 32];
+    int shift = 5;
+    int m = 1 << (N_POWER - 6);
+    SmallNTTPairButterfly31<N_POWER, false, true, true>(u0, v0, u1, v1, roots,
+                                            m + (tid >> shift));
+    const bool upper = (tid & 16) != 0;
+    const auto peer_u0 = SmallNTTShuffleXor(u0, 16);
+    const auto peer_v0 = SmallNTTShuffleXor(v0, 16);
+    const auto peer_u1 = SmallNTTShuffleXor(u1, 16);
+    const auto peer_v1 = SmallNTTShuffleXor(v1, 16);
+    u0 = upper ? peer_v0 : u0;
+    v0 = upper ? v0 : peer_u0;
+    u1 = upper ? peer_v1 : u1;
+    v1 = upper ? v1 : peer_u1;
+    --shift; m <<= 1;
+    SmallNTTPairButterfly31<N_POWER, false, false, true>(u0, v0, u1, v1, roots,
+                                            m + (tid >> shift));
+#pragma unroll
+    for (int mask = 8; mask >= 1; mask >>= 1) {
+        const bool hi = (tid & mask) != 0;
+        const auto peer0 = SmallNTTShuffleXor(hi ? u0 : v0, mask);
+        const auto peer1 = SmallNTTShuffleXor(hi ? u1 : v1, mask);
+        if (hi) { u0 = peer0; u1 = peer1; }
+        else { v0 = peer0; v1 = peer1; }
+        --shift; m <<= 1;
+        SmallNTTPairButterfly31<N_POWER, false, false, true>(u0, v0, u1, v1, roots,
+                                                m + (tid >> shift));
+    }
+#if defined(USE_CUDA_SHOUP_NTT)
+    if constexpr (CanonicalOutput) {
+        constexpr uint32_t p = small_ntt31::P;
+        u0 = u0 >= p ? u0 - p : u0;
+        v0 = v0 >= p ? v0 - p : v0;
+        u1 = u1 >= p ? u1 - p : u1;
+        v1 = v1 >= p ? v1 - p : v1;
+    }
+#endif
+#if !defined(CUFHE_USE_HIP)
+    __syncwarp();
+#endif
+    sh0[2 * tid] = u0; sh0[2 * tid + 1] = v0;
+    sh1[2 * tid] = u1; sh1[2 * tid + 1] = v1;
+}
+
+template <int N_POWER>
+__device__ __forceinline__ void SmallInverseNTTWarpPair31(
+    uint32_t* sh0, uint32_t* sh1, const uint32_t* roots, int tid)
+{
+    uint32_t u0 = sh0[2 * tid], v0 = sh0[2 * tid + 1];
+    uint32_t u1 = sh1[2 * tid], v1 = sh1[2 * tid + 1];
+    int shift = 0;
+    int m = 1 << (N_POWER - 1);
+    SmallNTTPairButterfly31<N_POWER, true>(u0, v0, u1, v1, roots,
+                                           m + (tid >> shift));
+#pragma unroll
+    for (int mask = 1; mask <= 8; mask <<= 1) {
+        const bool hi = (tid & mask) != 0;
+        const auto peer0 = SmallNTTShuffleXor(hi ? u0 : v0, mask);
+        const auto peer1 = SmallNTTShuffleXor(hi ? u1 : v1, mask);
+        if (hi) { u0 = peer0; u1 = peer1; }
+        else { v0 = peer0; v1 = peer1; }
+        ++shift; m >>= 1;
+        SmallNTTPairButterfly31<N_POWER, true>(u0, v0, u1, v1, roots,
+                                               m + (tid >> shift));
+    }
+    const bool upper = (tid & 16) != 0;
+    const auto peer_u0 = SmallNTTShuffleXor(u0, 16);
+    const auto peer_v0 = SmallNTTShuffleXor(v0, 16);
+    const auto peer_u1 = SmallNTTShuffleXor(u1, 16);
+    const auto peer_v1 = SmallNTTShuffleXor(v1, 16);
+    u0 = upper ? peer_v0 : u0;
+    v0 = upper ? v0 : peer_u0;
+    u1 = upper ? peer_v1 : u1;
+    v1 = upper ? v1 : peer_u1;
+    ++shift; m >>= 1;
+    SmallNTTPairButterfly31<N_POWER, true, true>(u0, v0, u1, v1, roots,
+                                           m + (tid >> shift));
+#if !defined(CUFHE_USE_HIP)
+    __syncwarp();
+#endif
+    const int address = ((tid >> 5) << 5) + tid;
+    sh0[address] = u0; sh0[address + 32] = v0;
+    sh1[address] = u1; sh1[address + 32] = v1;
+}
+
 // Transform two independent polynomials with one barrier schedule.  The
 // radix-4 stages only occupy N/4 of the block's N/2 threads; pairing gives
 // each 256-thread half its own buffer there, and the warp-local tail stages
 // process both buffers per thread.  Restricted to the 31-bit lvl1 layout
-// (even stage count, no Goldilocks special cases).
-template <int N_POWER>
+// (even stage count, no Goldilocks special cases). CanonicalOutput=false
+// permits [0, 2p) results for consumers that reduce them exactly before any
+// arithmetic requiring canonical inputs.
+template <int N_POWER, uint32_t Q_BITS = 32, bool CanonicalOutput = true>
 __device__ __forceinline__ void SmallForwardNTTPair(
-    SmallNTTValueFor<1U << N_POWER>* sh0,
-    SmallNTTValueFor<1U << N_POWER>* sh1,
-    const SmallNTTValueFor<1U << N_POWER>* root_table, int tid)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>* sh0,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>* sh1,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS>* root_table, int tid)
 {
     constexpr uint32_t N = 1U << N_POWER;
-    static_assert(N == TFHEpp::lvl1param::n && (N_POWER - 6) % 2 == 0,
+    static_assert(Q_BITS == 32 && (N_POWER - 6) % 2 == 0,
                   "Paired NTT supports the lvl1 layout only");
 
     int t_2 = N_POWER - 1;
@@ -1168,7 +1650,7 @@ __device__ __forceinline__ void SmallForwardNTTPair(
     int t = 1 << t_;
 
     constexpr int QUARTER = 1 << (N_POWER - 2);
-    SmallNTTValueFor<N>* const my_sh = tid < QUARTER ? sh0 : sh1;
+    SmallNTTValueFor<N, Q_BITS>* const my_sh = tid < QUARTER ? sh0 : sh1;
     const int ptid = tid & (QUARTER - 1);
 
 #pragma unroll
@@ -1186,17 +1668,17 @@ __device__ __forceinline__ void SmallForwardNTTPair(
             const auto root1_lo = d_const_forward_root_31[root1_lo_index];
             const auto root1_hi = d_const_forward_root_31[root1_hi_index];
 
-            SmallNTTValueFor<N> a = my_sh[address];
-            SmallNTTValueFor<N> b = my_sh[address + radix_t];
-            SmallNTTValueFor<N> c = my_sh[address + t];
-            SmallNTTValueFor<N> d = my_sh[address + t + radix_t];
+            SmallNTTValueFor<N, Q_BITS> a = my_sh[address];
+            SmallNTTValueFor<N, Q_BITS> b = my_sh[address + radix_t];
+            SmallNTTValueFor<N, Q_BITS> c = my_sh[address + t];
+            SmallNTTValueFor<N, Q_BITS> d = my_sh[address + t + radix_t];
 #if defined(USE_CUDA_SHOUP_NTT)
             SmallCooleyTukeyRadix4ShoupUnit(
                 a, b, c, d, root0, d_const_forward_root_31_shoup[root0_index],
                 root1_lo, d_const_forward_root_31_shoup[root1_lo_index],
                 root1_hi, d_const_forward_root_31_shoup[root1_hi_index]);
 #else
-            SmallCooleyTukeyRadix4Unit<N_POWER>(a, b, c, d, root0, root1_lo,
+            SmallCooleyTukeyRadix4Unit<N_POWER, Q_BITS>(a, b, c, d, root0, root1_lo,
                                                 root1_hi);
 #endif
             my_sh[address] = a;
@@ -1212,6 +1694,10 @@ __device__ __forceinline__ void SmallForwardNTTPair(
         __syncthreads();
     }
 
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
+    __CUDA_ARCH__ >= 890
+    SmallForwardNTTWarpPair31<N_POWER, CanonicalOutput>(sh0, sh1, root_table, tid);
+#else
     int in_shared_address = ((tid >> t_) << t_) + tid;
 #pragma unroll 1
     for (int lp = 0; lp < 6; lp++) {
@@ -1224,9 +1710,9 @@ __device__ __forceinline__ void SmallForwardNTTPair(
         SmallCooleyTukeyShoupUnit(sh1[in_shared_address],
                                   sh1[in_shared_address + t], root, root_shoup);
 #else
-        SmallCooleyTukeyUnit<N_POWER>(sh0[in_shared_address],
+        SmallCooleyTukeyUnit<N_POWER, Q_BITS>(sh0[in_shared_address],
                                       sh0[in_shared_address + t], root);
-        SmallCooleyTukeyUnit<N_POWER>(sh1[in_shared_address],
+        SmallCooleyTukeyUnit<N_POWER, Q_BITS>(sh1[in_shared_address],
                                       sh1[in_shared_address + t], root);
 #endif
 
@@ -1235,19 +1721,24 @@ __device__ __forceinline__ void SmallForwardNTTPair(
         --t_;
         m <<= 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
+#if !defined(CUFHE_USE_HIP)
+        __syncwarp();
+#endif
     }
+#endif
     __syncthreads();
 }
 
-template <int N_POWER>
+template <int N_POWER, uint32_t Q_BITS = 32, bool AddToTorus = false>
 __device__ __forceinline__ void SmallInverseNTTPair(
-    SmallNTTValueFor<1U << N_POWER>* sh0,
-    SmallNTTValueFor<1U << N_POWER>* sh1,
-    const SmallNTTValueFor<1U << N_POWER>* root_table,
-    SmallNTTValueFor<1U << N_POWER> n_inverse, int tid)
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>* sh0,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS>* sh1,
+    const SmallNTTValueFor<1U << N_POWER, Q_BITS>* root_table,
+    SmallNTTValueFor<1U << N_POWER, Q_BITS> n_inverse, int tid, uint32_t* torus = nullptr)
 {
     constexpr uint32_t N = 1U << N_POWER;
-    static_assert(N == TFHEpp::lvl1param::n && (N_POWER - 6) % 2 == 0,
+    static_assert(!AddToTorus || (Q_BITS == 32 && N_POWER > 6));
+    static_assert(Q_BITS == 32 && (N_POWER - 6) % 2 == 0,
                   "Paired NTT supports the lvl1 layout only");
 
     int t_2 = 0;
@@ -1255,6 +1746,11 @@ __device__ __forceinline__ void SmallInverseNTTPair(
     int m = 1 << (N_POWER - 1);
     int t = 1;
 
+#if defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
+    __CUDA_ARCH__ >= 890
+    SmallInverseNTTWarpPair31<N_POWER>(sh0, sh1, root_table, tid);
+    t <<= 6; t_2 += 6; t_ += 6; m >>= 6;
+#else
     int in_shared_address = ((tid >> t_) << t_) + tid;
 #pragma unroll 1
     for (int lp = 0; lp < 6; lp++) {
@@ -1269,9 +1765,9 @@ __device__ __forceinline__ void SmallInverseNTTPair(
                                      sh1[in_shared_address + t], root,
                                      root_shoup);
 #else
-        SmallGentlemanSandeUnit<N_POWER>(sh0[in_shared_address],
+        SmallGentlemanSandeUnit<N_POWER, Q_BITS>(sh0[in_shared_address],
                                          sh0[in_shared_address + t], root);
-        SmallGentlemanSandeUnit<N_POWER>(sh1[in_shared_address],
+        SmallGentlemanSandeUnit<N_POWER, Q_BITS>(sh1[in_shared_address],
                                          sh1[in_shared_address + t], root);
 #endif
 
@@ -1280,11 +1776,15 @@ __device__ __forceinline__ void SmallInverseNTTPair(
         ++t_;
         m >>= 1;
         in_shared_address = ((tid >> t_) << t_) + tid;
+#if !defined(CUFHE_USE_HIP)
+        __syncwarp();
+#endif
     }
+#endif
     __syncthreads();
 
     constexpr int QUARTER = 1 << (N_POWER - 2);
-    SmallNTTValueFor<N>* const my_sh = tid < QUARTER ? sh0 : sh1;
+    SmallNTTValueFor<N, Q_BITS>* const my_sh = tid < QUARTER ? sh0 : sh1;
     const int ptid = tid & (QUARTER - 1);
 
 #pragma unroll
@@ -1301,10 +1801,10 @@ __device__ __forceinline__ void SmallInverseNTTPair(
             const auto root0_hi = d_const_inverse_root_31[root0_hi_index];
             const auto root1 = d_const_inverse_root_31[root1_index];
 
-            SmallNTTValueFor<N> a = my_sh[address];
-            SmallNTTValueFor<N> b = my_sh[address + t];
-            SmallNTTValueFor<N> c = my_sh[address + 2 * t];
-            SmallNTTValueFor<N> d = my_sh[address + 3 * t];
+            SmallNTTValueFor<N, Q_BITS> a = my_sh[address];
+            SmallNTTValueFor<N, Q_BITS> b = my_sh[address + t];
+            SmallNTTValueFor<N, Q_BITS> c = my_sh[address + 2 * t];
+            SmallNTTValueFor<N, Q_BITS> d = my_sh[address + 3 * t];
 #if defined(USE_CUDA_SHOUP_NTT)
             const uint32_t root0_lo_shoup =
                 d_const_inverse_root_31_shoup[root0_lo_index];
@@ -1332,20 +1832,37 @@ __device__ __forceinline__ void SmallInverseNTTPair(
             if (lp == (N_POWER - 6) / 2 - 1) {
                 // The final inverse root is pre-scaled by 1/N; fold the
                 // normalization into the last two butterflies.
-                SmallGentlemanSandeUnit<N_POWER>(a, b, root0_lo);
-                SmallGentlemanSandeUnit<N_POWER>(c, d, root0_hi);
-                SmallGentlemanSandeScaledUnit<N_POWER>(a, c, root1, n_inverse);
-                SmallGentlemanSandeScaledUnit<N_POWER>(b, d, root1, n_inverse);
+                SmallGentlemanSandeUnit<N_POWER, Q_BITS>(a, b, root0_lo);
+                SmallGentlemanSandeUnit<N_POWER, Q_BITS>(c, d, root0_hi);
+                SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS>(a, c, root1, n_inverse);
+                SmallGentlemanSandeScaledUnit<N_POWER, Q_BITS>(b, d, root1, n_inverse);
             }
             else {
-                SmallGentlemanSandeRadix4Unit<N_POWER>(a, b, c, d, root0_lo,
+                SmallGentlemanSandeRadix4Unit<N_POWER, Q_BITS>(a, b, c, d, root0_lo,
                                                        root0_hi, root1);
             }
 #endif
-            my_sh[address] = a;
-            my_sh[address + t] = b;
-            my_sh[address + 2 * t] = c;
-            my_sh[address + 3 * t] = d;
+            if constexpr (AddToTorus) {
+                if (lp == (N_POWER - 6) / 2 - 1) {
+                    // Keep the same normalized values and torus conversion,
+                    // but consume them before an otherwise redundant store/load.
+                    uint32_t* const output = tid < QUARTER ? torus : torus + N;
+                    output[address] += ntt_mod_to_torus32<N, Q_BITS>(a);
+                    output[address + t] += ntt_mod_to_torus32<N, Q_BITS>(b);
+                    output[address + 2 * t] += ntt_mod_to_torus32<N, Q_BITS>(c);
+                    output[address + 3 * t] += ntt_mod_to_torus32<N, Q_BITS>(d);
+                } else {
+                    my_sh[address] = a;
+                    my_sh[address + t] = b;
+                    my_sh[address + 2 * t] = c;
+                    my_sh[address + 3 * t] = d;
+                }
+            } else {
+                my_sh[address] = a;
+                my_sh[address + t] = b;
+                my_sh[address + 2 * t] = c;
+                my_sh[address + 3 * t] = d;
+            }
         }
 
         t <<= 2;
@@ -1443,15 +1960,15 @@ class CuSmallNTTHandler {
 
         // Load and modulus switch: Torus32 -> NTT modulus
         if (tid < NUM_THREADS) {
-            sh_temp[tid] = torus_to_ntt_mod<N>(in[tid]);
+            sh_temp[tid] = torus_to_ntt_mod<N, Q_BITS>(in[tid]);
             sh_temp[tid + NUM_THREADS] =
-                torus_to_ntt_mod<N>(in[tid + NUM_THREADS]);
+                torus_to_ntt_mod<N, Q_BITS>(in[tid + NUM_THREADS]);
         }
         __syncthreads();
 
         // Forward NTT
         if (tid < NUM_THREADS) {
-            SmallForwardNTT<kLogLength>(sh_temp, forward_root_, tid);
+            SmallForwardNTT<kLogLength, Q_BITS>(sh_temp, forward_root_, tid);
         }
         else {
             for (int i = 0; i < SmallForwardNTTSyncCount<N>(); i++)
@@ -1483,14 +2000,14 @@ class CuSmallNTTHandler {
         if (tid < NUM_THREADS) {
             int32_t v0 = in[tid];
             int32_t v1 = in[tid + NUM_THREADS];
-            sh_temp[tid] = signed_int_to_ntt_mod<N>(v0);
-            sh_temp[tid + NUM_THREADS] = signed_int_to_ntt_mod<N>(v1);
+            sh_temp[tid] = signed_int_to_ntt_mod<N, Q_BITS>(v0);
+            sh_temp[tid + NUM_THREADS] = signed_int_to_ntt_mod<N, Q_BITS>(v1);
         }
         __syncthreads();
 
         // Forward NTT
         if (tid < NUM_THREADS) {
-            SmallForwardNTT<kLogLength>(sh_temp, forward_root_, tid);
+            SmallForwardNTT<kLogLength, Q_BITS>(sh_temp, forward_root_, tid);
         }
         else {
             for (int i = 0; i < SmallForwardNTTSyncCount<N>(); i++)
@@ -1528,7 +2045,7 @@ class CuSmallNTTHandler {
 
         // Inverse NTT
         if (tid < NUM_THREADS) {
-            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_,
+            SmallInverseNTT<kLogLength, Q_BITS>(sh_temp, inverse_root_, n_inverse_,
                                         tid);
         }
         else {
@@ -1538,9 +2055,9 @@ class CuSmallNTTHandler {
 
         // Convert to signed and apply inverse modulus switch
         if (tid < NUM_THREADS) {
-            out[tid] = ntt_mod_to_torus32<N>(sh_temp[tid]);
+            out[tid] = ntt_mod_to_torus32<N, Q_BITS>(sh_temp[tid]);
             out[tid + NUM_THREADS] =
-                ntt_mod_to_torus32<N>(sh_temp[tid + NUM_THREADS]);
+                ntt_mod_to_torus32<N, Q_BITS>(sh_temp[tid + NUM_THREADS]);
         }
         __syncthreads();
     }
@@ -1564,7 +2081,7 @@ class CuSmallNTTHandler {
 
         // Inverse NTT
         if (tid < NUM_THREADS) {
-            SmallInverseNTT<kLogLength>(sh_temp, inverse_root_, n_inverse_,
+            SmallInverseNTT<kLogLength, Q_BITS>(sh_temp, inverse_root_, n_inverse_,
                                         tid);
         }
         else {
@@ -1574,9 +2091,9 @@ class CuSmallNTTHandler {
 
         // Convert and ADD to output
         if (tid < NUM_THREADS) {
-            out[tid] += ntt_mod_to_torus32<N>(sh_temp[tid]);
+            out[tid] += ntt_mod_to_torus32<N, Q_BITS>(sh_temp[tid]);
             out[tid + NUM_THREADS] +=
-                ntt_mod_to_torus32<N>(sh_temp[tid + NUM_THREADS]);
+                ntt_mod_to_torus32<N, Q_BITS>(sh_temp[tid + NUM_THREADS]);
         }
         __syncthreads();
     }
@@ -1593,7 +2110,8 @@ class CuSmallNTTHandler {
 // 32-bit-only tfhe-rs-style FFT retains its original layout.
 template <class P>
 constexpr bool USE_LOW_LDS_BOOTSTRAP =
-#if defined(CUFHE_LOW_LDS_PLATFORM) && !defined(USE_BLOCK_BINARY) && \
+#if defined(CUFHE_LOW_LDS_PLATFORM) && \
+    (!defined(USE_BLOCK_BINARY) || (defined(USE_FFT) && defined(USE_GPU_FFT))) && \
     (!defined(USE_FFT) || defined(USE_GPU_FFT))
 #if defined(USE_FFT) && defined(USE_GPU_FFT)
     P::n == TFHEpp::lvl1param::n || sizeof(typename P::T) == 8;
@@ -1604,17 +2122,24 @@ constexpr bool USE_LOW_LDS_BOOTSTRAP =
     false;
 #endif
 
-// Minimum resident blocks requested from the compiler for gate kernels.  The
-// lvl1 NTT kernel sits at ~50 registers, allowing only two resident 512-thread
-// blocks per SM; requesting three forces it down to 42.  That trade is a win
-// on Ada (sm_89), but the extra register pressure is a throughput regression
-// on Ampere (sm_80).  Keep Ampere unconstrained while preserving the Ada
-// tuning.  FFT lvl1 needs ~100 registers so it stays at the default.
+// Ada launch bounds trade register budget against resident gate blocks.
+// The 32-bit lvl1 limit is configurable: three blocks suit shared-memory
+// tails, while the paired register tail benefits from a two-block budget.
+// The opt-in 64-bit register tail uses one block to avoid spills; other
+// 64-bit paths keep two blocks. Ampere and FFT keep unconstrained allocation.
 template <class P>
 constexpr uint32_t MIN_BLOCKS4HOMGATE =
 #if defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && !defined(USE_FFT)
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
-    P::n == TFHEpp::lvl1param::n ? 3 : 1;
+#if defined(USE_CUDA_WARP_TRANSFORM64)
+    sizeof(typename P::T) == 8 ? 1 :
+#endif
+#if defined(CUFHE_CUDA_NTT_MIN_BLOCKS)
+    P::n == TFHEpp::lvl1param::n
+        ? (sizeof(typename P::T) == 4 ? CUFHE_CUDA_NTT_MIN_BLOCKS : 2) : 1;
+#else
+    P::n == TFHEpp::lvl1param::n ? (sizeof(typename P::T) == 4 ? 3 : 2) : 1;
+#endif
 #else
     1;
 #endif
@@ -1766,6 +2291,16 @@ __device__ __forceinline__ double2 shfl_xor_d2(double2 val, int mask)
     return {shfl_xor_d(val.x, mask), shfl_xor_d(val.y, mask)};
 }
 
+// Shared-memory exchanges within a CUDA warp still need a memory barrier
+// under independent thread scheduling. Keep block-wide barrier counts intact:
+// callers also have inactive warps matching those barriers separately.
+__device__ __forceinline__ void GPUFFTWarpSync()
+{
+#if !defined(CUFHE_USE_HIP)
+    __syncwarp();
+#endif
+}
+
 /**
  * GPU-FFT Forward FFT for N/2=256 complex elements.
  * Uses 128 threads and a straightforward shared-memory Cooley-Tukey pass.
@@ -1806,6 +2341,7 @@ __device__ __forceinline__ void GPUFFTForward256(
         sh[address + 32] = u - v;
     }
 
+    GPUFFTWarpSync();
     {
         int root_shift = 4;
         const int address = ((tid >> 4) << 4) + tid;
@@ -1834,6 +2370,7 @@ __device__ __forceinline__ void GPUFFTForward256(
             reg_u = reg_u + weighted;
         }
 
+        GPUFFTWarpSync();
         sh[2 * tid] = reg_u;
         sh[2 * tid + 1] = reg_v;
     }
@@ -1873,8 +2410,10 @@ __device__ __forceinline__ void GPUFFTInverse256(
     }
 
     const int write_address = ((tid >> 4) << 4) + tid;
+    GPUFFTWarpSync();
     sh[write_address] = reg_u;
     sh[write_address + 16] = reg_v;
+    GPUFFTWarpSync();
 
     {
         const int address = ((tid >> 5) << 5) + tid;
@@ -1918,7 +2457,7 @@ __device__ __forceinline__ void GPUFFTInverse256(
  * eliminating one __syncthreads barrier.
  *
  * Sync pattern: 1 radix-4 (strides 256+128) + 1 radix-2 (stride 64) +
- * boundary (no sync) + warp-local + final sync = 3 total syncs
+ * boundary (warp sync) + warp-local + final sync = 3 block-wide syncs
  */
 __device__ __forceinline__ void GPUFFTForward512(
     double2* sh, const double2* __restrict__ root_table, int tid)
@@ -1959,8 +2498,7 @@ __device__ __forceinline__ void GPUFFTForward512(
     }
     __syncthreads();
 
-    // Boundary stage (stride 32): no sync needed after — stride-16 reads
-    // are warp-local
+    // Boundary stage (stride 32): the following exchange is warp-local.
     {
         int in_shared_address = ((tid >> 5) << 5) + tid;
         double2 root = __ldg(&root_table[tid >> 5]);
@@ -1970,6 +2508,7 @@ __device__ __forceinline__ void GPUFFTForward512(
         sh[in_shared_address + 32] = U - V;
     }
 
+    GPUFFTWarpSync();
     // Warp-local stages (stride 16..1): register-based with warp shuffle.
     {
         int t_2 = 4;
@@ -2004,6 +2543,7 @@ __device__ __forceinline__ void GPUFFTForward512(
             reg_u = reg_u + Vw;
         }
 
+        GPUFFTWarpSync();
         sh[2 * tid] = reg_u;
         sh[2 * tid + 1] = reg_v;
     }
@@ -2068,12 +2608,13 @@ __device__ __forceinline__ void GPUFFTInverse512(
 
         // Write back (stride-16 addressing for boundary stage)
         int wb_addr = ((tid >> 4) << 4) + tid;
+        GPUFFTWarpSync();
         sh[wb_addr] = reg_u;
         sh[wb_addr + 16] = reg_v;
     }
+    GPUFFTWarpSync();
 
-    // Stage 5 (stride 32): boundary stage. No sync needed before because
-    // stride-32 reads only access data written by same-warp threads.
+    // Stage 5 (stride 32): reads data written by same-warp threads.
     {
         int in_shared_address = ((tid >> 5) << 5) + tid;
         double2 root = __ldg(&root_table[tid >> 5]);
@@ -2125,8 +2666,8 @@ __device__ __forceinline__ void GPUFFTInverse512(
  * Radix-4 optimization: stages 0+1 and 2+3 each merged into radix-4
  * butterflies, eliminating two __syncthreads barriers.
  *
- * Sync pattern: 2 radix-4 stages + boundary (no sync) + warp-local +
- * final sync = 3 total syncs
+ * Sync pattern: 2 radix-4 stages + boundary (warp sync) + warp-local +
+ * final sync = 3 block-wide syncs
  */
 __device__ __forceinline__ void GPUFFTForward1024(
     double2* sh, const double2* __restrict__ root_table, int tid)
@@ -2192,8 +2733,7 @@ __device__ __forceinline__ void GPUFFTForward1024(
     }
     __syncthreads();
 
-    // Boundary stage (stride 32): all 512 threads, no sync after —
-    // stride-16 reads are warp-local
+    // Boundary stage (stride 32): all 512 threads, followed by a warp exchange.
     {
         int in_shared_address = ((tid >> 5) << 5) + tid;
         double2 root = __ldg(&root_table[tid >> 5]);
@@ -2203,6 +2743,7 @@ __device__ __forceinline__ void GPUFFTForward1024(
         sh[in_shared_address + 32] = U - V;
     }
 
+    GPUFFTWarpSync();
     // Warp-local stages (stride 16..1): register-based with warp shuffle.
     {
         int t_2 = 4;
@@ -2237,6 +2778,7 @@ __device__ __forceinline__ void GPUFFTForward1024(
             reg_u = reg_u + Vw;
         }
 
+        GPUFFTWarpSync();
         sh[2 * tid] = reg_u;
         sh[2 * tid + 1] = reg_v;
     }
@@ -2295,12 +2837,13 @@ __device__ __forceinline__ void GPUFFTInverse1024(
         }
 
         int wb_addr = ((tid >> 4) << 4) + tid;
+        GPUFFTWarpSync();
         sh[wb_addr] = reg_u;
         sh[wb_addr + 16] = reg_v;
     }
+    GPUFFTWarpSync();
 
-    // Stage 5 (stride 32): boundary stage. No sync needed before —
-    // stride-32 reads only access data written by same-warp threads.
+    // Stage 5 (stride 32): reads data written by same-warp threads.
     {
         int in_shared_address = ((tid >> 5) << 5) + tid;
         double2 root = __ldg(&root_table[tid >> 5]);
@@ -2500,12 +3043,17 @@ using NTTValue = NTTValueFor<TFHEpp::lvl1param::n>;
 
 // The lvl02 low-LDS path requires register-resident accumulators to fit the
 // R9700's per-workgroup LDS limit.  lvl01 does not require them for capacity,
-// but benefits from avoiding an LDS read/write for every pointwise MAC.  Keep
-// CUDA and block-binary builds on their established shared-memory layout.
+// but benefits from avoiding an LDS read/write for every pointwise MAC.
+// Block-binary lvl1 also keeps coefficient-local sums in registers; lvl02
+// retains its shared-memory layout.
 template <class P>
 constexpr bool USE_REGISTER_NTT_ACCUM =
-#if defined(CUFHE_REGISTER_NTT_ACCUM_PLATFORM) && !defined(USE_BLOCK_BINARY)
+#if defined(CUFHE_REGISTER_NTT_ACCUM_PLATFORM)
+#if defined(USE_BLOCK_BINARY)
+    sizeof(typename P::T) == 4;
+#else
     P::n == TFHEpp::lvl1param::n || USE_LOW_LDS_BOOTSTRAP<P>;
+#endif
 #else
     USE_LOW_LDS_BOOTSTRAP<P>;
 #endif
@@ -2516,8 +3064,31 @@ constexpr bool USE_REGISTER_NTT_ACCUM =
 template <class P>
 constexpr bool USE_PAIRED_NTT =
 #if defined(USE_CUDA_PAIRED_NTT) && !defined(CUFHE_USE_HIP)
-    P::n == TFHEpp::lvl1param::n && USE_REGISTER_NTT_ACCUM<P> && P::k == 1 &&
-    (((P::k + 1) * P::l) % 2 == 0);
+    sizeof(typename P::T) == 4 && P::n == TFHEpp::lvl1param::n &&
+    USE_REGISTER_NTT_ACCUM<P> && P::k == 1 && P::lₐ == P::l &&
+    P::Bgₐbit == P::Bgbit && (((P::k + 1) * P::l) % 2 == 0);
+#else
+    false;
+#endif
+
+// Stage two unchanged monomial polynomials for the Torus64 block-binary path.
+template <class P>
+constexpr bool USE_ASYNC_MONOMIALS64 =
+#if defined(USE_CUDA_ASYNC_MONOMIALS) && defined(USE_CUDA_PAIRED_NTT_MADD4) && \
+    defined(USE_BLOCK_BINARY) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE)
+    sizeof(typename P::T) == 8 && !USE_REGISTER_NTT_ACCUM<P>;
+#else
+    false;
+#endif
+
+// Eligible Goldilocks layout for paired decomposition rows. Callers choose
+// staged large batches or unstaged raw binary gates; other paths keep their workspace.
+template <class P>
+constexpr bool USE_PAIRED_NTT64 =
+#if defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && !defined(CUFHE_USE_HIP)
+    USE_ASYNC_MONOMIALS64<P> && P::n == TFHEpp::lvl2param::n &&
+    P::nbit >= 8 && (P::nbit - 6) % 2 == 0 && P::k == 2 &&
+    P::lₐ == P::l && P::Bgₐbit == P::Bgbit;
 #else
     false;
 #endif
@@ -2527,23 +3098,29 @@ constexpr bool USE_PAIRED_NTT =
 // extracted-TLWE scratch, with the larger determining the reusable prefix.
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_WORK =
-    (USE_PAIRED_NTT<P> ? 2 : 1) * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>);
+    (USE_PAIRED_NTT<P> ? 2 : 1) * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>)
+#if defined(USE_CUDA_ASYNC_MONOMIALS) && defined(USE_CUDA_PAIRED_NTT_MADD4) && defined(USE_BLOCK_BINARY)
+    + (USE_PAIRED_NTT<P> ? 2 * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>) : 0)
+#endif
+    ;
 
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_TLWE = (P::k * P::n + 1) * sizeof(typename P::T);
 
-template <class P = TFHEpp::lvl1param>
+template <class P = TFHEpp::lvl1param, bool StageMonomials64 = false, bool PairUnstaged64 = false>
 constexpr uint32_t MEM4HOMGATE =
     USE_REGISTER_NTT_ACCUM<P>
         ? (MEM4HOMGATE_WORK<P> > MEM4HOMGATE_TLWE<P> ? MEM4HOMGATE_WORK<P>
                                                      : MEM4HOMGATE_TLWE<P>)
-        : (P::k + 2) * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>);
+        : ((P::k + 2) + (StageMonomials64 && USE_ASYNC_MONOMIALS64<P> ? 2 : 0) +
+           ((StageMonomials64 || PairUnstaged64) && USE_PAIRED_NTT64<P> ? 1 : 0)) * P::n *
+              sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>);
 
 // Dynamic shared memory size for regular gates:
 // NTT workspace + one TRLWE array placed after it
-template <class P = TFHEpp::lvl1param>
+template <class P = TFHEpp::lvl1param, bool StageMonomials64 = false, bool PairUnstaged64 = false>
 constexpr uint32_t MEM4HOMGATE_DYN =
-    MEM4HOMGATE<P> + (P::k + 1) * P::n * sizeof(typename P::T);
+    MEM4HOMGATE<P, StageMonomials64, PairUnstaged64> + (P::k + 1) * P::n * sizeof(typename P::T);
 
 // Dynamic shared memory size for Mux/NMux gates.  The low-LDS path reuses one
 // TRLWE array sequentially; the regular path keeps two arrays.

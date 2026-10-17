@@ -42,8 +42,11 @@ int main()
     const uint32_t kNumTests = kNumSMs * 32;  // * 8;
     constexpr uint32_t kNumLevels = 10;  // Gate Types, Mux is counted as 2.
 
-    // using Param = TFHEpp::lvl0param;
+#ifdef CUFHE_TEST_BR_IKS
+    using Param = TFHEpp::lvl0param;
+#else
     using Param = TFHEpp::lvl1param;
+#endif
     using brP = TFHEpp::lvl01param;
     using iksP = TFHEpp::lvl10param;
 
@@ -74,6 +77,10 @@ int main()
 
     Test<Param>("NAND", Nand<Param>, NandCheck, pt, ct, st, kNumTests, kNumSMs,
                 *sk);
+    Test<Param>("NOR", Nor<Param>,
+                [](uint8_t& out, const uint8_t& in0, const uint8_t& in1) {
+                    out = !(in0 || in1);
+                }, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test<Param>("OR", Or<Param>, OrCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test<Param>("ORYN", OrYN<Param>, OrYNCheck, pt, ct, st, kNumTests, kNumSMs,
                 *sk);

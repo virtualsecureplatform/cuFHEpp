@@ -30,6 +30,99 @@ Each benchmark ran exclusively on the GPU — no concurrent workloads.
 - **Latency**: sequential time per gate on a single stream / thread
 - **Throughput**: total time ÷ total gates with all 108 SM streams active (cuFHEpp only; 3456 concurrent gates, 32 per SM)
 
+### RTX 4090 block-binary bootstrap optimizations
+
+The CUDA paths now distinguish torus word width explicitly, including when
+lvl1 and lvl2 share N=1024. NTT arithmetic continues to use the existing
+31-bit and Goldilocks primes. Paired transforms, exact fused modular products,
+register accumulators, prepared key-switch row descriptors, and workspace reuse
+reduce redundant arithmetic and shared-memory traffic. FFT block products also
+reuse their inverse workspace and keep partial sums in registers.
+
+Cryptographic parameters, secret and noise distributions, torus precision,
+decomposition and rounding, and security/noise-estimation inputs are unchanged.
+The backend defaults remain unchanged. The options below control implementation
+and scheduling for the existing block-binary parameter set.
+
+Configure the measured RTX 4090 NTT profile as follows
+(recorded with CUDA 13.3, Release, SM89, and device LTO):
+
+```sh
+cmake -S . -B build-4090-ntt -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_ARCHITECTURES=89 -DENABLE_TEST=ON \
+  -DUSE_BLOCK_BINARY=ON -DUSE_FFT=OFF \
+  -DUSE_CUDA_WARP_TRANSFORM=OFF -DUSE_CUDA_WARP_TRANSFORM64=ON \
+  -DUSE_CUDA_PAIRED_NTT=ON -DUSE_CUDA_PAIRED_NTT_WARP=ON \
+  -DUSE_CUDA_PAIRED_NTT_MADD4=ON -DUSE_CUDA_MIN_BLOCKS=ON \
+  -DCUFHE_CUDA_NTT_MIN_BLOCKS=2 \
+  -DUSE_CUDA_WARP_MODSWITCH_CORRECTION=ON \
+  -DUSE_CUDA_ASYNC_MONOMIALS=ON -DUSE_CUDA_PACKED_PAIRED_ROOTS=ON \
+  -DUSE_CUDA_UNREDUCED_INVERSE_DIFF=ON -DUSE_CUDA_WORD32_REDUCTION=ON
+cmake --build build-4090-ntt --target test_bootstrap_bench_lvl02 \
+  test_bootstrap_cooperative test_bootstrap_batch test_bootstrap_public_batch \
+  test_small_modulus test_keyswitch_gpu test_keyswitch_gpu_lvl20 -j8
+```
+
+Select an idle GPU using `CUDA_VISIBLE_DEVICES` before running tests or timing.
+For example, with an idle GPU already selected:
+
+```sh
+OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_bootstrap_bench_lvl02 1 25 45 batch
+OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_bootstrap_cooperative
+OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_bootstrap_batch
+OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_bootstrap_public_batch
+OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_small_modulus
+OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_keyswitch_gpu
+OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_keyswitch_gpu_lvl20
+```
+
+`test_bootstrap_bench` measures raw lvl1 IKS→BR NAND; the `_lvl02` target
+measures raw lvl2-input/lvl2-output IKS→BR NAND. The `_br_iks` targets measure
+the public BR→IKS ordering, whose lvl02 API has lvl0 inputs and outputs.
+Arguments are streams, samples per stream, repetitions, gate/mode, and optional
+`graph`. Each run creates fresh encrypted inputs and keys, excludes setup and
+transfers from timing, and checks the final outputs by decryption. `batch`
+uses one batch launch per stream; `packed` uses scalar launches on equivalent
+buffers. Keep these API orders and dispatch modes separate when comparing results.
+
+`NandBootstrapBatch` accepts GPU-resident independent ciphertexts with strides
+in torus coefficients. Transfers belong to the caller. Each stride must fit a
+complete TLWE, and distinct outputs must not overlap. An output may alias its
+corresponding input, including a partial overlap; cross-sample aliases are not
+supported. A zero count is a no-op. Both IKS→BR and BR→IKS overloads are available
+in `include/bootstrap_gpu.cuh`.
+
+For raw lvl02 NAND on an RTX 4090 (128 SMs), cooperative scheduling uses nine
+CTAs per sample for counts 1–14, five for 15–25, three for 26–42, and two for
+43–64. Larger batches use one CTA per ciphertext. Selection checks cooperative
+launch support and full-grid residency; other configurations use the ordinary
+batch path. Scratch allocation and release are stream ordered, support graph
+capture, and use private per-device pools without changing the caller's pool.
+
+Recent isolated comparisons on an idle RTX 4090 measured the following total
+batch times. Each row compares the retained schedule with its immediate
+predecessor, using the same cryptographic parameters and API order:
+
+| Raw lvl02 NAND samples | Previous schedule | Retained schedule | Reduction |
+|---|---:|---:|---:|
+| 15 | 4.12227 ms | 3.70995 ms | 10.0% |
+| 20 | 4.34568 ms | 3.89722 ms | 10.3% |
+| 25 | 4.53915 ms | 4.08580 ms | 10.0% |
+| 26 | 5.86661 ms | 4.92848 ms | 16.0% |
+| 32 | 6.00675 ms | 5.13699 ms | 14.5% |
+| 42 | 6.33419 ms | 5.64136 ms | 10.9% |
+| 43 | 8.38401 ms | 7.36246 ms | 12.2% |
+| 48 | 8.39170 ms | 7.52880 ms | 10.3% |
+| 64 | 8.41530 ms | 8.17254 ms | 2.9% |
+
+The final cooperative implementation passed 19,563,852 exact coefficient
+comparisons on one device and 20,100,690 on two devices. Coverage includes
+independent scalar references, dispatch boundaries, odd strides, padding,
+in-place aliases, captured replay, concurrent streams, pool isolation, and
+cleanup/reinitialization. Focused Compute Sanitizer memcheck, racecheck, and
+synccheck passed; FFT and no-warp compile controls also passed. These checks
+validate the tested implementation, not a new security or failure bound.
+
 ### NAND gate comparison
 
 | Library | Backend | N | Parameters | Latency | Throughput |

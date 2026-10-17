@@ -158,13 +158,13 @@ __global__ void __HalfTRGSWPolynomialToNTT__(NTTValueFor<P::n, sizeof(typename P
 #pragma unroll
         for (int e = 0; e < 2; e++) {
             const uint32_t i = tid + e * num_threads;
-            sh_ntt[i] = torus_to_ntt_mod<N>(in[row_offset + i]);
+            sh_ntt[i] = torus_to_ntt_mod<N, sizeof(typename P::T) * 8>(in[row_offset + i]);
         }
     }
     __syncthreads();
 
     if (tid < num_threads) {
-        SmallForwardNTT<P::nbit>(sh_ntt, ntt.forward_root_, tid);
+        SmallForwardNTT<P::nbit, sizeof(typename P::T) * 8>(sh_ntt, ntt.forward_root_, tid);
     }
     else {
         for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++) __syncthreads();
@@ -236,10 +236,10 @@ template <class P>
 __device__ inline typename P::T __TorusFromNTT__(const NTTValueFor<P::n, sizeof(typename P::T) * 8> value)
 {
     if constexpr (sizeof(typename P::T) == 8) {
-        return static_cast<typename P::T>(ntt_mod_to_torus64<P::n>(value));
+        return static_cast<typename P::T>(ntt_mod_to_torus64<P::n, sizeof(typename P::T) * 8>(value));
     }
     else {
-        return static_cast<typename P::T>(ntt_mod_to_torus32<P::n>(value));
+        return static_cast<typename P::T>(ntt_mod_to_torus32<P::n, sizeof(typename P::T) * 8>(value));
     }
 }
 #endif
@@ -408,13 +408,13 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
                                (digit + 1) * P::Bgbit)) &
                      decomp_mask) -
                     decomp_half);
-                sh_work[i] = signed_int_to_ntt_mod<N>(digit_val);
+                sh_work[i] = signed_int_to_ntt_mod<N, sizeof(typename P::T) * 8>(digit_val);
             }
         }
         __syncthreads();
 
         if (tid < num_threads) {
-            SmallForwardNTT<P::nbit>(sh_work, ntt.forward_root_, tid);
+            SmallForwardNTT<P::nbit, sizeof(typename P::T) * 8>(sh_work, ntt.forward_root_, tid);
         }
         else {
             for (int s = 0; s < SmallForwardNTTSyncCount<N>(); s++)
@@ -430,7 +430,7 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
                     const size_t key_offset =
                         (static_cast<size_t>(digit) * (P::k + 1) + out_k) * N +
                         i;
-                    sh_accum[out_k * N + i] = small_mod_madd<N>(
+                    sh_accum[out_k * N + i] = small_mod_madd<N, sizeof(typename P::T) * 8>(
                         ntt_val, __ldg(&halftrgswntt[key_offset]),
                         sh_accum[out_k * N + i]);
                 }
@@ -442,7 +442,7 @@ __device__ inline void __ExternalProductPolyHalfTRGSWNTT__(
     for (uint32_t k_idx = 0; k_idx <= P::k; k_idx++) {
         NTTValueFor<P::n, sizeof(typename P::T) * 8>* const sh_inv = &sh_accum[k_idx * N];
         if (tid < num_threads) {
-            SmallInverseNTT<P::nbit>(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
+            SmallInverseNTT<P::nbit, sizeof(typename P::T) * 8>(sh_inv, ntt.inverse_root_, ntt.n_inverse_,
                                      tid);
         }
         else {

@@ -50,6 +50,10 @@ int main()
 
     Test<Param>("NAND", Nand_lvl02, NandCheck, pt, ct, st, kNumTests, kNumSMs,
                 *sk);
+    Test<Param>("NOR", Nor_lvl02,
+                [](uint8_t& out, const uint8_t& in0, const uint8_t& in1) {
+                    out = !(in0 || in1);
+                }, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test<Param>("OR", Or_lvl02, OrCheck, pt, ct, st, kNumTests, kNumSMs, *sk);
     Test<Param>("ORYN", OrYN_lvl02, OrYNCheck, pt, ct, st, kNumTests, kNumSMs,
                 *sk);

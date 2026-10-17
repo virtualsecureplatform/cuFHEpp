@@ -91,7 +91,7 @@ template <class brP>
 void InitializeBR()
 {
     using targetP = typename brP::targetP;
-    if constexpr (targetP::n == TFHEpp::lvl1param::n) {
+    if constexpr (sizeof(typename targetP::T) == 4) {
         cufhe::InitializeNTThandlers(1);
 #if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         cufhe::InitializeXaiNTT(1);
@@ -115,7 +115,7 @@ template <class brP>
 void DeleteBR()
 {
     using targetP = typename brP::targetP;
-    if constexpr (targetP::n == TFHEpp::lvl1param::n) {
+    if constexpr (sizeof(typename targetP::T) == 4) {
 #if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
         cufhe::DeleteXaiNTT();
 #endif
