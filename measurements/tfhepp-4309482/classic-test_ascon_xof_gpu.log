@@ -1,0 +1,3 @@
+GPU ASCON XOF one-shot elapsed: 4842.38 ms
+GPU ASCON XOF phased elapsed: 5036.4 ms
+GPU ASCON XOF multi-block passed

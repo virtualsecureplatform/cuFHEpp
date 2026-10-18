@@ -1,0 +1,130 @@
+{
+  "date_utc": "2026-10-18",
+  "cufhepp_base": "8cf09fd037679d76a78ece36ea760dee3521f3c2",
+  "tfhepp_before": "3c7dca7fe57cdd0dfbda618f08ec16edabf4a61b",
+  "tfhepp_after": "4309482962154f6268eea2fdaf43b6b45d2be966",
+  "upstream_branch": "https://github.com/virtualsecureplatform/TFHEpp/tree/master",
+  "hardware": "NVIDIA A100-PCIE-40GB",
+  "cuda": "13.3.73",
+  "builds": [
+    {
+      "name": "blockbinary-ntt",
+      "configure": "cmake --preset a100-ntt-throughput -B /tmp/cufhe-tfhepp-4309482-ntt"
+    },
+    {
+      "name": "blockbinary-fft",
+      "configure": "cmake --preset a100-fft-throughput -B /tmp/cufhe-tfhepp-4309482-fft"
+    },
+    {
+      "name": "classic-fft",
+      "configure": "cmake -S . -B /tmp/cufhe-tfhepp-4309482-classic -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80-real -DCUFHE_GPU_BACKEND=CUDA -DENABLE_TEST=ON -DUSE_BLOCK_BINARY=OFF -DUSE_FFT=ON -DUSE_GPU_FFT=ON -DUSE_KEY_BUNDLE=ON"
+    }
+  ],
+  "changes": [
+    "Migrate removed lweKey::get to explicit subset or independent key access.",
+    "Generate ordinary gate key switches from the same subset secrets as lvl01/lvl02 bootstrapping keys.",
+    "Keep circuit, annihilation, AES and ASCON evaluation/encryption/decryption on the independent chain.",
+    "Reserve generic external-product shared accumulators separately from fused bootstrap workspace.",
+    "Select annihilation test transform handlers by ring size and coefficient width."
+  ],
+  "performance_note": "Block-binary lvl1 decomposition length changed from 3 to 4. Existing measurements/a100 data remain historical; this update verifies correctness and does not establish comparable speedups.",
+  "limitations": [
+    "Validated on CUDA/A100; ROCm and other GPU architectures were not run.",
+    "Block-binary circuit/AES/ASCON targets remain excluded by the existing build configuration."
+  ],
+  "results": [
+    {
+      "log": "classic-annihilate-memcheck.log",
+      "status": "passed",
+      "sanitizer_errors": 0
+    },
+    {
+      "log": "classic-annihilate-synccheck.log",
+      "status": "passed",
+      "sanitizer_errors": 0
+    },
+    {
+      "log": "classic-circuit-memcheck.log",
+      "status": "passed",
+      "sanitizer_errors": 0
+    },
+    {
+      "log": "classic-test_aes_decrypt_gpu.log",
+      "status": "passed"
+    },
+    {
+      "log": "classic-test_annihilate_gpu.log",
+      "status": "passed"
+    },
+    {
+      "log": "classic-test_ascon_xof_gpu.log",
+      "status": "passed"
+    },
+    {
+      "log": "classic-test_bootstrap_batch.log",
+      "status": "passed"
+    },
+    {
+      "log": "classic-test_bootstrap_public_batch.log",
+      "status": "passed"
+    },
+    {
+      "log": "classic-test_circuitbootstrapping_gpu.log",
+      "status": "passed"
+    },
+    {
+      "log": "classic-test_fft_roundtrip.log",
+      "status": "passed"
+    },
+    {
+      "log": "fft-arithmetic.log",
+      "status": "passed"
+    },
+    {
+      "log": "fft-public-batch.log",
+      "status": "passed"
+    },
+    {
+      "log": "fft-raw-batch.log",
+      "status": "passed"
+    },
+    {
+      "log": "ntt-annihilate-memcheck.log",
+      "status": "passed",
+      "sanitizer_errors": 0
+    },
+    {
+      "log": "ntt-annihilate.log",
+      "status": "passed"
+    },
+    {
+      "log": "ntt-arithmetic.log",
+      "status": "passed"
+    },
+    {
+      "log": "ntt-block-binary.log",
+      "status": "passed"
+    },
+    {
+      "log": "ntt-keyswitch32.log",
+      "status": "passed"
+    },
+    {
+      "log": "ntt-test_bootstrap_batch.log",
+      "status": "passed"
+    },
+    {
+      "log": "ntt-test_bootstrap_public_batch.log",
+      "status": "passed"
+    },
+    {
+      "log": "ntt-test_keyswitch_gpu_lvl20.log",
+      "status": "passed"
+    }
+  ],
+  "runtime_commands": {
+    "ordinary": "CUDA_VISIBLE_DEVICES=<idle GPU> <build>/test/<test executable>",
+    "memcheck": "CUDA_VISIBLE_DEVICES=<idle GPU> compute-sanitizer --tool memcheck --error-exitcode 99 <build>/test/<test executable>",
+    "synccheck": "CUDA_VISIBLE_DEVICES=<idle GPU> compute-sanitizer --tool synccheck --error-exitcode 99 <build>/test/test_annihilate_gpu"
+  }
+}

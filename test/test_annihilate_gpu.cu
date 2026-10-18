@@ -21,7 +21,8 @@ namespace {
 template <class P>
 void InitializeHandlers()
 {
-    if constexpr (P::n == TFHEpp::lvl1param::n)
+    if constexpr (P::n == TFHEpp::lvl1param::n &&
+                  sizeof(typename P::T) == sizeof(TFHEpp::lvl1param::T))
         cufhe::InitializeNTThandlers(1);
     else
         cufhe::InitializeNTThandlers_lvl02(1);
@@ -89,7 +90,7 @@ bool RunAnnihilateCase(const char* name)
         else {
             std::array<typename P::T, P::n> encoded{};
             encoded[0] = P::μ;
-            TFHEpp::trlweSymEncrypt<P>(*input, encoded, sk->key.get<P>());
+            TFHEpp::trlweSymEncrypt<P>(*input, encoded, sk->key.getIndependent<P>());
             input_kind = "encrypted";
         }
 
@@ -106,9 +107,9 @@ bool RunAnnihilateCase(const char* name)
         CUDA_CHECK(cudaStreamSynchronize(st));
 
         const auto cpu_phase =
-            TFHEpp::trlwePhase<P>(*cpu_out, sk->key.get<P>());
+            TFHEpp::trlwePhase<P>(*cpu_out, sk->key.getIndependent<P>());
         const auto gpu_phase =
-            TFHEpp::trlwePhase<P>(*gpu_out, sk->key.get<P>());
+            TFHEpp::trlwePhase<P>(*gpu_out, sk->key.getIndependent<P>());
         uint64_t max_abs_diff = 0;
         for (uint32_t i = 0; i < P::n; i++)
             max_abs_diff = std::max(

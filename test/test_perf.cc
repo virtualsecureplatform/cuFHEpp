@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 // Include these two files for GPU computing.
 #include <include/cufhe_gpu.cuh>
 
@@ -21,7 +22,7 @@ int main()
     TFHEpp::SecretKey* sk = new TFHEpp::SecretKey();
     TFHEpp::EvalKey ek(*sk);
     ek.emplacebk<TFHEpp::lvl01param>(*sk);
-    ek.emplaceiksk<TFHEpp::lvl10param>(*sk);
+    cufhe::EmplaceGateKeySwitchingKey<TFHEpp::lvl10param>(ek, *sk);
 
     cout << "n:" << sk->params.lvl0.n << endl;
 
@@ -39,7 +40,7 @@ int main()
         p[i] = binary(engine) > 0;
         TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
             ct[i].tlwehost, p[i] ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-            sk->key.get<TFHEpp::lvl0param>());
+            sk->key.getSubset<TFHEpp::lvl0param>());
     }
     Synchronize();
     bool correct;
@@ -61,7 +62,7 @@ int main()
     size_t bootstrap_errors = 0;
     for (int i = 0; i < kNumTests; i++) {
         const bool decrypted = TFHEpp::trlweSymDecrypt<TFHEpp::lvl1param>(
-            trlweLv1[i].trlwehost, sk->key.get<TFHEpp::lvl1param>())[0];
+            trlweLv1[i].trlwehost, sk->key.getSubset<TFHEpp::lvl1param>())[0];
         if (p[i] != (decrypted ? 1 : 0)) {
             if (bootstrap_errors < 5)
                 cerr << "bootstrap mismatch at " << i << ": expected "
@@ -100,7 +101,7 @@ int main()
     size_t refresh_errors = 0;
     for (int i = 0; i < kNumTests; i++) {
         const bool decrypted = TFHEpp::trlweSymDecrypt<TFHEpp::lvl1param>(
-            trlweLv1Temp[i].trlwehost, sk->key.get<TFHEpp::lvl1param>())[0];
+            trlweLv1Temp[i].trlwehost, sk->key.getSubset<TFHEpp::lvl1param>())[0];
         if (p[i] != (decrypted ? 1 : 0)) {
             if (refresh_errors < 5)
                 cerr << "refresh mismatch at " << i << ": expected "

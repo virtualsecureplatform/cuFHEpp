@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/cufhe_gpu.cuh>
 #include <include/gatebootstrapping_gpu.cuh>
 #include <include/keyswitch_gpu.cuh>
@@ -52,7 +53,7 @@ int main()
 #ifdef USE_SUBSET_KEY
     evaluation.emplacesubiksk<IKS>(secret);
 #else
-    evaluation.emplaceiksk<IKS>(secret);
+    cufhe::EmplaceGateKeySwitchingKey<IKS>(evaluation, secret);
 #endif
     cufhe::Initialize(evaluation);
     std::vector<P::T> input(Cases * Words);
@@ -61,7 +62,7 @@ int main()
         if (sample < 8) {
             std::array<P::T, Words> encrypted;
             TFHEpp::tlweSymEncrypt<P>(encrypted, (sample & 1) ? P::μ : -P::μ,
-                                     secret.key.get<P>());
+                                     secret.key.getSubset<P>());
             std::copy(encrypted.begin(), encrypted.end(), input.begin() + sample * Words);
         } else {
             for (int i = 0; i < Words; ++i)
@@ -97,7 +98,7 @@ int main()
                 for (int sample = 0; sample < 8; ++sample) {
                     std::array<P::T, Words> ciphertext;
                     std::copy_n(actual.begin() + sample * Words, Words, ciphertext.begin());
-                    if (TFHEpp::tlweSymDecrypt<P>(ciphertext, secret.key.get<P>()) != bool(sample & 1)) {
+                    if (TFHEpp::tlweSymDecrypt<P>(ciphertext, secret.key.getSubset<P>()) != bool(sample & 1)) {
                         std::fprintf(stderr, "generic Bootstrap truth mismatch\n");
                         return 1;
                     }

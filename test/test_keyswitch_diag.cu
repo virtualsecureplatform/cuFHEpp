@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 /**
  * Diagnostic: compare GPU vs CPU key switching for lvl20param.
  * Encrypts under lvl2 key, key-switches to lvl0 on both CPU and GPU.
@@ -46,7 +47,7 @@ int main()
     // Generate keys
     SecretKey sk;
     EvalKey ek;
-    ek.emplaceiksk<iksP>(sk);
+    cufhe::EmplaceGateKeySwitchingKey<iksP>(ek, sk);
 
     // Upload KSK to GPU
     cufhe::KeySwitchingKeyToDevice_lvl20(ek.getiksk<iksP>(), 1);
@@ -65,7 +66,7 @@ int main()
         uint8_t pt = trial % 2;
         auto mu = pt ? domP::μ : static_cast<typename domP::T>(-domP::μ);
         TLWE<domP> ct_dom;
-        tlweSymEncrypt<domP>(ct_dom, mu, sk.key.get<domP>());
+        tlweSymEncrypt<domP>(ct_dom, mu, sk.key.getSubset<domP>());
 
         // === CPU key switch ===
         TLWE<tgtP> cpu_result = {};
@@ -87,9 +88,9 @@ int main()
         typename tgtP::T gpu_phase = gpu_result[tgtP::k * tgtP::n];
         for (uint32_t i = 0; i < tgtP::k * tgtP::n; i++) {
             cpu_phase -= cpu_result[i] * static_cast<typename tgtP::T>(
-                             sk.key.get<tgtP>()[i]);
+                             sk.key.getSubset<tgtP>()[i]);
             gpu_phase -= gpu_result[i] * static_cast<typename tgtP::T>(
-                             sk.key.get<tgtP>()[i]);
+                             sk.key.getSubset<tgtP>()[i]);
         }
 
         auto scpu = static_cast<std::make_signed_t<typename tgtP::T>>(cpu_phase);

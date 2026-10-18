@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>
 
@@ -32,12 +33,7 @@ bool TestBatch(const TFHEpp::SecretKey& sk, uint32_t count = 17)
 
     TFHEpp::EvalKey ek(sk);
     ek.template emplacebk<brP>(sk);
-#ifdef USE_SUBSET_KEY
-    if constexpr (sizeof(T) == 4)
-        ek.template emplacesubiksk<iksP>(sk);
-    else
-#endif
-        ek.template emplaceiksk<iksP>(sk);
+    cufhe::EmplaceGateKeySwitchingKey<iksP>(ek, sk);
     if constexpr (sizeof(T) == 4) cufhe::Initialize(ek);
     else cufhe::Initialize_lvl02(ek, sk);
 
@@ -45,9 +41,9 @@ bool TestBatch(const TFHEpp::SecretKey& sk, uint32_t count = 17)
     std::vector<T> output(count * stride_out, 9), reference(output);
     for (uint32_t i = 0; i < count; ++i) {
         TFHEpp::TLWE<P> sample;
-        TFHEpp::tlweSymEncrypt<P>(sample, (i & 1) ? P::μ : -P::μ, sk.key.get<P>());
+        TFHEpp::tlweSymEncrypt<P>(sample, (i & 1) ? P::μ : -P::μ, sk.key.getSubset<P>());
         std::copy(sample.begin(), sample.end(), a.begin() + i * stride_a);
-        TFHEpp::tlweSymEncrypt<P>(sample, (i & 2) ? P::μ : -P::μ, sk.key.get<P>());
+        TFHEpp::tlweSymEncrypt<P>(sample, (i & 2) ? P::μ : -P::μ, sk.key.getSubset<P>());
         std::copy(sample.begin(), sample.end(), b.begin() + i * stride_b);
     }
     T *da = nullptr, *db = nullptr, *dout = nullptr, *dref = nullptr;
@@ -77,7 +73,7 @@ bool TestBatch(const TFHEpp::SecretKey& sk, uint32_t count = 17)
     for (uint32_t i = 0; i < count; ++i) {
         TFHEpp::TLWE<P> sample;
         std::copy_n(output.begin() + i * stride_out, elements, sample.begin());
-        passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.get<P>()) ==
+        passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.getSubset<P>()) ==
                   !((i & 1) && (i & 2));
         for (size_t j = elements; j < stride_out; ++j)
             passed &= output[i * stride_out + j] == 9;
@@ -119,14 +115,14 @@ bool TestBatch(const TFHEpp::SecretKey& sk, uint32_t count = 17)
         for (uint32_t i = 0; i < count; ++i) {
             TFHEpp::TLWE<P> sample;
             std::copy_n(reference.begin() + i * stride_out, elements, sample.begin());
-            passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.get<P>()) ==
+            passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.getSubset<P>()) ==
                       !((i & 1) && (i & 2));
         }
     }
     for (uint32_t i = 0; i < count; ++i) {
         TFHEpp::TLWE<P> sample;
         std::copy_n(a.begin() + i * stride_a, elements, sample.begin());
-        passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.get<P>()) ==
+        passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.getSubset<P>()) ==
                   !((i & 1) && (i & 2));
         for (size_t j = elements; j < stride_a; ++j)
             passed &= a[i * stride_a + j] == 7;

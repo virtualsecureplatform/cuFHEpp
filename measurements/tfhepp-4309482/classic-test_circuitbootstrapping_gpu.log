@@ -1,0 +1,11 @@
+=== direct AnnihilateCircuitBootstrapping GPU test, message=0 ===
+phase max abs diff=2^0 threshold_failures=0
+CPU CB compute: 62.7716 ms
+GPU CB compute: 10.6793 ms
+speedup: 5.87788x
+=== direct AnnihilateCircuitBootstrapping GPU test, message=1 ===
+phase max abs diff=2^0 threshold_failures=0
+CPU CB compute: 62.8285 ms
+GPU CB compute: 10.5994 ms
+speedup: 5.92754x
+ALL CIRCUIT BOOTSTRAPPING TESTS PASSED

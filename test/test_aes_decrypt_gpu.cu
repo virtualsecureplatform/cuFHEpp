@@ -31,7 +31,7 @@ void encrypt_block_as_bits(std::array<TFHEpp::TLWE<P>, 128>& out,
             TFHEpp::tlweSymEncrypt<P>(
                 out[byte * 8 + bit],
                 ((bytes[byte] >> bit) & 1U) ? bit_mu<P>() : -bit_mu<P>(), 0.0,
-                sk.key.get<P>());
+                sk.key.getIndependent<P>());
         }
     }
 }
@@ -50,7 +50,7 @@ void encrypt_expanded_aes_key(
                     out[round][byte * 8 + bit],
                     ((expanded[round * 16 + byte] >> bit) & 1U) ? bit_mu<P>()
                                                                 : -bit_mu<P>(),
-                    0.0, sk.key.get<P>());
+                    0.0, sk.key.getIndependent<P>());
             }
         }
     }
@@ -63,7 +63,8 @@ std::array<uint8_t, 16> decrypt_block_bits(
     std::array<uint8_t, 16> bytes = {};
     for (std::size_t byte = 0; byte < bytes.size(); byte++) {
         for (std::size_t bit = 0; bit < 8; bit++) {
-            if (TFHEpp::tlweSymDecrypt<P>(bits[byte * 8 + bit], sk))
+            if (TFHEpp::tlweSymDecrypt<P>(
+                    bits[byte * 8 + bit], sk.key.getIndependent<P>()))
                 bytes[byte] |= static_cast<uint8_t>(1U << bit);
         }
     }

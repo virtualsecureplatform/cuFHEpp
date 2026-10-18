@@ -658,7 +658,7 @@ void DeviceLROMUXBatch(typename P::T* const out, const NTTValue* const address,
     static_assert(address_bit == width_bit);
     static_assert(num_tlwe <= (1U << (P::nbit - width_bit)));
     constexpr uint32_t threads = NUM_THREAD4HOMGATE<P>;
-    constexpr size_t shmem = MEM4HOMGATE<P>;
+    constexpr size_t shmem = MEM4EXTERNALPRODUCT<P>;
     constexpr size_t trlwe_elems = TRLWEElements<P>();
     constexpr size_t trgswfft_elems = TRGSWFFTElements<P>();
     constexpr size_t address_stride =

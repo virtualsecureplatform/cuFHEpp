@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>
 
@@ -26,7 +27,7 @@ bool TestMux(const TFHEpp::SecretKey& sk, bool graph_mode)
     if constexpr (sizeof(typename P::T) == 4) ek.template emplacesubiksk<IKS>(sk);
     else
 #endif
-        ek.template emplaceiksk<IKS>(sk);
+        cufhe::EmplaceGateKeySwitchingKey<IKS>(ek, sk);
     if constexpr (sizeof(typename P::T) == 4) cufhe::Initialize(ek);
     else cufhe::Initialize_lvl02(ek, sk);
 
@@ -37,9 +38,9 @@ bool TestMux(const TFHEpp::SecretKey& sk, bool graph_mode)
     std::vector<cufhe::Ctxt<P>> a(count), b(count), selector(count), first(count), second(count), out(count);
     std::vector<TFHEpp::TLWE<P>> saved_a(count), saved_b(count), saved_selector(count);
     for (int i = 0; i < count; ++i) {
-        TFHEpp::tlweSymEncrypt<P>(a[i].tlwehost, (i & 1) ? P::μ : -P::μ, sk.key.template get<P>());
-        TFHEpp::tlweSymEncrypt<P>(b[i].tlwehost, (i & 2) ? P::μ : -P::μ, sk.key.template get<P>());
-        TFHEpp::tlweSymEncrypt<P>(selector[i].tlwehost, (i & 4) ? P::μ : -P::μ, sk.key.template get<P>());
+        TFHEpp::tlweSymEncrypt<P>(a[i].tlwehost, (i & 1) ? P::μ : -P::μ, sk.key.template getSubset<P>());
+        TFHEpp::tlweSymEncrypt<P>(b[i].tlwehost, (i & 2) ? P::μ : -P::μ, sk.key.template getSubset<P>());
+        TFHEpp::tlweSymEncrypt<P>(selector[i].tlwehost, (i & 4) ? P::μ : -P::μ, sk.key.template getSubset<P>());
         saved_a[i] = a[i].tlwehost;
         saved_b[i] = b[i].tlwehost;
         saved_selector[i] = selector[i].tlwehost;
@@ -114,7 +115,7 @@ bool TestMux(const TFHEpp::SecretKey& sk, bool graph_mode)
                     passed &= output.tlwehost == expected;
 #endif
                     const bool selected = (i & 4) ? bool(i & 2) : bool(i & 1);
-                    passed &= TFHEpp::tlweSymDecrypt<P>(output.tlwehost, sk.key.template get<P>()) ==
+                    passed &= TFHEpp::tlweSymDecrypt<P>(output.tlwehost, sk.key.template getSubset<P>()) ==
                               (negate ? !selected : selected);
                 }
 #ifdef CUFHE_MUX_TEST_HAS_GRAPH

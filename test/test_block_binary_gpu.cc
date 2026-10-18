@@ -17,15 +17,15 @@ bool TestNandTruthTable(const std::string_view label,
     for (uint8_t lhs = 0; lhs <= 1; lhs++) {
         for (uint8_t rhs = 0; rhs <= 1; rhs++) {
             TFHEpp::tlweSymEncrypt<P>(in0.tlwehost, lhs ? P::μ : -P::μ,
-                                      sk.key.get<P>());
+                                      sk.key.getSubset<P>());
             TFHEpp::tlweSymEncrypt<P>(in1.tlwehost, rhs ? P::μ : -P::μ,
-                                      sk.key.get<P>());
+                                      sk.key.getSubset<P>());
 
             cufhe::Nand<P>(out, in0, in1, st);
             cufhe::Synchronize();
 
             const bool actual =
-                TFHEpp::tlweSymDecrypt<P>(out.tlwehost, sk.key.get<P>());
+                TFHEpp::tlweSymDecrypt<P>(out.tlwehost, sk.key.getSubset<P>());
             const bool expected = !(lhs && rhs);
             if (actual != expected) {
                 std::cerr << label << " NAND failed for " << unsigned(lhs)
@@ -54,19 +54,19 @@ bool TestMuxTruthTable(const std::string_view label,
         for (uint8_t true_value = 0; true_value <= 1; true_value++) {
             for (uint8_t false_value = 0; false_value <= 1; false_value++) {
                 TFHEpp::tlweSymEncrypt<P>(
-                    condition.tlwehost, select ? P::μ : -P::μ, sk.key.get<P>());
+                    condition.tlwehost, select ? P::μ : -P::μ, sk.key.getSubset<P>());
                 TFHEpp::tlweSymEncrypt<P>(if_true.tlwehost,
                                           true_value ? P::μ : -P::μ,
-                                          sk.key.get<P>());
+                                          sk.key.getSubset<P>());
                 TFHEpp::tlweSymEncrypt<P>(if_false.tlwehost,
                                           false_value ? P::μ : -P::μ,
-                                          sk.key.get<P>());
+                                          sk.key.getSubset<P>());
 
                 cufhe::Mux<P>(out, condition, if_true, if_false, st);
                 cufhe::Synchronize();
 
                 const bool actual =
-                    TFHEpp::tlweSymDecrypt<P>(out.tlwehost, sk.key.get<P>());
+                    TFHEpp::tlweSymDecrypt<P>(out.tlwehost, sk.key.getSubset<P>());
                 const bool expected = select ? true_value : false_value;
                 if (actual != expected) {
                     std::cerr << label << " MUX failed for " << unsigned(select)
@@ -89,8 +89,8 @@ bool ValidateBlockKey(const TFHEpp::SecretKey& sk)
     static_assert(TFHEpp::lvl1param::k * TFHEpp::lvl1param::n >=
                   TFHEpp::lvl0param::n);
 
-    const auto& lvl0 = sk.key.get<TFHEpp::lvl0param>();
-    const auto& lvl1 = sk.key.get<TFHEpp::lvl1param>();
+    const auto& lvl0 = sk.key.getSubset<TFHEpp::lvl0param>();
+    const auto& lvl1 = sk.key.getSubset<TFHEpp::lvl1param>();
     for (uint32_t block = 0;
          block < TFHEpp::lvl0param::n / TFHEpp::lvl0param::ell; block++) {
         uint32_t weight = 0;
@@ -123,12 +123,12 @@ bool TestSubsetSampleExtraction(const TFHEpp::SecretKey& sk, cufhe::Stream st)
         TFHEpp::Polynomial<TFHEpp::lvl1param> encoded{};
         encoded[0] = message ? TFHEpp::lvl1param::μ : -TFHEpp::lvl1param::μ;
         TFHEpp::trlweSymEncrypt<TFHEpp::lvl1param>(
-            input.trlwehost, encoded, sk.key.get<TFHEpp::lvl1param>());
+            input.trlwehost, encoded, sk.key.getSubset<TFHEpp::lvl1param>());
 
         cufhe::SampleExtractAndKeySwitch(output, input, st);
         cufhe::Synchronize();
         const bool actual = TFHEpp::tlweSymDecrypt<TFHEpp::lvl0param>(
-            output.tlwehost, sk.key.get<TFHEpp::lvl0param>());
+            output.tlwehost, sk.key.getSubset<TFHEpp::lvl0param>());
         if (actual != message) {
             std::cerr << "Subset sample extraction failed for "
                       << unsigned(message) << ": got " << actual << '\n';

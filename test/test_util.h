@@ -23,7 +23,7 @@ void Test(string type, Func func, Check check, vector<uint8_t>& pt,
     for (int i = 0; i < 4 * kNumTests; i++) {
         pt[i] = binary(engine) > 0;
         TFHEpp::tlweSymEncrypt<P>(ct[i].tlwehost,
-            pt[i] ? P::μ : -P::μ, sk.key.get<P>());
+            pt[i] ? P::μ : -P::μ, sk.key.getSubset<P>());
     }
 
     float et;
@@ -75,7 +75,7 @@ void Test(string type, Func func, Check check, vector<uint8_t>& pt,
     for (int i = 0; i < kNumTests; i++) {
         uint8_t res;
         res = TFHEpp::tlweSymDecrypt<P>(ct[i].tlwehost,
-                                                        sk.key.get<P>());
+                                                        sk.key.getSubset<P>());
         if (res != pt[i]) {
             correct = false;
             cnt_failures += 1;

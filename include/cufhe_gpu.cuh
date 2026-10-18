@@ -29,6 +29,7 @@
 
 #pragma once
 #include "gpu_runtime.cuh"
+#include "tfhepp_keygen.hpp"
 
 #include <array>
 #include <tfhe/cloudkey.hpp>

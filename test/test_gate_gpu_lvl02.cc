@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 /**
  * Test for lvl02param gate bootstrapping (GPU-FFT or NTT backend).
  * Same structure as test_gate_gpu.cc but uses the lvl02 path
@@ -31,7 +32,7 @@ int main()
     TFHEpp::SecretKey* sk = new TFHEpp::SecretKey();
     TFHEpp::EvalKey ek(*sk);
     ek.emplacebk<brP>(*sk);
-    ek.emplaceiksk<iksP>(*sk);
+    cufhe::EmplaceGateKeySwitchingKey<iksP>(ek, *sk);
 
     cout << "n:" << sk->params.lvl0.n << endl;
 

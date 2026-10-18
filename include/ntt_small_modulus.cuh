@@ -3163,6 +3163,19 @@ constexpr uint32_t NUM_THREAD4HOMGATE = P::n >> 1;
 
 #endif  // USE_FFT
 
+// Generic external products keep one transform work array and k+1 output
+// accumulators in shared memory. They do not use the register accumulators
+// that let the fused bootstrap kernels reserve a smaller workspace.
+template <class P>
+constexpr uint32_t MEM4EXTERNALPRODUCT =
+    (P::k + 2) *
+#ifdef USE_FFT
+    (P::n / 2) *
+#else
+    P::n *
+#endif
+    sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>);
+
 #if defined(USE_KEY_BUNDLE) || defined(USE_BLOCK_BINARY)
 extern std::vector<NTTValue*> xai_ntt_devs;
 extern std::vector<NTTValue*> one_trgsw_ntt_devs;

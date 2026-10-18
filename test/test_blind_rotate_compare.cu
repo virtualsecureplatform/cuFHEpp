@@ -175,8 +175,8 @@ int main()
         TLWE<domP> ct0, ct1;
         auto mu_a = a ? domP::μ : static_cast<domP::T>(-domP::μ);
         auto mu_b = b ? domP::μ : static_cast<domP::T>(-domP::μ);
-        tlweSymEncrypt<domP>(ct0, mu_a, sk.key.get<domP>());
-        tlweSymEncrypt<domP>(ct1, mu_b, sk.key.get<domP>());
+        tlweSymEncrypt<domP>(ct0, mu_a, sk.key.getSubset<domP>());
+        tlweSymEncrypt<domP>(ct1, mu_b, sk.key.getSubset<domP>());
 
         // ====== CPU Blind Rotation ======
         // Combine inputs as NAND: res = -ct0 - ct1 + mu
@@ -229,8 +229,8 @@ int main()
         SampleExtractIndex<tgtP>(gpu_tlwe, gpu_trlwe, 0);
 
         // Compare
-        const T cpu_phase = tlweSymPhase<tgtP>(cpu_tlwe, sk.key.get<tgtP>());
-        const T gpu_phase = tlweSymPhase<tgtP>(gpu_tlwe, sk.key.get<tgtP>());
+        const T cpu_phase = tlweSymPhase<tgtP>(cpu_tlwe, sk.key.getSubset<tgtP>());
+        const T gpu_phase = tlweSymPhase<tgtP>(gpu_tlwe, sk.key.getSubset<tgtP>());
         auto scpu = static_cast<std::make_signed_t<T>>(cpu_phase);
         auto sgpu = static_cast<std::make_signed_t<T>>(gpu_phase);
         double cpu_frac = (double)scpu / (double)(1ULL << 63) / 2.0;

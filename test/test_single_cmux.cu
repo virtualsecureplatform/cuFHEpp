@@ -102,7 +102,7 @@ int main()
     const auto& bk = ek.getbk<brP>();
     const auto& bk_elem = bk[0][0];  // TRGSW<lvl2param>
 
-    int s0 = (int)sk.key.get<TFHEpp::lvl0param>()[0];
+    int s0 = (int)sk.key.getSubset<TFHEpp::lvl0param>()[0];
     printf("s_0 = %d\n\n", s0);
 
     // Convert to GPU FFT
@@ -177,7 +177,7 @@ int main()
 
         // ====== Compare ======
         // Compute phases
-        const auto& key = sk.key.get<tgtP>();
+        const auto& key = sk.key.getSubset<tgtP>();
         T gpu_phase = h_gpu[tgtP::k * N];
         T cpu_phase = cpu_result[tgtP::k][0];
         for (uint32_t k = 0; k < tgtP::k; k++)

@@ -30,7 +30,16 @@ Each benchmark ran exclusively on the GPU — no concurrent workloads.
 - **Latency**: sequential time per gate on a single stream / thread
 - **Throughput**: total time ÷ total gates with all 108 SM streams active (cuFHEpp only; 3456 concurrent gates, 32 per SM)
 
+TFHEpp is pinned to `4309482` (upstream master as of 2026-10-18). CUDA/A100
+compatibility checks and logs are recorded in
+[measurements/tfhepp-4309482/validation.json](measurements/tfhepp-4309482/validation.json).
+
 ### A100 block-binary bootstrap profiles
+
+The performance results in this section were collected with TFHEpp `3c7dca7`
+(lvl1 decomposition length 3). The current TFHEpp pin `4309482` increases
+block-binary lvl1 decomposition to 4; those historical timings should be
+remeasured when comparing the updated parameters.
 
 Use the `a100-ntt` preset for lvl1 throughput and small raw lvl02 NAND batches.
 It enables the paired register NTT tail on Ampere, exact fused products,
@@ -423,16 +432,16 @@ using P = TFHEpp::lvl1param;       // Parameter set for ciphertexts
 using brP = TFHEpp::lvl01param;    // Blind rotation parameters
 using iksP = TFHEpp::lvl10param;   // Key switching parameters
 
-// --- Key generation (TFHEpp) ---
+// --- Matching gate key generation ---
 TFHEpp::SecretKey sk;
 TFHEpp::EvalKey ek(sk);
 ek.emplacebk<brP>(sk);    // Bootstrapping key
-ek.emplaceiksk<iksP>(sk); // Key switching key
+cufhe::EmplaceGateKeySwitchingKey<iksP>(ek, sk); // Key switching key
 
 // --- Encryption (TFHEpp) ---
 Ctxt<P> ct0, ct1, ct_out;
-TFHEpp::tlweSymEncrypt<P>(ct0.tlwehost, P::μ, sk.key.get<P>());   // Encrypt 1
-TFHEpp::tlweSymEncrypt<P>(ct1.tlwehost, -P::μ, sk.key.get<P>());  // Encrypt 0
+TFHEpp::tlweSymEncrypt<P>(ct0.tlwehost, P::μ, sk.key.getSubset<P>());   // Encrypt 1
+TFHEpp::tlweSymEncrypt<P>(ct1.tlwehost, -P::μ, sk.key.getSubset<P>());  // Encrypt 0
 
 // --- GPU initialization ---
 Initialize(ek);  // Upload keys to GPU
@@ -446,12 +455,20 @@ Nand<P>(ct_out, ct0, ct1, st);  // Homomorphic NAND gate
 Synchronize();  // Wait for all GPU operations to complete
 
 // --- Decryption (TFHEpp) ---
-uint8_t result = TFHEpp::tlweSymDecrypt<P>(ct_out.tlwehost, sk.key.get<P>());
+uint8_t result = TFHEpp::tlweSymDecrypt<P>(ct_out.tlwehost, sk.key.getSubset<P>());
 
 // --- Cleanup ---
 st.Destroy();
 CleanUp();
 ```
+
+TFHEpp now provides separate subset and independent secret-key chains.
+Ordinary `lvl01param`/`lvl02param` gate bootstrapping keys use the subset
+chain. `cufhe::EmplaceGateKeySwitchingKey<P>(ek, sk)` generates the matching
+switch, selecting subset lvl10 switching when enabled. TFHEpp's direct
+`ek.emplaceiksk<P>(sk)` generates independent-chain switches. Circuit and
+annihilation bootstrapping use `sk.key.getIndependent<P>()` with their
+matching evaluation keys.
 
 The lvl02 Boolean API keeps lvl0 ciphertext inputs and outputs while using
 `lvl02param` for blind rotation. Generate `lvl02param`/`lvl20param` evaluation

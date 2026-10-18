@@ -41,7 +41,8 @@ int main(int argc, char** argv)
     Check(cudaSetDevice(0)); cufhe::SetGPUNum(1);
     TFHEpp::SecretKey secret;
     auto bk = std::make_unique<TFHEpp::BootstrappingKey<BR>>();
-    TFHEpp::bkgen<BR>(*bk,secret);
+    TFHEpp::bkgen<BR>(*bk, secret.key.getIndependent<Input>(),
+                      secret.key.getIndependent<Ring>());
     auto ahk = std::make_unique<cufhe::AnnihilateKeyPolynomial<AH>>();
     cufhe::AnnihilateKeyPolynomialGen<AH>(*ahk,secret);
     auto cbsk = std::make_unique<cufhe::CBswitchingKeyPolynomial<AH>>();
@@ -61,7 +62,7 @@ int main(int argc, char** argv)
     std::vector<Input::T> input(count * InputWords);
     for (size_t i=0;i<count;++i) {
         TFHEpp::TLWE<Input> sample;
-        TFHEpp::tlweSymEncrypt<Input>(sample,(i&1)?Input::μ:-Input::μ,secret.key.get<Input>());
+        TFHEpp::tlweSymEncrypt<Input>(sample,(i&1)?Input::μ:-Input::μ,secret.key.getIndependent<Input>());
         std::copy(sample.begin(),sample.end(),input.begin()+i*InputWords);
     }
     Input::T* device_input; Ring::T *output,*acc,*temp;

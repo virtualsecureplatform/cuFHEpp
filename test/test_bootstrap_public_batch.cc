@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <algorithm>
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>
@@ -96,12 +97,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     }
     TFHEpp::EvalKey ek(sk);
     ek.template emplacebk<BR>(sk);
-#ifdef USE_SUBSET_KEY
-    if constexpr (sizeof(typename BR::targetP::T) == 4)
-        ek.template emplacesubiksk<IKS>(sk);
-    else
-#endif
-        ek.template emplaceiksk<IKS>(sk);
+    cufhe::EmplaceGateKeySwitchingKey<IKS>(ek, sk);
     if constexpr (sizeof(typename BR::targetP::T) == 4)
         cufhe::Initialize(ek);
     else
@@ -112,10 +108,10 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     for (uint32_t i = 0; i < count; ++i) {
         TFHEpp::TLWE<P> sample;
         TFHEpp::tlweSymEncrypt<P>(sample, i & 1 ? P::μ : -P::μ,
-                                  sk.key.get<P>());
+                                  sk.key.getSubset<P>());
         std::copy(sample.begin(), sample.end(), a.begin() + i * sa);
         TFHEpp::tlweSymEncrypt<P>(sample, i & 2 ? P::μ : -P::μ,
-                                  sk.key.get<P>());
+                                  sk.key.getSubset<P>());
         std::copy(sample.begin(), sample.end(), b.begin() + i * sb);
     }
     T *da = nullptr, *db = nullptr, *dout = nullptr, *dref = nullptr;
@@ -189,7 +185,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     for (uint32_t i = 0; i < count; ++i) {
         TFHEpp::TLWE<P> sample;
         std::copy_n(got.begin() + i * so, n, sample.begin());
-        passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.get<P>()) ==
+        passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.getSubset<P>()) ==
                   !((i & 1) && (i & 2));
         for (size_t j = n; j < so; ++j) passed &= got[i * so + j] == 9;
     }
@@ -257,7 +253,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
             const bool expected_bit = alias == 0
                                           ? ((i & 2) ? bool(i & 1) : true)
                                           : ((i & 1) ? bool(i & 2) : true);
-            passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.get<P>()) ==
+            passed &= TFHEpp::tlweSymDecrypt<P>(sample, sk.key.getSubset<P>()) ==
                       expected_bit;
         }
     }

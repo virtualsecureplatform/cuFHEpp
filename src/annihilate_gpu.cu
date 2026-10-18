@@ -469,7 +469,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<P>) void __EvalAutoKernel__(
     const NTTValueFor<P::n, sizeof(typename P::T) * 8>* const evalautokey, const CuNTTHandler<P::n, sizeof(typename P::T) * 8> ntt)
 {
     extern __shared__ char dyn_sh[];
-    constexpr size_t fft_bytes = MEM4HOMGATE<P>;
+    constexpr size_t fft_bytes = MEM4EXTERNALPRODUCT<P>;
     auto* sh_acc_ntt = reinterpret_cast<NTTValueFor<P::n, sizeof(typename P::T) * 8>*>(dyn_sh);
     auto* auto_poly = reinterpret_cast<typename P::T*>(dyn_sh + fft_bytes);
     const uint32_t tid = ThisThreadRankInBlock();
@@ -566,7 +566,7 @@ __launch_bounds__(NUM_THREAD4HOMGATE<P>) void __EvalAutoBatchKernel__(
     if (batch >= batch_count) return;
 
     extern __shared__ char dyn_sh[];
-    constexpr size_t fft_bytes = MEM4HOMGATE<P>;
+    constexpr size_t fft_bytes = MEM4EXTERNALPRODUCT<P>;
     auto* sh_acc_ntt = reinterpret_cast<NTTValueFor<P::n, sizeof(typename P::T) * 8>*>(dyn_sh);
     auto* auto_poly = reinterpret_cast<typename P::T*>(dyn_sh + fft_bytes);
 
@@ -625,7 +625,7 @@ template <class P>
 void AnnihilateKeyPolynomialGen(AnnihilateKeyPolynomial<P>& ahk,
                                 const TFHEpp::SecretKey& sk)
 {
-    AnnihilateKeyPolynomialGen<P>(ahk, sk.key.get<P>());
+    AnnihilateKeyPolynomialGen<P>(ahk, sk.key.getIndependent<P>());
 }
 
 template <class P>
@@ -705,7 +705,7 @@ void AnnihilateKeySwitchingWithWorkspace(typename P::T* const out,
         cudaMemcpyAsync(out, in, trlwe_bytes, cudaMemcpyDeviceToDevice, st));
 
     constexpr size_t evalauto_key_elems = EvalAutoKeyElements<P>();
-    constexpr size_t shmem = MEM4HOMGATE<P> + P::n * sizeof(typename P::T);
+    constexpr size_t shmem = MEM4EXTERNALPRODUCT<P> + P::n * sizeof(typename P::T);
     static bool evalauto_attribute_set = false;
     if (!evalauto_attribute_set) {
         CuSafeCall(cudaFuncSetAttribute(
@@ -741,7 +741,7 @@ void AnnihilateKeySwitchingBatchWithWorkspace(
     auto* const handler = AnnihilateHandler<P>(gpuNum);
 
     constexpr size_t evalauto_key_elems = EvalAutoKeyElements<P>();
-    constexpr size_t shmem = MEM4HOMGATE<P> + P::n * sizeof(typename P::T);
+    constexpr size_t shmem = MEM4EXTERNALPRODUCT<P> + P::n * sizeof(typename P::T);
     static bool evalauto_batch_attribute_set = false;
     if (!evalauto_batch_attribute_set) {
         CuSafeCall(cudaFuncSetAttribute(

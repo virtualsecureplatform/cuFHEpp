@@ -1,0 +1,13 @@
+========= COMPUTE-SANITIZER
+=== AHlvl1param annihilate GPU test ===
+case 0 (trivial body): phase max abs diff=2^0 pass
+case 1 (first mask): phase max abs diff=2^20.1439 pass
+case 2 (encrypted): phase max abs diff=2^20.2028 pass
+case 3 (encrypted): phase max abs diff=2^20.4954 pass
+=== cbAHlvl2param annihilate GPU test ===
+case 0 (trivial body): phase max abs diff=2^0 pass
+case 1 (first mask): phase max abs diff=2^32.8792 pass
+case 2 (second mask): phase max abs diff=2^33.3752 pass
+case 3 (encrypted): phase max abs diff=2^32.6779 pass
+ALL ANNIHILATE TESTS PASSED
+========= ERROR SUMMARY: 0 errors

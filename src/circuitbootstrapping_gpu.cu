@@ -1135,7 +1135,7 @@ template <class P>
 void CBswitchingKeyPolynomialGen(CBswitchingKeyPolynomial<P>& cbsk,
                                  const TFHEpp::SecretKey& sk)
 {
-    CBswitchingKeyPolynomialGen<P>(cbsk, sk.key.get<P>());
+    CBswitchingKeyPolynomialGen<P>(cbsk, sk.key.getIndependent<P>());
 }
 
 template <class P>
@@ -1242,7 +1242,7 @@ void AnnihilateCircuitBootstrappingWithWorkspace(
     if (!external_product_attribute_set) {
         CuSafeCall(cudaFuncSetAttribute(
             __CBExternalProductKernel__<ahP>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<ahP>));
+            cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4EXTERNALPRODUCT<ahP>));
         external_product_attribute_set = true;
     }
 
@@ -1254,7 +1254,7 @@ void AnnihilateCircuitBootstrappingWithWorkspace(
                                                      st, gpuNum);
             for (uint32_t k = 0; k < targetP::k; k++) {
                 __CBExternalProductKernel__<ahP>
-                    <<<1, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
+                    <<<1, NUM_THREAD4HOMGATE<ahP>, MEM4EXTERNALPRODUCT<ahP>, st>>>(
                         out + static_cast<size_t>(k * targetP::lₐ + i) *
                                   trlwe_elems,
                         acc, cbsk + static_cast<size_t>(k) * cbsk_one_key_elems,
@@ -1275,7 +1275,7 @@ void AnnihilateCircuitBootstrappingWithWorkspace(
         for (uint32_t k = 0; k < targetP::k; k++) {
             for (uint32_t i = 0; i < targetP::lₐ; i++) {
                 __CBExternalProductKernel__<ahP>
-                    <<<1, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
+                    <<<1, NUM_THREAD4HOMGATE<ahP>, MEM4EXTERNALPRODUCT<ahP>, st>>>(
                         out + static_cast<size_t>(k * targetP::lₐ + i) *
                                   trlwe_elems,
                         out + static_cast<size_t>(main_row_offset + i) *
@@ -1340,7 +1340,7 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
         if (!external_product_source_attribute_set) {
             CuSafeCall(cudaFuncSetAttribute(
                 __CBExternalProductFromSourceBatchKernel__<ahP, targetP::lₐ>,
-                cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<ahP>));
+                cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4EXTERNALPRODUCT<ahP>));
             external_product_source_attribute_set = true;
         }
         const dim3 external_grid(targetP::k, batch_count);
@@ -1351,7 +1351,7 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
                 acc, trlwe_elems, extracted, temptrlwe_stride, extracted,
                 temptrlwe_stride, batch_count, st, gpuNum);
             __CBExternalProductFromSourceBatchKernel__<ahP, targetP::lₐ>
-                <<<external_grid, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>,
+                <<<external_grid, NUM_THREAD4HOMGATE<ahP>, MEM4EXTERNALPRODUCT<ahP>,
                    st>>>(out, out_stride, i, acc, trlwe_elems, cbsk,
                          *RingHandler<ahP>(gpuNum), batch_count);
         }
@@ -1371,12 +1371,12 @@ void AnnihilateCircuitBootstrappingBatchWithWorkspace(
         if (!external_product_batch_attribute_set) {
             CuSafeCall(cudaFuncSetAttribute(
                 __CBExternalProductBatchKernel__<ahP, targetP::l, targetP::lₐ>,
-                cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4HOMGATE<ahP>));
+                cudaFuncAttributeMaxDynamicSharedMemorySize, MEM4EXTERNALPRODUCT<ahP>));
             external_product_batch_attribute_set = true;
         }
         const dim3 external_grid(targetP::k * targetP::lₐ, batch_count);
         __CBExternalProductBatchKernel__<ahP, targetP::l, targetP::lₐ>
-            <<<external_grid, NUM_THREAD4HOMGATE<ahP>, MEM4HOMGATE<ahP>, st>>>(
+            <<<external_grid, NUM_THREAD4HOMGATE<ahP>, MEM4EXTERNALPRODUCT<ahP>, st>>>(
                 out, out_stride, cbsk, *RingHandler<ahP>(gpuNum), batch_count);
     }
 

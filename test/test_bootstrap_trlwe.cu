@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/cufhe_gpu.cuh>
 #ifndef CUFHE_TRLWE_BENCH_ONLY
 #include <include/gatebootstrapping_gpu.cuh>
@@ -135,7 +136,7 @@ bool Truth(const std::vector<Ring::T>& values, int sample, const TFHEpp::SecretK
             -values[sample * RingWords + (component + 1) * Ring::n - coeff];
     }
     extracted[Ring::k * Ring::n] = values[sample * RingWords + Ring::k * Ring::n];
-    return TFHEpp::tlweSymDecrypt<Ring>(extracted, key.key.get<Ring>());
+    return TFHEpp::tlweSymDecrypt<Ring>(extracted, key.key.getSubset<Ring>());
 }
 }
 int main(int argc, char** argv)
@@ -158,7 +159,7 @@ int main(int argc, char** argv)
 #ifdef USE_SUBSET_KEY
     evaluation.emplacesubiksk<IKS>(secret);
 #else
-    evaluation.emplaceiksk<IKS>(secret);
+    cufhe::EmplaceGateKeySwitchingKey<IKS>(evaluation, secret);
 #endif
     cufhe::Initialize(evaluation);
     std::vector<Small::T> small(count * InputWords);
@@ -167,11 +168,11 @@ int main(int argc, char** argv)
     for (int sample = 0; sample < count; ++sample) {
         if (!verify || sample < 8) {
             std::array<Small::T, InputWords> a;
-            TFHEpp::tlweSymEncrypt<Small>(a, (sample & 1) ? Small::μ : -Small::μ, secret.key.get<Small>());
+            TFHEpp::tlweSymEncrypt<Small>(a, (sample & 1) ? Small::μ : -Small::μ, secret.key.getSubset<Small>());
             std::copy(a.begin(), a.end(), small.begin() + sample * InputWords);
             TFHEpp::TRLWE<Ring> b; std::array<Ring::T, Ring::n> plaintext;
             for (int i = 0; i < Ring::n; ++i) plaintext[i] = ((sample + i) & 1) ? Ring::μ : -Ring::μ;
-            TFHEpp::trlweSymEncrypt<Ring>(b, plaintext, secret.key.get<Ring>());
+            TFHEpp::trlweSymEncrypt<Ring>(b, plaintext, secret.key.getSubset<Ring>());
             for (int j = 0; j <= Ring::k; ++j)
                 std::copy(b[j].begin(), b[j].end(), large.begin() + sample * RingWords + j * Ring::n);
         } else {

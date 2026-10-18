@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>
 
@@ -21,7 +22,7 @@ bool TestBinary(const TFHEpp::SecretKey& sk)
     if constexpr (sizeof(typename P::T) == 4) ek.template emplacesubiksk<IKS>(sk);
     else
 #endif
-        ek.template emplaceiksk<IKS>(sk);
+        cufhe::EmplaceGateKeySwitchingKey<IKS>(ek, sk);
     if constexpr (sizeof(typename P::T) == 4) cufhe::Initialize(ek);
     else cufhe::Initialize_lvl02(ek, sk);
 
@@ -48,8 +49,8 @@ bool TestBinary(const TFHEpp::SecretKey& sk)
     std::vector<cufhe::Ctxt<P>> a(count), b(count), out(count);
     std::vector<TFHEpp::TLWE<P>> saved_a(count);
     for (int i = 0; i < count; ++i) {
-        TFHEpp::tlweSymEncrypt<P>(a[i].tlwehost, (i & 1) ? P::μ : -P::μ, sk.key.template get<P>());
-        TFHEpp::tlweSymEncrypt<P>(b[i].tlwehost, (i & 2) ? P::μ : -P::μ, sk.key.template get<P>());
+        TFHEpp::tlweSymEncrypt<P>(a[i].tlwehost, (i & 1) ? P::μ : -P::μ, sk.key.template getSubset<P>());
+        TFHEpp::tlweSymEncrypt<P>(b[i].tlwehost, (i & 2) ? P::μ : -P::μ, sk.key.template getSubset<P>());
         saved_a[i] = a[i].tlwehost;
         cufhe::CtxtCopyH2D(b[i], stream);
     }
@@ -94,7 +95,7 @@ bool TestBinary(const TFHEpp::SecretKey& sk)
                 passed &= std::equal(result.tlwehost.begin(), result.tlwehost.end(),
                                      reference.begin() + i * elements);
 #endif
-                passed &= TFHEpp::tlweSymDecrypt<P>(result.tlwehost, sk.key.template get<P>()) ==
+                passed &= TFHEpp::tlweSymDecrypt<P>(result.tlwehost, sk.key.template getSubset<P>()) ==
                           bool((gate.truth >> (i & 3)) & 1U);
             }
         }

@@ -292,7 +292,8 @@ bool RunDirectCBCase(const bool message)
     TFHEpp::SecretKey sk;
 
     auto bk = std::make_unique<TFHEpp::BootstrappingKey<brP>>();
-    TFHEpp::bkgen<brP>(*bk, sk);
+    TFHEpp::bkgen<brP>(*bk, sk.key.getIndependent<domainP>(),
+                        sk.key.getIndependent<targetP>());
     auto cpu_bkfft = std::make_unique<TFHEpp::BootstrappingKeyFFT<brP>>();
     BootstrappingKeyToCPUFFT<brP>(*cpu_bkfft, *bk);
 
@@ -309,7 +310,7 @@ bool RunDirectCBCase(const bool message)
     TFHEpp::TLWE<domainP> input;
     const typename domainP::T plain =
         message ? domainP::μ : static_cast<typename domainP::T>(-domainP::μ);
-    TFHEpp::tlweSymEncrypt<domainP>(input, plain, 0.0, sk.key.get<domainP>());
+    TFHEpp::tlweSymEncrypt<domainP>(input, plain, 0.0, sk.key.getIndependent<domainP>());
 
     auto cpu_out = std::make_unique<TFHEpp::TRGSW<targetP>>();
     const auto cpu_start = std::chrono::steady_clock::now();
@@ -361,12 +362,12 @@ bool RunDirectCBCase(const bool message)
     FlatToTRGSW<targetP>(*gpu_out, gpu_flat);
 
     bool ok =
-        CompareCBPhase<targetP>(*cpu_out, *gpu_out, sk.key.get<targetP>());
+        CompareCBPhase<targetP>(*cpu_out, *gpu_out, sk.key.getIndependent<targetP>());
     if constexpr (sizeof(typename targetP::T) == 8) {
         const bool cpu_ok = ValidateCircuitBootstrap<targetP>(
-            *cpu_out, sk.key.get<targetP>(), message);
+            *cpu_out, sk.key.getIndependent<targetP>(), message);
         const bool gpu_ok = ValidateCircuitBootstrap<targetP>(
-            *gpu_out, sk.key.get<targetP>(), message);
+            *gpu_out, sk.key.getIndependent<targetP>(), message);
         ok = ok && cpu_ok && gpu_ok;
     }
     std::cout << "CPU CB compute: " << cpu_ms << " ms" << std::endl;

@@ -59,7 +59,7 @@ void encrypt_bytes_as_bits(std::vector<TFHEpp::TLWE<P>>& out,
                                       ((bytes[byte] >> bit) & 1U)
                                           ? TFHEpp::ascon_bit_mu<P>
                                           : -TFHEpp::ascon_bit_mu<P>,
-                                      0.0, sk.key.get<P>());
+                                      0.0, sk.key.getIndependent<P>());
         }
     }
 }
@@ -72,7 +72,8 @@ std::vector<uint8_t> decrypt_bits_as_bytes(
     std::vector<uint8_t> bytes(bits.size() / 8);
     for (std::size_t byte = 0; byte < bytes.size(); byte++) {
         for (std::size_t bit = 0; bit < 8; bit++) {
-            if (TFHEpp::tlweSymDecrypt<P>(bits[byte * 8 + bit], sk))
+            if (TFHEpp::tlweSymDecrypt<P>(
+                    bits[byte * 8 + bit], sk.key.getIndependent<P>()))
                 bytes[byte] |= static_cast<uint8_t>(1U << bit);
         }
     }

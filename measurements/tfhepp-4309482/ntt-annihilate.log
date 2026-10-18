@@ -1,0 +1,11 @@
+=== AHlvl1param annihilate GPU test ===
+case 0 (trivial body): phase max abs diff=2^0 pass
+case 1 (first mask): phase max abs diff=2^20.5628 pass
+case 2 (encrypted): phase max abs diff=2^20.2678 pass
+case 3 (encrypted): phase max abs diff=2^20.408 pass
+=== cbAHlvl2param annihilate GPU test ===
+case 0 (trivial body): phase max abs diff=2^0 pass
+case 1 (first mask): phase max abs diff=2^32.6764 pass
+case 2 (second mask): phase max abs diff=2^32.923 pass
+case 3 (encrypted): phase max abs diff=2^32.7734 pass
+ALL ANNIHILATE TESTS PASSED

@@ -1,0 +1,6 @@
+Block-binary key structure: PASS
+Subset sample extraction: PASS
+lvl0 NAND: PASS
+lvl1 NAND: PASS
+lvl0 MUX: PASS
+lvl1 MUX: PASS

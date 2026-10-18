@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/cufhe_gpu.cuh>
 #include <include/bootstrap_gpu.cuh>
 
@@ -115,13 +116,13 @@ int main(int argc, char** argv)
     TFHEpp::EvalKey ek(sk);
     ek.emplacebk<BR>(sk);
 #ifdef CUFHE_BENCH_LVL02
-    ek.emplaceiksk<IKS>(sk);
+    cufhe::EmplaceGateKeySwitchingKey<IKS>(ek, sk);
     cufhe::Initialize_lvl02(ek, sk);
 #else
 #ifdef USE_SUBSET_KEY
     ek.emplacesubiksk<IKS>(sk);
 #else
-    ek.emplaceiksk<IKS>(sk);
+    cufhe::EmplaceGateKeySwitchingKey<IKS>(ek, sk);
 #endif
     cufhe::Initialize(ek);
 #endif
@@ -132,14 +133,14 @@ int main(int argc, char** argv)
     std::vector<cufhe::Ctxt<P>> c(mux ? count : 0);
     for (int i = 0; i < count; ++i) {
         TFHEpp::tlweSymEncrypt<P>(a[i].tlwehost, (i & 1) ? P::μ : -P::μ,
-                                  sk.key.get<P>());
+                                  sk.key.getSubset<P>());
         TFHEpp::tlweSymEncrypt<P>(b[i].tlwehost, (i & 2) ? P::μ : -P::μ,
-                                  sk.key.get<P>());
+                                  sk.key.getSubset<P>());
         cufhe::CtxtCopyH2D(a[i], streams[i % streams_count]);
         cufhe::CtxtCopyH2D(b[i], streams[i % streams_count]);
         if (mux) {
             TFHEpp::tlweSymEncrypt<P>(c[i].tlwehost, (i & 4) ? P::μ : -P::μ,
-                                      sk.key.get<P>());
+                                      sk.key.getSubset<P>());
             cufhe::CtxtCopyH2D(c[i], streams[i % streams_count]);
         }
     }
@@ -302,10 +303,10 @@ int main(int argc, char** argv)
         const bool expected = bootstrap ? bool(i & 1) :
             mux ? (nmux ? !selected : selected) :
             bool((binary->truth >> (i & 3)) & 1U);
-        errors += TFHEpp::tlweSymDecrypt<P>(out[i].tlwehost, sk.key.get<P>()) !=
+        errors += TFHEpp::tlweSymDecrypt<P>(out[i].tlwehost, sk.key.getSubset<P>()) !=
                   expected;
         const auto phase = TFHEpp::tlweSymPhase<P>(out[i].tlwehost,
-                                                   sk.key.get<P>());
+                                                   sk.key.getSubset<P>());
         const auto residual = static_cast<std::make_signed_t<P::T>>(
             phase - (expected ? P::μ : -P::μ));
         const long double noise = std::ldexp(static_cast<long double>(residual),

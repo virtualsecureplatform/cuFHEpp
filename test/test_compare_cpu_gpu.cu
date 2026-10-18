@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 /**
  * Compare CPU vs GPU gate bootstrapping for lvl02param.
  * Runs a single NAND gate on both paths and prints detailed results.
@@ -28,7 +29,7 @@ void print_tlwe_phase(const char* label, const TLWE<P>& ct, const SecretKey& sk)
     using T = typename P::T;
     T phase = ct[P::k * P::n];  // b
     for (int i = 0; i < P::k * P::n; i++) {
-        phase -= ct[i] * sk.key.get<P>()[i];
+        phase -= ct[i] * sk.key.getSubset<P>()[i];
     }
     // Interpret as signed for display
     using ST = std::make_signed_t<T>;
@@ -45,7 +46,7 @@ void print_tlwe_phase(const char* label, const TLWE<P>& ct, const SecretKey& sk)
            (unsigned long long)(T)(phase + (T)P::μ));
 
     // Decrypt
-    uint8_t pt = tlweSymDecrypt<P>(ct, sk.key.get<P>());
+    uint8_t pt = tlweSymDecrypt<P>(ct, sk.key.getSubset<P>());
     printf("    decrypted=%d\n", pt);
 }
 
@@ -65,7 +66,7 @@ int main()
     ek.emplacebkfft<lvl02param>(sk);
 
     printf("Generating KSK...\n");
-    ek.emplaceiksk<lvl20param>(sk);
+    cufhe::EmplaceGateKeySwitchingKey<lvl20param>(ek, sk);
 
     printf("Keys generated.\n\n");
 
@@ -95,8 +96,8 @@ int main()
         TLWE<lvl0param> ct0, ct1;
         auto mu_a = a ? lvl0param::μ : static_cast<lvl0param::T>(-lvl0param::μ);
         auto mu_b = b ? lvl0param::μ : static_cast<lvl0param::T>(-lvl0param::μ);
-        tlweSymEncrypt<lvl0param>(ct0, mu_a, sk.key.get<lvl0param>());
-        tlweSymEncrypt<lvl0param>(ct1, mu_b, sk.key.get<lvl0param>());
+        tlweSymEncrypt<lvl0param>(ct0, mu_a, sk.key.getSubset<lvl0param>());
+        tlweSymEncrypt<lvl0param>(ct1, mu_b, sk.key.getSubset<lvl0param>());
 
         printf("  Input ciphertexts:\n");
         print_tlwe_phase<lvl0param>("ct0", ct0, sk);
@@ -108,7 +109,7 @@ int main()
         printf("\n  CPU NAND result:\n");
         print_tlwe_phase<lvl0param>("cpu", cpu_result, sk);
 
-        uint8_t cpu_pt = tlweSymDecrypt<lvl0param>(cpu_result, sk.key.get<lvl0param>());
+        uint8_t cpu_pt = tlweSymDecrypt<lvl0param>(cpu_result, sk.key.getSubset<lvl0param>());
         if (cpu_pt == expected) cpu_pass++;
 
         // GPU NAND
@@ -130,7 +131,7 @@ int main()
         printf("\n  GPU NAND result:\n");
         print_tlwe_phase<lvl0param>("gpu", gpu_result_tlwe, sk);
 
-        uint8_t gpu_pt = tlweSymDecrypt<lvl0param>(gpu_result_tlwe, sk.key.get<lvl0param>());
+        uint8_t gpu_pt = tlweSymDecrypt<lvl0param>(gpu_result_tlwe, sk.key.getSubset<lvl0param>());
         if (gpu_pt == expected) gpu_pass++;
 
         // Compare

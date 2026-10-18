@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/cufhe_gpu.cuh>
 #include <memory>
 
@@ -66,13 +67,13 @@ void testMux(TFHEpp::SecretKey& sk)
     bool expected = pa ? pb : pc;
     TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
         ca.tlwehost, pa ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-        sk.key.get<TFHEpp::lvl0param>());
+        sk.key.getSubset<TFHEpp::lvl0param>());
     TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
         cb.tlwehost, pb ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-        sk.key.get<TFHEpp::lvl0param>());
+        sk.key.getSubset<TFHEpp::lvl0param>());
     TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
         cc.tlwehost, pc ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-        sk.key.get<TFHEpp::lvl0param>());
+        sk.key.getSubset<TFHEpp::lvl0param>());
 
     runAndVerify(
         "mux",
@@ -82,7 +83,7 @@ void testMux(TFHEpp::SecretKey& sk)
         [&](size_t i, size_t j) {
             bool decres;
             decres = TFHEpp::tlweSymDecrypt<TFHEpp::lvl0param>(
-                cres(i, j).tlwehost, sk.key.get<TFHEpp::lvl0param>());
+                cres(i, j).tlwehost, sk.key.getSubset<TFHEpp::lvl0param>());
             return expected == decres;
         });
 }
@@ -97,10 +98,10 @@ void testNand(TFHEpp::SecretKey& sk)
     bool expected = !(pa && pb);
     TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
         ca.tlwehost, pa ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-        sk.key.get<TFHEpp::lvl0param>());
+        sk.key.getSubset<TFHEpp::lvl0param>());
     TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
         cb.tlwehost, pb ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-        sk.key.get<TFHEpp::lvl0param>());
+        sk.key.getSubset<TFHEpp::lvl0param>());
 
     runAndVerify(
         "nand",
@@ -110,7 +111,7 @@ void testNand(TFHEpp::SecretKey& sk)
         [&](size_t i, size_t j) {
             bool decres;
             decres = TFHEpp::tlweSymDecrypt<TFHEpp::lvl0param>(
-                cres(i, j).tlwehost, sk.key.get<TFHEpp::lvl0param>());
+                cres(i, j).tlwehost, sk.key.getSubset<TFHEpp::lvl0param>());
             return expected == decres;
         });
 }
@@ -123,7 +124,7 @@ int main()
 #ifdef USE_SUBSET_KEY
     ek.emplacesubiksk<TFHEpp::lvl10param>(*sk);
 #else
-    ek.emplaceiksk<TFHEpp::lvl10param>(*sk);
+    cufhe::EmplaceGateKeySwitchingKey<TFHEpp::lvl10param>(ek, *sk);
 #endif
     cufhe::Initialize(ek);
 

@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 /**
  * Copyright 2018 Wei Dai <wdai3141@gmail.com>
  *
@@ -61,7 +62,7 @@ int main()
 #ifdef USE_SUBSET_KEY
     ek.emplacesubiksk<iksP>(*sk);
 #else
-    ek.emplaceiksk<iksP>(*sk);
+    cufhe::EmplaceGateKeySwitchingKey<iksP>(ek, *sk);
 #endif
 
     cout << "n:" << sk->params.lvl0.n << endl;

@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 #include <include/bootstrap_gpu.cuh>
 #include <include/cufhe_gpu.cuh>
 
@@ -84,7 +85,7 @@ int main()
         TFHEpp::SecretKey sk;
         TFHEpp::EvalKey ek(sk);
         ek.emplacebk<BR>(sk);
-        ek.emplaceiksk<IKS>(sk);
+        cufhe::EmplaceGateKeySwitchingKey<IKS>(ek, sk);
         cufhe::Initialize_lvl02(ek, sk);
 
         std::vector<T> a(words, guard), b(words, guard), blank(words, guard);
@@ -92,10 +93,10 @@ int main()
         for (size_t i = 0; i < capacity; ++i) {
             TFHEpp::TLWE<P> sample;
             TFHEpp::tlweSymEncrypt<P>(
-                sample, (i & 1) ? P::μ : -P::μ, sk.key.get<P>());
+                sample, (i & 1) ? P::μ : -P::μ, sk.key.getSubset<P>());
             std::copy(sample.begin(), sample.end(), a.begin() + 1 + i * stride);
             TFHEpp::tlweSymEncrypt<P>(
-                sample, (i & 2) ? P::μ : -P::μ, sk.key.get<P>());
+                sample, (i & 2) ? P::μ : -P::μ, sk.key.getSubset<P>());
             std::copy(sample.begin(), sample.end(), b.begin() + 1 + i * stride);
         }
         T *da, *db, *dout, *dref;

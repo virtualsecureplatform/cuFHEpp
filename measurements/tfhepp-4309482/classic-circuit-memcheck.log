@@ -1,0 +1,13 @@
+========= COMPUTE-SANITIZER
+=== direct AnnihilateCircuitBootstrapping GPU test, message=0 ===
+phase max abs diff=2^0 threshold_failures=0
+CPU CB compute: 83.4169 ms
+GPU CB compute: 276.104 ms
+speedup: 0.302121x
+=== direct AnnihilateCircuitBootstrapping GPU test, message=1 ===
+phase max abs diff=2^0 threshold_failures=0
+CPU CB compute: 63.7335 ms
+GPU CB compute: 170.69 ms
+speedup: 0.373389x
+ALL CIRCUIT BOOTSTRAPPING TESTS PASSED
+========= ERROR SUMMARY: 0 errors

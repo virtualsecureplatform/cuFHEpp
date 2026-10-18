@@ -1,3 +1,4 @@
+#include <include/tfhepp_keygen.hpp>
 /**
  * CPU-only test: verify TFHEpp gate bootstrapping works for lvl02param.
  * If this fails, the issue is in the parameter definitions, not the GPU code.
@@ -23,7 +24,7 @@ int main()
     ek.emplacebkfft<TFHEpp::lvl02param>(sk);
 
     printf("Generating KSK for lvl20param...\n");
-    ek.emplaceiksk<TFHEpp::lvl20param>(sk);
+    cufhe::EmplaceGateKeySwitchingKey<TFHEpp::lvl20param>(ek, sk);
 
     printf("Keys generated. Running CPU gate tests...\n");
 
@@ -47,14 +48,14 @@ int main()
         TFHEpp::TLWE<domP> ct0, ct1, result;
         auto mu_a = a ? domP::μ : static_cast<typename domP::T>(-domP::μ);
         auto mu_b = b ? domP::μ : static_cast<typename domP::T>(-domP::μ);
-        TFHEpp::tlweSymEncrypt<domP>(ct0, mu_a, sk.key.get<domP>());
-        TFHEpp::tlweSymEncrypt<domP>(ct1, mu_b, sk.key.get<domP>());
+        TFHEpp::tlweSymEncrypt<domP>(ct0, mu_a, sk.key.getSubset<domP>());
+        TFHEpp::tlweSymEncrypt<domP>(ct1, mu_b, sk.key.getSubset<domP>());
 
         // Run CPU NAND
         TFHEpp::HomNAND<brP, mu_tgt, iksP>(result, ct0, ct1, ek);
 
         // Decrypt
-        uint8_t pt = TFHEpp::tlweSymDecrypt<domP>(result, sk.key.get<domP>());
+        uint8_t pt = TFHEpp::tlweSymDecrypt<domP>(result, sk.key.getSubset<domP>());
         if (pt == expected) {
             pass++;
             printf("  NAND(%d, %d) = %d [expected %d] PASS\n", a, b, pt, expected);
@@ -74,12 +75,12 @@ int main()
         TFHEpp::TLWE<domP> ct0, ct1, result;
         auto mu_a = a ? domP::μ : static_cast<typename domP::T>(-domP::μ);
         auto mu_b = b ? domP::μ : static_cast<typename domP::T>(-domP::μ);
-        TFHEpp::tlweSymEncrypt<domP>(ct0, mu_a, sk.key.get<domP>());
-        TFHEpp::tlweSymEncrypt<domP>(ct1, mu_b, sk.key.get<domP>());
+        TFHEpp::tlweSymEncrypt<domP>(ct0, mu_a, sk.key.getSubset<domP>());
+        TFHEpp::tlweSymEncrypt<domP>(ct1, mu_b, sk.key.getSubset<domP>());
 
         TFHEpp::HomAND<brP, mu_tgt, iksP>(result, ct0, ct1, ek);
 
-        uint8_t pt = TFHEpp::tlweSymDecrypt<domP>(result, sk.key.get<domP>());
+        uint8_t pt = TFHEpp::tlweSymDecrypt<domP>(result, sk.key.getSubset<domP>());
         if (pt == expected) {
             pass++;
             printf("  AND(%d, %d) = %d [expected %d] PASS\n", a, b, pt, expected);
