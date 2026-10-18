@@ -1,0 +1,806 @@
+========= COMPUTE-SANITIZER
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=fft block_binary=1
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (32,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (33,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (34,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (35,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (36,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (37,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (38,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (39,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (40,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (41,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (42,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (43,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (44,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (45,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (46,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (47,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (48,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (49,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (50,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (51,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (52,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (53,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (54,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (55,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (56,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (57,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (58,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (59,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (60,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (61,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (62,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (63,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (96,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (97,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (98,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (99,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (100,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (101,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (102,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (103,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (104,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (105,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (106,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (107,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (108,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (109,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (110,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (111,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (112,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (113,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (114,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (115,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (116,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (117,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (118,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (119,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (120,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (121,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (122,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (123,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (124,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (125,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (126,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (127,0,0) in block (1,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (96,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (97,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (98,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (99,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (100,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (101,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (102,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (103,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (104,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (105,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (106,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (107,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (108,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (109,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (110,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (111,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (112,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (113,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (114,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (115,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (116,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (117,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (118,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (119,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (120,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (121,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (122,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (123,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (124,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (125,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (126,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (127,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (224,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (225,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (226,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (227,0,0) in block (216,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks
+=========
+CuCheckError() failed at /home/work-bleaker/kmatsuoka/sources/cuFHEpp-workspace/cuFHEpp/src/ntt_small_modulus.cu:1224 : unspecified launch failure
+========= Target application returned an error
+========= ERROR SUMMARY: 32800 errors
+========= ERROR SUMMARY: 32700 errors were not printed. Use --print-limit option to adjust the number of printed errors

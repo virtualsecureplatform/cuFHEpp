@@ -25,7 +25,7 @@ using namespace cufhe;
 template <class P>
 __global__ void __TRGSW2FFT_Test__(NTTValue* const bk_fft,
                                     const typename P::T* const bk,
-                                    CuGPUFFTHandler<P::n> ntt)
+                                    CuGPUFFTHandler<P::n, sizeof(typename P::T) * 8> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t HALF_N = N >> 1;
@@ -53,7 +53,7 @@ __global__ void __TRGSW2FFT_Test__(NTTValue* const bk_fft,
     }
     __syncthreads();
 
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
@@ -67,11 +67,11 @@ __global__ void __TRGSW2FFT_Test__(NTTValue* const bk_fft,
 
 // Single Accumulate with trlwe in global memory
 template <class P>
-__global__ void __TestAccumulate__(
+__global__ __launch_bounds__(P::targetP::n / 2) void __TestAccumulate__(
     typename P::targetP::T* const trlwe,
     const NTTValue* const tgsw_fft,
     const uint32_t a_bar,
-    CuGPUFFTHandler<P::targetP::n> ntt)
+    CuGPUFFTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     extern __shared__ NTTValue sh[];
     Accumulate<P>(trlwe, &sh[0], a_bar, tgsw_fft, ntt);
@@ -93,8 +93,8 @@ int main()
     TFHEpp::EvalKey ek;
     ek.emplacebk<brP>(sk);
 
-    CuGPUFFTHandler<N>::Create();
-    CuGPUFFTHandler<N> handler;
+    CuGPUFFTHandler<N, sizeof(T) * 8>::Create();
+    CuGPUFFTHandler<N, sizeof(T) * 8> handler;
     handler.SetDevicePointers(0);
     cudaDeviceSynchronize();
 
@@ -255,7 +255,7 @@ int main()
 
     cudaFree(d_trgsw_fft);
     cudaFree(d_trlwe);
-    CuGPUFFTHandler<N>::Destroy();
+    CuGPUFFTHandler<N, sizeof(T) * 8>::Destroy();
 
     return 0;
 }

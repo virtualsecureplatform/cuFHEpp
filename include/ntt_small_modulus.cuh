@@ -1695,7 +1695,7 @@ __device__ __forceinline__ void SmallForwardNTTPair(
     }
 
 #if defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
-    __CUDA_ARCH__ >= 890
+    __CUDA_ARCH__ >= 800
     SmallForwardNTTWarpPair31<N_POWER, CanonicalOutput>(sh0, sh1, root_table, tid);
 #else
     int in_shared_address = ((tid >> t_) << t_) + tid;
@@ -1747,7 +1747,7 @@ __device__ __forceinline__ void SmallInverseNTTPair(
     int t = 1;
 
 #if defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
-    __CUDA_ARCH__ >= 890
+    __CUDA_ARCH__ >= 800
     SmallInverseNTTWarpPair31<N_POWER>(sh0, sh1, root_table, tid);
     t <<= 6; t_2 += 6; t_ += 6; m >>= 6;
 #else
@@ -2126,10 +2126,16 @@ constexpr bool USE_LOW_LDS_BOOTSTRAP =
 // The 32-bit lvl1 limit is configurable: three blocks suit shared-memory
 // tails, while the paired register tail benefits from a two-block budget.
 // The opt-in 64-bit register tail uses one block to avoid spills; other
-// 64-bit paths keep two blocks. Ampere and FFT keep unconstrained allocation.
+// 64-bit paths keep two blocks. A100 has separate opt-in lvl1 NTT and
+// block-binary lvl02 FFT budgets, both defaulting to unconstrained allocation.
 template <class P>
 constexpr uint32_t MIN_BLOCKS4HOMGATE =
-#if defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && !defined(USE_FFT)
+#if defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && \
+    defined(USE_FFT) && defined(USE_GPU_FFT) && defined(USE_BLOCK_BINARY) && \
+    defined(__CUDA_ARCH__) && __CUDA_ARCH__ == 800 && \
+    defined(CUFHE_CUDA_FFT_MIN_BLOCKS_SM80)
+    sizeof(typename P::T) == 8 ? CUFHE_CUDA_FFT_MIN_BLOCKS_SM80 : 1;
+#elif defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && !defined(USE_FFT)
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
 #if defined(USE_CUDA_WARP_TRANSFORM64)
     sizeof(typename P::T) == 8 ? 1 :
@@ -2140,6 +2146,10 @@ constexpr uint32_t MIN_BLOCKS4HOMGATE =
 #else
     P::n == TFHEpp::lvl1param::n ? (sizeof(typename P::T) == 4 ? 3 : 2) : 1;
 #endif
+#elif defined(__CUDA_ARCH__) && __CUDA_ARCH__ == 800 && \
+      defined(CUFHE_CUDA_NTT_MIN_BLOCKS_SM80)
+    P::n == TFHEpp::lvl1param::n && sizeof(typename P::T) == 4
+        ? CUFHE_CUDA_NTT_MIN_BLOCKS_SM80 : 1;
 #else
     1;
 #endif
@@ -2155,6 +2165,15 @@ constexpr uint32_t MIN_BLOCKS4HOMGATE =
 
 // NTT value type: double2 complex for FFT
 using NTTValue = double2;
+
+// Custom FFTs predicate arithmetic internally; every CTA thread must reach
+// the same block barriers, including threads without butterfly work.
+inline constexpr bool GPUFFTAllThreads =
+#ifdef USE_GPU_FFT
+    true;
+#else
+    false;
+#endif
 
 template <uint32_t N, uint32_t Q_BITS = 32>
 using NTTValueFor = NTTValue;
@@ -2292,8 +2311,8 @@ __device__ __forceinline__ double2 shfl_xor_d2(double2 val, int mask)
 }
 
 // Shared-memory exchanges within a CUDA warp still need a memory barrier
-// under independent thread scheduling. Keep block-wide barrier counts intact:
-// callers also have inactive warps matching those barriers separately.
+// under independent thread scheduling. All CTA threads execute the block
+// barriers uniformly; only butterfly arithmetic is predicated.
 __device__ __forceinline__ void GPUFFTWarpSync()
 {
 #if !defined(CUFHE_USE_HIP)
@@ -2331,48 +2350,48 @@ __device__ __forceinline__ void GPUFFTForward256(
         sh[tid + 192] = c1 - d1w;
     }
     __syncthreads();
-
-    {
-        const int address = ((tid >> 5) << 5) + tid;
-        const double2 root = __ldg(&root_table[tid >> 5]);
-        const double2 u = sh[address];
-        const double2 v = sh[address + 32] * root;
-        sh[address] = u + v;
-        sh[address + 32] = u - v;
-    }
-
-    GPUFFTWarpSync();
-    {
-        int root_shift = 4;
-        const int address = ((tid >> 4) << 4) + tid;
-        double2 reg_u = sh[address];
-        double2 reg_v = sh[address + 16];
-
-        double2 root = __ldg(&root_table[tid >> root_shift]);
-        double2 weighted = reg_v * root;
-        reg_v = reg_u - weighted;
-        reg_u = reg_u + weighted;
-
-#pragma unroll
-        for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
-            root_shift--;
-            const bool is_upper = (tid & xor_mask) != 0;
-            const double2 sent = is_upper ? reg_u : reg_v;
-            const double2 received = shfl_xor_d2(sent, xor_mask);
-            if (is_upper)
-                reg_u = received;
-            else
-                reg_v = received;
-
-            root = __ldg(&root_table[tid >> root_shift]);
-            weighted = reg_v * root;
-            reg_v = reg_u - weighted;
-            reg_u = reg_u + weighted;
+    if (tid < 128) {
+        {
+            const int address = ((tid >> 5) << 5) + tid;
+            const double2 root = __ldg(&root_table[tid >> 5]);
+            const double2 u = sh[address];
+            const double2 v = sh[address + 32] * root;
+            sh[address] = u + v;
+            sh[address + 32] = u - v;
         }
 
         GPUFFTWarpSync();
-        sh[2 * tid] = reg_u;
-        sh[2 * tid + 1] = reg_v;
+        {
+            int root_shift = 4;
+            const int address = ((tid >> 4) << 4) + tid;
+            double2 reg_u = sh[address];
+            double2 reg_v = sh[address + 16];
+
+            double2 root = __ldg(&root_table[tid >> root_shift]);
+            double2 weighted = reg_v * root;
+            reg_v = reg_u - weighted;
+            reg_u = reg_u + weighted;
+#pragma unroll
+            for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
+                root_shift--;
+                const bool is_upper = (tid & xor_mask) != 0;
+                const double2 sent = is_upper ? reg_u : reg_v;
+                const double2 received = shfl_xor_d2(sent, xor_mask);
+                if (is_upper)
+                    reg_u = received;
+                else
+                    reg_v = received;
+
+                root = __ldg(&root_table[tid >> root_shift]);
+                weighted = reg_v * root;
+                reg_v = reg_u - weighted;
+                reg_u = reg_u + weighted;
+            }
+
+            GPUFFTWarpSync();
+            sh[2 * tid] = reg_u;
+            sh[2 * tid + 1] = reg_v;
+        }
     }
     __syncthreads();
 }
@@ -2384,44 +2403,45 @@ __device__ __forceinline__ void GPUFFTForward256(
 __device__ __forceinline__ void GPUFFTInverse256(
     double2* sh, const double2* __restrict__ root_table, int tid)
 {
-    double2 reg_u = sh[2 * tid];
-    double2 reg_v = sh[2 * tid + 1];
-    int root_shift = 0;
-    double2 root = __ldg(&root_table[tid >> root_shift]);
-    double2 sum = reg_u + reg_v;
-    reg_v = (reg_u - reg_v) * root;
-    reg_u = sum;
-
-#pragma unroll
-    for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
-        root_shift++;
-        const bool is_upper = (tid & xor_mask) != 0;
-        const double2 sent = is_upper ? reg_u : reg_v;
-        const double2 received = shfl_xor_d2(sent, xor_mask);
-        if (is_upper)
-            reg_u = received;
-        else
-            reg_v = received;
-
-        root = __ldg(&root_table[tid >> root_shift]);
-        sum = reg_u + reg_v;
+    if (tid < 128) {
+        double2 reg_u = sh[2 * tid];
+        double2 reg_v = sh[2 * tid + 1];
+        int root_shift = 0;
+        double2 root = __ldg(&root_table[tid >> root_shift]);
+        double2 sum = reg_u + reg_v;
         reg_v = (reg_u - reg_v) * root;
         reg_u = sum;
-    }
+#pragma unroll
+        for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
+            root_shift++;
+            const bool is_upper = (tid & xor_mask) != 0;
+            const double2 sent = is_upper ? reg_u : reg_v;
+            const double2 received = shfl_xor_d2(sent, xor_mask);
+            if (is_upper)
+                reg_u = received;
+            else
+                reg_v = received;
 
-    const int write_address = ((tid >> 4) << 4) + tid;
-    GPUFFTWarpSync();
-    sh[write_address] = reg_u;
-    sh[write_address + 16] = reg_v;
-    GPUFFTWarpSync();
+            root = __ldg(&root_table[tid >> root_shift]);
+            sum = reg_u + reg_v;
+            reg_v = (reg_u - reg_v) * root;
+            reg_u = sum;
+        }
 
-    {
-        const int address = ((tid >> 5) << 5) + tid;
-        root = __ldg(&root_table[tid >> 5]);
-        const double2 u = sh[address];
-        const double2 v = sh[address + 32];
-        sh[address] = u + v;
-        sh[address + 32] = (u - v) * root;
+        const int write_address = ((tid >> 4) << 4) + tid;
+        GPUFFTWarpSync();
+        sh[write_address] = reg_u;
+        sh[write_address + 16] = reg_v;
+        GPUFFTWarpSync();
+
+        {
+            const int address = ((tid >> 5) << 5) + tid;
+            root = __ldg(&root_table[tid >> 5]);
+            const double2 u = sh[address];
+            const double2 v = sh[address + 32];
+            sh[address] = u + v;
+            sh[address + 32] = (u - v) * root;
+        }
     }
     __syncthreads();
 
@@ -2486,66 +2506,68 @@ __device__ __forceinline__ void GPUFFTForward512(
         sh[tid + 384] = c1 - d1w;
     }
     __syncthreads();
-
-    // Stage 2 (stride 64): all 256 threads, normal radix-2
-    {
-        int in_shared_address = ((tid >> 6) << 6) + tid;
-        double2 root = __ldg(&root_table[tid >> 6]);
-        double2 U = sh[in_shared_address];
-        double2 V = sh[in_shared_address + 64] * root;
-        sh[in_shared_address] = U + V;
-        sh[in_shared_address + 64] = U - V;
+    if (tid < 256) {
+        // Stage 2 (stride 64): all 256 threads, normal radix-2
+        {
+            int in_shared_address = ((tid >> 6) << 6) + tid;
+            double2 root = __ldg(&root_table[tid >> 6]);
+            double2 U = sh[in_shared_address];
+            double2 V = sh[in_shared_address + 64] * root;
+            sh[in_shared_address] = U + V;
+            sh[in_shared_address + 64] = U - V;
+        }
     }
     __syncthreads();
-
-    // Boundary stage (stride 32): the following exchange is warp-local.
-    {
-        int in_shared_address = ((tid >> 5) << 5) + tid;
-        double2 root = __ldg(&root_table[tid >> 5]);
-        double2 U = sh[in_shared_address];
-        double2 V = sh[in_shared_address + 32] * root;
-        sh[in_shared_address] = U + V;
-        sh[in_shared_address + 32] = U - V;
-    }
-
-    GPUFFTWarpSync();
-    // Warp-local stages (stride 16..1): register-based with warp shuffle.
-    {
-        int t_2 = 4;
-        int in_shared_address = ((tid >> 4) << 4) + tid;
-
-        double2 reg_u = sh[in_shared_address];
-        double2 reg_v = sh[in_shared_address + 16];
-
-        // Stride 16: butterfly pair already in registers
+    if (tid < 256) {
+        // Boundary stage (stride 32): the following exchange is warp-local.
         {
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 Vw = reg_v * root;
-            reg_v = reg_u - Vw;
-            reg_u = reg_u + Vw;
-        }
-
-        // Strides 8, 4, 2, 1: shuffle exchange then butterfly
-#pragma unroll
-        for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
-            t_2 -= 1;
-            bool is_upper = (tid & xor_mask) != 0;
-            double2 to_send = is_upper ? reg_u : reg_v;
-            double2 received = shfl_xor_d2(to_send, xor_mask);
-            if (is_upper)
-                reg_u = received;
-            else
-                reg_v = received;
-
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 Vw = reg_v * root;
-            reg_v = reg_u - Vw;
-            reg_u = reg_u + Vw;
+            int in_shared_address = ((tid >> 5) << 5) + tid;
+            double2 root = __ldg(&root_table[tid >> 5]);
+            double2 U = sh[in_shared_address];
+            double2 V = sh[in_shared_address + 32] * root;
+            sh[in_shared_address] = U + V;
+            sh[in_shared_address + 32] = U - V;
         }
 
         GPUFFTWarpSync();
-        sh[2 * tid] = reg_u;
-        sh[2 * tid + 1] = reg_v;
+        // Warp-local stages (stride 16..1): register-based with warp shuffle.
+        {
+            int t_2 = 4;
+            int in_shared_address = ((tid >> 4) << 4) + tid;
+
+            double2 reg_u = sh[in_shared_address];
+            double2 reg_v = sh[in_shared_address + 16];
+
+            // Stride 16: butterfly pair already in registers
+            {
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 Vw = reg_v * root;
+                reg_v = reg_u - Vw;
+                reg_u = reg_u + Vw;
+            }
+
+            // Strides 8, 4, 2, 1: shuffle exchange then butterfly
+#pragma unroll
+            for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
+                t_2 -= 1;
+                bool is_upper = (tid & xor_mask) != 0;
+                double2 to_send = is_upper ? reg_u : reg_v;
+                double2 received = shfl_xor_d2(to_send, xor_mask);
+                if (is_upper)
+                    reg_u = received;
+                else
+                    reg_v = received;
+
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 Vw = reg_v * root;
+                reg_v = reg_u - Vw;
+                reg_u = reg_u + Vw;
+            }
+
+            GPUFFTWarpSync();
+            sh[2 * tid] = reg_u;
+            sh[2 * tid + 1] = reg_v;
+        }
     }
     __syncthreads();
 }
@@ -2570,69 +2592,72 @@ __device__ __forceinline__ void GPUFFTForward512(
 __device__ __forceinline__ void GPUFFTInverse512(
     double2* sh, const double2* __restrict__ root_table, int tid)
 {
-    int t_2 = 0;
-    int t = 1;
+    if (tid < 256) {
+        int t_2 = 0;
+        int t = 1;
 
-    int in_shared_address = ((tid >> 0) << 0) + tid;
+        int in_shared_address = ((tid >> 0) << 0) + tid;
 
-    // Warp-local stages (stride 1..16): register-based with warp shuffle.
-    {
-        double2 reg_u = sh[in_shared_address];
-        double2 reg_v = sh[in_shared_address + t];
-
-        // Stride 1: butterfly pair already in registers
+        // Warp-local stages (stride 1..16): register-based with warp shuffle.
         {
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 sum = reg_u + reg_v;
-            reg_v = (reg_u - reg_v) * root;
-            reg_u = sum;
-        }
+            double2 reg_u = sh[in_shared_address];
+            double2 reg_v = sh[in_shared_address + t];
 
-        // Strides 2, 4, 8, 16: shuffle exchange then butterfly
+            // Stride 1: butterfly pair already in registers
+            {
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 sum = reg_u + reg_v;
+                reg_v = (reg_u - reg_v) * root;
+                reg_u = sum;
+            }
+
+            // Strides 2, 4, 8, 16: shuffle exchange then butterfly
 #pragma unroll
-        for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
-            t_2 += 1;
-            bool is_upper = (tid & xor_mask) != 0;
-            double2 to_send = is_upper ? reg_u : reg_v;
-            double2 received = shfl_xor_d2(to_send, xor_mask);
-            if (is_upper)
-                reg_u = received;
-            else
-                reg_v = received;
+            for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
+                t_2 += 1;
+                bool is_upper = (tid & xor_mask) != 0;
+                double2 to_send = is_upper ? reg_u : reg_v;
+                double2 received = shfl_xor_d2(to_send, xor_mask);
+                if (is_upper)
+                    reg_u = received;
+                else
+                    reg_v = received;
 
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 sum = reg_u + reg_v;
-            reg_v = (reg_u - reg_v) * root;
-            reg_u = sum;
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 sum = reg_u + reg_v;
+                reg_v = (reg_u - reg_v) * root;
+                reg_u = sum;
+            }
+
+            // Write back (stride-16 addressing for boundary stage)
+            int wb_addr = ((tid >> 4) << 4) + tid;
+            GPUFFTWarpSync();
+            sh[wb_addr] = reg_u;
+            sh[wb_addr + 16] = reg_v;
         }
-
-        // Write back (stride-16 addressing for boundary stage)
-        int wb_addr = ((tid >> 4) << 4) + tid;
         GPUFFTWarpSync();
-        sh[wb_addr] = reg_u;
-        sh[wb_addr + 16] = reg_v;
-    }
-    GPUFFTWarpSync();
 
-    // Stage 5 (stride 32): reads data written by same-warp threads.
-    {
-        int in_shared_address = ((tid >> 5) << 5) + tid;
-        double2 root = __ldg(&root_table[tid >> 5]);
-        double2 u = sh[in_shared_address];
-        double2 v = sh[in_shared_address + 32];
-        sh[in_shared_address] = u + v;
-        sh[in_shared_address + 32] = (u - v) * root;
+        // Stage 5 (stride 32): reads data written by same-warp threads.
+        {
+            int in_shared_address = ((tid >> 5) << 5) + tid;
+            double2 root = __ldg(&root_table[tid >> 5]);
+            double2 u = sh[in_shared_address];
+            double2 v = sh[in_shared_address + 32];
+            sh[in_shared_address] = u + v;
+            sh[in_shared_address + 32] = (u - v) * root;
+        }
     }
     __syncthreads();
-
-    // Stage 6 (stride 64): all 256 threads, normal GS radix-2
-    {
-        int in_shared_address = ((tid >> 6) << 6) + tid;
-        double2 root = __ldg(&root_table[tid >> 6]);
-        double2 u = sh[in_shared_address];
-        double2 v = sh[in_shared_address + 64];
-        sh[in_shared_address] = u + v;
-        sh[in_shared_address + 64] = (u - v) * root;
+    if (tid < 256) {
+        // Stage 6 (stride 64): all 256 threads, normal GS radix-2
+        {
+            int in_shared_address = ((tid >> 6) << 6) + tid;
+            double2 root = __ldg(&root_table[tid >> 6]);
+            double2 u = sh[in_shared_address];
+            double2 v = sh[in_shared_address + 64];
+            sh[in_shared_address] = u + v;
+            sh[in_shared_address + 64] = (u - v) * root;
+        }
     }
     __syncthreads();
 
@@ -2732,55 +2757,56 @@ __device__ __forceinline__ void GPUFFTForward1024(
         sh[base + 192] = c1 - d1w;
     }
     __syncthreads();
-
-    // Boundary stage (stride 32): all 512 threads, followed by a warp exchange.
-    {
-        int in_shared_address = ((tid >> 5) << 5) + tid;
-        double2 root = __ldg(&root_table[tid >> 5]);
-        double2 U = sh[in_shared_address];
-        double2 V = sh[in_shared_address + 32] * root;
-        sh[in_shared_address] = U + V;
-        sh[in_shared_address + 32] = U - V;
-    }
-
-    GPUFFTWarpSync();
-    // Warp-local stages (stride 16..1): register-based with warp shuffle.
-    {
-        int t_2 = 4;
-        int in_shared_address = ((tid >> 4) << 4) + tid;
-
-        double2 reg_u = sh[in_shared_address];
-        double2 reg_v = sh[in_shared_address + 16];
-
-        // Stride 16: butterfly pair already in registers
+    if (tid < 512) {
+        // Boundary stage (stride 32): all 512 threads, followed by a warp exchange.
         {
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 Vw = reg_v * root;
-            reg_v = reg_u - Vw;
-            reg_u = reg_u + Vw;
-        }
-
-        // Strides 8, 4, 2, 1: shuffle exchange then butterfly
-#pragma unroll
-        for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
-            t_2 -= 1;
-            bool is_upper = (tid & xor_mask) != 0;
-            double2 to_send = is_upper ? reg_u : reg_v;
-            double2 received = shfl_xor_d2(to_send, xor_mask);
-            if (is_upper)
-                reg_u = received;
-            else
-                reg_v = received;
-
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 Vw = reg_v * root;
-            reg_v = reg_u - Vw;
-            reg_u = reg_u + Vw;
+            int in_shared_address = ((tid >> 5) << 5) + tid;
+            double2 root = __ldg(&root_table[tid >> 5]);
+            double2 U = sh[in_shared_address];
+            double2 V = sh[in_shared_address + 32] * root;
+            sh[in_shared_address] = U + V;
+            sh[in_shared_address + 32] = U - V;
         }
 
         GPUFFTWarpSync();
-        sh[2 * tid] = reg_u;
-        sh[2 * tid + 1] = reg_v;
+        // Warp-local stages (stride 16..1): register-based with warp shuffle.
+        {
+            int t_2 = 4;
+            int in_shared_address = ((tid >> 4) << 4) + tid;
+
+            double2 reg_u = sh[in_shared_address];
+            double2 reg_v = sh[in_shared_address + 16];
+
+            // Stride 16: butterfly pair already in registers
+            {
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 Vw = reg_v * root;
+                reg_v = reg_u - Vw;
+                reg_u = reg_u + Vw;
+            }
+
+            // Strides 8, 4, 2, 1: shuffle exchange then butterfly
+#pragma unroll
+            for (int xor_mask = 8; xor_mask >= 1; xor_mask >>= 1) {
+                t_2 -= 1;
+                bool is_upper = (tid & xor_mask) != 0;
+                double2 to_send = is_upper ? reg_u : reg_v;
+                double2 received = shfl_xor_d2(to_send, xor_mask);
+                if (is_upper)
+                    reg_u = received;
+                else
+                    reg_v = received;
+
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 Vw = reg_v * root;
+                reg_v = reg_u - Vw;
+                reg_u = reg_u + Vw;
+            }
+
+            GPUFFTWarpSync();
+            sh[2 * tid] = reg_u;
+            sh[2 * tid + 1] = reg_v;
+        }
     }
     __syncthreads();
 }
@@ -2800,57 +2826,59 @@ __device__ __forceinline__ void GPUFFTForward1024(
 __device__ __forceinline__ void GPUFFTInverse1024(
     double2* sh, const double2* __restrict__ root_table, int tid)
 {
-    int t_2 = 0;
-    int t = 1;
+    if (tid < 512) {
+        int t_2 = 0;
+        int t = 1;
 
-    int in_shared_address = ((tid >> 0) << 0) + tid;
+        int in_shared_address = ((tid >> 0) << 0) + tid;
 
-    // Warp-local stages (stride 1..16): register-based with warp shuffle.
-    {
-        double2 reg_u = sh[in_shared_address];
-        double2 reg_v = sh[in_shared_address + t];
-
-        // Stride 1: butterfly pair already in registers
+        // Warp-local stages (stride 1..16): register-based with warp shuffle.
         {
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 sum = reg_u + reg_v;
-            reg_v = (reg_u - reg_v) * root;
-            reg_u = sum;
-        }
+            double2 reg_u = sh[in_shared_address];
+            double2 reg_v = sh[in_shared_address + t];
 
-        // Strides 2, 4, 8, 16: shuffle exchange then butterfly
+            // Stride 1: butterfly pair already in registers
+            {
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 sum = reg_u + reg_v;
+                reg_v = (reg_u - reg_v) * root;
+                reg_u = sum;
+            }
+
+            // Strides 2, 4, 8, 16: shuffle exchange then butterfly
 #pragma unroll
-        for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
-            t_2 += 1;
-            bool is_upper = (tid & xor_mask) != 0;
-            double2 to_send = is_upper ? reg_u : reg_v;
-            double2 received = shfl_xor_d2(to_send, xor_mask);
-            if (is_upper)
-                reg_u = received;
-            else
-                reg_v = received;
+            for (int xor_mask = 1; xor_mask <= 8; xor_mask <<= 1) {
+                t_2 += 1;
+                bool is_upper = (tid & xor_mask) != 0;
+                double2 to_send = is_upper ? reg_u : reg_v;
+                double2 received = shfl_xor_d2(to_send, xor_mask);
+                if (is_upper)
+                    reg_u = received;
+                else
+                    reg_v = received;
 
-            double2 root = __ldg(&root_table[tid >> t_2]);
-            double2 sum = reg_u + reg_v;
-            reg_v = (reg_u - reg_v) * root;
-            reg_u = sum;
+                double2 root = __ldg(&root_table[tid >> t_2]);
+                double2 sum = reg_u + reg_v;
+                reg_v = (reg_u - reg_v) * root;
+                reg_u = sum;
+            }
+
+            int wb_addr = ((tid >> 4) << 4) + tid;
+            GPUFFTWarpSync();
+            sh[wb_addr] = reg_u;
+            sh[wb_addr + 16] = reg_v;
         }
-
-        int wb_addr = ((tid >> 4) << 4) + tid;
         GPUFFTWarpSync();
-        sh[wb_addr] = reg_u;
-        sh[wb_addr + 16] = reg_v;
-    }
-    GPUFFTWarpSync();
 
-    // Stage 5 (stride 32): reads data written by same-warp threads.
-    {
-        int in_shared_address = ((tid >> 5) << 5) + tid;
-        double2 root = __ldg(&root_table[tid >> 5]);
-        double2 u = sh[in_shared_address];
-        double2 v = sh[in_shared_address + 32];
-        sh[in_shared_address] = u + v;
-        sh[in_shared_address + 32] = (u - v) * root;
+        // Stage 5 (stride 32): reads data written by same-warp threads.
+        {
+            int in_shared_address = ((tid >> 5) << 5) + tid;
+            double2 root = __ldg(&root_table[tid >> 5]);
+            double2 u = sh[in_shared_address];
+            double2 v = sh[in_shared_address + 32];
+            sh[in_shared_address] = u + v;
+            sh[in_shared_address + 32] = (u - v) * root;
+        }
     }
     __syncthreads();
 

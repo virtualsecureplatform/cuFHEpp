@@ -1,0 +1,3 @@
+lvl1 count=17 batch strides / scalar equivalence / in-place chain: PASS
+lvl02 count=17 batch strides / scalar equivalence / in-place chain: PASS
+lvl02 count=109 batch strides / scalar equivalence / in-place chain: PASS

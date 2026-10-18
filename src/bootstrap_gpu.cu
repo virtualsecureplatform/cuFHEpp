@@ -131,7 +131,7 @@ __global__ void __TRGSW2FFT__(NTTValue* const bk_fft,
     }
     __syncthreads();
 
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
@@ -777,7 +777,7 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHE
             }
             __syncthreads();
 
-            if (tid < FFT_THREADS) {
+            if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
                 GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
             }
             else {
@@ -804,7 +804,7 @@ __launch_bounds__(NUM_THREAD4HOMGATE<TFHEpp::lvl1param>, MIN_BLOCKS4HOMGATE<TFHE
     constexpr double denorm = 4294967296.0;  // 2^32
     for (int k_idx = 0; k_idx <= lvl1param::k; k_idx++) {
         double2* const sh_inv = &sh_accum[k_idx * HALF_N];
-        if (tid < FFT_THREADS) {
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
             GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
         }
         else {
@@ -1316,8 +1316,10 @@ __device__ inline void __KeySwitchAfterBlindRotate__(
     typename iksP::targetP::T* out, const typename iksP::domainP::T* input,
     const typename iksP::targetP::T* ksk, char* dyn_sh)
 {
-#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
-    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP) && \
+    ((defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
+      (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890)) || \
+     (defined(USE_FFT) && defined(USE_BLOCK_BINARY) && __CUDA_ARCH__ == 800))
     constexpr size_t prepared_bytes =
         (iksP::domainP::k * iksP::domainP::n * iksP::t + 1) * sizeof(uint16_t);
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
@@ -1405,10 +1407,19 @@ __device__ inline void __HomGate__(typename brP::targetP::T* const out,
     extern __shared__ char dyn_sh[];
     constexpr int prepared_count = (iksP::domainP::k * iksP::domainP::n -
         (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) * iksP::t;
-#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
-    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP) && \
+    ((defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
+      (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890)) || \
+     (defined(USE_FFT) && defined(USE_BLOCK_BINARY) && __CUDA_ARCH__ == 800))
+#ifdef USE_FFT
+    // No dynamic TRLWE data is live yet. The prepared rows may use the full
+    // allocation; the CTA barrier below retires them before rotation starts.
+    constexpr size_t prepared_capacity = MEM4HOMGATE_DYN<typename brP::targetP>;
+#else
+    constexpr size_t prepared_capacity = MEM4HOMGATE<typename brP::targetP>;
+#endif
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl10param> &&
-                  prepared_count * sizeof(uint32_t) <= MEM4HOMGATE<typename brP::targetP>) {
+                  prepared_count * sizeof(uint32_t) <= prepared_capacity) {
         IdentityKeySwitchPreAddPrepared<iksP, casign, cbsign, offset>(
             tlwe, in0, in1, ksk, reinterpret_cast<uint32_t*>(dyn_sh));
     } else if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
@@ -2698,12 +2709,35 @@ void SEIandBootstrap2TRLWE(TFHEpp::lvl1param::T* const out,
     CuCheckError();
 }
 
+#if defined(USE_CUDA_COOPERATIVE_SCALAR) && defined(USE_BLOCK_BINARY) && \
+    !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+namespace {
+bool TryCooperativeScalarNand(TFHEpp::lvl0param::T*,
+    const TFHEpp::lvl0param::T*, const TFHEpp::lvl0param::T*, cudaStream_t, int);
+bool TryCooperativeScalarNand(TFHEpp::lvl2param::T*,
+    const TFHEpp::lvl2param::T*, const TFHEpp::lvl2param::T*, cudaStream_t, int);
+}
+#endif
+
 template <class brP, typename brP::targetP::T μ, class iksP>
 void NandBootstrap(typename iksP::targetP::T* const out,
                    const typename brP::domainP::T* const in0,
                    const typename brP::domainP::T* const in1,
                    const cudaStream_t st, const int gpuNum)
 {
+#if defined(USE_CUDA_COOPERATIVE_SCALAR) && defined(USE_BLOCK_BINARY) && \
+    !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                  std::is_same_v<brP, TFHEpp::lvl02param> &&
+                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+        if (TryCooperativeScalarNand(out, in0, in1, st, gpuNum)) return;
+    }
+#endif
+
 #ifdef USE_KEY_BUNDLE
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         cudaFuncSetAttribute(__NandBootstrapKB__<brP, brP::targetP::μ, iksP>,
@@ -2763,6 +2797,17 @@ void NandBootstrap(typename brP::targetP::T* const out,
                    const typename iksP::domainP::T* const in1,
                    const cudaStream_t st, const int gpuNum)
 {
+#if defined(USE_CUDA_COOPERATIVE_SCALAR) && defined(USE_BLOCK_BINARY) && \
+    !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                  std::is_same_v<brP, TFHEpp::lvl02param> &&
+                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+        if (TryCooperativeScalarNand(out, in0, in1, st, gpuNum)) return;
+    }
+#endif
+
 #ifdef USE_KEY_BUNDLE
     if constexpr (sizeof(typename brP::targetP::T) == 8) {
         cudaFuncSetAttribute(__NandBootstrapKB__<iksP, brP, brP::targetP::μ>,
@@ -2817,68 +2862,6 @@ INST(TFHEpp::lvl10param, TFHEpp::lvl01param, TFHEpp::lvl1param::μ);
 INST(TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::lvl2param::μ);
 #undef INST
 
-template <class brP, typename brP::targetP::T μ, class iksP>
-void NandBootstrapBatch(
-    typename iksP::targetP::T* out, size_t out_stride,
-    const typename brP::domainP::T* in0, size_t in0_stride,
-    const typename brP::domainP::T* in1, size_t in1_stride,
-    uint32_t count, cudaStream_t st, int gpuNum)
-{
-    if (count == 0) return;
-    constexpr size_t out_elements = iksP::targetP::k * iksP::targetP::n + 1;
-    constexpr size_t in_elements = brP::domainP::k * brP::domainP::n + 1;
-    if (out_stride < out_elements || in0_stride < in_elements ||
-        in1_stride < in_elements)
-        throw std::invalid_argument("NandBootstrapBatch: TLWE stride is too small");
-    CuSafeCall(cudaSetDevice(gpuNum));
-    if (count == 1) {
-        NandBootstrap<brP, μ, iksP>(out, in0, in1, st, gpuNum);
-        return;
-    }
-    auto& handlers = []() -> auto& {
-        if constexpr (sizeof(typename brP::targetP::T) == 8)
-            return ntt_handlers_lvl02;
-        else
-            return ntt_handlers;
-    }();
-    auto& keys = BootstrappingKeyStorage<typename brP::targetP>();
-    auto& switching_keys = sizeof(typename brP::targetP::T) == 8
-                               ? ksk_devs_lvl20 : ksk_devs;
-#ifdef USE_KEY_BUNDLE
-    auto& ones = []() -> auto& {
-        if constexpr (sizeof(typename brP::targetP::T) == 8)
-            return one_trgsw_ntt_devs_lvl02;
-        else
-            return one_trgsw_ntt_devs;
-    }();
-    auto& monomials = []() -> auto& {
-        if constexpr (sizeof(typename brP::targetP::T) == 8)
-            return xai_ntt_devs_lvl02;
-        else
-            return xai_ntt_devs;
-    }();
-#endif
-    constexpr size_t shared_bytes = MEM4HOMGATE_DYN<typename brP::targetP>;
-    CuSafeCall(cudaFuncSetAttribute(__NandBootstrapBatch__<brP, μ, iksP>,
-        cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
-    __NandBootstrapBatch__<brP, μ, iksP>
-        <<<count, NUM_THREAD4HOMGATE<typename brP::targetP>, shared_bytes, st>>>(
-            out, out_stride, in0, in0_stride, in1, in1_stride,
-            keys[gpuNum], switching_keys[gpuNum],
-#ifdef USE_KEY_BUNDLE
-            ones[gpuNum], monomials[gpuNum],
-#endif
-            *handlers[gpuNum]);
-    CuCheckError();
-}
-
-template void NandBootstrapBatch<TFHEpp::lvl01param, TFHEpp::lvl1param::μ, TFHEpp::lvl10param>(
-    TFHEpp::lvl0param::T*, size_t, const TFHEpp::lvl0param::T*, size_t,
-    const TFHEpp::lvl0param::T*, size_t, uint32_t, cudaStream_t, int);
-template void NandBootstrapBatch<TFHEpp::lvl02param, TFHEpp::lvl2param::μ, TFHEpp::lvl20param>(
-    TFHEpp::lvl0param::T*, size_t, const TFHEpp::lvl0param::T*, size_t,
-    const TFHEpp::lvl0param::T*, size_t, uint32_t, cudaStream_t, int);
-
 #if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
     !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
     defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
@@ -2889,6 +2872,8 @@ using CoopBR = TFHEpp::lvl02param;
 using CoopKS = TFHEpp::lvl20param;
 using CoopTarget = CoopBR::targetP;
 using CoopWord = CoopTarget::T;
+template <bool Public>
+using CoopIO = std::conditional_t<Public, CoopBR::domainP::T, CoopWord>;
 constexpr int CoopN = CoopTarget::n;
 constexpr int CoopRows = BootstrappingTRGSWRows<CoopTarget>;
 constexpr int CoopThreads = CoopN / 2;
@@ -2908,11 +2893,12 @@ static_assert(CoopTarget::l == CoopTarget::lₐ &&
 // Small independent batches trade extra SMs and global partial sums for latency.
 // Every sample has nine row CTAs. All CTAs participate in every grid barrier;
 // the host only launches a grid that can be resident in full.
-__global__ __launch_bounds__(CoopThreads, 1)
+template <bool Public, bool Dense = false>
+__global__ __launch_bounds__(CoopThreads, Dense ? 2 : 1)
 void CooperativeNandBatchKernel(
-    CoopWord* out, size_t out_stride,
-    const CoopWord* in0, size_t in0_stride,
-    const CoopWord* in1, size_t in1_stride,
+    CoopIO<Public>* out, size_t out_stride,
+    const CoopIO<Public>* in0, size_t in0_stride,
+    const CoopIO<Public>* in1, size_t in1_stride,
     const uint64_t* bk, const CoopKS::targetP::T* ksk,
     CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
 {
@@ -2935,8 +2921,14 @@ void CooperativeNandBatchKernel(
     volatile CoopWord* partial_rw = partial;
     volatile CoopBR::domainP::T* power_read = powers;
     if (row == 0) {
-        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
-            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        if constexpr (Public) {
+            for (int i = tid; i <= CoopBR::domainP::n; i += CoopThreads)
+                lwe[i] = (i == CoopBR::domainP::n ? CoopBR::domainP::μ : 0) -
+                         in0[i] - in1[i];
+        } else {
+            IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+                lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        }
         __syncthreads();
         const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
         constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
@@ -3005,7 +2997,20 @@ void CooperativeNandBatchKernel(
         }
         grid.sync();
     }
-    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+    if (row == 0) {
+        if constexpr (Public) {
+            // Mutable cross-CTA state must bypass the read-only cache.
+            // Retire the local copy before reusing it for prepared key rows.
+            for (int i = tid; i < (CoopTarget::k + 1) * CoopN; i += CoopThreads)
+                work[i] = state_read[i];
+            __syncthreads();
+            KeySwitchPrepared16<CoopKS, CoopThreads, true>(
+                out, reinterpret_cast<CoopWord*>(work), ksk,
+                reinterpret_cast<uint16_t*>(work));
+        } else {
+            __SampleExtractIndex__<CoopTarget, 0>(out, state);
+        }
+    }
 }
 
 // Three row groups reduce cross-block partial storage for medium batches.
@@ -3016,11 +3021,12 @@ constexpr size_t CoopThreeScratchBytes =
 constexpr size_t CoopThreeScratchWords =
     (CoopThreeScratchBytes + sizeof(CoopWord) - 1) / sizeof(CoopWord);
 
-__global__ __launch_bounds__(CoopThreads, 1)
+template <bool Public, bool Dense = false>
+__global__ __launch_bounds__(CoopThreads, Dense ? 2 : 1)
 void CooperativeNandBatchThreeKernel(
-    CoopWord* out, size_t out_stride,
-    const CoopWord* in0, size_t in0_stride,
-    const CoopWord* in1, size_t in1_stride,
+    CoopIO<Public>* out, size_t out_stride,
+    const CoopIO<Public>* in0, size_t in0_stride,
+    const CoopIO<Public>* in1, size_t in1_stride,
     const uint64_t* bk, const CoopKS::targetP::T* ksk,
     CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
 {
@@ -3043,8 +3049,14 @@ void CooperativeNandBatchThreeKernel(
     volatile CoopWord* partial_rw = partial;
     volatile CoopBR::domainP::T* power_read = powers;
     if (row == 0) {
-        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
-            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        if constexpr (Public) {
+            for (int i = tid; i <= CoopBR::domainP::n; i += CoopThreads)
+                lwe[i] = (i == CoopBR::domainP::n ? CoopBR::domainP::μ : 0) -
+                         in0[i] - in1[i];
+        } else {
+            IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+                lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        }
         __syncthreads();
         const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
         constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
@@ -3165,7 +3177,20 @@ void CooperativeNandBatchThreeKernel(
         }
         grid.sync();
     }
-    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+    if (row == 0) {
+        if constexpr (Public) {
+            // Mutable cross-CTA state must bypass the read-only cache.
+            // Retire the local copy before reusing it for prepared key rows.
+            for (int i = tid; i < (CoopTarget::k + 1) * CoopN; i += CoopThreads)
+                work[i] = state_read[i];
+            __syncthreads();
+            KeySwitchPrepared16<CoopKS, CoopThreads, true>(
+                out, reinterpret_cast<CoopWord*>(work), ksk,
+                reinterpret_cast<uint16_t*>(work));
+        } else {
+            __SampleExtractIndex__<CoopTarget, 0>(out, state);
+        }
+    }
 }
 
 // Two blocks cover batches beyond the three-block resident limit. Rows 0..3
@@ -3178,11 +3203,12 @@ constexpr size_t CoopTwoScratchBytes =
 constexpr size_t CoopTwoScratchWords =
     (CoopTwoScratchBytes + sizeof(CoopWord) - 1) / sizeof(CoopWord);
 
-__global__ __launch_bounds__(CoopThreads, 1)
+template <bool Public, bool Dense = false>
+__global__ __launch_bounds__(CoopThreads, Dense ? 2 : 1)
 void CooperativeNandBatchTwoKernel(
-    CoopWord* out, size_t out_stride,
-    const CoopWord* in0, size_t in0_stride,
-    const CoopWord* in1, size_t in1_stride,
+    CoopIO<Public>* out, size_t out_stride,
+    const CoopIO<Public>* in0, size_t in0_stride,
+    const CoopIO<Public>* in1, size_t in1_stride,
     const uint64_t* bk, const CoopKS::targetP::T* ksk,
     CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
 {
@@ -3205,8 +3231,14 @@ void CooperativeNandBatchTwoKernel(
     volatile CoopWord* partial_rw = partial;
     volatile CoopBR::domainP::T* power_read = powers;
     if (row == 0) {
-        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
-            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        if constexpr (Public) {
+            for (int i = tid; i <= CoopBR::domainP::n; i += CoopThreads)
+                lwe[i] = (i == CoopBR::domainP::n ? CoopBR::domainP::μ : 0) -
+                         in0[i] - in1[i];
+        } else {
+            IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+                lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        }
         __syncthreads();
         const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
         constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
@@ -3353,7 +3385,20 @@ void CooperativeNandBatchTwoKernel(
         }
         grid.sync();
     }
-    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+    if (row == 0) {
+        if constexpr (Public) {
+            // Mutable cross-CTA state must bypass the read-only cache.
+            // Retire the local copy before reusing it for prepared key rows.
+            for (int i = tid; i < (CoopTarget::k + 1) * CoopN; i += CoopThreads)
+                work[i] = state_read[i];
+            __syncthreads();
+            KeySwitchPrepared16<CoopKS, CoopThreads, true>(
+                out, reinterpret_cast<CoopWord*>(work), ksk,
+                reinterpret_cast<uint16_t*>(work));
+        } else {
+            __SampleExtractIndex__<CoopTarget, 0>(out, state);
+        }
+    }
 }
 
 // Five groups partition the nine existing rows into groups of one or two.
@@ -3364,11 +3409,12 @@ constexpr size_t CoopFiveScratchBytes =
 constexpr size_t CoopFiveScratchWords =
     (CoopFiveScratchBytes + sizeof(CoopWord) - 1) / sizeof(CoopWord);
 
-__global__ __launch_bounds__(CoopThreads, 1)
+template <bool Public, bool Dense = false>
+__global__ __launch_bounds__(CoopThreads, Dense ? 2 : 1)
 void CooperativeNandBatchFiveKernel(
-    CoopWord* out, size_t out_stride,
-    const CoopWord* in0, size_t in0_stride,
-    const CoopWord* in1, size_t in1_stride,
+    CoopIO<Public>* out, size_t out_stride,
+    const CoopIO<Public>* in0, size_t in0_stride,
+    const CoopIO<Public>* in1, size_t in1_stride,
     const uint64_t* bk, const CoopKS::targetP::T* ksk,
     CuNTTHandler<CoopN, 64> ntt, CoopWord* scratch)
 {
@@ -3391,8 +3437,14 @@ void CooperativeNandBatchFiveKernel(
     volatile CoopWord* partial_rw = partial;
     volatile CoopBR::domainP::T* power_read = powers;
     if (row == 0) {
-        IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
-            lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        if constexpr (Public) {
+            for (int i = tid; i <= CoopBR::domainP::n; i += CoopThreads)
+                lwe[i] = (i == CoopBR::domainP::n ? CoopBR::domainP::μ : 0) -
+                         in0[i] - in1[i];
+        } else {
+            IdentityKeySwitchPreAddPrepared16<CoopKS, -1, -1, CoopKS::domainP::μ>(
+                lwe, in0, in1, ksk, reinterpret_cast<uint16_t*>(dynamic_shared));
+        }
         __syncthreads();
         const auto correction = BlockBinaryModSwitchCorrection<CoopBR>(lwe);
         constexpr CoopBR::domainP::T roundoffset = CoopBR::domainP::T{1} <<
@@ -3513,7 +3565,20 @@ void CooperativeNandBatchFiveKernel(
         }
         grid.sync();
     }
-    if (row == 0) __SampleExtractIndex__<CoopTarget, 0>(out, state);
+    if (row == 0) {
+        if constexpr (Public) {
+            // Mutable cross-CTA state must bypass the read-only cache.
+            // Retire the local copy before reusing it for prepared key rows.
+            for (int i = tid; i < (CoopTarget::k + 1) * CoopN; i += CoopThreads)
+                work[i] = state_read[i];
+            __syncthreads();
+            KeySwitchPrepared16<CoopKS, CoopThreads, true>(
+                out, reinterpret_cast<CoopWord*>(work), ksk,
+                reinterpret_cast<uint16_t*>(work));
+        } else {
+            __SampleExtractIndex__<CoopTarget, 0>(out, state);
+        }
+    }
 }
 
 // Keep a bounded cache for this implementation without changing the caller's
@@ -3525,7 +3590,8 @@ void InitializeCooperativeScratchPools(int gpu_count)
         CuSafeCall(cudaSetDevice(gpu));
         cudaDeviceProp prop{};
         CuSafeCall(cudaGetDeviceProperties(&prop, gpu));
-        if (prop.major != 8 || prop.minor != 9 || !prop.cooperativeLaunch) continue;
+        if (prop.major != 8 || (prop.minor != 0 && prop.minor != 9) ||
+            !prop.cooperativeLaunch) continue;
         int supported = 0;
         CuSafeCall(cudaDeviceGetAttribute(
             &supported, cudaDevAttrMemoryPoolsSupported, gpu));
@@ -3569,41 +3635,64 @@ void DeleteCooperativeScratchPools()
     cooperative_scratch_pools.clear();
 }
 
+template <bool Public = false>
 bool TryCooperativeNandBatch(
-    CoopWord* out, size_t out_stride,
-    const CoopWord* in0, size_t in0_stride,
-    const CoopWord* in1, size_t in1_stride,
+    CoopIO<Public>* out, size_t out_stride,
+    const CoopIO<Public>* in0, size_t in0_stride,
+    const CoopIO<Public>* in1, size_t in1_stride,
     uint32_t count, cudaStream_t stream, int gpu)
 {
     cudaDeviceProp prop{};
     CuSafeCall(cudaGetDeviceProperties(&prop, gpu));
-    // Only the measured SM89 configuration selects this latency schedule.
-    if (prop.major != 8 || prop.minor != 9 || !prop.cooperativeLaunch ||
-        count > uint32_t(prop.multiProcessorCount / CoopTwoGroups))
+    // Restrict this schedule to the Ampere/Ada configurations tested here.
+    if (prop.major != 8 || (prop.minor != 0 && prop.minor != 9) ||
+        !prop.cooperativeLaunch ||
+        count > uint32_t(Public ? 2 * prop.multiProcessorCount / CoopThreeGroups :
+                                  prop.multiProcessorCount / CoopTwoGroups))
         return false;
+    // The public API schedule is enabled only on the measured SM80 GPU.
+    if constexpr (Public) if (prop.minor != 0) return false;
     int pools = 0;
     CuSafeCall(cudaDeviceGetAttribute(&pools, cudaDevAttrMemoryPoolsSupported, gpu));
     if (!pools) return false;
-    const bool five_groups = count > uint32_t(prop.multiProcessorCount / CoopRows) &&
-                            count <= uint32_t(prop.multiProcessorCount / CoopFiveGroups);
-    const bool three_groups = count > uint32_t(prop.multiProcessorCount / CoopFiveGroups) &&
-                             count <= uint32_t(prop.multiProcessorCount / CoopThreeGroups);
-    const bool two_groups = count > uint32_t(prop.multiProcessorCount / CoopThreeGroups);
+    // SM80 measurements favor two resident CTAs only when the extra row
+    // groups outweigh the tighter register budget. Keep the latency schedule
+    // for smaller batches and the measured one-CTA schedule between windows.
+    const bool dense = Public &&
+        ((count > uint32_t(prop.multiProcessorCount / CoopThreeGroups) &&
+          count <= uint32_t(2 * prop.multiProcessorCount / CoopFiveGroups)) ||
+         (count > uint32_t(prop.multiProcessorCount / CoopTwoGroups) &&
+          count <= uint32_t(2 * prop.multiProcessorCount / CoopThreeGroups)));
+    const int scheduling_sms = (dense ? 2 : 1) * prop.multiProcessorCount;
+    const bool five_groups = count > uint32_t(scheduling_sms / CoopRows) &&
+                            count <= uint32_t(scheduling_sms / CoopFiveGroups);
+    const bool three_groups = count > uint32_t(scheduling_sms / CoopFiveGroups) &&
+                             count <= uint32_t(scheduling_sms / CoopThreeGroups);
+    const bool two_groups = count > uint32_t(scheduling_sms / CoopThreeGroups);
     const int groups = two_groups ? CoopTwoGroups : three_groups ? CoopThreeGroups :
                        five_groups ? CoopFiveGroups : CoopRows;
     const size_t scratch_words = two_groups ? CoopTwoScratchWords :
                                  three_groups ? CoopThreeScratchWords :
                                  five_groups ? CoopFiveScratchWords : CoopScratchWords;
-    const void* kernel = two_groups ? (const void*)CooperativeNandBatchTwoKernel :
-                         three_groups ? (const void*)CooperativeNandBatchThreeKernel :
-                         five_groups ? (const void*)CooperativeNandBatchFiveKernel :
-                                      (const void*)CooperativeNandBatchKernel;
-    // Reserve enough shared memory to place each row CTA on a separate SM.
+    const void* kernel = two_groups ? (const void*)CooperativeNandBatchTwoKernel<Public> :
+                         three_groups ? (const void*)CooperativeNandBatchThreeKernel<Public> :
+                         five_groups ? (const void*)CooperativeNandBatchFiveKernel<Public> :
+                                       (const void*)CooperativeNandBatchKernel<Public>;
+    if constexpr (Public) {
+        if (dense) kernel = five_groups ?
+            (const void*)CooperativeNandBatchFiveKernel<Public, true> :
+            (const void*)CooperativeNandBatchThreeKernel<Public, true>;
+    }
+    // Forward pairs and three output accumulators occupy 40 KiB; the final
+    // extraction/row table also fits. Leave room for static/driver shared memory
+    // so two blocks fit the 100 KiB carveout.
+    const size_t shared_bytes = dense ? 40960 : CoopSharedBytes;
+    // Query residency with the actual shared-memory reservation on this GPU.
     CuSafeCall(cudaFuncSetAttribute(kernel,
-        cudaFuncAttributeMaxDynamicSharedMemorySize, CoopSharedBytes));
+        cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
     int active = 0;
     CuSafeCall(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-        &active, kernel, CoopThreads, CoopSharedBytes));
+        &active, kernel, CoopThreads, shared_bytes));
     if (count > uint32_t(active * prop.multiProcessorCount / groups)) return false;
 
     // Stream-ordered allocation/free gives concurrent calls independent state
@@ -3619,14 +3708,113 @@ bool TryCooperativeNandBatch(
                     &bk, &ksk, &ntt, &workspace};
     const auto launch = cudaLaunchCooperativeKernel(
         kernel, dim3(groups * count),
-        dim3(CoopThreads), args, CoopSharedBytes, stream);
+        dim3(CoopThreads), args, shared_bytes, stream);
     const auto release = cudaFreeAsync(workspace, stream);
     CuSafeCall(launch);
     CuSafeCall(release);
     return true;
 }
+#ifdef USE_CUDA_COOPERATIVE_SCALAR
+bool TryCooperativeScalarNand(TFHEpp::lvl0param::T* out,
+    const TFHEpp::lvl0param::T* in0, const TFHEpp::lvl0param::T* in1,
+    cudaStream_t stream, int gpu)
+{
+    CuSafeCall(cudaSetDevice(gpu));
+    constexpr size_t elements = TFHEpp::lvl0param::k * TFHEpp::lvl0param::n + 1;
+    return TryCooperativeNandBatch<true>(out, elements, in0, elements,
+                                       in1, elements, 1, stream, gpu);
+}
+bool TryCooperativeScalarNand(TFHEpp::lvl2param::T* out,
+    const TFHEpp::lvl2param::T* in0, const TFHEpp::lvl2param::T* in1,
+    cudaStream_t stream, int gpu)
+{
+    CuSafeCall(cudaSetDevice(gpu));
+    int major = 0, minor = 0;
+    CuSafeCall(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, gpu));
+    CuSafeCall(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, gpu));
+    if (major != 8 || minor != 0) return false;
+    constexpr size_t elements = TFHEpp::lvl2param::k * TFHEpp::lvl2param::n + 1;
+    return TryCooperativeNandBatch<false>(out, elements, in0, elements,
+                                        in1, elements, 1, stream, gpu);
+}
+#endif
 }  // namespace
 #endif
+
+template <class brP, typename brP::targetP::T μ, class iksP>
+void NandBootstrapBatch(
+    typename iksP::targetP::T* out, size_t out_stride,
+    const typename brP::domainP::T* in0, size_t in0_stride,
+    const typename brP::domainP::T* in1, size_t in1_stride,
+    uint32_t count, cudaStream_t st, int gpuNum)
+{
+    if (count == 0) return;
+    constexpr size_t out_elements = iksP::targetP::k * iksP::targetP::n + 1;
+    constexpr size_t in_elements = brP::domainP::k * brP::domainP::n + 1;
+    if (out_stride < out_elements || in0_stride < in_elements ||
+        in1_stride < in_elements)
+        throw std::invalid_argument("NandBootstrapBatch: TLWE stride is too small");
+    CuSafeCall(cudaSetDevice(gpuNum));
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
+    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
+    CUDART_VERSION >= 11040
+    if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                  std::is_same_v<brP, TFHEpp::lvl02param> &&
+                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+        if (TryCooperativeNandBatch<true>(out, out_stride, in0, in0_stride,
+                                        in1, in1_stride, count, st, gpuNum))
+            return;
+    }
+#endif
+    if (count == 1) {
+        NandBootstrap<brP, μ, iksP>(out, in0, in1, st, gpuNum);
+        return;
+    }
+    auto& handlers = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return ntt_handlers_lvl02;
+        else
+            return ntt_handlers;
+    }();
+    auto& keys = BootstrappingKeyStorage<typename brP::targetP>();
+    auto& switching_keys = sizeof(typename brP::targetP::T) == 8
+                               ? ksk_devs_lvl20 : ksk_devs;
+#ifdef USE_KEY_BUNDLE
+    auto& ones = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return one_trgsw_ntt_devs_lvl02;
+        else
+            return one_trgsw_ntt_devs;
+    }();
+    auto& monomials = []() -> auto& {
+        if constexpr (sizeof(typename brP::targetP::T) == 8)
+            return xai_ntt_devs_lvl02;
+        else
+            return xai_ntt_devs;
+    }();
+#endif
+    constexpr size_t shared_bytes = MEM4HOMGATE_DYN<typename brP::targetP>;
+    CuSafeCall(cudaFuncSetAttribute(__NandBootstrapBatch__<brP, μ, iksP>,
+        cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
+    __NandBootstrapBatch__<brP, μ, iksP>
+        <<<count, NUM_THREAD4HOMGATE<typename brP::targetP>, shared_bytes, st>>>(
+            out, out_stride, in0, in0_stride, in1, in1_stride,
+            keys[gpuNum], switching_keys[gpuNum],
+#ifdef USE_KEY_BUNDLE
+            ones[gpuNum], monomials[gpuNum],
+#endif
+            *handlers[gpuNum]);
+    CuCheckError();
+}
+
+template void NandBootstrapBatch<TFHEpp::lvl01param, TFHEpp::lvl1param::μ, TFHEpp::lvl10param>(
+    TFHEpp::lvl0param::T*, size_t, const TFHEpp::lvl0param::T*, size_t,
+    const TFHEpp::lvl0param::T*, size_t, uint32_t, cudaStream_t, int);
+template void NandBootstrapBatch<TFHEpp::lvl02param, TFHEpp::lvl2param::μ, TFHEpp::lvl20param>(
+    TFHEpp::lvl0param::T*, size_t, const TFHEpp::lvl0param::T*, size_t,
+    const TFHEpp::lvl0param::T*, size_t, uint32_t, cudaStream_t, int);
+
 
 template <class iksP, class brP, typename brP::targetP::T μ>
 void NandBootstrapBatch(

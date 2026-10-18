@@ -5,12 +5,72 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <type_traits>
+#include <utility>
 
 namespace {
 void Check(cudaError_t e)
 {
     if (e != cudaSuccess) throw std::runtime_error(cudaGetErrorString(e));
 }
+
+#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+cudaError_t GetDependencies(cudaGraphNode_t node, cudaGraphNode_t* parents,
+                            size_t* count)
+{
+#if CUDART_VERSION >= 13000
+    return cudaGraphNodeGetDependencies(node, parents, nullptr, count);
+#else
+    return cudaGraphNodeGetDependencies(node, parents, count);
+#endif
+}
+
+bool CheckBatchGraph(cudaGraph_t graph, uint32_t count, unsigned threads,
+                     bool allow_cooperative)
+{
+    size_t size = 0;
+    Check(cudaGraphGetNodes(graph, nullptr, &size));
+    if (size != 1 && !(allow_cooperative && size == 3)) return false;
+    std::vector<cudaGraphNode_t> nodes(size);
+    Check(cudaGraphGetNodes(graph, nodes.data(), &size));
+    cudaGraphNode_t kernel = nullptr, allocation = nullptr, release = nullptr;
+    for (auto node : nodes) {
+        cudaGraphNodeType type;
+        Check(cudaGraphNodeGetType(node, &type));
+        if (type == cudaGraphNodeTypeKernel && !kernel) kernel = node;
+        else if (type == cudaGraphNodeTypeMemAlloc && !allocation) allocation = node;
+        else if (type == cudaGraphNodeTypeMemFree && !release) release = node;
+        else return false;
+    }
+    if (!kernel) return false;
+    cudaKernelNodeParams params;
+    Check(cudaGraphKernelNodeGetParams(kernel, &params));
+    if (params.blockDim.x != threads || params.blockDim.y != 1 ||
+        params.blockDim.z != 1 || params.gridDim.y != 1 || params.gridDim.z != 1)
+        return false;
+    if (size == 1) return params.gridDim.x == count;
+    if (!allocation || !release || params.gridDim.x % count != 0) return false;
+    const auto groups = params.gridDim.x / count;
+    if (groups != 2 && groups != 3 && groups != 5 && groups != 9) return false;
+    cudaKernelNodeAttrValue cooperative{};
+    Check(cudaGraphKernelNodeGetAttribute(kernel, cudaKernelNodeAttributeCooperative,
+                                          &cooperative));
+    if (!cooperative.cooperative) return false;
+    // Scratch must be allocated before the kernel and released after it.
+    size_t dependencies = 0;
+    Check(GetDependencies(allocation, nullptr, &dependencies));
+    if (dependencies != 0) return false;
+    for (auto pair : {std::pair{kernel, allocation}, std::pair{release, kernel}}) {
+        Check(GetDependencies(pair.first, nullptr, &dependencies));
+        if (dependencies == 0 || dependencies > 2) return false;
+        std::vector<cudaGraphNode_t> parents(dependencies);
+        Check(GetDependencies(pair.first, parents.data(), &dependencies));
+        if (std::find(parents.begin(), parents.end(), pair.second) == parents.end())
+            return false;
+    }
+    return true;
+}
+#endif
 
 template <class BR, class IKS>
 bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
@@ -71,6 +131,9 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
                      cudaMemcpyHostToDevice));
     Check(cudaMemcpy(dref, ref.data(), ref.size() * sizeof(T),
                      cudaMemcpyHostToDevice));
+    // Pageable H2D copies need not finish DMA before returning. The test's
+    // nonblocking stream must wait for the default-stream uploads explicitly.
+    Check(cudaStreamSynchronize(nullptr));
     cudaStream_t stream;
     Check(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
     bool passed = true;
@@ -81,22 +144,15 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     Check(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
     batch(dout, so, da, sa, db, sb, count, stream, 0);
     Check(cudaStreamEndCapture(stream, &graph));
-    size_t nodes = 0;
-    Check(cudaGraphGetNodes(graph, nullptr, &nodes));
-    passed &= nodes == 1;
-    if (nodes == 1) {
-        cudaGraphNode_t node;
-        Check(cudaGraphGetNodes(graph, &node, &nodes));
-        cudaGraphNodeType type;
-        Check(cudaGraphNodeGetType(node, &type));
-        passed &= type == cudaGraphNodeTypeKernel;
-        if (type == cudaGraphNodeTypeKernel) {
-            cudaKernelNodeParams params;
-            Check(cudaGraphKernelNodeGetParams(node, &params));
-            passed &= params.gridDim.x == count &&
-                      params.blockDim.x == BR::targetP::n / 2;
-        }
-    }
+    bool allow_cooperative = false;
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(USE_KEY_BUNDLE) && \
+    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64)
+    cudaDeviceProp prop{};
+    Check(cudaGetDeviceProperties(&prop, 0));
+    allow_cooperative = std::is_same_v<BR, TFHEpp::lvl02param> &&
+                        prop.major == 8 && prop.minor == 0 && prop.cooperativeLaunch;
+#endif
+    passed &= CheckBatchGraph(graph, count, BR::targetP::n / 2, allow_cooperative);
     Check(cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
     Check(cudaGraphLaunch(exec, stream));
 #else
@@ -150,6 +206,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
         std::vector<T> expected = alias == 0 ? a : b, actual(expected);
         Check(cudaMemcpy(dref, ref.data(), ref.size() * sizeof(T),
                          cudaMemcpyHostToDevice));
+        Check(cudaStreamSynchronize(nullptr));
         for (uint32_t i = 0; i < count; ++i)
             Check(cudaMemcpyAsync(dref + i * so, expected.data() + i * stride,
                                   n * sizeof(T), cudaMemcpyHostToDevice,
@@ -161,9 +218,8 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
         Check(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
         batch(target, stride, da, sa, db, sb, count, stream, 0);
         Check(cudaStreamEndCapture(stream, &alias_graph));
-        size_t alias_nodes = 0;
-        Check(cudaGraphGetNodes(alias_graph, nullptr, &alias_nodes));
-        passed &= alias_nodes == 1;
+        passed &= CheckBatchGraph(alias_graph, count, BR::targetP::n / 2,
+                                   allow_cooperative);
         Check(cudaGraphInstantiate(&alias_exec, alias_graph, nullptr, nullptr,
                                    0));
 #endif
@@ -211,6 +267,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     for (int alias = 0; alias < 2; ++alias) {
         Check(cudaMemcpy(da, a.data(), a.size() * sizeof(T), cudaMemcpyHostToDevice));
         Check(cudaMemcpy(db, b.data(), b.size() * sizeof(T), cudaMemcpyHostToDevice));
+        Check(cudaStreamSynchronize(nullptr));
         T* target = alias == 0 ? da : db;
         const size_t stride = alias == 0 ? sa : sb;
         const auto& original = alias == 0 ? a : b;
@@ -241,7 +298,11 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     std::cout << "public lvl"
               << (sizeof(typename BR::targetP::T) == 4 ? "1" : "02")
               << " count=" << count
+#ifdef USE_FFT
+              << " batch/scalar truth cases, graph replay, both aliases: "
+#else
               << " exact batch/scalar, graph replay, both aliases: "
+#endif
               << (passed ? "PASS" : "FAIL") << std::endl;
     return passed;
 }

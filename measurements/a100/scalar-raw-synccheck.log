@@ -1,0 +1,7 @@
+========= COMPUTE-SANITIZER
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nand backend=ntt block_binary=1
+graph_nodes=3
+repeat=0 ms/gate=61.5021
+dispatch=graph streams=1 gates=1 median_ms/gate=61.5021 errors=0
+observed_noise_rms=1.44788e-09 observed_max_abs_noise=1.44788e-09
+========= ERROR SUMMARY: 0 errors

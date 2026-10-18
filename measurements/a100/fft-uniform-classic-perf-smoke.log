@@ -1,0 +1,16 @@
+GPU: NVIDIA A100-PCIE-40GB (SM 8.0, 108 SMs)
+Iterations: 2
+
+=== N=1024 (512-point complex FFT) ===
+  Correctness check N=1024: max_err=7.11e-14 PASS
+  Forward FFT  512-pt:  7.680 us/op  (2 iters, 0.0 ms total)
+  Inverse FFT  512-pt:  7.168 us/op  (2 iters, 0.0 ms total)
+  Full roundtrip N=1024:  10.240 us/op  (2 iters, 0.0 ms total)
+
+=== N=2048 (1024-point complex FFT) ===
+  Correctness check N=2048: max_err=5.68e-14 PASS
+  Forward FFT 1024-pt:  9.216 us/op  (2 iters, 0.0 ms total)
+  Inverse FFT 1024-pt:  9.216 us/op  (2 iters, 0.0 ms total)
+  Full roundtrip N=2048:  14.336 us/op  (2 iters, 0.0 ms total)
+
+Done.

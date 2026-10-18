@@ -253,7 +253,7 @@ __device__ inline void Accumulate(
             __syncthreads();
 
             // Step 2: Forward FFT
-            if (tid < FFT_THREADS) {
+            if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
                 GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
             }
             else {
@@ -298,7 +298,7 @@ __device__ inline void Accumulate(
             sh_inv = &sh_accum[k_idx * HALF_N];
         }
 
-        if (tid < FFT_THREADS) {
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
             GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
         }
         else {
@@ -409,7 +409,7 @@ __device__ inline void AccumulateBlockBinary(
             }
             __syncthreads();
 
-            if (tid < FFT_THREADS)
+            if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads)
                 GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
             else
                 for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
@@ -457,7 +457,7 @@ __device__ inline void AccumulateBlockBinary(
             if (tid < HALF_N) sh_fft[tid] = local_accum[component];
             __syncthreads();
         }
-        if (tid < FFT_THREADS)
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads)
             GPUFFTInverse<N>(sh_inverse, ntt.inverse_root_, tid);
         else
             for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
@@ -1979,7 +1979,7 @@ __device__ inline void AccumulateKeyBundle(
             __syncthreads();
 
             // Step 2: Forward FFT (GPU-FFT)
-            if (tid < FFT_THREADS) {
+            if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
                 GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
             }
             else {
@@ -2036,7 +2036,7 @@ __device__ inline void AccumulateKeyBundle(
         else {
             sh_inv = &sh_accum[k_idx * HALF_N];
         }
-        if (tid < FFT_THREADS) {
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
             GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
         }
         else {

@@ -59,6 +59,7 @@ bool TestBatch(const TFHEpp::SecretKey& sk, uint32_t count = 17)
     Check(cudaMemcpy(db, b.data(), b.size() * sizeof(T), cudaMemcpyHostToDevice));
     Check(cudaMemcpy(dout, output.data(), output.size() * sizeof(T), cudaMemcpyHostToDevice));
     Check(cudaMemcpy(dref, reference.data(), reference.size() * sizeof(T), cudaMemcpyHostToDevice));
+    Check(cudaStreamSynchronize(nullptr));  // Complete pageable uploads before nonblocking work.
     cudaStream_t stream;
     Check(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
     cufhe::NandBootstrapBatch<iksP, brP, P::μ>(

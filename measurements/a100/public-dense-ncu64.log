@@ -1,0 +1,52 @@
+==PROF== Connected to process 4004491 (/tmp/cufhe-a100-combined/test/test_bootstrap_bench_lvl02_br_iks)
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=ntt block_binary=1
+==PROF== Profiling "CooperativeNandBatchThreeKernel": 0%....50%....100% - 1 pass
+repeat=0 ms/gate=0.463326
+dispatch=batch streams=1 gates=64 median_ms/gate=0.463326 errors=0
+observed_noise_rms=0.00974747 observed_max_abs_noise=0.0257874
+==PROF== Disconnected from process 4004491
+[4004491] test_bootstrap_bench_lvl02_br_iks@127.0.0.1
+  void unnamed>::CooperativeNandBatchThreeKernel<1, 1>(conditional<T1, unsigned short, unsigned long>::type *, unsigned long, const conditional<T1, unsigned short, unsigned long>::type *, unsigned long, const conditional<T1, unsigned short, unsigned long>::type *, unsigned long, const unsigned long *, const unsigned short *, CuSmallNTTHandler<1024, 64>, unsigned long *) (192, 1, 1)x(512, 1, 1), Context 1, Stream 13, Device 0, CC 8.0
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   512
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                    192
+    Registers Per Thread             register/thread              64
+    Shared Memory Configuration Size           Kbyte          102.40
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block      Kbyte/block           40.96
+    Static Shared Memory Per Block       Kbyte/block            1.26
+    # SMs                                         SM             108
+    Stack Size                                                  1024
+    Threads                                   thread           98304
+    # TPCs                                                        54
+    Enabled TPC IDs                                              all
+    Uses Green Context                                             0
+    Waves Per SM                                                0.89
+    -------------------------------- --------------- ---------------
+
+    OPT   If you execute __syncthreads() to synchronize the threads of a block, it is recommended to have at least two
+          blocks per multiprocessor (compared to the currently executed 1.8 blocks) This way, blocks that aren't
+          waiting for __syncthreads() can keep the hardware busy.
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           32
+    Block Limit Registers                 block            2
+    Block Limit Shared Mem                block            2
+    Block Limit Warps                     block            4
+    Theoretical Active Warps per SM        warp           32
+    Theoretical Occupancy                     %           50
+    Achieved Occupancy                        %        43.79
+    Achieved Active Warps Per SM           warp        28.03
+    ------------------------------- ----------- ------------
+
+    OPT   Est. Local Speedup: 50%
+          The 8.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the
+          hardware maximum of 16. This kernel's theoretical occupancy (50.0%) is limited by the number of required
+          registers, and the required amount of shared memory.

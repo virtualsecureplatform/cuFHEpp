@@ -1,0 +1,55 @@
+==PROF== Connected to process 4002055 (/tmp/cufhe-a100-ntt-residency3/test/test_bootstrap_bench)
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=1 l=3 torus_bits=32 order=iks-br gate=nand backend=ntt block_binary=1
+==PROF== Profiling "__NandBootstrapBatch__": 0%....50%....100% - 1 pass
+repeat=0 ms/gate=0.0489356
+dispatch=batch streams=1 gates=648 median_ms/gate=0.0489356 errors=0
+observed_noise_rms=0.00192774 observed_max_abs_noise=0.00591265
+==PROF== Disconnected from process 4002055
+[4002055] test_bootstrap_bench@127.0.0.1
+  void __NandBootstrapBatch__<lvl10param, lvl01param, 536870912, 0>(T *, unsigned long, const T *, unsigned long, const T *, unsigned long, const conditional<sizeof(T)*8==32, unsigned int, unsigned long>::type *, const T *, CuSmallNTTHandler<n, sizeof(T)*8>) (648, 1, 1)x(512, 1, 1), Context 1, Stream 13, Device 0, CC 8.0
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   512
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                    648
+    Registers Per Thread             register/thread              40
+    Shared Memory Configuration Size           Kbyte          102.40
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block      Kbyte/block           24.58
+    Static Shared Memory Per Block       Kbyte/block            1.26
+    # SMs                                         SM             108
+    Stack Size                                                  1024
+    Threads                                   thread          331776
+    # TPCs                                                        54
+    Enabled TPC IDs                                              all
+    Uses Green Context                                             0
+    Waves Per SM                                                   2
+    -------------------------------- --------------- ---------------
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           32
+    Block Limit Registers                 block            3
+    Block Limit Shared Mem                block            3
+    Block Limit Warps                     block            4
+    Theoretical Active Warps per SM        warp           48
+    Theoretical Occupancy                     %           75
+    Achieved Occupancy                        %        64.94
+    Achieved Active Warps Per SM           warp        41.56
+    ------------------------------- ----------- ------------
+
+    OPT   Est. Local Speedup: 13.41%
+          The difference between calculated theoretical (75.0%) and measured achieved occupancy (64.9%) can be the
+          result of warp scheduling overheads or workload imbalances during the kernel execution. Load imbalances can
+          occur between warps within a block as well as across blocks of the same kernel. See the CUDA Best Practices
+          Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on
+          optimizing occupancy.
+    ----- --------------------------------------------------------------------------------------------------------------
+    OPT   Est. Local Speedup: 25%
+          The 12.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the
+          hardware maximum of 16. This kernel's theoretical occupancy (75.0%) is limited by the number of required
+          registers, and the required amount of shared memory.

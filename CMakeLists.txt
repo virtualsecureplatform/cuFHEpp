@@ -155,12 +155,12 @@ option(USE_CUDA_LOW_LDS_BOOTSTRAP
 option(USE_CUDA_PAIRED_GPU_FFT
        "Run two GPU-FFT transforms per block in the KeyBundle path" ON)
 # Second-generation lvl1 NTT optimizations (RTX 4070 tuning): together they
-# cut lvl1 gate time by ~29%.  MIN_BLOCKS applies its three-block launch bound
-# only to sm_89+; Ampere keeps unconstrained register allocation.
+# cut lvl1 gate time by ~29%. MIN_BLOCKS defaults to three blocks on sm_89+;
+# A100 has a separate budget that defaults to unconstrained allocation.
 option(USE_CUDA_PAIRED_NTT
        "Transform two decomposition digits per lvl1 NTT pass" ON)
 option(USE_CUDA_PAIRED_NTT_WARP
-       "Keep paired NTT tail stages in registers on sm_89+" OFF)
+       "Keep paired NTT tail stages in registers on sm_80+" OFF)
 option(USE_CUDA_PAIRED_NTT_MADD4
        "Share paired decomposition products across both output polynomials" OFF)
 option(USE_CUDA_WARP_MODSWITCH_CORRECTION
@@ -177,8 +177,10 @@ option(USE_CUDA_SHOUP_NTT
        "Use Shoup precomputed-quotient twiddle multiplication in the lvl1 NTT"
        ON)
 option(USE_CUDA_MIN_BLOCKS
-       "Apply minimum-residency launch bounds to NTT gate blocks on sm_89+"
+       "Apply architecture-specific minimum-residency bounds to GPU gate blocks"
        ON)
+option(USE_CUDA_COOPERATIVE_SCALAR
+       "Prefer cooperative A100 lvl02 scalar NAND latency over stream throughput" OFF)
 set(CUFHE_CUDA_NTT_MIN_BLOCKS "3" CACHE STRING
     "Minimum resident lvl1 NTT blocks requested on sm_89+ (1, 2, or 3)")
 set_property(CACHE CUFHE_CUDA_NTT_MIN_BLOCKS PROPERTY STRINGS 1 2 3)
@@ -186,11 +188,25 @@ if(NOT CUFHE_CUDA_NTT_MIN_BLOCKS MATCHES "^[123]$")
   message(FATAL_ERROR "CUFHE_CUDA_NTT_MIN_BLOCKS must be 1, 2, or 3")
 endif()
 add_compile_definitions(CUFHE_CUDA_NTT_MIN_BLOCKS=${CUFHE_CUDA_NTT_MIN_BLOCKS})
+set(CUFHE_CUDA_NTT_MIN_BLOCKS_SM80 "1" CACHE STRING
+    "Minimum resident lvl1 NTT blocks requested on A100 (1, 2, or 3)")
+set_property(CACHE CUFHE_CUDA_NTT_MIN_BLOCKS_SM80 PROPERTY STRINGS 1 2 3)
+if(NOT CUFHE_CUDA_NTT_MIN_BLOCKS_SM80 MATCHES "^[123]$")
+  message(FATAL_ERROR "CUFHE_CUDA_NTT_MIN_BLOCKS_SM80 must be 1, 2, or 3")
+endif()
+add_compile_definitions(CUFHE_CUDA_NTT_MIN_BLOCKS_SM80=${CUFHE_CUDA_NTT_MIN_BLOCKS_SM80})
+set(CUFHE_CUDA_FFT_MIN_BLOCKS_SM80 "1" CACHE STRING
+    "Minimum resident block-binary lvl02 GPU-FFT blocks requested on A100 (1, 2, or 3)")
+set_property(CACHE CUFHE_CUDA_FFT_MIN_BLOCKS_SM80 PROPERTY STRINGS 1 2 3)
+if(NOT CUFHE_CUDA_FFT_MIN_BLOCKS_SM80 MATCHES "^[123]$")
+  message(FATAL_ERROR "CUFHE_CUDA_FFT_MIN_BLOCKS_SM80 must be 1, 2, or 3")
+endif()
+add_compile_definitions(CUFHE_CUDA_FFT_MIN_BLOCKS_SM80=${CUFHE_CUDA_FFT_MIN_BLOCKS_SM80})
 foreach(cuda_transform_opt
         USE_CUDA_WARP_TRANSFORM USE_CUDA_WARP_TRANSFORM64 USE_CUDA_REGISTER_NTT_ACCUM
         USE_CUDA_LOW_LDS_BOOTSTRAP USE_CUDA_PAIRED_GPU_FFT
         USE_CUDA_PAIRED_NTT USE_CUDA_PAIRED_NTT_WARP USE_CUDA_PAIRED_NTT_MADD4
-        USE_CUDA_SHOUP_NTT USE_CUDA_MIN_BLOCKS USE_CUDA_WARP_MODSWITCH_CORRECTION
+        USE_CUDA_SHOUP_NTT USE_CUDA_MIN_BLOCKS USE_CUDA_COOPERATIVE_SCALAR USE_CUDA_WARP_MODSWITCH_CORRECTION
         USE_CUDA_ASYNC_MONOMIALS USE_CUDA_PACKED_PAIRED_ROOTS
         USE_CUDA_WORD32_REDUCTION USE_CUDA_UNREDUCED_INVERSE_DIFF)
   if(${cuda_transform_opt})

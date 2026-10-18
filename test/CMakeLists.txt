@@ -95,6 +95,11 @@ endif()
 
 if(NOT USE_FFT AND USE_BLOCK_BINARY AND NOT USE_KEY_BUNDLE AND
    CUFHE_GPU_BACKEND STREQUAL "CUDA" AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.4)
+    add_executable(test_bootstrap_public_cooperative test_bootstrap_cooperative.cc)
+    target_compile_definitions(test_bootstrap_public_cooperative PRIVATE CUFHE_TEST_PUBLIC_COOPERATIVE=1)
+    target_include_directories(test_bootstrap_public_cooperative PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+    target_link_libraries(test_bootstrap_public_cooperative cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
     add_executable(test_bootstrap_cooperative test_bootstrap_cooperative.cc)
     target_include_directories(test_bootstrap_cooperative PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
     target_link_libraries(test_bootstrap_cooperative cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
@@ -121,22 +126,23 @@ if(NOT USE_FFT)
     cufhe_enable_cuda_separable_compilation(test_bootstrap_generic)
     target_link_libraries(test_bootstrap_generic cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 
-    add_executable(test_keyswitch_gpu test_keyswitch_gpu.cu)
-    target_include_directories(test_keyswitch_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
-    cufhe_enable_cuda_separable_compilation(test_keyswitch_gpu)
-    target_link_libraries(test_keyswitch_gpu cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
-
-    add_executable(test_keyswitch_gpu_lvl20 test_keyswitch_gpu.cu)
-    target_compile_definitions(test_keyswitch_gpu_lvl20 PRIVATE CUFHE_TEST_COMPACT_LVL20=1)
-    target_include_directories(test_keyswitch_gpu_lvl20 PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
-    cufhe_enable_cuda_separable_compilation(test_keyswitch_gpu_lvl20)
-    target_link_libraries(test_keyswitch_gpu_lvl20 cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
-
     add_executable(test_small_modulus test_small_modulus.cu)
     target_include_directories(test_small_modulus PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
     cufhe_enable_cuda_separable_compilation(test_small_modulus)
     target_link_libraries(test_small_modulus cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 endif()
+
+# Key switching is integer arithmetic shared by the FFT and NTT backends.
+add_executable(test_keyswitch_gpu test_keyswitch_gpu.cu)
+target_include_directories(test_keyswitch_gpu PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+cufhe_enable_cuda_separable_compilation(test_keyswitch_gpu)
+target_link_libraries(test_keyswitch_gpu cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_keyswitch_gpu_lvl20 test_keyswitch_gpu.cu)
+target_compile_definitions(test_keyswitch_gpu_lvl20 PRIVATE CUFHE_TEST_COMPACT_LVL20=1)
+target_include_directories(test_keyswitch_gpu_lvl20 PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+cufhe_enable_cuda_separable_compilation(test_keyswitch_gpu_lvl20)
+target_link_libraries(test_keyswitch_gpu_lvl20 cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 
 add_executable(test_gate_gpu_lvl02 test_gate_gpu_lvl02.cc)
 target_include_directories(test_gate_gpu_lvl02 PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})

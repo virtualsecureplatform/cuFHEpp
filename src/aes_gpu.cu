@@ -181,7 +181,7 @@ __global__ void __TRGSWToFFTKernel__(NTTValue* const out,
     }
     __syncthreads();
 
-    if (tid < fft_threads) {
+    if (tid < fft_threads || cufhe::GPUFFTAllThreads) {
 #ifdef USE_GPU_FFT
         GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
 #else
@@ -291,7 +291,7 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_AES(
             }
             __syncthreads();
 
-            if (tid < fft_threads) {
+            if (tid < fft_threads || cufhe::GPUFFTAllThreads) {
 #ifdef USE_GPU_FFT
                 GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
 #else
@@ -327,7 +327,7 @@ __device__ inline void ExternalProductTRLWE_TRGSWFFT_AES(
 
     for (uint32_t k_idx = 0; k_idx <= P::k; k_idx++) {
         NTTValue* const sh_inv = &sh_accum[k_idx * half_n];
-        if (tid < fft_threads) {
+        if (tid < fft_threads || cufhe::GPUFFTAllThreads) {
 #ifdef USE_GPU_FFT
             GPUFFTInverse<N>(sh_inv, ntt.inverse_root_, tid);
 #else

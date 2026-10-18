@@ -21,6 +21,10 @@
 
 using namespace cufhe;
 
+template <uint32_t N>
+using BenchFFTHandler = CuGPUFFTHandler<N,
+    N == TFHEpp::lvl1param::n ? 32 : 64>;
+
 // ---------------------------------------------------------------------------
 // Benchmark kernels
 // ---------------------------------------------------------------------------
@@ -30,7 +34,7 @@ template <uint32_t N>
 __global__ void __launch_bounds__(1024) __BenchForwardFFT__(
     double2* __restrict__ out,
     const double2* __restrict__ in,
-    CuGPUFFTHandler<N> ntt,
+    BenchFFTHandler<N> ntt,
     int num_iters)
 {
     constexpr uint32_t HALF_N = N >> 1;
@@ -48,7 +52,7 @@ __global__ void __launch_bounds__(1024) __BenchForwardFFT__(
         if (tid < HALF_N) sh[tid] = in[tid];
         __syncthreads();
 
-        if (tid < FFT_THREADS) {
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
             GPUFFTForward<N>(sh, ntt.forward_root_, tid);
         } else {
             for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
@@ -65,7 +69,7 @@ template <uint32_t N>
 __global__ void __launch_bounds__(1024) __BenchInverseFFT__(
     double2* __restrict__ out,
     const double2* __restrict__ in,
-    CuGPUFFTHandler<N> ntt,
+    BenchFFTHandler<N> ntt,
     int num_iters)
 {
     constexpr uint32_t HALF_N = N >> 1;
@@ -81,7 +85,7 @@ __global__ void __launch_bounds__(1024) __BenchInverseFFT__(
         if (tid < HALF_N) sh[tid] = in[tid];
         __syncthreads();
 
-        if (tid < FFT_THREADS) {
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
             GPUFFTInverse<N>(sh, ntt.inverse_root_, tid);
         } else {
             for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
@@ -100,7 +104,7 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
     double* __restrict__ out,
     const double* __restrict__ poly_a,
     const double2* __restrict__ poly_b_fft,  // pre-FFT'd second operand
-    CuGPUFFTHandler<N> ntt,
+    BenchFFTHandler<N> ntt,
     int num_iters)
 {
     constexpr uint32_t HALF_N = N >> 1;
@@ -121,7 +125,7 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
         __syncthreads();
 
         // Step 2: Forward FFT
-        if (tid < FFT_THREADS) {
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
             GPUFFTForward<N>(sh, ntt.forward_root_, tid);
         } else {
             for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
@@ -135,7 +139,7 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
         __syncthreads();
 
         // Step 4: Inverse FFT
-        if (tid < FFT_THREADS) {
+        if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
             GPUFFTInverse<N>(sh, ntt.inverse_root_, tid);
         } else {
             for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++)
@@ -159,7 +163,7 @@ __global__ void __launch_bounds__(1024) __BenchFullRoundtrip__(
 // ---------------------------------------------------------------------------
 
 template <uint32_t N>
-void bench_forward(CuGPUFFTHandler<N>& handler, int num_iters)
+void bench_forward(BenchFFTHandler<N>& handler, int num_iters)
 {
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t NUM_THREADS = HALF_N;
@@ -205,7 +209,7 @@ void bench_forward(CuGPUFFTHandler<N>& handler, int num_iters)
 }
 
 template <uint32_t N>
-void bench_inverse(CuGPUFFTHandler<N>& handler, int num_iters)
+void bench_inverse(BenchFFTHandler<N>& handler, int num_iters)
 {
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t NUM_THREADS = HALF_N;
@@ -250,7 +254,7 @@ void bench_inverse(CuGPUFFTHandler<N>& handler, int num_iters)
 }
 
 template <uint32_t N>
-void bench_full_roundtrip(CuGPUFFTHandler<N>& handler, int num_iters)
+void bench_full_roundtrip(BenchFFTHandler<N>& handler, int num_iters)
 {
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t NUM_THREADS = HALF_N;
@@ -325,7 +329,7 @@ template <uint32_t N>
 __global__ void __VerifyRoundtrip__(
     double* const out,
     const double* const in,
-    CuGPUFFTHandler<N> ntt)
+    BenchFFTHandler<N> ntt)
 {
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t FFT_THREADS = HALF_N >> 1;
@@ -342,14 +346,14 @@ __global__ void __VerifyRoundtrip__(
     __syncthreads();
 
     // Forward
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh, ntt.forward_root_, tid);
     } else {
         for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
     }
 
     // Inverse
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTInverse<N>(sh, ntt.inverse_root_, tid);
     } else {
         for (int s = 0; s < GPUFFTSharedSyncCount<N>(); s++) __syncthreads();
@@ -366,7 +370,7 @@ __global__ void __VerifyRoundtrip__(
 }
 
 template <uint32_t N>
-bool verify_correctness(CuGPUFFTHandler<N>& handler)
+bool verify_correctness(BenchFFTHandler<N>& handler)
 {
     std::mt19937 rng(789);
     std::uniform_real_distribution<double> dist(-100.0, 100.0);
@@ -412,8 +416,8 @@ template <uint32_t N>
 void bench_degree(const int num_iters)
 {
     printf("=== N=%u (%u-point complex FFT) ===\n", N, N / 2);
-    CuGPUFFTHandler<N>::Create();
-    CuGPUFFTHandler<N> handler;
+    BenchFFTHandler<N>::Create();
+    BenchFFTHandler<N> handler;
     handler.SetDevicePointers(0);
     cudaDeviceSynchronize();
 
@@ -426,7 +430,7 @@ void bench_degree(const int num_iters)
         bench_full_roundtrip<N>(handler, num_iters);
     }
 
-    CuGPUFFTHandler<N>::Destroy();
+    BenchFFTHandler<N>::Destroy();
 }
 
 int main(int argc, char** argv)

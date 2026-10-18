@@ -1,0 +1,56 @@
+==PROF== Connected to process 3981435 (/tmp/cufhe-a100-before-cache/test_bootstrap_bench_lvl02)
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nand backend=ntt block_binary=1
+==PROF== Profiling "CooperativeNandBatchKernel": 0%....50%....100% - 1 pass
+repeat=0 ms/gate=14.2535
+dispatch=batch streams=1 gates=1 median_ms/gate=14.2535 errors=0
+observed_noise_rms=1.73686e-10 observed_max_abs_noise=1.73686e-10
+==PROF== Disconnected from process 3981435
+[3981435] test_bootstrap_bench_lvl02@127.0.0.1
+  unnamed>::CooperativeNandBatchKernel(unsigned long *, unsigned long, const unsigned long *, unsigned long, const unsigned long *, unsigned long, const unsigned long *, const unsigned short *, CuSmallNTTHandler<1024, 64>, unsigned long *) (9, 1, 1)x(512, 1, 1), Context 1, Stream 13, Device 0, CC 8.0
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   512
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                      9
+    Registers Per Thread             register/thread             126
+    Shared Memory Configuration Size           Kbyte          102.40
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block      Kbyte/block           65.54
+    Static Shared Memory Per Block       Kbyte/block            1.26
+    # SMs                                         SM             108
+    Stack Size                                                  1024
+    Threads                                   thread            4608
+    # TPCs                                                        54
+    Enabled TPC IDs                                              all
+    Uses Green Context                                             0
+    Waves Per SM                                                0.08
+    -------------------------------- --------------- ---------------
+
+    OPT   Est. Speedup: 91.67%
+          The grid for this launch is configured to execute only 9 blocks, which is less than the 108 multiprocessors
+          used. This can underutilize some multiprocessors. If you do not intend to execute this kernel concurrently
+          with other workloads, consider reducing the block size to have at least one block per multiprocessor or
+          increase the size of the grid to fully utilize the available hardware resources. See the Hardware Model
+          (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-hw-model) description for more
+          details on launch configurations.
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           32
+    Block Limit Registers                 block            1
+    Block Limit Shared Mem                block            1
+    Block Limit Warps                     block            4
+    Theoretical Active Warps per SM        warp           16
+    Theoretical Occupancy                     %           25
+    Achieved Occupancy                        %        25.00
+    Achieved Active Warps Per SM           warp        16.00
+    ------------------------------- ----------- ------------
+
+    OPT   Est. Local Speedup: 75%
+          The 4.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the
+          hardware maximum of 16. This kernel's theoretical occupancy (25.0%) is limited by the number of required
+          registers, and the required amount of shared memory.

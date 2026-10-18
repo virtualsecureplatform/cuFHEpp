@@ -30,6 +30,144 @@ Each benchmark ran exclusively on the GPU — no concurrent workloads.
 - **Latency**: sequential time per gate on a single stream / thread
 - **Throughput**: total time ÷ total gates with all 108 SM streams active (cuFHEpp only; 3456 concurrent gates, 32 per SM)
 
+### A100 block-binary bootstrap profiles
+
+Use the `a100-ntt` preset for lvl1 throughput and small raw lvl02 NAND batches.
+It enables the paired register NTT tail on Ampere, exact fused products,
+monomial staging, warp rounding correction, and prepared key-switch row
+descriptors reused across the block. Raw lvl02 batch NAND also
+uses the cooperative row schedule on SM80: nine CTAs per sample for counts
+1–12, five for 13–21, three for 22–36, and two for 37–54 on a 108-SM A100.
+Full-grid residency and cooperative-launch support are checked before dispatch.
+Larger batches use the ordinary fused block path.
+
+```sh
+cmake --preset a100-ntt
+cmake --build build-a100-ntt-optimized --target test_bootstrap_bench \
+  test_bootstrap_bench_lvl02 test_bootstrap_cooperative test_small_modulus \
+  test_bootstrap_batch -j8
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 \
+  ./build-a100-ntt-optimized/test/test_bootstrap_bench 1 432 15 batch
+```
+
+Select an idle GPU before running. The measurements below used an exclusive
+A100-PCIE-40GB, CUDA 13.3, Release, SM80 device LTO, unchanged block-binary
+parameters, and fresh encrypted inputs and keys. Times exclude key setup and
+transfers, include host submission/synchronization, and report the median of
+9 baseline or 15–27 optimized repetitions after warmup. Every run checked output
+decryption. These are raw IKS→BR NAND measurements; see the API-order caveats
+below. Logs and exact build options are in `measurements/a100/`.
+Prepared-row scheduling passed exact comparisons with the original lvl10 and
+lvl20 key switches, including boundary words and aliased extraction scratch.
+Focused memory and synchronization sanitizer checks also passed.
+
+| Raw NAND workload | Default NTT | A100 NTT preset | Reduction |
+|---|---:|---:|---:|
+| lvl1, one sample | 5.577 ms | 3.779 ms | 32.2% |
+| lvl1, batch 432, per gate | 50.05 µs | 30.62 µs | 38.8% |
+| lvl02, one sample | 29.696 ms | 5.153 ms | 82.6% |
+| lvl02, batch 25, total | 25.694 ms | 11.296 ms | 56.0% |
+| lvl02, batch 432, per gate | 228.55 µs | 153.73 µs | 32.7% |
+
+The optional `a100-ntt-throughput` preset applies an A100-specific two-block
+register budget to lvl1 NTT gates. It measured **29.32 µs/gate** at batch 432
+(41.4% below the default NTT), with a 64-register budget per thread.
+Its one-sample latency is higher, 3.91 ms, so prefer `a100-ntt` for latency.
+At larger batches, it measured 28.12 µs/gate at 648 and 27.42 µs/gate at
+3456. A three-block budget reached higher occupancy but was slower for both
+raw and public lvl1, so the throughput preset retains two blocks.
+This separate budget leaves Ada scheduling and 64-bit gate launch bounds intact.
+
+For scalar lvl02 NAND latency, `cmake --preset a100-ntt-latency` enables
+`USE_CUDA_COOPERATIVE_SCALAR=ON` and builds in `build-a100-ntt-latency`.
+This option routes public and raw scalar NAND through the cooperative kernels
+on A100. The ordinary presets leave it OFF to favor many concurrent calls.
+
+| Scalar lvl02 NAND, one stream | Ordinary preset | Latency preset |
+|---|---:|---:|
+| Public BR→IKS | 18.91 ms | 5.14 ms |
+| Raw IKS→BR | 16.64 ms | 5.80 ms |
+
+The latency preset also improved eight-stream throughput. At 128 streams it
+was slower: public 422.97 versus 293.83 µs/gate, and raw 473.21 versus
+259.10 µs/gate. Use the default presets or the packed batch API for high
+concurrency. Scalar dispatch retains the batch path's residency checks,
+private scratch allocation, aliases and graph-capture behavior.
+
+For **large raw lvl02 batches**, the `a100-fft` preset is faster: batch 432
+measured **88.96 µs/gate** with the custom GPU FFT. Build it with
+`cmake --preset a100-fft`, then use `build-a100-fft-optimized` for the build and
+benchmark paths. The FFT profile measured 9.65 ms for one lvl02 sample;
+the NTT cooperative profile is preferable for the measured small batches.
+These backend choices keep the same cryptographic parameter types and do not
+introduce a common-mask assumption or change torus precision.
+
+The `a100-fft-throughput` preset requests two resident block-binary lvl02 FFT
+blocks on A100. With the latest pre-add schedule, it measured
+**97.88 µs/gate** for raw lvl02 at batch 432 and 12.66 ms for one sample,
+so use the one-block preset for this raw workload. The default FFT budget remains
+one block. Other GPU architectures keep their existing FFT launch bounds.
+
+Raw FFT now also prepares pre-add key-switch rows before blind rotation.
+The lvl1 table temporarily uses the full dynamic shared allocation; a CTA
+barrier retires it before rotation initializes that storage. Lvl02 uses the
+existing two-output native-word key-switch schedule on SM80 as well as Ada.
+Exact key-switch, batch/alias, captured memory and synchronization checks passed.
+Lvl1 measured
+5.59 ms for one sample and 50.92 µs/gate at batch 432.
+
+The public **BR→IKS** NAND batch API keeps lvl0 ciphertext inputs and outputs.
+Its post-rotation key switch now reuses prepared row descriptors and native-word
+paired-output sums on A100 with
+the NTT presets and with block-binary GPU-FFT. These separate measurements use
+`test_bootstrap_bench_lvl01_br_iks` or `test_bootstrap_bench_lvl02_br_iks`, with
+the same parameters and backend before and after the change:
+
+| Public NAND workload | Before | Optimized | Reduction |
+|---|---:|---:|---:|
+| NTT lvl1, one sample | 3.986 ms | 3.234 ms | 18.9% |
+| NTT lvl1, batch 432, per gate | 34.01 µs | 30.76 µs | 9.6% |
+| NTT lvl02, one sample through batch API | 28.410 ms | 5.112 ms | 82.0% |
+| NTT lvl02, batch 432, per gate | 219.60 µs | 172.41 µs | 21.5% |
+| FFT lvl02, one sample | 19.630 ms | 9.699 ms | 50.6% |
+| FFT lvl02, batch 432, per gate | 139.42 µs | 88.92 µs | 36.2% |
+
+The NTT throughput preset measured **29.14 µs/gate** for public lvl1 at batch
+432. FFT was faster at batch 432; cooperative NTT is preferable for the
+measured small public lvl02 batches. NTT public batches
+passed exact scalar comparisons. Both backends passed padded strides, aliases,
+encrypted truth cases and captured replay at counts 17 and 109 for both levels.
+
+The A100 NTT preset also runs public lvl02 NAND batches cooperatively at counts
+1–72, using the raw path's residency checks and private stream-ordered scratch.
+The public variant combines lvl0 inputs before rotation and key-switches the
+final extracted state back to lvl0. Batch 25 measured **8.79 ms total**, versus
+18.63 ms with the same native-word key switch and one CTA per sample.
+At counts 37–43 and 55–72, two resident CTAs use five or three row groups
+per sample, with 64 registers per thread and 40 KiB dynamic shared memory.
+Batch 42 measured 273.11 µs/gate versus 306.02 with the previous schedule;
+batch 64 measured 249.84 µs/gate versus 291.02. Other counts retain the
+previous schedules; the denser variant was slower outside these windows.
+The 5.11 ms one-sample result above uses the batch API. With the default
+presets, the standalone scalar public API measured 18.91 ms; the latency
+preset enables cooperative scalar dispatch. Exact comparisons cover dispatch boundaries,
+both aliases, forward overlap, graph replay, concurrent calls and cleanup.
+
+For public lvl02, `a100-fft-throughput` measured **74.09 µs/gate** at batch
+432 with the native-word key-switch schedule. Its one-sample latency is 11.25 ms,
+so retain `a100-fft` for latency. Profiling confirmed 64 registers per thread
+and 50% theoretical occupancy instead of 110 registers and 25%. A three-block
+budget was slower even on a balanced batch; the throughput preset selects two.
+All ten binary gates and MUX/NMux also passed fresh encrypted truth-case checks
+with the public lvl02 FFT throughput profile.
+
+Custom GPU-FFT transforms now execute block barriers uniformly across the CTA,
+with butterfly work restricted to the active threads. The previous split
+barrier pattern failed synchronization checking during monomial-table setup.
+Tests verify bit-identical forward/inverse results with active-only and
+oversized blocks at N=512, 1024, and 2048. Roundtrip/convolution, memory, and
+synchronization checks passed, including the distinct N=2048 lvl2 configuration.
+
 ### RTX 4090 block-binary bootstrap optimizations
 
 The CUDA paths now distinguish torus word width explicitly, including when

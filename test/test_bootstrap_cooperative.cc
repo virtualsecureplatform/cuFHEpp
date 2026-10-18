@@ -3,11 +3,22 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
+#ifdef CUFHE_TEST_PUBLIC_COOPERATIVE
+#define COOP_NAND_TEMPLATE BR, TFHEpp::lvl2param::μ, IKS
+#else
+#define COOP_NAND_TEMPLATE IKS, BR, P::μ
+#endif
+
 namespace {
+#ifdef CUFHE_TEST_PUBLIC_COOPERATIVE
+using P = TFHEpp::lvl0param;
+#else
 using P = TFHEpp::lvl2param;
+#endif
 using IKS = TFHEpp::lvl20param;
 using BR = TFHEpp::lvl02param;
 using T = P::T;
@@ -15,7 +26,7 @@ constexpr size_t elements = P::k * P::n + 1;
 constexpr size_t stride = elements + 10;
 constexpr size_t capacity = 129;
 constexpr size_t words = capacity * stride + 2;
-constexpr T guard = 0x129a63e84b7d05c1ULL;
+constexpr T guard = static_cast<T>(0x129a63e84b7d05c1ULL);
 
 void Check(cudaError_t error)
 {
@@ -24,12 +35,13 @@ void Check(cudaError_t error)
 
 void Batch(T* out, const T* a, const T* b, unsigned count, cudaStream_t stream)
 {
-    cufhe::NandBootstrapBatch<IKS, BR, P::μ>(
+    cufhe::NandBootstrapBatch<COOP_NAND_TEMPLATE>(
         out, stride, a, stride, b, stride, count, stream, 0);
 }
 }
 
-// Exercise both sides of the SM89 small-batch dispatch, including stream-ordered
+// Exercise both sides of the small-batch dispatch (raw SM80/SM89, public SM80),
+// including stream-ordered
 // scratch lifetime, graph allocation/free nodes, aliases and untouched padding.
 int main()
 {
@@ -106,14 +118,30 @@ int main()
         upload(da, a);
         upload(db, b);
         upload(dref, blank);
+#ifdef USE_CUDA_COOPERATIVE_SCALAR
+        // A capacity-sized launch exceeds every cooperative dispatch window,
+        // preserving an independent one-CTA reference for scalar dispatch.
+        Batch(dref + 1, da + 1, db + 1, capacity, stream);
+        upload(dout, blank);
         for (size_t i = 0; i < capacity; ++i)
-            cufhe::NandBootstrap<IKS, BR, P::μ>(
+            cufhe::NandBootstrap<COOP_NAND_TEMPLATE>(
+                dout + 1 + i * stride, da + 1 + i * stride,
+                db + 1 + i * stride, stream, 0);
+        Check(cudaStreamSynchronize(stream));
+        std::vector<T> scalar_expected(words);
+        Check(cudaMemcpy(scalar_expected.data(), dref, words * sizeof(T), cudaMemcpyDeviceToHost));
+        equal(dout, scalar_expected);
+        std::cout << "cooperative scalar / ordinary batch reference: PASS" << std::endl;
+#else
+        for (size_t i = 0; i < capacity; ++i)
+            cufhe::NandBootstrap<COOP_NAND_TEMPLATE>(
                 dref + 1 + i * stride, da + 1 + i * stride,
                 db + 1 + i * stride, stream, 0);
+#endif
         Check(cudaStreamSynchronize(stream));
         Check(cudaMemcpy(reference.data(), dref, words * sizeof(T), cudaMemcpyDeviceToHost));
         size_t compared = 0;
-        for (unsigned count : {1, 2, 4, 8, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 32, 42, 43, 48, 63, 64, 65, 96, 127, 128, 129}) {
+        for (unsigned count : {1, 2, 4, 8, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 32, 35, 36, 37, 42, 43, 44, 48, 53, 54, 55, 63, 64, 65, 71, 72, 73, 96, 107, 108, 109, 127, 128, 129}) {
             for (unsigned placement = 0; placement < 5; ++placement) {
                 upload(da, a);
                 upload(db, b);
@@ -141,7 +169,7 @@ int main()
                       << " separate/exact aliases/forward aliases/padding: PASS"
                       << std::endl;
         }
-        for (unsigned count : {1, 8, 14, 15, 20, 21, 22, 25, 26, 32, 42, 43, 48, 63, 64, 65, 127, 128}) {
+        for (unsigned count : {1, 8, 12, 13, 14, 15, 20, 21, 22, 25, 26, 32, 35, 36, 37, 42, 43, 44, 48, 53, 54, 55, 63, 64, 65, 71, 72, 73, 107, 108, 109, 127, 128}) {
             upload(da, a);
             upload(db, b);
             upload(dref, a);
@@ -158,7 +186,7 @@ int main()
             for (int depth = 0; depth < 4; ++depth) {
                 Check(cudaGraphLaunch(executable, stream));
                 for (unsigned i = 0; i < count; ++i)
-                    cufhe::NandBootstrap<IKS, BR, P::μ>(
+                    cufhe::NandBootstrap<COOP_NAND_TEMPLATE>(
                         dref + 1 + i * stride, dref + 1 + i * stride,
                         db + 1 + i * stride, other, 0);
                 Check(cudaDeviceSynchronize());
@@ -196,7 +224,8 @@ int main()
             for (size_t i = 0; i < 43; ++i)
                 for (size_t j = 0; j < elements; ++j) {
                     T value = pattern == 0 ? T{0} : pattern == 1 ? ~T{0} :
-                              pattern == 2 ? (T{1} << 63) : (T{1} << ((i + j) % 64));
+                              pattern == 2 ? (T{1} << (std::numeric_limits<T>::digits - 1)) :
+                              (T{1} << ((i + j) % std::numeric_limits<T>::digits));
                     fixture_a[1 + i * stride + j] = value;
                     fixture_b[1 + i * stride + j] = pattern == 2 ? value - 1 :
                                                    pattern == 3 ? ~value : value;
@@ -207,7 +236,7 @@ int main()
             upload(dref, blank);
             Batch(dout + 1, da + 1, db + 1, 43, stream);
             for (size_t i = 0; i < 43; ++i)
-                cufhe::NandBootstrap<IKS, BR, P::μ>(
+                cufhe::NandBootstrap<COOP_NAND_TEMPLATE>(
                     dref + 1 + i * stride, da + 1 + i * stride,
                     db + 1 + i * stride, other, 0);
             Check(cudaDeviceSynchronize());
@@ -283,7 +312,7 @@ int main()
                 Check(cudaStreamCreateWithFlags(&device_stream, cudaStreamNonBlocking));
                 for (unsigned count : {25, 42, 64}) {
                     upload(mo, blank);
-                    cufhe::NandBootstrapBatch<IKS, BR, P::μ>(
+                    cufhe::NandBootstrapBatch<COOP_NAND_TEMPLATE>(
                         mo + 1, stride, ma + 1, stride, mb + 1, stride,
                         count, device_stream, gpu);
                     Check(cudaStreamSynchronize(device_stream));

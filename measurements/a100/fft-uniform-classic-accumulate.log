@@ -1,0 +1,19 @@
+=== Test 1: Accumulate a_bar=0, TRGSW=0 ===
+  Testing Accumulate with a_bar=0, TRGSW=0, N=1024...
+  Mismatches: 0 / 2048
+  PASS
+  Testing Accumulate with a_bar=0, TRGSW=0, N=2048...
+  Mismatches: 0 / 4096
+  PASS
+
+=== Test 2: Accumulate a_bar=1, noiseless TRGSW(1), vec(mu) ===
+  Testing Accumulate with noiseless TRGSW(1), a_bar=1, N=1024...
+  Max error: 0
+  Mismatches (beyond tolerance): 0 / 2048
+  PASS
+  Testing Accumulate with noiseless TRGSW(1), a_bar=1, N=2048...
+  Max error: 0
+  Mismatches (beyond tolerance): 0 / 4096
+  PASS
+
+ALL TESTS PASSED

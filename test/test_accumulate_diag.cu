@@ -24,7 +24,7 @@ using namespace cufhe;
 template <class P = TFHEpp::lvl1param>
 __global__ void __LocalTRGSW2FFT__(NTTValue* const bk_fft,
                                    const typename P::T* const bk,
-                                   CuGPUFFTHandler<P::n> ntt)
+                                   CuGPUFFTHandler<P::n, sizeof(typename P::T) * 8> ntt)
 {
     constexpr uint32_t N = P::n;
     constexpr uint32_t HALF_N = N >> 1;
@@ -56,7 +56,7 @@ __global__ void __LocalTRGSW2FFT__(NTTValue* const bk_fft,
     }
     __syncthreads();
 
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
@@ -76,7 +76,7 @@ void __TestAccumulate__(
     const typename P::targetP::T* const trlwe_in,
     const NTTValue* const tgsw_fft,
     const uint32_t a_bar,
-    CuGPUFFTHandler<P::targetP::n> ntt)
+    CuGPUFFTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
     constexpr uint32_t N = P::targetP::n;
     constexpr uint32_t NUM_THREADS = N >> 1;
@@ -156,7 +156,7 @@ bool test_accumulate_noiseless()
     NTTValue* d_tgsw_fft;
     cudaMalloc(&d_tgsw_fft, num_polys * HALF_N * sizeof(NTTValue));
 
-    CuGPUFFTHandler<N> handler;
+    CuGPUFFTHandler<N, sizeof(T) * 8> handler;
     handler.SetDevicePointers(0);
     cudaDeviceSynchronize();
 
@@ -289,7 +289,7 @@ bool test_accumulate_zero_bar()
     cudaMemcpy(d_trlwe_in, h_trlwe_in.data(),
                trlwe_size * sizeof(T), cudaMemcpyHostToDevice);
 
-    CuGPUFFTHandler<N> handler;
+    CuGPUFFTHandler<N, sizeof(T) * 8> handler;
     handler.SetDevicePointers(0);
     cudaDeviceSynchronize();
 
@@ -339,8 +339,8 @@ int main()
 {
     cudaSetDevice(0);
 
-    CuGPUFFTHandler<TFHEpp::lvl1param::n>::Create();
-    CuGPUFFTHandler<TFHEpp::lvl2param::n>::Create();
+    CuGPUFFTHandler<TFHEpp::lvl1param::n, 32>::Create();
+    CuGPUFFTHandler<TFHEpp::lvl2param::n, 64>::Create();
 
     bool all_pass = true;
 
@@ -354,8 +354,8 @@ int main()
 
     printf("\n%s\n", all_pass ? "ALL TESTS PASSED" : "SOME TESTS FAILED");
 
-    CuGPUFFTHandler<TFHEpp::lvl1param::n>::Destroy();
-    CuGPUFFTHandler<TFHEpp::lvl2param::n>::Destroy();
+    CuGPUFFTHandler<TFHEpp::lvl1param::n, 32>::Destroy();
+    CuGPUFFTHandler<TFHEpp::lvl2param::n, 64>::Destroy();
 
     return all_pass ? 0 : 1;
 }

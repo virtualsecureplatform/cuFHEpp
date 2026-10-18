@@ -339,7 +339,7 @@ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared16(
             (val < 0 ? 0x8000U : 0U);
     }
     __syncthreads();
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890) && !defined(CUFHE_USE_HIP)
     if constexpr (std::is_same_v<P, TFHEpp::lvl20param> &&
                   !use_subset_key_switch<P> && output_size > 512 && output_size <= 1024) {
         if (blockDim.x == 512) {
@@ -565,7 +565,7 @@ __device__ __forceinline__ void KeySwitchPrepared16(
     }
     if (tid == 0) rows[domain_size * P::t] = body;
     __syncthreads();
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890) && !defined(CUFHE_USE_HIP)
     if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
         if constexpr (!ExtractFromTRLWE) {
             // The already-combined MUX/NMux input benefits from five outputs

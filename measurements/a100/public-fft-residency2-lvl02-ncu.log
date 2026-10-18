@@ -1,0 +1,69 @@
+==PROF== Connected to process 3991894 (/tmp/cufhe-a100-fft-residency2/test/test_bootstrap_bench_lvl02_br_iks)
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=fft block_binary=1
+==PROF== Profiling "__NandBootstrapBatch__": 0%....50%....100% - 9 passes
+repeat=0 ms/gate=0.0931283
+dispatch=batch streams=1 gates=432 median_ms/gate=0.0931283 errors=0
+observed_noise_rms=0.00851785 observed_max_abs_noise=0.0257874
+==PROF== Disconnected from process 3991894
+[3991894] test_bootstrap_bench_lvl02_br_iks@127.0.0.1
+  void __NandBootstrapBatch__<lvl02param, 2305843009213693952, lvl20param>(T *, unsigned long, const T *, unsigned long, const T *, unsigned long, const double2 *, const T *, CuGPUFFTHandler<n, sizeof(T)*8>) (432, 1, 1)x(512, 1, 1), Context 1, Stream 13, Device 0, CC 8.0
+    Section: GPU Speed Of Light Throughput
+    ----------------------- ----------- ------------
+    Metric Name             Metric Unit Metric Value
+    ----------------------- ----------- ------------
+    DRAM Frequency                  Ghz         1.21
+    SM Frequency                    Mhz       765.00
+    Elapsed Cycles                cycle     45956505
+    Memory Throughput                 %        58.11
+    DRAM Throughput                   %         1.29
+    Duration                         ms        60.07
+    L1/TEX Cache Throughput           %        58.14
+    L2 Cache Throughput               %        37.34
+    SM Active Cycles              cycle  45953395.12
+    Compute (SM) Throughput           %        36.84
+    ----------------------- ----------- ------------
+
+    OPT   This workload exhibits low compute throughput and memory bandwidth utilization relative to the peak
+          performance of this device. Achieved compute throughput and/or memory bandwidth below 60.0% of peak
+          typically indicate latency issues. Look at Scheduler Statistics and Warp State Statistics for potential
+          reasons.
+
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   512
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                    432
+    Registers Per Thread             register/thread              64
+    Shared Memory Configuration Size           Kbyte          102.40
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block      Kbyte/block           40.97
+    Static Shared Memory Per Block        byte/block              16
+    # SMs                                         SM             108
+    Stack Size                                                  1024
+    Threads                                   thread          221184
+    # TPCs                                                        54
+    Enabled TPC IDs                                              all
+    Uses Green Context                                             0
+    Waves Per SM                                                   2
+    -------------------------------- --------------- ---------------
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           32
+    Block Limit Registers                 block            2
+    Block Limit Shared Mem                block            2
+    Block Limit Warps                     block            4
+    Theoretical Active Warps per SM        warp           32
+    Theoretical Occupancy                     %           50
+    Achieved Occupancy                        %        44.81
+    Achieved Active Warps Per SM           warp        28.68
+    ------------------------------- ----------- ------------
+
+    OPT   Est. Local Speedup: 50%
+          The 8.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the
+          hardware maximum of 16. This kernel's theoretical occupancy (50.0%) is limited by the number of required
+          registers, and the required amount of shared memory.

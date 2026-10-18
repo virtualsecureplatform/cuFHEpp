@@ -1,0 +1,110 @@
+{
+  "status": "verified",
+  "source_baseline": "2bae119b6882d6c4c9a846263bc2bc356c188645",
+  "source_sha256": {
+    "CMakeLists.txt": "494005187fd76cc45a83b8c33ad224f3223c368dc17e21f4135876e4a17ebe44",
+    "README.md": "0bc512bf4ffe15222f38af4de54cff7174781b5e795b7ac06e36cc69f219cbce",
+    "include/gatebootstrapping_gpu.cuh": "f403596e6ebff1d1e0c1a02758ebffc13b4961d5e9742530ca285d7df0b90c4c",
+    "include/keyswitch_gpu.cuh": "04372754d19d3d4725a8969e7bee990b66627bd4c93fb6213486f7de2767ec40",
+    "include/ntt_small_modulus.cuh": "336f1eb3e0b2a8e541dc45b4a11b778f9767ba2fd65dc8978c7d0bee3496a103",
+    "src/aes_gpu.cu": "74f871f291da530589c93fd2da6c1d2bdd38dd17a99f63b20bb1387768eefe7a",
+    "src/annihilate_gpu.cu": "0970d88c48850f8dcfabac0bed96c98504d68699b07983054b2145c29b940ac3",
+    "src/ascon_gpu.cu": "7330e3a5908b6385295d0c1ca374ada0c67145f2a71c2c1ed9d8347703f60e41",
+    "src/bootstrap_gpu.cu": "2c46f8928a70787c6ba2c39832e06d435863ab3cac72fcbefff25888c559a9e1",
+    "src/circuitbootstrapping_gpu.cu": "3631a9c4e90269add042226cf872ab555ea4f0228d918ed32cca828fa47a2213",
+    "src/ntt_small_modulus.cu": "7aef7dbf2b8111942acc0a7addcaeac5083919caf400ffdb7cbe9f0e14704a10",
+    "test/CMakeLists.txt": "3eb92d356cc2a7739d684e91ffdd05038681b6dd9059c7213de0c2fe6cbcd984",
+    "test/test_accumulate_diag.cu": "43ef6ae1eb7fdbe0e5c88f65b7c083587829341800d0a54359ae7423cf902a57",
+    "test/test_bootstrap_batch.cc": "e55cb380a036d8435f685bf21dcfa22df14000975bf4524d18c0f78329ee4884",
+    "test/test_bootstrap_cooperative.cc": "1f01ca763c5b0a82f1dff8a007bf3d10bc8e79a5c9b96d5731b621bba770e8bb",
+    "test/test_bootstrap_public_batch.cc": "354be7c2159b93c2cb08437c6747baae2c990402d050b85b9127d09bd480e5d2",
+    "test/test_fft_perf.cu": "60aad81029859050e975c33c42582cb1162609a38c313182118a785ba674641c",
+    "test/test_fft_roundtrip.cu": "64a14094c9f7b7fac778ad1bf0350f10950a9da078f9cc10ef1b643d302dc3d9",
+    "test/test_single_cmux.cu": "31e124540d53033fca6a8e62c8107f18b6ec5088a3754d5a2e3e20f828f56cdd",
+    "test/test_small_modulus.cu": "d87adedc5cab29250e77981518d0a8ffcb3acd60b849b119a6f5aa4afa504578",
+    "CMakePresets.json": "5d77ee274aaad29ed350875afc2a0e2f7a3b430851cce5ac2fb8031f1f30db64"
+  },
+  "requirements": [
+    {
+      "requirement": "Optimize bootstrapping on the local A100 using idle GPUs",
+      "evidence": [
+        "device.csv",
+        "summary.csv",
+        "optimization-state.json"
+      ],
+      "result": "Measured latency and throughput; retained workload-specific SM80 schedules, discarded slower experiments"
+    },
+    {
+      "requirement": "Consider BOLT-FHE and the local paper",
+      "evidence": [
+        "../../../BOLT-FHE/src/evaluate/kernels/blind_rotate_gd.inc.cuh",
+        "../../../refs/17416.pdf"
+      ],
+      "result": "Retained fused arithmetic, register/shared-memory reuse and measured residency budgets; independent ciphertext inputs retained"
+    },
+    {
+      "requirement": "Provide reproducible GPU-specific choices",
+      "evidence": [
+        "../../CMakePresets.json",
+        "profiles.json",
+        "prepared-options.json",
+        "fft-register-options.json",
+        "scalar-latency-options.json"
+      ],
+      "result": "Five named A100 presets; scalar latency optimization opt-in due saturation tradeoff"
+    },
+    {
+      "requirement": "Preserve correctness and cryptographic parameter types",
+      "evidence": [
+        "scalar-public-exact-check.log",
+        "scalar-raw-exact-check.log",
+        "public-dense-final-exact-check.log",
+        "public-dense-final-raw-check.log",
+        "final-fft2-arithmetic.log",
+        "final-fft2-raw-batch.log",
+        "final-fft2-public-batch.log",
+        "final-ntt2-arithmetic.log",
+        "final-ntt2-raw-batch.log",
+        "final-ntt2-public-batch.log"
+      ],
+      "result": "NTT exact references and lifecycle checks, FFT transform/convolution and encrypted truth checks passed; parameter headers unchanged"
+    },
+    {
+      "requirement": "Check memory safety and synchronization for changed schedules",
+      "evidence": [
+        "public-dense-memcheck42.log",
+        "public-dense-synccheck42.log",
+        "public-dense-memcheck64.log",
+        "public-dense-synccheck64.log",
+        "native-post-fft2-memcheck64.log",
+        "native-post-fft2-synccheck64.log",
+        "scalar-public-memcheck.log",
+        "scalar-public-synccheck.log",
+        "scalar-raw-memcheck.log",
+        "scalar-raw-synccheck.log"
+      ],
+      "result": "All listed runs report zero sanitizer errors"
+    },
+    {
+      "requirement": "Verify final preset builds and captured graph lifetimes",
+      "evidence": [
+        "final-ntt2-public-batch.log",
+        "final-fft2-public-batch.log"
+      ],
+      "result": "Both final throughput profiles rebuilt from their presets and passed graph topology, scratch lifetime ordering, scalar comparison, replay and alias checks; pageable-upload ordering is explicit"
+    }
+  ],
+  "profile_choices": {
+    "lvl1_raw_throughput": "a100-ntt-throughput",
+    "lvl02_small_nand_batches": "a100-ntt",
+    "lvl02_scalar_nand_latency": "a100-ntt-latency",
+    "lvl02_large_raw_batches": "a100-fft",
+    "lvl02_large_public_batches": "a100-fft-throughput"
+  },
+  "limits": [
+    "Benchmarks use block-binary parameters and the local A100-PCIE-40GB; compare matching API order and batch sizes.",
+    "Preset choices expose latency/throughput tradeoffs; no claim of a universal mathematical optimum."
+  ],
+  "source_paths_relative_to": "../..",
+  "evidence_paths_relative_to": "."
+}

@@ -640,7 +640,7 @@ __global__ void __ComputeXaiFFT__(NTTValue* const xai_fft,
     }
     __syncthreads();
 
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {
@@ -710,7 +710,7 @@ __global__ void __FFTPolynomials__(NTTValue* const out,
     }
     __syncthreads();
 
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {
@@ -1191,7 +1191,7 @@ __global__ void __ComputeXaiFFT_lvl2__(NTTValue* const xai_fft,
     }
     __syncthreads();
 
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {
@@ -1261,7 +1261,7 @@ __global__ void __FFTPolynomials_lvl2__(NTTValue* const out,
     }
     __syncthreads();
 
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, forward_root, tid);
     }
     else {

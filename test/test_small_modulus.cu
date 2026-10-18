@@ -1054,7 +1054,8 @@ bool TestPair64Compare() {
 // Compare the complete cached external product with the independently selected
 // uncached scalar schedule, including decomposition and final torus conversion.
 template <bool Cached, bool Paired = false>
-__global__ void TestScalarMonomialCacheKernel(
+__global__ __launch_bounds__(TFHEpp::lvl2param::n / 2, 1)
+void TestScalarMonomialCacheKernel(
     uint64_t* out, const uint64_t* input, const uint64_t* key,
     const uint32_t* exponents, cufhe::CuNTTHandler<TFHEpp::lvl2param::n, 64> ntt)
 {
@@ -1085,7 +1086,11 @@ bool TestScalarMonomialCache(bool& table_symmetry)
     constexpr int N = Target::n, Cases = 16, Words = (Target::k + 1) * N;
     constexpr size_t KeyWords = 2 * cufhe::BootstrappingTRGSWRows<Target> *
         (Target::k + 1) * N;
-    constexpr size_t Shared = cufhe::MEM4HOMGATE_DYN<Target, false, Paired>;
+    // This fixture explicitly instantiates the paired kernel even when the
+    // production dispatch disables it. Match the fixture's workspace/TRLWE
+    // offsets rather than the option-dependent production allocation.
+    constexpr size_t Shared = (2 * Target::k + 3 + (Paired ? 1 : 0)) *
+                              N * sizeof(typename Target::T);
     constexpr uint64_t p = cufhe::small_ntt::P;
     cufhe::CuNTTHandler<N, 64> ntt;
     ntt.Create(); ntt.SetDevicePointers(0);
@@ -1185,7 +1190,8 @@ bool TestPairedMonomialCache31()
     constexpr int N = Target::n, Cases = 16, Words = (Target::k + 1) * N;
     constexpr size_t KeyWords = 2 * cufhe::BootstrappingTRGSWRows<Target> *
         (Target::k + 1) * N;
-    constexpr size_t Shared = cufhe::MEM4HOMGATE_DYN<Target>;
+    // The fixture reserves four workspace polynomials even without staging.
+    constexpr size_t Shared = (4 + Target::k + 1) * N * sizeof(typename Target::T);
     constexpr uint32_t p = cufhe::small_ntt31::P;
     cufhe::CuNTTHandler<N, 32> ntt;
     ntt.Create(); ntt.SetDevicePointers(0);

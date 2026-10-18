@@ -10,17 +10,87 @@
 #include <random>
 #include <vector>
 #include <algorithm>
+#include <cstdlib>
+#include <cstring>
 
 #include <include/ntt_small_modulus.cuh>
 
 using namespace cufhe;
+
+// Match the handler specializations instantiated by the library. When both
+// levels have the same degree, their Fourier tables are identical.
+template <uint32_t N>
+using FFTTestHandler = CuGPUFFTHandler<N,
+    N == TFHEpp::lvl1param::n ? 32 : 64>;
+
+// The same transform must produce identical bits with extra idle warps.
+// Arbitrary unit roots isolate this scheduling invariant from table generation.
+template <uint32_t N, bool Inverse>
+__global__ __launch_bounds__(N / 2) void FFTParticipation(
+    double2* out, const double2* input, const double2* roots)
+{
+    __shared__ double2 work[N / 2];
+    for (int i = threadIdx.x; i < N / 2; i += blockDim.x) work[i] = input[i];
+    __syncthreads();
+    if constexpr (Inverse) GPUFFTInverse<N>(work, roots, threadIdx.x);
+    else GPUFFTForward<N>(work, roots, threadIdx.x);
+    for (int i = threadIdx.x; i < N / 2; i += blockDim.x) out[i] = work[i];
+}
+
+template <uint32_t N>
+bool test_participation()
+{
+    auto check = [](cudaError_t error) {
+        if (error != cudaSuccess) {
+            std::fprintf(stderr, "%s\n", cudaGetErrorString(error));
+            std::exit(2);
+        }
+    };
+    constexpr size_t bytes = N / 2 * sizeof(double2);
+    std::vector<double2> input(N / 2), roots(N / 2), ref(N / 2), actual(N / 2);
+    const double pi = std::acos(-1.0);
+    for (int i = 0; i < N / 2; ++i)
+        roots[i] = {std::cos(2 * pi * i / N), std::sin(2 * pi * i / N)};
+    double2 *din, *droots, *dref, *dactual;
+    check(cudaMalloc(&din, bytes)); check(cudaMalloc(&droots, bytes));
+    check(cudaMalloc(&dref, bytes)); check(cudaMalloc(&dactual, bytes));
+    check(cudaMemcpy(droots, roots.data(), bytes, cudaMemcpyHostToDevice));
+    std::mt19937_64 rng(7100 + N);
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
+    bool pass = true;
+    for (int sample = 0; sample < 4; ++sample) {
+        for (int i = 0; i < N / 2; ++i)
+            input[i] = sample == 0 ? double2{0, 0} :
+                       sample == 1 ? double2{i & 1 ? -1.0 : 1.0, 0} :
+                       double2{dist(rng), dist(rng)};
+        check(cudaMemcpy(din, input.data(), bytes, cudaMemcpyHostToDevice));
+        for (bool inverse : {false, true}) {
+            if (inverse) {
+                FFTParticipation<N, true><<<1, N / 4>>>(dref, din, droots);
+                FFTParticipation<N, true><<<1, N / 2>>>(dactual, din, droots);
+            } else {
+                FFTParticipation<N, false><<<1, N / 4>>>(dref, din, droots);
+                FFTParticipation<N, false><<<1, N / 2>>>(dactual, din, droots);
+            }
+            check(cudaGetLastError());
+            check(cudaMemcpy(ref.data(), dref, bytes, cudaMemcpyDeviceToHost));
+            check(cudaMemcpy(actual.data(), dactual, bytes, cudaMemcpyDeviceToHost));
+            pass &= std::memcmp(ref.data(), actual.data(), bytes) == 0;
+        }
+    }
+    check(cudaFree(din)); check(cudaFree(droots));
+    check(cudaFree(dref)); check(cudaFree(dactual));
+    std::printf("N=%u active/full-CTA forward/inverse bit equivalence: %s\n",
+                N, pass ? "PASS" : "FAIL");
+    return pass;
+}
 
 // Test kernel: fold+twist+FFT+IFFT+untwist+unfold for N-coefficient polynomial
 template <uint32_t N>
 __global__ void __FFTRoundtrip__(
     double* const out,
     const double* const in,
-    CuGPUFFTHandler<N> ntt)
+    FFTTestHandler<N> ntt)
 {
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t FFT_THREADS = HALF_N >> 1;
@@ -40,7 +110,7 @@ __global__ void __FFTRoundtrip__(
     __syncthreads();
 
     // Step 2: Forward FFT
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
@@ -48,7 +118,7 @@ __global__ void __FFTRoundtrip__(
     }
 
     // Step 3: Inverse FFT
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTInverse<N>(sh_fft, ntt.inverse_root_, tid);
     }
     else {
@@ -71,7 +141,7 @@ template <uint32_t N>
 __global__ void __FFTNegacyclicSquare__(
     double* const out,
     const double* const in,
-    CuGPUFFTHandler<N> ntt)
+    FFTTestHandler<N> ntt)
 {
     constexpr uint32_t HALF_N = N >> 1;
     constexpr uint32_t FFT_THREADS = HALF_N >> 1;
@@ -91,7 +161,7 @@ __global__ void __FFTNegacyclicSquare__(
     __syncthreads();
 
     // Forward FFT
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTForward<N>(sh_fft, ntt.forward_root_, tid);
     }
     else {
@@ -106,7 +176,7 @@ __global__ void __FFTNegacyclicSquare__(
     __syncthreads();
 
     // Inverse FFT
-    if (tid < FFT_THREADS) {
+    if (tid < FFT_THREADS || cufhe::GPUFFTAllThreads) {
         GPUFFTInverse<N>(sh_fft, ntt.inverse_root_, tid);
     }
     else {
@@ -139,7 +209,7 @@ void negacyclic_poly_mul_cpu(const double* a, const double* b, double* out, int 
 }
 
 template <uint32_t N>
-bool test_roundtrip(CuGPUFFTHandler<N>& handler)
+bool test_roundtrip(FFTTestHandler<N>& handler)
 {
     printf("  Testing FFT roundtrip for N=%u (FFT size %u)...\n", N, N/2);
 
@@ -184,7 +254,7 @@ bool test_roundtrip(CuGPUFFTHandler<N>& handler)
 }
 
 template <uint32_t N>
-bool test_negacyclic_square(CuGPUFFTHandler<N>& handler)
+bool test_negacyclic_square(FFTTestHandler<N>& handler)
 {
     printf("  Testing negacyclic polynomial squaring for N=%u...\n", N);
 
@@ -243,7 +313,7 @@ bool test_negacyclic_square(CuGPUFFTHandler<N>& handler)
 }
 
 template <uint32_t N>
-bool test_negacyclic_random(CuGPUFFTHandler<N>& handler)
+bool test_negacyclic_random(FFTTestHandler<N>& handler)
 {
     printf("  Testing negacyclic squaring with random small-int coefficients N=%u...\n", N);
 
@@ -298,15 +368,15 @@ template <uint32_t N>
 bool test_degree()
 {
     printf("=== N=%u (%u-point FFT) ===\n", N, N / 2);
-    CuGPUFFTHandler<N>::Create();
-    CuGPUFFTHandler<N> handler;
+    FFTTestHandler<N>::Create();
+    FFTTestHandler<N> handler;
     handler.SetDevicePointers(0);
     cudaDeviceSynchronize();
 
     const bool pass = test_roundtrip<N>(handler) &&
                       test_negacyclic_square<N>(handler) &&
                       test_negacyclic_random<N>(handler);
-    CuGPUFFTHandler<N>::Destroy();
+    FFTTestHandler<N>::Destroy();
     return pass;
 }
 
@@ -314,7 +384,10 @@ int main()
 {
     cudaSetDevice(0);
 
-    bool all_pass = test_degree<TFHEpp::lvl1param::n>();
+    bool all_pass = test_participation<512>();
+    all_pass &= test_participation<1024>();
+    all_pass &= test_participation<2048>();
+    all_pass &= test_degree<TFHEpp::lvl1param::n>();
     printf("\n");
     all_pass &= test_degree<TFHEpp::lvl2param::n>();
 

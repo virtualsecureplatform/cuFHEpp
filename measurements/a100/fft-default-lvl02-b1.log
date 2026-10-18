@@ -1,0 +1,12 @@
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nand backend=fft block_binary=1
+repeat=0 ms/gate=19.7102
+repeat=1 ms/gate=19.7283
+repeat=2 ms/gate=19.7217
+repeat=3 ms/gate=19.716
+repeat=4 ms/gate=19.7237
+repeat=5 ms/gate=19.729
+repeat=6 ms/gate=19.7224
+repeat=7 ms/gate=19.7399
+repeat=8 ms/gate=19.7213
+dispatch=batch streams=1 gates=1 median_ms/gate=19.7224 errors=0
+observed_noise_rms=4.08319e-08 observed_max_abs_noise=4.08319e-08

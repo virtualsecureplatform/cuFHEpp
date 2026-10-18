@@ -1,0 +1,14 @@
+========= COMPUTE-SANITIZER
+GPU=NVIDIA A100-PCIE-40GB n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=fft block_binary=1
+========= Barrier error detected. Divergent thread(s) in block.
+=========     at cufhe::__ComputeXaiFFT_lvl2__(double2 *, const double2 *, const double2 *)+0x560
+=========     by thread (0,0,0) in block (0,0,0)
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame: cufhe::InitializeXaiNTT_lvl02(int) [0x3af77] in test_bootstrap_bench_lvl02_br_iks_fft
+=========         Host Frame: cufhe::Initialize_lvl02(TFHEpp::EvalKey const&, TFHEpp::SecretKey const&) [0x3403d] in test_bootstrap_bench_lvl02_br_iks_fft
+=========         Host Frame: main [0x4a9b] in test_bootstrap_bench_lvl02_br_iks_fft
+=========
+CuCheckError() failed at /home/work-bleaker/kmatsuoka/sources/cuFHEpp-workspace/cuFHEpp/src/ntt_small_modulus.cu:1224 : unspecified launch failure
+========= Target application returned an error
+========= ERROR SUMMARY: 28384 errors
+========= ERROR SUMMARY: 28383 errors were not printed. Use --print-limit option to adjust the number of printed errors

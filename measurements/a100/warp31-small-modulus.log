@@ -1,0 +1,31 @@
+64-bit host/device exact torus conversion (500200 cases): PASS
+64-bit host/device modular addition (300256 cases): PASS
+64-bit host/device modular subtraction (200144 cases): PASS
+64-bit host/device fixed inverse scaling: PASS
+Block-binary rounding correction: PASS
+31-bit lazy butterfly range/residues (100245 cases): PASS
+31-bit inverse butterflies (100125 cases): PASS
+31-bit full uint64 reduction: PASS
+64-bit host/device full uint128 reduction (1000400 cases): PASS
+64-bit host/device madd2 (266384 cases): PASS
+31-bit host/device madd4: PASS
+31-bit host madd: PASS
+64-bit host madd: PASS
+31-bit device madd: PASS
+64-bit device madd: PASS
+31-bit host madd3: PASS
+64-bit host madd3: PASS
+31-bit device madd3: PASS
+64-bit device madd3: PASS
+31-bit roundtrip / negacyclic square: PASS
+64-bit roundtrip / negacyclic square: PASS
+31-bit paired roundtrip / negacyclic square: PASS
+64-bit paired roundtrip / convolution: PASS
+64-bit paired / scalar forward and inverse: PASS
+64-bit host/device madd4 (396611 cases): PASS
+64-bit raw paired / uncached scalar external product (49152 coefficients): PASS
+64-bit complete monomial adjacent-pair symmetry (1048576 pairs): PASS
+64-bit scalar cached / uncached external product (49152 coefficients): PASS
+31-bit register schedules / staged external product (65536 coefficients): PASS
+Output exponent cache (4762800 exponents / body-padding / both aliases): PASS
+Full BR original / output-cache / MUX signs (172032 coefficients / exact-forward aliases): PASS

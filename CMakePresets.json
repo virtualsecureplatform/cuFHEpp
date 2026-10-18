@@ -1,0 +1,81 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "a100-base",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CUDA_ARCHITECTURES": "80-real",
+        "CUFHE_GPU_BACKEND": "CUDA",
+        "ENABLE_TEST": "ON",
+        "USE_BLOCK_BINARY": "ON",
+        "USE_CUDA_MIN_BLOCKS": "ON",
+        "CUFHE_CUDA_NTT_MIN_BLOCKS_SM80": "1",
+        "CUFHE_CUDA_FFT_MIN_BLOCKS_SM80": "1",
+        "USE_CUDA_COOPERATIVE_SCALAR": "OFF"
+      }
+    },
+    {
+      "name": "a100-ntt",
+      "displayName": "A100 block-binary NTT (lvl1 throughput / lvl02 latency)",
+      "inherits": "a100-base",
+      "binaryDir": "${sourceDir}/build-a100-ntt-optimized",
+      "cacheVariables": {
+        "USE_FFT": "OFF",
+        "USE_CUDA_WARP_TRANSFORM64": "ON",
+        "USE_CUDA_PAIRED_NTT": "ON",
+        "USE_CUDA_PAIRED_NTT_WARP": "ON",
+        "USE_CUDA_PAIRED_NTT_MADD4": "ON",
+        "USE_CUDA_ASYNC_MONOMIALS": "ON",
+        "USE_CUDA_WARP_MODSWITCH_CORRECTION": "ON",
+        "USE_CUDA_WORD32_REDUCTION": "ON",
+        "USE_CUDA_UNREDUCED_INVERSE_DIFF": "ON",
+        "USE_CUDA_PACKED_PAIRED_ROOTS": "ON"
+      }
+    },
+    {
+      "name": "a100-ntt-latency",
+      "displayName": "A100 block-binary NTT (cooperative lvl02 scalar NAND)",
+      "inherits": "a100-ntt",
+      "binaryDir": "${sourceDir}/build-a100-ntt-latency",
+      "cacheVariables": {
+        "USE_CUDA_COOPERATIVE_SCALAR": "ON"
+      }
+    },
+    {
+      "name": "a100-ntt-throughput",
+      "displayName": "A100 block-binary NTT (two resident lvl1 gate blocks)",
+      "inherits": "a100-ntt",
+      "binaryDir": "${sourceDir}/build-a100-ntt-throughput",
+      "cacheVariables": {
+        "CUFHE_CUDA_NTT_MIN_BLOCKS_SM80": "2"
+      }
+    },
+    {
+      "name": "a100-fft",
+      "displayName": "A100 block-binary FFT (large lvl02 batches)",
+      "inherits": "a100-base",
+      "binaryDir": "${sourceDir}/build-a100-fft-optimized",
+      "cacheVariables": {
+        "USE_FFT": "ON",
+        "USE_GPU_FFT": "ON"
+      }
+    },
+    {
+      "name": "a100-fft-throughput",
+      "displayName": "A100 block-binary FFT (two resident lvl02 gate blocks)",
+      "inherits": "a100-fft",
+      "binaryDir": "${sourceDir}/build-a100-fft-throughput",
+      "cacheVariables": {
+        "CUFHE_CUDA_FFT_MIN_BLOCKS_SM80": "2"
+      }
+    }
+  ]
+}

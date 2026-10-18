@@ -1,0 +1,50 @@
+========= COMPUTE-SANITIZER
+N=512 active/full-CTA forward/inverse bit equivalence: PASS
+N=1024 active/full-CTA forward/inverse bit equivalence: PASS
+N=2048 active/full-CTA forward/inverse bit equivalence: PASS
+=== N=1024 (512-point FFT) ===
+  Testing FFT roundtrip for N=1024 (FFT size 512)...
+  Max roundtrip error: 5.684342e-14
+  PASS
+  Testing negacyclic polynomial squaring for N=1024...
+  First 10 coefficients (CPU vs GPU):
+    [0] CPU=1.000000 GPU=1.000000
+    [1] CPU=2.000000 GPU=2.000000
+    [2] CPU=3.000000 GPU=3.000000
+    [3] CPU=2.000000 GPU=2.000000
+    [4] CPU=1.000000 GPU=1.000000
+    [5] CPU=0.000000 GPU=0.000000
+    [6] CPU=0.000000 GPU=0.000000
+    [7] CPU=0.000000 GPU=-0.000000
+    [8] CPU=0.000000 GPU=0.000000
+    [9] CPU=0.000000 GPU=-0.000000
+  Max error: 8.772842e-17 at index 718
+  PASS
+  Testing negacyclic squaring with random small-int coefficients N=1024...
+  Max error: 8.313350e-13 at index 128
+  PASS
+
+=== N=2048 (1024-point FFT) ===
+  Testing FFT roundtrip for N=2048 (FFT size 1024)...
+  Max roundtrip error: 6.394885e-14
+  PASS
+  Testing negacyclic polynomial squaring for N=2048...
+  First 10 coefficients (CPU vs GPU):
+    [0] CPU=1.000000 GPU=1.000000
+    [1] CPU=2.000000 GPU=2.000000
+    [2] CPU=3.000000 GPU=3.000000
+    [3] CPU=2.000000 GPU=2.000000
+    [4] CPU=1.000000 GPU=1.000000
+    [5] CPU=0.000000 GPU=0.000000
+    [6] CPU=0.000000 GPU=0.000000
+    [7] CPU=0.000000 GPU=0.000000
+    [8] CPU=0.000000 GPU=0.000000
+    [9] CPU=0.000000 GPU=-0.000000
+  Max error: 4.440892e-16 at index 2
+  PASS
+  Testing negacyclic squaring with random small-int coefficients N=2048...
+  Max error: 1.421085e-12 at index 220
+  PASS
+
+ALL TESTS PASSED
+========= ERROR SUMMARY: 0 errors

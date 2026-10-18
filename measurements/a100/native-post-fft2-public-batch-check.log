@@ -1,0 +1,4 @@
+public lvl1 count=17 exact batch/scalar, graph replay, both aliases: PASS
+public lvl02 count=17 exact batch/scalar, graph replay, both aliases: PASS
+public lvl1 count=109 exact batch/scalar, graph replay, both aliases: PASS
+public lvl02 count=109 exact batch/scalar, graph replay, both aliases: PASS

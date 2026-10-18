@@ -1,0 +1,201 @@
+{
+  "goal_status": "complete",
+  "phase": "A100 tuning and final source/preset validation complete",
+  "source_baseline": "2bae119",
+  "profiles": {
+    "a100-ntt": "/tmp/cufhe-a100-combined",
+    "a100-ntt-throughput": "/tmp/cufhe-a100-residency2",
+    "a100-fft": "/tmp/cufhe-a100-public-fft",
+    "public-fft": "/tmp/cufhe-a100-public-fft",
+    "a100-fft-throughput": "/tmp/cufhe-a100-fft-residency2",
+    "a100-ntt-latency": "/tmp/cufhe-a100-scalar-latency"
+  },
+  "verified": [
+    "All benchmark decryptions passed; measurements compare identical block-binary parameters and raw IKS->BR NAND",
+    "Combined and paired cooperative suites each passed 25003947 coefficient comparisons",
+    "Combined and warp31 small-modulus arithmetic suites passed after correcting fixture workspace sizes and paired-kernel launch bounds",
+    "Combined, warp31 and residency2 batch equivalence/strides/alias suites passed",
+    "Combined lvl1/lvl02 memcheck and lvl02 batch25 synccheck passed",
+    "Nsight Compute: lvl1 110 registers/25% theoretical occupancy versus 64 registers/50% with separate SM80 budget",
+    "Residency2 lvl1 batch432 memcheck passed",
+    "Prepared row descriptors: lvl1 3.98552->3.77869 ms single / 33.9826->30.6197 us per gate at batch432",
+    "Prepared rows with residency2: 30.9763->29.3163 us per lvl1 gate at batch432; single latency 3.91438 ms",
+    "Prepared rows lvl02 batch432: 194.289->172.082 us per gate",
+    "Prepared lvl10 and lvl20 key-switch reference comparisons passed (boundary/random words, signs/offsets, extraction/direct TLWE, aliased scratch)",
+    "Prepared lvl1 memcheck/synccheck, lvl02 noncooperative batch55 memcheck and residency2 batch432 memcheck passed",
+    "Public NTT prepared post-rotation key switching: lvl1 3.98641->3.23361 ms and 34.0147->30.7589 us/gate; lvl02 28.4104->22.1724 ms and 219.6->191.606 us/gate at batch432",
+    "Public lvl1 NTT residency2 measured 29.1395 us/gate at batch432",
+    "Public FFT with prepared rows and uniform barriers: 19.6303->13.0397 ms single; 139.419->107.29 us/gate at batch432",
+    "NTT and FFT public batches passed exact scalar/alias/graph comparisons at counts17 and109 for both levels",
+    "Fixed preexisting custom FFT divergent barrier pattern: all caller threads participate in the same CTA barriers, arithmetic is predicated internally",
+    "Forward/inverse bit-equivalence for active-only versus oversized CTAs passed at N512/1024/2048; block-binary and classic roundtrip/CPU convolution and synccheck passed",
+    "Uniform FFT roundtrip memcheck and public lvl02 captured memcheck/synccheck passed; public lvl1 alias/graph memcheck passed",
+    "Classic FFT diagnostics and perf compiled with explicit Torus32/Torus64 handler tags; diagnostic single-CMUX launch bound matches its1024-thread launch; smoke runs completed",
+    "NTT library compile control passed after uniform FFT changes",
+    "FFT residency2: public lvl02 83.242 us/gate at batch432 and82.8613 at648; single14.2591 ms;64 registers/50% theoretical occupancy; public alias/graph checks and focused memcheck/synccheck passed",
+    "FFT residency2 raw lvl02:117.638 us/gate at432;single21.9906 ms;captured memcheck/synccheck passed",
+    "Current one-block raw FFT reference:133.635 us/gate at432 and19.3674 ms single",
+    "Public FFT throughput profile passed all ten binary gates plusMUX/NMUX, eight freshly encrypted truth-case samples per gate",
+    "FFT residency3 rejected:116.917 us/gate at432 and104.695 at balanced648 versus residency2 82.8613 at648;single16.6177 ms;functional alias/graph tests passed",
+    "Raw FFT prepared pre-add rows: lvl1 single5.59445ms/batch432 50.9207us; lvl02 single12.8343ms/batch432 106.653us; FFT budget2 lvl02 single15.4101ms/batch432 105.531us",
+    "Raw FFT batch exact scalar/stride/alias chains passed counts17/109; lvl10/lvl20 prepared reference tests passed; lvl1 captured memcheck/synccheck passed",
+    "SM80 native pre-add lvl20 schedule exact key-switch references, batch17/109 stride/scalar/alias chains and captured memcheck/synccheck passed; raw FFT batch432 106.810->88.960us and single9.6459ms",
+    "NTT native-word pre-add control build and exact lvl20 references passed; raw lvl02 single5.15272ms and batch432 153.728us, decryptions passed",
+    "Native pre-add FFT budget2 remeasurement:97.8755us/gate at432,12.6569ms single; slower than budget1 88.960us/9.6459ms; raw default remains1",
+    "Updated native pre-add NTT cooperative suite:25003947 exact coefficient comparisons; stream/caller-pool lifecycle and captured batch25 memcheck/synccheck passed",
+    "Native postrotation FFT schedule exact lvl20 references, public count17/109 scalar/graph/aliases, MUX/NMux truth cases and captured memcheck/synccheck passed",
+    "Native postrotation FFT budget1:107.480->88.9153us/gate at432;single9.69918ms. Budget2:74.0935us/gate at432;single11.2539ms",
+    "Native postrotation FFT2 public batch counts17/109 both levels exact scalar/graph/aliases and captured memcheck/synccheck passed",
+    "Native postrotation NTT exact lvl20 reference and public batch17/109 scalar/graph/aliases passed; public lvl02 single22.2097->18.9112ms, batch432 192.304->172.414us",
+    "Public cooperative NTT exact suite passed7700093 coefficient comparisons including counts1..129 across dispatch boundaries, both aliases/forward overlap, graph chains, concurrent calls, caller-pool isolation and cleanup/reinit",
+    "Public cooperative NTT single5.11237ms vs18.9112ms;batch25 8.789ms total vs18.63275ms;captured batch25 memcheck/synccheck passed; FFT library compile control passed",
+    "After shared kernel templating, raw cooperative suite passed25003947 coefficient comparisons; public captured schedules at counts1/13/25/37 each passed memcheck and synccheck",
+    "Saturation public FFT2 native schedule:77.9002us at648 and77.591us at3456; all decryptions passed",
+    "All-window dense candidate passed11016629 public exact coefficient comparisons including expanded boundaries, aliases, graph replay, concurrency and cleanup. Timings favor dense only37..43 and55..72; final dispatcher restricts those windows.",
+    "Public dense variants at42/64 passed captured memcheck/synccheck; NCU64 measured64regs,40KiB dynamic shared,50% theoretical occupancy/43.79% achieved. FFT library compile control passed.",
+    "Final restricted dispatcher measured273.11us/gate at42 and249.836us at64 versus306.02/291.023; counts1/25/96 retain prior performance.",
+    "Final restricted dense dispatcher: public11016629 and raw35773491 exact coefficient comparisons passed, including expanded boundaries, aliases/forward overlap, graph chains, concurrent calls and caller-pool lifecycle.",
+    "Scalar latency preset public/raw captured NAND memcheck/synccheck passed; stream1/8/32/128 decryptions passed, latency improves but saturation regresses, hence opt-in preset only",
+    "Scalar latency preset final public11016629/raw35773491 exact suites passed, including independent scalar-vs-noncooperative-batch reference, aliases, graph chains, concurrency and pool cleanup; default-OFF NTT library build control passed.",
+    "Final NTT2/FFT2 preset rebuilds passed arithmetic and raw/public batch suites. Fixed stale single-node graph fixture assumption by verifying ordinary/cooperative graph shapes and scratch ordering; explicit pageable-upload synchronization added to nonblocking test streams. Final evidence and source hashes recorded in final-audit.json."
+  ],
+  "next_experiments": [],
+  "experiments_2026_10_17": [
+    {
+      "name": "SM80 register monomial cache",
+      "decision": "reverted; no demonstrated throughput gain",
+      "before_ms_per_gate": 0.0343115,
+      "after_ms_per_gate": 0.0348628,
+      "registers_before": 110,
+      "registers_after": 128,
+      "arithmetic_checks": "PASS"
+    },
+    {
+      "name": "A100 cooperative 96KiB reservation",
+      "decision": "reverted; register residency was already one CTA/SM",
+      "batch1_before_ms": 8.36583,
+      "batch1_after_ms": 8.38418,
+      "batch25_before_ms_per_gate": 0.451549,
+      "batch25_after_ms_per_gate": 0.451607,
+      "decryption": "PASS"
+    },
+    {
+      "name": "SM80 prepared pre-add rows in __HomGate__",
+      "decision": "retained",
+      "source_change": "Extend the raw __HomGate__ prepared-row architecture guard to SM80; retain existing options, parameter and workspace eligibility checks",
+      "new_latency_ms": 3.77869,
+      "new_default_batch432_us_per_gate": 30.6197,
+      "new_residency2_batch432_us_per_gate": 29.3163,
+      "new_lvl02_batch432_us_per_gate": 172.082
+    },
+    {
+      "name": "SM80 public post-rotation prepared rows and uniform FFT barriers",
+      "decision": "retained",
+      "public_ntt_lvl1_single_ms": 3.23361,
+      "public_ntt_lvl02_single_ms": 22.1724,
+      "public_fft_lvl02_single_ms": 13.0397,
+      "public_fft_lvl02_batch432_us": 107.29
+    },
+    {
+      "name": "SM80 FFT register budget2",
+      "decision": "retained in a100-fft-throughput preset",
+      "public_batch432_us": 83.242,
+      "public_batch648_us": 82.8613,
+      "raw_batch432_us": 117.638,
+      "public_single_ms": 14.2591,
+      "raw_single_ms": 21.9906
+    },
+    {
+      "name": "SM80 FFT register budget3",
+      "decision": "rejected; slower even with balanced batch648",
+      "public_batch432_us": 116.917,
+      "public_batch648_us": 104.695,
+      "public_single_ms": 16.6177
+    },
+    {
+      "name": "SM80 raw FFT prepared pre-add rows",
+      "decision": "retained after exact reference and batch tests",
+      "lvl1_single_ms": 5.59445,
+      "lvl1_batch432_us": 50.9207,
+      "lvl02_single_ms": 12.8343,
+      "lvl02_batch432_us": 106.653,
+      "lvl02_budget2_batch432_us": 105.531
+    },
+    {
+      "name": "SM80 native-word lvl20 pre-add key switch",
+      "decision": "retained after exact references, batch tests and captured sanitizers",
+      "before_batch432_us": 106.81,
+      "after_batch432_us": 88.96,
+      "after_single_ms": 9.6459,
+      "ntt_single_ms": 5.15272,
+      "ntt_batch432_us": 153.728
+    },
+    {
+      "name": "SM80 native-word lvl20 postrotation key switch",
+      "decision": "retained after both FFT budgets passed validation",
+      "public_fft1_batch432_us": 88.9153,
+      "public_fft1_single_ms": 9.69918,
+      "public_fft2_batch432_us": 74.0935,
+      "public_fft2_single_ms": 11.2539
+    },
+    {
+      "name": "SM80 public cooperative BR->IKS lvl02 NAND batches",
+      "decision": "retained after public/raw exact suites and all four captured sanitizer schedules",
+      "single_before_ms": 18.9112,
+      "single_after_ms": 5.11237,
+      "batch25_before_ms": 18.63275,
+      "batch25_after_ms": 8.789,
+      "exact_coefficients": 7700093
+    },
+    {
+      "name": "SM80 lvl1 NTT register budget3",
+      "decision": "rejected; slower for raw and public lvl1",
+      "raw_batch648_us": 30.5136,
+      "raw_batch3456_us": 31.9202,
+      "raw_single_ms": 4.15999,
+      "registers": 40,
+      "theoretical_occupancy_pct": 75,
+      "achieved_occupancy_pct": 64.94,
+      "budget2_batch648_us": 28.1161,
+      "budget2_batch3456_us": 27.4246,
+      "public_budget2_batch648_us": 28.8415,
+      "public_budget3_batch648_us": 30.6827
+    },
+    {
+      "name": "SM80 lvl1 paired native-word postrotation sums",
+      "decision": "reverted; no throughput gain and scalar latency regression",
+      "before_batch432_us": 30.4149,
+      "after_batch432_us": 30.6858,
+      "before_single_ms": 3.24218,
+      "after_single_ms": 3.42264,
+      "validation": "exact references and captured memcheck/synccheck passed"
+    },
+    {
+      "name": "SM80 dense public cooperative NTT windows",
+      "decision": "retained only in windows37..43 and55..72 after final public/raw exact suites, dense kernel sanitizers and FFT compile control",
+      "batch42_before_us": 306.02,
+      "batch42_after_us": 273.11,
+      "batch64_before_us": 291.023,
+      "batch64_after_us": 249.836,
+      "registers": 64,
+      "dynamic_shared_bytes": 40960,
+      "theoretical_occupancy_pct": 50
+    },
+    {
+      "name": "A100 cooperative scalar lvl02 NAND latency preset",
+      "decision": "retained in opt-in a100-ntt-latency preset after public/raw exact suites and captured sanitizer checks; default OFF",
+      "public_single_before_ms": 18.9053,
+      "public_single_after_ms": 5.13581,
+      "raw_single_before_ms": 16.6404,
+      "raw_single_after_ms": 5.8029,
+      "public_s128_before_us": 293.831,
+      "public_s128_after_us": 422.972,
+      "raw_s128_before_us": 259.104,
+      "raw_s128_after_us": 473.205,
+      "default": "OFF"
+    }
+  ],
+  "optional_future_work": [
+    "Runtime selection between existing register-budget kernels could improve configuration convenience; measured optima are already available through presets."
+  ]
+}
