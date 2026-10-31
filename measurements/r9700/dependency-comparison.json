@@ -1,0 +1,200 @@
+{
+  "cufhepp_source": "8693c81ace009822896ccdc96c527150020c0908 (unchanged for both builds)",
+  "tfhepp_before": "4309482962154f6268eea2fdaf43b6b45d2be966",
+  "tfhepp_after": "1dd9a1addef4cae01da9bb6bfff0d22b55bec683",
+  "method": "One fresh-key run per case/revision, 15 timed repetitions after warmup; descriptive observations, separate from kernel speedup comparisons.",
+  "results": [
+    {
+      "backend": "ntt",
+      "level": "lvl1",
+      "order": "iks-br",
+      "count": 1,
+      "before_ms_per_gate": 4.04502,
+      "after_ms_per_gate": 4.97297,
+      "logs": [
+        "dependency-4309482-ntt-b1.log",
+        "dependency-1dd9a1a-ntt-b1.log"
+      ]
+    },
+    {
+      "backend": "ntt",
+      "level": "lvl1",
+      "order": "iks-br",
+      "count": 512,
+      "before_ms_per_gate": 0.0667597,
+      "after_ms_per_gate": 0.0655119,
+      "logs": [
+        "dependency-4309482-ntt-b512.log",
+        "dependency-1dd9a1a-ntt-b512.log"
+      ]
+    },
+    {
+      "backend": "ntt",
+      "level": "lvl1",
+      "order": "br-iks",
+      "count": 1,
+      "before_ms_per_gate": 4.58291,
+      "after_ms_per_gate": 4.57111,
+      "logs": [
+        "dependency-4309482-ntt_lvl01_br_iks-b1.log",
+        "dependency-1dd9a1a-ntt_lvl01_br_iks-b1.log"
+      ]
+    },
+    {
+      "backend": "ntt",
+      "level": "lvl1",
+      "order": "br-iks",
+      "count": 512,
+      "before_ms_per_gate": 0.0673155,
+      "after_ms_per_gate": 0.0663462,
+      "logs": [
+        "dependency-4309482-ntt_lvl01_br_iks-b512.log",
+        "dependency-1dd9a1a-ntt_lvl01_br_iks-b512.log"
+      ]
+    },
+    {
+      "backend": "ntt",
+      "level": "lvl02",
+      "order": "iks-br",
+      "count": 1,
+      "before_ms_per_gate": 17.5942,
+      "after_ms_per_gate": 17.4387,
+      "logs": [
+        "dependency-4309482-ntt_lvl02-b1.log",
+        "dependency-1dd9a1a-ntt_lvl02-b1.log"
+      ]
+    },
+    {
+      "backend": "ntt",
+      "level": "lvl02",
+      "order": "iks-br",
+      "count": 512,
+      "before_ms_per_gate": 0.286929,
+      "after_ms_per_gate": 0.281881,
+      "logs": [
+        "dependency-4309482-ntt_lvl02-b512.log",
+        "dependency-1dd9a1a-ntt_lvl02-b512.log"
+      ]
+    },
+    {
+      "backend": "ntt",
+      "level": "lvl02",
+      "order": "br-iks",
+      "count": 1,
+      "before_ms_per_gate": 17.7356,
+      "after_ms_per_gate": 17.6716,
+      "logs": [
+        "dependency-4309482-ntt_lvl02_br_iks-b1.log",
+        "dependency-1dd9a1a-ntt_lvl02_br_iks-b1.log"
+      ]
+    },
+    {
+      "backend": "ntt",
+      "level": "lvl02",
+      "order": "br-iks",
+      "count": 512,
+      "before_ms_per_gate": 0.285874,
+      "after_ms_per_gate": 0.28186,
+      "logs": [
+        "dependency-4309482-ntt_lvl02_br_iks-b512.log",
+        "dependency-1dd9a1a-ntt_lvl02_br_iks-b512.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl1",
+      "order": "iks-br",
+      "count": 1,
+      "before_ms_per_gate": 10.8474,
+      "after_ms_per_gate": 10.8122,
+      "logs": [
+        "dependency-4309482-fft-b1.log",
+        "dependency-1dd9a1a-fft-b1.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl1",
+      "order": "iks-br",
+      "count": 512,
+      "before_ms_per_gate": 0.240251,
+      "after_ms_per_gate": 0.239349,
+      "logs": [
+        "dependency-4309482-fft-b512.log",
+        "dependency-1dd9a1a-fft-b512.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl1",
+      "order": "br-iks",
+      "count": 1,
+      "before_ms_per_gate": 10.479,
+      "after_ms_per_gate": 10.4428,
+      "logs": [
+        "dependency-4309482-fft_lvl01_br_iks-b1.log",
+        "dependency-1dd9a1a-fft_lvl01_br_iks-b1.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl1",
+      "order": "br-iks",
+      "count": 512,
+      "before_ms_per_gate": 0.237844,
+      "after_ms_per_gate": 0.235548,
+      "logs": [
+        "dependency-4309482-fft_lvl01_br_iks-b512.log",
+        "dependency-1dd9a1a-fft_lvl01_br_iks-b512.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl02",
+      "order": "iks-br",
+      "count": 1,
+      "before_ms_per_gate": 18.6289,
+      "after_ms_per_gate": 18.2588,
+      "logs": [
+        "dependency-4309482-fft_lvl02-b1.log",
+        "dependency-1dd9a1a-fft_lvl02-b1.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl02",
+      "order": "iks-br",
+      "count": 512,
+      "before_ms_per_gate": 0.340306,
+      "after_ms_per_gate": 0.336547,
+      "logs": [
+        "dependency-4309482-fft_lvl02-b512.log",
+        "dependency-1dd9a1a-fft_lvl02-b512.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl02",
+      "order": "br-iks",
+      "count": 1,
+      "before_ms_per_gate": 18.2089,
+      "after_ms_per_gate": 18.0603,
+      "logs": [
+        "dependency-4309482-fft_lvl02_br_iks-b1.log",
+        "dependency-1dd9a1a-fft_lvl02_br_iks-b1.log"
+      ]
+    },
+    {
+      "backend": "fft",
+      "level": "lvl02",
+      "order": "br-iks",
+      "count": 512,
+      "before_ms_per_gate": 0.325019,
+      "after_ms_per_gate": 0.32354,
+      "logs": [
+        "dependency-4309482-fft_lvl02_br_iks-b512.log",
+        "dependency-1dd9a1a-fft_lvl02_br_iks-b512.log"
+      ]
+    }
+  ]
+}

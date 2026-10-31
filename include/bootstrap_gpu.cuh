@@ -83,8 +83,9 @@ void NandBootstrap(typename brP::targetP::T* const out,
                    const typename iksP::domainP::T* const in1,
                    const cudaStream_t st, const int gpuNum);
 
-// GPU-resident independent NANDs in one grid. Small raw lvl02 batches on SM89
-// use cooperative row CTAs; other batches use one ciphertext per block.
+// GPU-resident independent NANDs in one grid. Eligible CUDA and R9700
+// profiles use cooperative row groups for small lvl02 batches; other batches
+// use one ciphertext per block.
 // Cooperative scratch is allocated/freed in stream order and supports capture.
 // Strides count torus coefficients and must fit a complete TLWE. Input/output
 // transfers are caller-owned. Distinct outputs must not overlap; in-place

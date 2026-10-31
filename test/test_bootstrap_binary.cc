@@ -19,18 +19,23 @@ bool TestBinary(const TFHEpp::SecretKey& sk)
     TFHEpp::EvalKey ek(sk);
     ek.template emplacebk<BR>(sk);
 #ifdef USE_SUBSET_KEY
-    if constexpr (sizeof(typename P::T) == 4) ek.template emplacesubiksk<IKS>(sk);
+    if constexpr (std::is_same_v<BR, TFHEpp::lvl01param>) ek.template emplacesubiksk<IKS>(sk);
     else
 #endif
         cufhe::EmplaceGateKeySwitchingKey<IKS>(ek, sk);
-    if constexpr (sizeof(typename P::T) == 4) cufhe::Initialize(ek);
+    if constexpr (std::is_same_v<BR, TFHEpp::lvl01param>) cufhe::Initialize(ek);
     else cufhe::Initialize_lvl02(ek, sk);
 
     using T = typename P::T;
     using Launch = void (*)(T*, const T*, const T*, cudaStream_t, int);
     struct Gate { const char* name; int ca, cb, offset; unsigned truth; Launch launch; };
+#ifdef CUFHE_TEST_BR_IKS
+#define G(Name, ca, cb, offset, truth) \
+    {#Name, ca, cb, offset, truth, &cufhe::Name##Bootstrap<BR, BR::targetP::μ, IKS>}
+#else
 #define G(Name, ca, cb, offset, truth) \
     {#Name, ca, cb, offset, truth, &cufhe::Name##Bootstrap<IKS, BR, P::μ>}
+#endif
     const Gate gates[] = {
         G(Nand, -1, -1, 1, 7), G(And, 1, 1, -1, 8),
         G(Nor, -1, -1, -1, 1), G(Or, 1, 1, 1, 14),
@@ -74,7 +79,11 @@ bool TestBinary(const TFHEpp::SecretKey& sk)
                               cudaMemcpyHostToDevice, stream.st()));
         for (int first = 0; first < count; first += chunk) {
             const int size = std::min(chunk, count - first);
+#ifdef CUFHE_TEST_BR_IKS
+            cufhe::NandBootstrapBatch<BR, BR::targetP::μ, IKS>(
+#else
             cufhe::NandBootstrapBatch<IKS, BR, P::μ>(
+#endif
                 dref + first * elements, elements, dlinear + first * elements,
                 elements, dzero + first * elements, elements, size, stream.st(), 0);
         }
@@ -100,13 +109,19 @@ bool TestBinary(const TFHEpp::SecretKey& sk)
             }
         }
         all_passed &= passed;
-        std::cout << (sizeof(T) == 4 ? "lvl1" : "lvl02") << " raw " << gate.name
+        std::cout << (std::is_same_v<BR, TFHEpp::lvl01param> ? "lvl1" : "lvl02")
+#ifdef CUFHE_TEST_BR_IKS
+                  << " public "
+#else
+                  << " raw "
+#endif
+                  << gate.name
                   << " 16 masks / 4 truth cases / small-batch reference / output=input0: "
                   << (passed ? "PASS" : "FAIL") << std::endl;
     }
     Check(cudaFree(dlinear)); Check(cudaFree(dzero)); Check(cudaFree(dref));
     stream.Destroy();
-    if constexpr (sizeof(T) == 4) cufhe::CleanUp();
+    if constexpr (std::is_same_v<BR, TFHEpp::lvl01param>) cufhe::CleanUp();
     else cufhe::CleanUp_lvl02();
     return all_passed;
 }
@@ -118,8 +133,13 @@ int main()
         Check(cudaSetDevice(0));
         cufhe::SetGPUNum(1);
         TFHEpp::SecretKey sk;
+#ifdef CUFHE_TEST_BR_IKS
+        const bool lvl1 = TestBinary<TFHEpp::lvl0param, TFHEpp::lvl10param, TFHEpp::lvl01param>(sk);
+        const bool lvl02 = TestBinary<TFHEpp::lvl0param, TFHEpp::lvl20param, TFHEpp::lvl02param>(sk);
+#else
         const bool lvl1 = TestBinary<TFHEpp::lvl1param, TFHEpp::lvl10param, TFHEpp::lvl01param>(sk);
         const bool lvl02 = TestBinary<TFHEpp::lvl2param, TFHEpp::lvl20param, TFHEpp::lvl02param>(sk);
+#endif
         return lvl1 && lvl02 ? 0 : 1;
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;

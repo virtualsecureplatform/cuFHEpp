@@ -15,7 +15,7 @@ void Check(cudaError_t e)
     if (e != cudaSuccess) throw std::runtime_error(cudaGetErrorString(e));
 }
 
-#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+#if defined(CUFHE_USE_HIP) || CUDART_VERSION >= 11040
 cudaError_t GetDependencies(cudaGraphNode_t node, cudaGraphNode_t* parents,
                             size_t* count)
 {
@@ -133,7 +133,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     cudaStream_t stream;
     Check(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
     bool passed = true;
-#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+#if defined(CUFHE_USE_HIP) || CUDART_VERSION >= 11040
     // First use of this batch kernel is captured, with no warm-up launch.
     cudaGraph_t graph;
     cudaGraphExec_t exec;
@@ -147,6 +147,9 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
     Check(cudaGetDeviceProperties(&prop, 0));
     allow_cooperative = std::is_same_v<BR, TFHEpp::lvl02param> &&
                         prop.major == 8 && prop.minor == 0 && prop.cooperativeLaunch;
+#endif
+#if defined(USE_HIP_COOPERATIVE_BATCH)
+    allow_cooperative = std::is_same_v<BR, TFHEpp::lvl02param>;
 #endif
     passed &= CheckBatchGraph(graph, count, BR::targetP::n / 2, allow_cooperative);
     Check(cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
@@ -164,7 +167,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
 #ifndef USE_FFT
     passed &= got == ref;
 #endif
-#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+#if defined(CUFHE_USE_HIP) || CUDART_VERSION >= 11040
     Check(cudaGraphLaunch(exec, stream));
     Check(cudaStreamSynchronize(stream));
     Check(cudaMemcpy(got.data(), dout, got.size() * sizeof(T),
@@ -207,7 +210,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
             Check(cudaMemcpyAsync(dref + i * so, expected.data() + i * stride,
                                   n * sizeof(T), cudaMemcpyHostToDevice,
                                   stream));
-#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+#if defined(CUFHE_USE_HIP) || CUDART_VERSION >= 11040
         Check(cudaStreamSynchronize(stream));
         cudaGraph_t alias_graph;
         cudaGraphExec_t alias_exec;
@@ -220,7 +223,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
                                    0));
 #endif
         for (int round = 0; round < 8; ++round) {
-#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+#if defined(CUFHE_USE_HIP) || CUDART_VERSION >= 11040
             Check(cudaGraphLaunch(alias_exec, stream));
 #else
             batch(target, stride, da, sa, db, sb, count, stream, 0);
@@ -230,7 +233,7 @@ bool Test(const TFHEpp::SecretKey& sk, uint32_t count)
                        alias == 1 ? dref + i * so : db + i * sb, stream, 0);
         }
         Check(cudaStreamSynchronize(stream));
-#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+#if defined(CUFHE_USE_HIP) || CUDART_VERSION >= 11040
         Check(cudaGraphExecDestroy(alias_exec));
         Check(cudaGraphDestroy(alias_graph));
 #endif

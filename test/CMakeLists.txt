@@ -64,9 +64,19 @@ add_executable(test_bootstrap_mux test_bootstrap_mux.cc)
 target_include_directories(test_bootstrap_mux PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
 target_link_libraries(test_bootstrap_mux cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 
+add_executable(test_bootstrap_public_mux test_bootstrap_mux.cc)
+target_compile_definitions(test_bootstrap_public_mux PRIVATE CUFHE_TEST_BR_IKS=1)
+target_include_directories(test_bootstrap_public_mux PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_public_mux cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
 add_executable(test_bootstrap_binary test_bootstrap_binary.cc)
 target_include_directories(test_bootstrap_binary PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
 target_link_libraries(test_bootstrap_binary cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
+
+add_executable(test_bootstrap_public_binary test_bootstrap_binary.cc)
+target_compile_definitions(test_bootstrap_public_binary PRIVATE CUFHE_TEST_BR_IKS=1)
+target_include_directories(test_bootstrap_public_binary PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})
+target_link_libraries(test_bootstrap_public_binary cufhe_gpu ${CUFHE_GPU_RUNTIME_TARGET})
 
 if(USE_BLOCK_BINARY)
     add_executable(test_block_binary_gpu test_block_binary_gpu.cc)
@@ -94,7 +104,8 @@ if(NOT USE_BLOCK_BINARY)
 endif()
 
 if(NOT USE_FFT AND USE_BLOCK_BINARY AND NOT USE_KEY_BUNDLE AND
-   CUFHE_GPU_BACKEND STREQUAL "CUDA" AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.4)
+   ((CUFHE_GPU_BACKEND STREQUAL "CUDA" AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.4) OR
+    (CUFHE_GPU_BACKEND STREQUAL "HIP" AND USE_HIP_COOPERATIVE_BATCH)))
     add_executable(test_bootstrap_public_cooperative test_bootstrap_cooperative.cc)
     target_compile_definitions(test_bootstrap_public_cooperative PRIVATE CUFHE_TEST_PUBLIC_COOPERATIVE=1)
     target_include_directories(test_bootstrap_public_cooperative PRIVATE ${CUFHE_GPU_INCLUDE_DIRECTORIES})

@@ -10,7 +10,7 @@
 #include <string_view>
 #include <vector>
 
-#if !defined(CUFHE_USE_HIP) && CUDART_VERSION >= 11040
+#if defined(CUFHE_USE_HIP) || CUDART_VERSION >= 11040
 #define CUFHE_BENCH_HAS_CUDA_GRAPH 1
 #endif
 
@@ -109,6 +109,13 @@ int main(int argc, char** argv)
               << " block_binary=1"
 #else
               << " block_binary=0"
+#endif
+              << " mode=" << mode
+#ifdef CUFHE_BENCH_BR_IKS
+              << " timed_transfers=" << (!packed_buffers && !bootstrap &&
+                   (mux || (binary && binary->name == "nand")))
+#else
+              << " timed_transfers=0"
 #endif
               << std::endl;
     cufhe::SetGPUNum(1);
@@ -315,7 +322,7 @@ int main(int argc, char** argv)
         max_noise = std::max(max_noise, std::abs(noise));
     }
     std::sort(times.begin(), times.end());
-    std::cout << "dispatch=" << (graph_mode ? "graph" : batch ? "batch" : "streams")
+    std::cout << "dispatch=" << (graph_mode ? "graph" : batch ? "batch" : packed_scalar ? "packed" : "streams")
               << " streams=" << (batch ? 1 : streams_count) << " gates=" << count
               << " median_ms/gate=" << times[times.size() / 2]
               << " errors=" << errors << std::endl;

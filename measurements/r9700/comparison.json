@@ -1,0 +1,74 @@
+[
+  {
+    "level": "lvl1",
+    "order": "iks-br",
+    "count": 1,
+    "profile": "r9700-ntt",
+    "baseline_ms_per_gate": 4.090455,
+    "retained_ms_per_gate": 3.12912,
+    "reduction_percent": 23.501908711867024
+  },
+  {
+    "level": "lvl1",
+    "order": "iks-br",
+    "count": 512,
+    "profile": "r9700-ntt-throughput",
+    "baseline_ms_per_gate": 0.0661642,
+    "retained_ms_per_gate": 0.057925950000000004,
+    "reduction_percent": 12.451219843963957
+  },
+  {
+    "level": "lvl1",
+    "order": "br-iks",
+    "count": 1,
+    "profile": "r9700-ntt",
+    "baseline_ms_per_gate": 4.551769999999999,
+    "retained_ms_per_gate": 2.852065,
+    "reduction_percent": 37.34162754269218
+  },
+  {
+    "level": "lvl1",
+    "order": "br-iks",
+    "count": 512,
+    "profile": "r9700-ntt-throughput",
+    "baseline_ms_per_gate": 0.06688595,
+    "retained_ms_per_gate": 0.0563196,
+    "reduction_percent": 15.797562866341885
+  },
+  {
+    "level": "lvl02",
+    "order": "iks-br",
+    "count": 1,
+    "profile": "r9700-ntt",
+    "baseline_ms_per_gate": 17.51155,
+    "retained_ms_per_gate": 10.6902,
+    "reduction_percent": 38.95343359097281
+  },
+  {
+    "level": "lvl02",
+    "order": "iks-br",
+    "count": 512,
+    "profile": "r9700-ntt-throughput",
+    "baseline_ms_per_gate": 0.285012,
+    "retained_ms_per_gate": 0.2454735,
+    "reduction_percent": 13.872573786366882
+  },
+  {
+    "level": "lvl02",
+    "order": "br-iks",
+    "count": 1,
+    "profile": "r9700-ntt",
+    "baseline_ms_per_gate": 17.7324,
+    "retained_ms_per_gate": 10.6586,
+    "reduction_percent": 39.89194920033384
+  },
+  {
+    "level": "lvl02",
+    "order": "br-iks",
+    "count": 512,
+    "profile": "r9700-ntt-throughput",
+    "baseline_ms_per_gate": 0.284659,
+    "retained_ms_per_gate": 0.244797,
+    "reduction_percent": 14.00342163781929
+  }
+]

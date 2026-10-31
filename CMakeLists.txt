@@ -144,6 +144,46 @@ endif()
 # required for lvl02 MUX on GPUs with a ~99 KiB shared-memory cap (Ada).  The
 # generic warp-shuffle path stays opt-in because its register pressure can
 # cause spills. The Torus64 option also relaxes the Ada register budget.
+# R9700 features are independently selectable for reproducible comparisons.
+foreach(feature PAIRED_NTT PAIRED_NTT64 FUSED_NTT MONOMIAL_STAGING
+                PREPARED_KEYSWITCH NATIVE_KEYSWITCH WAVE_MODSWITCH_CORRECTION LOW_LDS
+                COOPERATIVE_BATCH COOPERATIVE_SCALAR)
+  option(USE_HIP_${feature} "Enable HIP ${feature} scheduling" OFF)
+  if(USE_HIP_${feature})
+    if(NOT CUFHE_GPU_BACKEND STREQUAL "HIP")
+      message(FATAL_ERROR "USE_HIP_${feature} requires HIP")
+    endif()
+    add_compile_definitions(USE_HIP_${feature})
+  endif()
+endforeach()
+
+set(CUFHE_HIP_MIN_WAVES_PER_EU "1" CACHE STRING
+    "Minimum HIP waves per execution unit requested by gate launch bounds (1-4)")
+set_property(CACHE CUFHE_HIP_MIN_WAVES_PER_EU PROPERTY STRINGS 1 2 3 4)
+if(NOT CUFHE_HIP_MIN_WAVES_PER_EU MATCHES "^[1234]$")
+  message(FATAL_ERROR "CUFHE_HIP_MIN_WAVES_PER_EU must be 1, 2, 3, or 4")
+endif()
+if(CUFHE_GPU_BACKEND STREQUAL "HIP")
+  add_compile_definitions(CUFHE_HIP_MIN_WAVES_PER_EU=${CUFHE_HIP_MIN_WAVES_PER_EU})
+endif()
+
+set(CUFHE_HIP_COOPERATIVE_GROUPS "0" CACHE STRING
+    "HIP cooperative row groups: 0 for tuned automatic selection, or 2/3/5/9")
+set_property(CACHE CUFHE_HIP_COOPERATIVE_GROUPS PROPERTY STRINGS 0 2 3 5 9)
+if(NOT CUFHE_HIP_COOPERATIVE_GROUPS MATCHES "^[02359]$")
+  message(FATAL_ERROR "CUFHE_HIP_COOPERATIVE_GROUPS must be 0, 2, 3, 5, or 9")
+endif()
+
+if(USE_HIP_PAIRED_NTT64 AND NOT USE_HIP_LOW_LDS)
+  message(FATAL_ERROR "USE_HIP_PAIRED_NTT64 requires USE_HIP_LOW_LDS")
+endif()
+if(USE_HIP_MONOMIAL_STAGING AND NOT USE_HIP_PAIRED_NTT64)
+  message(FATAL_ERROR "USE_HIP_MONOMIAL_STAGING requires USE_HIP_PAIRED_NTT64")
+endif()
+if(USE_HIP_COOPERATIVE_SCALAR AND NOT USE_HIP_COOPERATIVE_BATCH)
+  message(FATAL_ERROR "USE_HIP_COOPERATIVE_SCALAR requires USE_HIP_COOPERATIVE_BATCH")
+endif()
+
 option(USE_CUDA_WARP_TRANSFORM
        "Run the final NTT butterfly stages in registers via warp shuffles" OFF)
 option(USE_CUDA_WARP_TRANSFORM64

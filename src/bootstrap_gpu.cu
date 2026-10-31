@@ -30,21 +30,20 @@
 #include <include/utils_gpu.cuh>
 #include <limits>
 #include <stdexcept>
+#include <string_view>
 #include <vector>
 
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
-    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND)
+#if defined(CUFHE_USE_HIP)
+#include <hip/hip_cooperative_groups.h>
+#else
 #include <cooperative_groups.h>
+#endif
 #endif
 
 namespace cufhe {
 
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
-    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND)
 namespace {
 std::vector<cudaMemPool_t> cooperative_scratch_pools;
 void InitializeCooperativeScratchPools(int gpu_count);
@@ -633,10 +632,7 @@ void DeleteBootstrappingKeyNTT(const int gpuNum)
 void InitializeNTThandlers_lvl02(const int gpuNum)
 {
     CuNTTHandler<TFHEpp::lvl2param::n, 64>::Create();
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
-    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND)
     InitializeCooperativeScratchPools(gpuNum);
 #endif
     for (int i = 0; i < gpuNum; i++) {
@@ -662,10 +658,7 @@ void DeleteBootstrappingKeyNTT_lvl02(const int gpuNum)
     }
     ntt_handlers_lvl02.clear();
     CuNTTHandler<TFHEpp::lvl2param::n, 64>::Destroy();
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
-    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND)
     DeleteCooperativeScratchPools();
 #endif
 }
@@ -1316,10 +1309,10 @@ __device__ inline void __KeySwitchAfterBlindRotate__(
     typename iksP::targetP::T* out, const typename iksP::domainP::T* input,
     const typename iksP::targetP::T* ksk, char* dyn_sh)
 {
-#if defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP) && \
+#if defined(USE_HIP_PREPARED_KEYSWITCH) || (defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP) && \
     ((defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
       (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890)) || \
-     (defined(USE_FFT) && defined(USE_BLOCK_BINARY) && __CUDA_ARCH__ == 800))
+     (defined(USE_FFT) && defined(USE_BLOCK_BINARY) && __CUDA_ARCH__ == 800)))
     constexpr size_t prepared_bytes =
         (iksP::domainP::k * iksP::domainP::n * iksP::t + 1) * sizeof(uint16_t);
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
@@ -1355,8 +1348,8 @@ __device__ __forceinline__ void __KeySwitchMuxPreAdd__(
     const typename iksP::domainP::T* in1, const typename iksP::targetP::T* ksk,
     char* scratch)
 {
-#if defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
-    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_PREPARED_KEYSWITCH) || (defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
+    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
     constexpr size_t count = (iksP::domainP::k * iksP::domainP::n -
         (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) * iksP::t;
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl10param> &&
@@ -1407,10 +1400,10 @@ __device__ inline void __HomGate__(typename brP::targetP::T* const out,
     extern __shared__ char dyn_sh[];
     constexpr int prepared_count = (iksP::domainP::k * iksP::domainP::n -
         (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) * iksP::t;
-#if defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP) && \
+#if defined(USE_HIP_PREPARED_KEYSWITCH) || (defined(__CUDA_ARCH__) && !defined(CUFHE_USE_HIP) && \
     ((defined(USE_CUDA_PAIRED_NTT_WARP) && !defined(USE_FFT) && \
       (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890)) || \
-     (defined(USE_FFT) && defined(USE_BLOCK_BINARY) && __CUDA_ARCH__ == 800))
+     (defined(USE_FFT) && defined(USE_BLOCK_BINARY) && __CUDA_ARCH__ == 800)))
 #ifdef USE_FFT
     // No dynamic TRLWE data is live yet. The prepared rows may use the full
     // allocation; the CTA barrier below retires them before rotation starts.
@@ -2709,10 +2702,7 @@ void SEIandBootstrap2TRLWE(TFHEpp::lvl1param::T* const out,
     CuCheckError();
 }
 
-#if defined(USE_CUDA_COOPERATIVE_SCALAR) && defined(USE_BLOCK_BINARY) && \
-    !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND) && (defined(USE_CUDA_COOPERATIVE_SCALAR) || defined(USE_HIP_COOPERATIVE_SCALAR))
 namespace {
 bool TryCooperativeScalarNand(TFHEpp::lvl0param::T*,
     const TFHEpp::lvl0param::T*, const TFHEpp::lvl0param::T*, cudaStream_t, int);
@@ -2727,13 +2717,14 @@ void NandBootstrap(typename iksP::targetP::T* const out,
                    const typename brP::domainP::T* const in1,
                    const cudaStream_t st, const int gpuNum)
 {
-#if defined(USE_CUDA_COOPERATIVE_SCALAR) && defined(USE_BLOCK_BINARY) && \
-    !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND) && (defined(USE_CUDA_COOPERATIVE_SCALAR) || defined(USE_HIP_COOPERATIVE_SCALAR))
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
                   std::is_same_v<brP, TFHEpp::lvl02param> &&
-                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+
+#ifndef CUFHE_USE_HIP
+                  USE_RAW_PAIRED_NTT64<brP> &&
+#endif
+                  μ == brP::targetP::μ) {
         if (TryCooperativeScalarNand(out, in0, in1, st, gpuNum)) return;
     }
 #endif
@@ -2797,13 +2788,14 @@ void NandBootstrap(typename brP::targetP::T* const out,
                    const typename iksP::domainP::T* const in1,
                    const cudaStream_t st, const int gpuNum)
 {
-#if defined(USE_CUDA_COOPERATIVE_SCALAR) && defined(USE_BLOCK_BINARY) && \
-    !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND) && (defined(USE_CUDA_COOPERATIVE_SCALAR) || defined(USE_HIP_COOPERATIVE_SCALAR))
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
                   std::is_same_v<brP, TFHEpp::lvl02param> &&
-                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+
+#ifndef CUFHE_USE_HIP
+                  USE_RAW_PAIRED_NTT64<brP> &&
+#endif
+                  μ == brP::targetP::μ) {
         if (TryCooperativeScalarNand(out, in0, in1, st, gpuNum)) return;
     }
 #endif
@@ -2862,10 +2854,7 @@ INST(TFHEpp::lvl10param, TFHEpp::lvl01param, TFHEpp::lvl1param::μ);
 INST(TFHEpp::lvl20param, TFHEpp::lvl02param, TFHEpp::lvl2param::μ);
 #undef INST
 
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
-    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND)
 namespace {
 namespace cg = cooperative_groups;
 using CoopBR = TFHEpp::lvl02param;
@@ -3581,6 +3570,17 @@ void CooperativeNandBatchFiveKernel(
     }
 }
 
+bool CooperativeDeviceSupported(const cudaDeviceProp& prop)
+{
+#ifdef CUFHE_USE_HIP
+    return prop.cooperativeLaunch && prop.warpSize == 32 &&
+           std::string_view(prop.gcnArchName).starts_with("gfx1201");
+#else
+    return prop.cooperativeLaunch && prop.major == 8 &&
+           (prop.minor == 0 || prop.minor == 9);
+#endif
+}
+
 // Keep a bounded cache for this implementation without changing the caller's
 // current/default CUDA memory pool. Scratch allocations remain stream ordered.
 void InitializeCooperativeScratchPools(int gpu_count)
@@ -3590,8 +3590,7 @@ void InitializeCooperativeScratchPools(int gpu_count)
         CuSafeCall(cudaSetDevice(gpu));
         cudaDeviceProp prop{};
         CuSafeCall(cudaGetDeviceProperties(&prop, gpu));
-        if (prop.major != 8 || (prop.minor != 0 && prop.minor != 9) ||
-            !prop.cooperativeLaunch) continue;
+        if (!CooperativeDeviceSupported(prop)) continue;
         int supported = 0;
         CuSafeCall(cudaDeviceGetAttribute(
             &supported, cudaDevAttrMemoryPoolsSupported, gpu));
@@ -3645,32 +3644,47 @@ bool TryCooperativeNandBatch(
     cudaDeviceProp prop{};
     CuSafeCall(cudaGetDeviceProperties(&prop, gpu));
     // Restrict this schedule to the Ampere/Ada configurations tested here.
-    if (prop.major != 8 || (prop.minor != 0 && prop.minor != 9) ||
-        !prop.cooperativeLaunch ||
+    if (!CooperativeDeviceSupported(prop) ||
         count > uint32_t(Public ? 2 * prop.multiProcessorCount / CoopThreeGroups :
                                   prop.multiProcessorCount / CoopTwoGroups))
         return false;
     // The public API schedule is enabled only on the measured SM80 GPU.
+#ifndef CUFHE_USE_HIP
     if constexpr (Public) if (prop.minor != 0) return false;
+#endif
     int pools = 0;
     CuSafeCall(cudaDeviceGetAttribute(&pools, cudaDevAttrMemoryPoolsSupported, gpu));
     if (!pools) return false;
     // SM80 measurements favor two resident CTAs only when the extra row
     // groups outweigh the tighter register budget. Keep the latency schedule
     // for smaller batches and the measured one-CTA schedule between windows.
-    const bool dense = Public &&
+    const bool dense =
+#ifdef CUFHE_USE_HIP
+        false;
+#else
+        Public &&
         ((count > uint32_t(prop.multiProcessorCount / CoopThreeGroups) &&
           count <= uint32_t(2 * prop.multiProcessorCount / CoopFiveGroups)) ||
          (count > uint32_t(prop.multiProcessorCount / CoopTwoGroups) &&
           count <= uint32_t(2 * prop.multiProcessorCount / CoopThreeGroups)));
+#endif
     const int scheduling_sms = (dense ? 2 : 1) * prop.multiProcessorCount;
-    const bool five_groups = count > uint32_t(scheduling_sms / CoopRows) &&
-                            count <= uint32_t(scheduling_sms / CoopFiveGroups);
-    const bool three_groups = count > uint32_t(scheduling_sms / CoopFiveGroups) &&
-                             count <= uint32_t(scheduling_sms / CoopThreeGroups);
-    const bool two_groups = count > uint32_t(scheduling_sms / CoopThreeGroups);
-    const int groups = two_groups ? CoopTwoGroups : three_groups ? CoopThreeGroups :
-                       five_groups ? CoopFiveGroups : CoopRows;
+    const int automatic_groups =
+#ifndef CUFHE_USE_HIP
+        count <= uint32_t(scheduling_sms / CoopRows) ? CoopRows :
+#endif
+        // R9700 measurements favor paired five-group products even for one
+        // sample. Nine independent rows retain their CUDA schedule above.
+        count <= uint32_t(scheduling_sms / CoopFiveGroups) ? CoopFiveGroups :
+        count <= uint32_t(scheduling_sms / CoopThreeGroups) ? CoopThreeGroups : CoopTwoGroups;
+#if defined(CUFHE_USE_HIP) && CUFHE_HIP_COOPERATIVE_GROUPS != 0
+    const int groups = CUFHE_HIP_COOPERATIVE_GROUPS;
+#else
+    const int groups = automatic_groups;
+#endif
+    const bool two_groups = groups == CoopTwoGroups;
+    const bool three_groups = groups == CoopThreeGroups;
+    const bool five_groups = groups == CoopFiveGroups;
     const size_t scratch_words = two_groups ? CoopTwoScratchWords :
                                  three_groups ? CoopThreeScratchWords :
                                  five_groups ? CoopFiveScratchWords : CoopScratchWords;
@@ -3686,14 +3700,26 @@ bool TryCooperativeNandBatch(
     // Forward pairs and three output accumulators occupy 40 KiB; the final
     // extraction/row table also fits. Leave room for static/driver shared memory
     // so two blocks fit the 100 KiB carveout.
+#ifdef CUFHE_USE_HIP
+    // Row groups reuse their transform prefix for extraction and prepared
+    // key rows. Include the body descriptor, then align for vector accesses.
+    constexpr size_t key_rows_bytes =
+        (CoopKS::domainP::k * CoopKS::domainP::n * CoopKS::t + 1) * sizeof(uint16_t);
+    const size_t transform_bytes = (groups == CoopRows ? 1 : 5) * CoopN * sizeof(CoopWord);
+    const size_t extraction_bytes = (CoopTarget::k + 1) * CoopN * sizeof(CoopWord);
+    const size_t shared_bytes =
+        (std::max({transform_bytes, extraction_bytes, key_rows_bytes}) + 15) & ~size_t{15};
+#else
     const size_t shared_bytes = dense ? 40960 : CoopSharedBytes;
+#endif
     // Query residency with the actual shared-memory reservation on this GPU.
     CuSafeCall(cudaFuncSetAttribute(kernel,
         cudaFuncAttributeMaxDynamicSharedMemorySize, shared_bytes));
     int active = 0;
     CuSafeCall(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
         &active, kernel, CoopThreads, shared_bytes));
-    if (count > uint32_t(active * prop.multiProcessorCount / groups)) return false;
+    if (active == 0 || count > uint32_t(active * prop.multiProcessorCount / groups) ||
+        !cooperative_scratch_pools.at(gpu)) return false;
 
     // Stream-ordered allocation/free gives concurrent calls independent state
     // and becomes allocation/free graph nodes during stream capture.
@@ -3714,7 +3740,7 @@ bool TryCooperativeNandBatch(
     CuSafeCall(release);
     return true;
 }
-#ifdef USE_CUDA_COOPERATIVE_SCALAR
+#if defined(USE_CUDA_COOPERATIVE_SCALAR) || defined(USE_HIP_COOPERATIVE_SCALAR)
 bool TryCooperativeScalarNand(TFHEpp::lvl0param::T* out,
     const TFHEpp::lvl0param::T* in0, const TFHEpp::lvl0param::T* in1,
     cudaStream_t stream, int gpu)
@@ -3729,10 +3755,12 @@ bool TryCooperativeScalarNand(TFHEpp::lvl2param::T* out,
     cudaStream_t stream, int gpu)
 {
     CuSafeCall(cudaSetDevice(gpu));
+#ifndef CUFHE_USE_HIP
     int major = 0, minor = 0;
     CuSafeCall(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, gpu));
     CuSafeCall(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, gpu));
     if (major != 8 || minor != 0) return false;
+#endif
     constexpr size_t elements = TFHEpp::lvl2param::k * TFHEpp::lvl2param::n + 1;
     return TryCooperativeNandBatch<false>(out, elements, in0, elements,
                                         in1, elements, 1, stream, gpu);
@@ -3755,13 +3783,14 @@ void NandBootstrapBatch(
         in1_stride < in_elements)
         throw std::invalid_argument("NandBootstrapBatch: TLWE stride is too small");
     CuSafeCall(cudaSetDevice(gpuNum));
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
-    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND)
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
                   std::is_same_v<brP, TFHEpp::lvl02param> &&
-                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+
+#ifndef CUFHE_USE_HIP
+                  USE_RAW_PAIRED_NTT64<brP> &&
+#endif
+                  μ == brP::targetP::μ) {
         if (TryCooperativeNandBatch<true>(out, out_stride, in0, in0_stride,
                                         in1, in1_stride, count, st, gpuNum))
             return;
@@ -3830,13 +3859,14 @@ void NandBootstrapBatch(
         in1_stride < in_elements)
         throw std::invalid_argument("NandBootstrapBatch: TLWE stride is too small");
     CuSafeCall(cudaSetDevice(gpuNum));
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
-    !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE) && \
-    defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && \
-    CUDART_VERSION >= 11040
+#if defined(CUFHE_COOPERATIVE_NAND)
     if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
                   std::is_same_v<brP, TFHEpp::lvl02param> &&
-                  USE_RAW_PAIRED_NTT64<brP> && μ == brP::targetP::μ) {
+
+#ifndef CUFHE_USE_HIP
+                  USE_RAW_PAIRED_NTT64<brP> &&
+#endif
+                  μ == brP::targetP::μ) {
         if (TryCooperativeNandBatch(out, out_stride, in0, in0_stride,
                                    in1, in1_stride, count, st, gpuNum))
             return;
@@ -3888,6 +3918,13 @@ void NandBootstrapBatch(
 #endif
                 *handlers[gpuNum]);
     };
+#if defined(USE_HIP_MONOMIAL_STAGING) && !defined(USE_FFT)
+    if constexpr (USE_PAIRED_NTT64<typename brP::targetP>) {
+        launch(std::true_type{});
+        CuCheckError();
+        return;
+    }
+#endif
 #if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && \
     !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE)
     if constexpr (USE_ASYNC_MONOMIALS64<typename brP::targetP> &&

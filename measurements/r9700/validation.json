@@ -1,0 +1,434 @@
+{
+  "date_utc": "2026-10-31T12:33:55.222599+00:00",
+  "status": "passed",
+  "cufhepp_base": "8693c81ace009822896ccdc96c527150020c0908",
+  "tfhepp": "1dd9a1addef4cae01da9bb6bfff0d22b55bec683",
+  "scope": "Block-binary lvl1 and lvl02; raw IKS\u2192BR and public BR\u2192IKS; HIP NTT and custom GPU-FFT.",
+  "parameters": {
+    "lvl0": {
+      "n": 630,
+      "ell": 2,
+      "torus_bits": 16
+    },
+    "lvl1": {
+      "N": 1024,
+      "k": 1,
+      "l": 4,
+      "Bgbit": 6,
+      "torus_bits": 32
+    },
+    "lvl2": {
+      "N": 1024,
+      "k": 2,
+      "l": 3,
+      "Bgbit": 13,
+      "torus_bits": 64
+    }
+  },
+  "device": "device.json",
+  "toolchain": "toolchain.txt",
+  "configurations": "configurations.json",
+  "source_sha256": "source-sha256.json",
+  "kernel_comparison": "comparison.json",
+  "dependency_comparison": "dependency-comparison.json",
+  "benchmark_summary": "summary.json",
+  "benchmark_commands": "commands.json",
+  "timing": {
+    "repetitions": 15,
+    "warmup": "At least 250 ms",
+    "key_setup_and_transfers": "Excluded from retained batch and packed-scalar timings",
+    "included": "Host submission, private scratch allocation/free, execution and synchronization",
+    "fresh_inputs": "New encrypted inputs and keys for each program invocation",
+    "headline": "Median of two independent run medians, each containing 15 timed repetitions",
+    "gpu": "R9700 used exclusively; no simultaneous GPU test or benchmark jobs"
+  },
+  "benchmark_runs": 722,
+  "decryption_errors": 0,
+  "selected_schedule": {
+    "row_groups": [
+      {
+        "counts": "1\u20136",
+        "groups": 5
+      },
+      {
+        "counts": "7\u201310",
+        "groups": 3
+      },
+      {
+        "counts": "11\u201316",
+        "groups": 2
+      }
+    ],
+    "fallback": "Ordinary workgroup per sample outside the resident cooperative schedule",
+    "dispatch_checks": [
+      "gfx1201",
+      "wave32",
+      "cooperative launch",
+      "memory-pool support",
+      "actual full-grid residency including static LDS"
+    ]
+  },
+  "runner": {
+    "build": "r9700-ntt-throughput/build.log",
+    "check": "runner-check.log",
+    "run": "runner-run.log",
+    "recorded_commands": 76,
+    "status": "passed"
+  },
+  "tests": [
+    {
+      "profile": "ntt",
+      "test": "test_small_modulus",
+      "log": "retained-ntt-test_small_modulus.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_keyswitch_gpu",
+      "log": "retained-ntt-test_keyswitch_gpu.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_keyswitch_gpu_lvl20",
+      "log": "retained-ntt-test_keyswitch_gpu_lvl20.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_bootstrap_batch",
+      "log": "retained-ntt-test_bootstrap_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_bootstrap_public_batch",
+      "log": "retained-ntt-test_bootstrap_public_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_bootstrap_binary",
+      "log": "retained-ntt-test_bootstrap_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_bootstrap_public_binary",
+      "log": "retained-ntt-test_bootstrap_public_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_bootstrap_mux",
+      "log": "retained-ntt-test_bootstrap_mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_bootstrap_cooperative",
+      "log": "retained-ntt-test_bootstrap_cooperative.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "test_bootstrap_public_cooperative",
+      "log": "retained-ntt-test_bootstrap_public_cooperative.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "raw MUX graph",
+      "log": "retained-ntt-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "public MUX",
+      "log": "retained-ntt-public-mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt",
+      "test": "public MUX graph",
+      "log": "retained-ntt-public-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_small_modulus",
+      "log": "r9700-ntt-throughput/test_small_modulus.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_keyswitch_gpu",
+      "log": "r9700-ntt-throughput/test_keyswitch_gpu.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_keyswitch_gpu_lvl20",
+      "log": "r9700-ntt-throughput/test_keyswitch_gpu_lvl20.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_bootstrap_batch",
+      "log": "r9700-ntt-throughput/test_bootstrap_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_bootstrap_public_batch",
+      "log": "r9700-ntt-throughput/test_bootstrap_public_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_bootstrap_binary",
+      "log": "r9700-ntt-throughput/test_bootstrap_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_bootstrap_public_binary",
+      "log": "r9700-ntt-throughput/test_bootstrap_public_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_bootstrap_mux",
+      "log": "r9700-ntt-throughput/test_bootstrap_mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_bootstrap_cooperative",
+      "log": "r9700-ntt-throughput/test_bootstrap_cooperative.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "test_bootstrap_public_cooperative",
+      "log": "r9700-ntt-throughput/test_bootstrap_public_cooperative.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "raw MUX graph",
+      "log": "retained-ntt-throughput-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "public MUX",
+      "log": "retained-ntt-throughput-public-mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-throughput",
+      "test": "public MUX graph",
+      "log": "retained-ntt-throughput-public-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_small_modulus",
+      "log": "retained-ntt-latency-test_small_modulus.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_keyswitch_gpu",
+      "log": "retained-ntt-latency-test_keyswitch_gpu.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_keyswitch_gpu_lvl20",
+      "log": "retained-ntt-latency-test_keyswitch_gpu_lvl20.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_bootstrap_batch",
+      "log": "retained-ntt-latency-test_bootstrap_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_bootstrap_public_batch",
+      "log": "retained-ntt-latency-test_bootstrap_public_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_bootstrap_binary",
+      "log": "retained-ntt-latency-test_bootstrap_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_bootstrap_public_binary",
+      "log": "retained-ntt-latency-test_bootstrap_public_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_bootstrap_mux",
+      "log": "retained-ntt-latency-test_bootstrap_mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_bootstrap_cooperative",
+      "log": "retained-ntt-latency-test_bootstrap_cooperative.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "test_bootstrap_public_cooperative",
+      "log": "retained-ntt-latency-test_bootstrap_public_cooperative.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "raw MUX graph",
+      "log": "retained-ntt-latency-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "public MUX",
+      "log": "retained-ntt-latency-public-mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "ntt-latency",
+      "test": "public MUX graph",
+      "log": "retained-ntt-latency-public-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "test_bootstrap_batch",
+      "log": "final-fft-test_bootstrap_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "test_bootstrap_public_batch",
+      "log": "final-fft-test_bootstrap_public_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "test_bootstrap_binary",
+      "log": "final-fft-test_bootstrap_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "test_bootstrap_public_binary",
+      "log": "final-fft-test_bootstrap_public_binary.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "test_bootstrap_mux",
+      "log": "final-fft-test_bootstrap_mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "FFT arithmetic and participation",
+      "log": "fft-test_fft_roundtrip.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "mux-graph",
+      "log": "final-fft-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "public-mux",
+      "log": "retained-fft-public-mux.log",
+      "status": "passed"
+    },
+    {
+      "profile": "fft",
+      "test": "public-mux-graph",
+      "log": "retained-fft-public-mux-graph.log",
+      "status": "passed"
+    },
+    {
+      "profile": "staging-unfused",
+      "test": "test_bootstrap_batch",
+      "log": "staging-unfused-test_bootstrap_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "staging-unfused",
+      "test": "test_bootstrap_public_batch",
+      "log": "staging-unfused-test_bootstrap_public_batch.log",
+      "status": "passed"
+    },
+    {
+      "profile": "staging-unfused",
+      "test": "test_bootstrap_cooperative",
+      "log": "staging-unfused-test_bootstrap_cooperative.log",
+      "status": "passed"
+    },
+    {
+      "profile": "staging-unfused",
+      "test": "test_keyswitch_gpu",
+      "log": "staging-unfused-test_keyswitch_gpu.log",
+      "status": "passed"
+    },
+    {
+      "profile": "staging-unfused",
+      "test": "test_keyswitch_gpu_lvl20",
+      "log": "staging-unfused-test_keyswitch_gpu_lvl20.log",
+      "status": "passed"
+    },
+    {
+      "profile": "staging-unfused",
+      "test": "arithmetic",
+      "log": "staging-unfused-arithmetic.log",
+      "status": "passed"
+    },
+    {
+      "profile": "staging-fused",
+      "test": "arithmetic",
+      "log": "staged-arithmetic.log",
+      "status": "passed"
+    }
+  ],
+  "cuda": {
+    "compiler": "CUDA 13.0 / GCC 13",
+    "architectures": [
+      "sm_80",
+      "sm_89"
+    ],
+    "logs": [
+      "cuda-compile.log",
+      "cuda-fft-compile.log",
+      "cuda-ntt-images.log",
+      "cuda-fft-images.log"
+    ],
+    "runtime": "Not run: no accessible NVIDIA device"
+  },
+  "findings": [
+    "NTT paired transforms, prepared rows and cooperative scheduling retained based on measurements.",
+    "FFT prepared-row/native-word/wave-correction and four-wave candidates did not show repeatable improvement; FFT presets keep existing settings.",
+    "Standalone cooperative scalar dispatch is isolated in the latency preset because high concurrency is slower."
+  ],
+  "provenance_notes": [
+    "Named-wrapper experiments include transfers and remain separate from retained packed-scalar comparisons.",
+    "Early staged/streams experiments predate the raw-scalar guard fix; retained scalar logs and captured-grid assertions cover the corrected dispatch.",
+    "The dependency comparison keeps cuFHEpp source unchanged for both TFHEpp revisions; kernel comparisons use 1dd9a1a on both sides."
+  ]
+}

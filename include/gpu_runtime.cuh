@@ -11,6 +11,59 @@ using cudaError_t = hipError_t;
 using cudaEvent_t = hipEvent_t;
 using cudaStream_t = hipStream_t;
 
+// Cooperative launches, stream-ordered scratch and graph replay.
+#define cudaDevAttrComputeCapabilityMajor hipDeviceAttributeComputeCapabilityMajor
+#define cudaDevAttrComputeCapabilityMinor hipDeviceAttributeComputeCapabilityMinor
+#define cudaDevAttrMemoryPoolsSupported hipDeviceAttributeMemoryPoolsSupported
+#define cudaDevAttrMultiProcessorCount hipDeviceAttributeMultiprocessorCount
+#define cudaDeviceGetAttribute hipDeviceGetAttribute
+#define cudaDeviceGetMemPool hipDeviceGetMemPool
+#define cudaDeviceSetMemPool hipDeviceSetMemPool
+#define cudaFreeAsync hipFreeAsync
+#define cudaGraphDestroy hipGraphDestroy
+#define cudaGraphExecDestroy hipGraphExecDestroy
+#define cudaGraphExec_t hipGraphExec_t
+#define cudaGraphGetNodes hipGraphGetNodes
+#define cudaGraphInstantiate hipGraphInstantiate
+#define cudaGraphInstantiateWithFlags hipGraphInstantiateWithFlags
+#define cudaGraphKernelNodeGetAttribute hipGraphKernelNodeGetAttribute
+#define cudaGraphKernelNodeGetParams hipGraphKernelNodeGetParams
+#define cudaGraphLaunch hipGraphLaunch
+#define cudaGraphNodeGetDependencies hipGraphNodeGetDependencies
+#define cudaGraphNodeGetType hipGraphNodeGetType
+#define cudaGraphNodeType hipGraphNodeType
+#define cudaGraphNodeTypeKernel hipGraphNodeTypeKernel
+#define cudaGraphNodeTypeMemAlloc hipGraphNodeTypeMemAlloc
+#define cudaGraphNodeTypeMemFree hipGraphNodeTypeMemFree
+#define cudaGraphNode_t hipGraphNode_t
+#define cudaGraph_t hipGraph_t
+#define cudaKernelNodeAttrValue hipKernelNodeAttrValue
+#define cudaKernelNodeAttributeCooperative hipKernelNodeAttributeCooperative
+#define cudaKernelNodeParams hipKernelNodeParams
+#define cudaLaunchCooperativeKernel hipLaunchCooperativeKernel
+#define cudaMallocFromPoolAsync hipMallocFromPoolAsync
+#define cudaMemAllocationTypePinned hipMemAllocationTypePinned
+#define cudaMemHandleTypeNone hipMemHandleTypeNone
+#define cudaMemLocationTypeDevice hipMemLocationTypeDevice
+#define cudaMemPoolAttrReleaseThreshold hipMemPoolAttrReleaseThreshold
+#define cudaMemPoolAttrReservedMemCurrent hipMemPoolAttrReservedMemCurrent
+#define cudaMemPoolAttrReservedMemHigh hipMemPoolAttrReservedMemHigh
+#define cudaMemPoolCreate hipMemPoolCreate
+#define cudaMemPoolDestroy hipMemPoolDestroy
+#define cudaMemPoolGetAttribute hipMemPoolGetAttribute
+#define cudaMemPoolProps hipMemPoolProps
+#define cudaMemPoolReuseAllowInternalDependencies hipMemPoolReuseAllowInternalDependencies
+#define cudaMemPoolReuseAllowOpportunistic hipMemPoolReuseAllowOpportunistic
+#define cudaMemPoolSetAttribute hipMemPoolSetAttribute
+#define cudaMemPool_t hipMemPool_t
+#define cudaOccupancyMaxActiveBlocksPerMultiprocessor hipOccupancyMaxActiveBlocksPerMultiprocessor
+#define cudaStreamBeginCapture hipStreamBeginCapture
+#define cudaStreamCaptureModeGlobal hipStreamCaptureModeGlobal
+#define cudaStreamCaptureStatus hipStreamCaptureStatus
+#define cudaStreamCaptureStatusActive hipStreamCaptureStatusActive
+#define cudaStreamEndCapture hipStreamEndCapture
+#define cudaStreamIsCapturing hipStreamIsCapturing
+
 #define cudaDeviceSynchronize hipDeviceSynchronize
 #define cudaErrorNotReady hipErrorNotReady
 #define cudaEventCreate hipEventCreate
@@ -80,6 +133,7 @@ using cudaStream_t = hipStream_t;
 #define cudaMemcpyToSymbol(symbol, ...) \
     hipMemcpyToSymbol(HIP_SYMBOL(symbol), __VA_ARGS__)
 #define cudaMemset hipMemset
+#define cudaMemsetAsync hipMemsetAsync
 #define cudaSetDevice hipSetDevice
 #define cudaStreamCreateWithFlags hipStreamCreateWithFlags
 #define cudaStreamDestroy hipStreamDestroy

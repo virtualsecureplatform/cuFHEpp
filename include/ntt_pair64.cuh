@@ -44,7 +44,7 @@ __host__ __device__ __forceinline__ uint64_t small_mod64_madd4(
     return small_mod64_add<NativeAdd>(corrected, (hi_lo << 32) - hi_lo);
 }
 
-#if defined(CUFHE_GPU_DEVICE_COMPILER) && !defined(CUFHE_USE_HIP)
+#if defined(CUFHE_GPU_DEVICE_COMPILER)
 #define CUFHE_HAS_PAIR_NTT64 1
 
 template <int Power, bool Inverse, bool NativeSubtract = false, int NativeAdd = 0,
@@ -117,7 +117,9 @@ __device__ __forceinline__ void SmallForwardNTTPair64(
         --shift; m <<= 1;
         PairButterfly64<Power, false, NativeSubtract, NativeAdd>(u0, v0, u1, v1, roots, m + (tid >> shift));
     }
+#if !defined(CUFHE_USE_HIP)
     __syncwarp();
+#endif
     sh0[2 * tid] = u0; sh0[2 * tid + 1] = v0;
     sh1[2 * tid] = u1; sh1[2 * tid + 1] = v1;
     __syncthreads();
@@ -150,7 +152,9 @@ __device__ __forceinline__ void SmallInverseNTTPair64(
     ++shift; m >>= 1;
     PairButterfly64<Power, true, false, NativeAdd, UniformRoot>(u0, v0, u1, v1, roots, m + (tid >> shift));
     const int address = ((tid >> 5) << 5) + tid;
+#if !defined(CUFHE_USE_HIP)
     __syncwarp();
+#endif
     sh0[address] = u0; sh0[address + 32] = v0;
     sh1[address] = u1; sh1[address + 32] = v1;
     __syncthreads();
@@ -211,7 +215,9 @@ __device__ __forceinline__ void SmallInverseNTTReturnPair64(
     SmallGentlemanSandeUnit<Power, 64, NativeAdd>(
         u, v, __ldg(roots + m + (tid >> shift)));
     const int boundary = ((tid >> 5) << 5) + tid;
+#if !defined(CUFHE_USE_HIP)
     __syncwarp();
+#endif
     sh[boundary] = u; sh[boundary + 32] = v;
     __syncthreads();
     int t = 64; shift = 6; m >>= 1;

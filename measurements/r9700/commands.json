@@ -1,0 +1,2434 @@
+{
+  "retained-ntt-b1-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b32-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b64-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b128-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b512-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b1-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b32-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b64-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b128-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-b512-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-s1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-s8.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-s32.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-s128.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-graph.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt_lvl02-b1-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b32-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b64-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b128-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b512-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b1-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b32-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b64-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b128-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-b512-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02-s1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02-s8.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02-s32.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02-s128.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02-graph.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt_lvl01_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl01_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl01_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl01_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl01_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl01_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt_lvl02_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt_lvl02_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt_lvl02_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-coop/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-throughput-b1-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b32-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b64-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b128-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b512-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b1-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b32-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b64-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b128-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-b512-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput-s1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput-s8.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput-s32.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput-s128.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput-graph.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-throughput_lvl02-b1-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b32-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b64-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b128-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b512-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b1-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b32-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b64-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b128-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-b512-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02-s1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02-s8.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02-s32.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02-s128.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02-graph.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl01_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-throughput_lvl02_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-ntt-throughput/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-latency-b1-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b32-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b64-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b128-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b512-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b1-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b32-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b64-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b128-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-b512-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency-s1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency-s8.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency-s32.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency-s128.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency-graph.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-latency_lvl02-b1-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b32-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b64-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b128-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b512-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b1-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b32-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b64-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b128-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-b512-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02-s1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02-s8.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02-s32.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02-s128.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02-graph.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-latency_lvl01_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl01_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl01_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl01_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl01_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl01_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-ntt-latency_lvl02_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-ntt-latency_lvl02_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-ntt-latency_lvl02_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-staged/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-fft-b1-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b32-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b64-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b128-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b512-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b1-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b32-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b64-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b128-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-b512-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft-s1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft-s8.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft-s32.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft-s128.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft-graph.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-fft_lvl02-b1-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b32-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b64-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b128-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b512-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b1-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b32-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b64-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b128-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-b512-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02-s1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02-s8.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02-s32.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02-s128.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02-graph.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-fft_lvl01_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl01_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl01_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl01_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl01_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl01_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl01_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  },
+  "retained-fft_lvl02_br_iks-b1-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b32-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b64-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b128-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b512-r1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b1-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b32-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "32",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b64-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "64",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b128-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "128",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-b512-r2.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "512",
+      "15",
+      "batch"
+    ],
+    "mode": "batch"
+  },
+  "retained-fft_lvl02_br_iks-s1.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02_br_iks-s8.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "8",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02_br_iks-s32.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "32",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02_br_iks-s128.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "128",
+      "1",
+      "15",
+      "packed"
+    ],
+    "mode": "packed"
+  },
+  "retained-fft_lvl02_br_iks-graph.log": {
+    "argv": [
+      "build-r9700-fft-optimized/test/test_bootstrap_bench_lvl02_br_iks",
+      "1",
+      "17",
+      "15",
+      "batch",
+      "graph"
+    ],
+    "mode": "batch",
+    "graph": true
+  }
+}

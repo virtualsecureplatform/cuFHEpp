@@ -30,9 +30,11 @@ Each benchmark ran exclusively on the GPU — no concurrent workloads.
 - **Latency**: sequential time per gate on a single stream / thread
 - **Throughput**: total time ÷ total gates with all 108 SM streams active (cuFHEpp only; 3456 concurrent gates, 32 per SM)
 
-TFHEpp is pinned to `4309482` (upstream master as of 2026-10-18). CUDA/A100
-compatibility checks and logs are recorded in
-[measurements/tfhepp-4309482/validation.json](measurements/tfhepp-4309482/validation.json).
+TFHEpp is pinned to `1dd9a1a` (upstream master verified on 2026-10-31).
+R9700 validation and measurements are recorded in
+[measurements/r9700/validation.json](measurements/r9700/validation.json).
+The earlier CUDA/A100 dependency checks used `4309482`; those historical logs
+remain in [measurements/tfhepp-4309482/validation.json](measurements/tfhepp-4309482/validation.json).
 
 ### A100 block-binary bootstrap profiles
 
@@ -227,10 +229,12 @@ OMP_NUM_THREADS=8 ./build-4090-ntt/test/test_keyswitch_gpu_lvl20
 measures raw lvl2-input/lvl2-output IKS→BR NAND. The `_br_iks` targets measure
 the public BR→IKS ordering, whose lvl02 API has lvl0 inputs and outputs.
 Arguments are streams, samples per stream, repetitions, gate/mode, and optional
-`graph`. Each run creates fresh encrypted inputs and keys, excludes setup and
-transfers from timing, and checks the final outputs by decryption. `batch`
-uses one batch launch per stream; `packed` uses scalar launches on equivalent
-buffers. Keep these API orders and dispatch modes separate when comparing results.
+`graph`. Each run creates fresh encrypted inputs and keys and checks the final
+outputs by decryption. `batch` uses one batch launch; `packed` uses scalar
+launches on equivalent GPU-resident buffers. These modes exclude setup and
+transfers from timing. Named public `nand`/`mux` modes exercise Ctxt wrappers
+that include transfers; keep them separate from GPU-resident measurements.
+Keep API orders and dispatch modes separate when comparing results.
 
 `NandBootstrapBatch` accepts GPU-resident independent ciphertexts with strides
 in torus coefficients. Transfers belong to the caller. Each stride must fit a
@@ -286,7 +290,101 @@ NAND is measured as NOT(AND); NOT is a trivial polynomial negation (~0.16 ms) wi
 
 **Note on methodology**: tfhe-rs GPU latency is single-stream (one gate at a time). cuFHEpp throughput exploits all 108 SMs simultaneously; its latency is measured on one stream out of 108.
 
-### ROCm validation — AMD Radeon AI PRO R9700
+### R9700 block-binary profiles
+
+The R9700 profiles use ROCm 7.15, wave32, TFHEpp `1dd9a1a`, and the upstream
+block-binary parameters: lvl1 N=1024, k=1, l=4, and lvl02 N=1024, k=2, l=3.
+The dependency update preserves these parameters. Kernel tuning does not change
+torus precision, key distributions, decomposition, rounding, or the NTT primes.
+
+```sh
+./bench_r9700.sh build r9700-ntt
+HIP_VISIBLE_DEVICES=0 ./bench_r9700.sh check r9700-ntt
+HIP_VISIBLE_DEVICES=0 ./bench_r9700.sh run r9700-ntt
+```
+
+The script selects an R9700 preset, builds its tests, and writes results under
+`measurements/r9700/<preset>/`. `JOBS`, `OMP_NUM_THREADS`, `HIP_VISIBLE_DEVICES`,
+`ROCM_PATH`, and `REPEATS` are configurable; timings default to 15 repetitions
+after warmup. Run GPU jobs exclusively. Direct CMake use is also supported:
+`cmake --preset r9700-ntt`, followed by `cmake --build build-r9700-ntt`.
+
+These public NAND measurements use the batch API on an idle R9700. Values
+are medians of two fresh-key runs, each with 15 repetitions after warmup.
+One-sample rows use `r9700-ntt`; batch-512 rows use `r9700-ntt-throughput`.
+Baseline and tuned builds use the same TFHEpp revision and parameters.
+
+| Public BR→IKS NAND | Baseline NTT | R9700 NTT preset | Reduction |
+|---|---:|---:|---:|
+| lvl1, one sample | 4.55 ms | 2.85 ms | 37.3% |
+| lvl1, batch 512, per gate | 66.89 µs | 56.32 µs | 15.8% |
+| lvl02, one sample | 17.73 ms | 10.66 ms | 39.9% |
+| lvl02, batch 512, per gate | 284.66 µs | 244.80 µs | 14.0% |
+
+Raw IKS→BR results, smaller batches, scalar concurrency, and all repetitions
+are retained in [comparison.json](measurements/r9700/comparison.json) and
+[summary.json](measurements/r9700/summary.json). The dependency-only comparison
+uses unchanged cuFHEpp source with `4309482` and `1dd9a1a`; its timings are
+separate from these kernel comparisons.
+
+The NTT presets enable paired lvl1 transforms with register tails, exact fused
+products, prepared key-switch rows, wave rounding correction, and low-LDS
+workspaces. The lvl02 paired path keeps three output accumulators in registers
+and reuses two transform buffers for inverse transforms. Public MUX/NMux reuse one
+TRLWE buffer, preserving the first extracted result in registers between
+rotations. Raw MUX/NMux consume both key switches before publishing an aliased
+partial result, then reuse the same TRLWE buffer. Prepared key rows may overwrite
+extraction scratch only after every thread has captured its input.
+
+`r9700-ntt` enables paired lvl02 products for latency and medium batches.
+`r9700-ntt-throughput` keeps the scalar lvl02 transform schedule for large
+batches. Both dispatch small lvl02 NAND batches cooperatively. HIP reports 32
+multiprocessors on this 64-CU R9700: counts 1–6 use five row groups,
+7–10 use three, and 11–16 use two. Direct 2/3/5/9-group comparisons selected
+the five-group schedule even for one sample. Larger batches use one workgroup
+per sample.
+Dispatch additionally checks the ISA, wave size, cooperative support, allocator
+support, and actual full-grid residency with static and dynamic LDS included.
+Scratch comes from private per-device pools and supports capture, concurrent
+calls, and cleanup without changing the caller's pool.
+
+`r9700-ntt-latency` additionally enables cooperative standalone lvl02 NAND.
+This favors isolated calls; many streams can serialize and become substantially
+slower. In a separate 15-repetition GPU-resident scalar run, public lvl02
+measured 15.02 ms with `r9700-ntt` versus 10.55 ms with the latency preset.
+At 128 streams, the same profiles measured 3.46 versus 13.37 ms/gate.
+Use the other presets or the packed batch API for throughput.
+
+All new `USE_HIP_*` options default OFF and are independent of CUDA scheduling
+controls. `USE_HIP_PAIRED_NTT64` requires `USE_HIP_LOW_LDS`.
+`USE_HIP_MONOMIAL_STAGING` requires paired lvl02 transforms; it stages monomials
+with ordinary HIP loads and a barrier, rather than CUDA asynchronous-copy
+instructions. The 31-bit staging area is used only with fused products.
+Staging and native-word key-switch sums remain available for
+experiments but are excluded from presets unless the measurements justify them.
+`CUFHE_HIP_MIN_WAVES_PER_EU` controls HIP gate launch bounds independently of
+CUDA residency settings. A four-wave candidate did not show a repeatable gain,
+so the presets retain one wave. `CUFHE_HIP_COOPERATIVE_GROUPS` selects automatic
+scheduling (0) or a fixed 2/3/5/9-group schedule for measurement; every selection
+still obeys the runtime residency checks.
+
+The FFT profile retains the existing register accumulators and inverse-workspace
+reuse. Prepared-row and wave-correction candidates passed correctness checks but
+did not improve the initial FFT sweep, so `r9700-fft` leaves those additions off.
+The baseline presets explicitly disable new features for comparable timing.
+The original NTT baseline's lvl02 MUX exceeds the R9700 LDS limit; the optimized
+low-LDS profiles fix that launch limitation.
+
+Measurements keep raw IKS→BR and public BR→IKS ordering separate. The public
+lvl02 API still accepts and returns lvl0 ciphertexts. Reported batch and packed
+scalar timings use fresh encrypted inputs and keys, exclude setup/transfers,
+include submission and synchronization, and check decryption. Named-wrapper
+experiments that include transfers are kept separate. Exact arithmetic, batch padding,
+input aliases, graph replay, cooperative boundaries, and pool isolation are
+covered separately. Logs, build options, dependency comparisons, and timing
+summaries are in [measurements/r9700](measurements/r9700/).
+
+### Historical ROCm validation — AMD Radeon AI PRO R9700
 
 The ROCm backend was validated on an R9700 (`gfx1201`) with ROCm 7.14, KeyBundle, 32 streams, and 1024 encrypted gates per test. All Boolean gate correctness tests passed for both lvl1 and lvl02 with the custom GPU-FFT and small-modulus NTT backends.
 
@@ -335,10 +433,10 @@ These figures are throughput measurements from the encrypted correctness suite, 
 **The library has been tested on Ubuntu Desktop 24.04 with NVIDIA A100, NVIDIA GeForce RTX 4070, and AMD Radeon AI PRO R9700 (`gfx1201`).**
 
 - NVIDIA builds require an NVIDIA driver and CUDA Toolkit.
-- AMD builds require a ROCm development installation containing the HIP Clang compiler, HIP headers, and `amdhip64` runtime library. The R9700 port was validated with ROCm 7.14.
+- AMD builds require a ROCm development installation containing the HIP Clang compiler, HIP headers, and `amdhip64` runtime library. The current block-binary profiles were validated with ROCm 7.15; older KeyBundle results used ROCm 7.14.
 - The AMD kernels currently target 32-lane wavefront GPUs. The default HIP architecture is therefore `gfx1201` for the R9700.
 
-The R9700's 64 KiB per-workgroup LDS supports lvl1 directly. The optimized lvl1 NTT keeps its final five butterfly stages and pointwise accumulators in registers, using wave32 shuffles for cross-thread partners. The custom lvl1 GPU-FFT also keeps pointwise accumulators in registers, reducing dynamic gate scratch from 32 KiB to 16 KiB and removing the LDS barrier to a second resident block. For lvl02, the HIP kernels use a 49,160-byte low-LDS layout: transform accumulators stay in registers, the transform area is reused for extracted-TLWE scratch, and MUX/NMUX reuse a single TRLWE buffer. This path supports the default custom GPU-FFT backend and the NTT backend. The optional tfhe-rs-style FFT (`-DUSE_GPU_FFT=OFF`) remains limited to lvl1 on this GPU.
+The R9700 exposes 64 KiB of LDS per workgroup. The block-binary NTT presets use 16 KiB of dynamic LDS for paired lvl1 gates and 40,968 bytes for lvl02 gates, with static storage counted separately by the occupancy checks. Register accumulators and workspace reuse keep lvl02 MUX/NMux within this limit. The custom GPU-FFT already uses register accumulators and inverse-workspace reuse on HIP. The optional tfhe-rs-style FFT (`-DUSE_GPU_FFT=OFF`) remains limited to lvl1 on this GPU. Historical KeyBundle configurations use different scratch sizes from these current block-binary profiles.
 
 ### Installation (Linux)
 Do the standard CMake compilation process.
@@ -400,8 +498,9 @@ cmake --build build-rocm
 ./build-rocm/test/test_gate_gpu_lvl02
 ```
 
-For the optimized NTT backend on R9700, configure with `-DUSE_FFT=OFF` and run
-`test_gate_gpu` for lvl1 or `test_gate_gpu_lvl02` for lvl02.
+For current block-binary NTT tuning on R9700, use `cmake --preset r9700-ntt`
+and the `bench_r9700.sh` commands above. This also enables the low-LDS layout
+needed by lvl02 MUX/NMux.
 
 If CMake cannot locate the ROCm compiler automatically, also pass
 `-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang++"`. `CUFHE_GPU_BACKEND=ROCM`

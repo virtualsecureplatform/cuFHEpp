@@ -3,16 +3,23 @@
 #include <include/cufhe_gpu.cuh>
 #include <include/error_gpu.cuh>
 #include <include/ntt_small_modulus.cuh>
-#if !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+#if !defined(USE_FFT)
 #include <include/ntt_pair64.cuh>
 #endif
 #include <include/utils_gpu.cuh>
 #if defined(USE_CUDA_ASYNC_MONOMIALS) && !defined(CUFHE_USE_HIP)
 #include <cuda_pipeline.h>
 #endif
-#if defined(USE_CUDA_ASYNC_MONOMIALS) && defined(USE_CUDA_PAIRED_NTT_MADD4) && \
+#if defined(USE_CUDA_ASYNC_MONOMIALS) && defined(CUFHE_PAIRED_NTT_MADD4) && \
     defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800 && !defined(CUFHE_USE_HIP)
 #define CUFHE_ASYNC_MONOMIALS_DEVICE 1
+#endif
+
+// The 31-bit staging area is reserved only for fused-product consumers.
+// The 64-bit paired path has its own independently sized staging area.
+#if defined(CUFHE_ASYNC_MONOMIALS_DEVICE) || \
+    (defined(USE_HIP_MONOMIAL_STAGING) && defined(CUFHE_PAIRED_NTT_MADD4))
+#define CUFHE_STAGED_MONOMIALS_DEVICE 1
 #endif
 
 namespace cufhe {
@@ -76,8 +83,8 @@ BlockBinaryModSwitchCorrection(const typename P::domainP::T* in0,
     constexpr uint32_t shift = std::numeric_limits<T>::digits - 1 - P::targetP::nbit;
     constexpr T rounding = T{1} << (shift - 1);
     __shared__ Signed correction;
-#if defined(USE_CUDA_WARP_MODSWITCH_CORRECTION) && defined(__CUDA_ARCH__) && \
-    __CUDA_ARCH__ >= 800 && !defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_WAVE_MODSWITCH_CORRECTION) || (defined(USE_CUDA_WARP_MODSWITCH_CORRECTION) && defined(__CUDA_ARCH__) && \
+    __CUDA_ARCH__ >= 800 && !defined(CUFHE_USE_HIP))
     if constexpr (sizeof(T) == 2 && uint64_t(count) * rounding <= ((uint64_t{1} << (std::numeric_limits<T>::digits - 1)) - 1)) {
         if (ThisThreadRankInBlock() < 32) {
             int32_t sum = 0;
@@ -87,7 +94,13 @@ BlockBinaryModSwitchCorrection(const typename P::domainP::T* in0,
                 if constexpr (Sign1 != 0) phase += Sign1 * in1[i];
                 sum += int32_t((uint32_t(phase) + rounding) & ((1U << shift) - 1)) - rounding;
             }
+            #if defined(CUFHE_USE_HIP)
+            for (int delta = 16; delta; delta >>= 1)
+                sum += __shfl_down(sum, delta, 32);
+            const int32_t total = sum;
+#else
             const int32_t total = __reduce_add_sync(0xffffffffU, sum);
+#endif
             if (ThisThreadRankInBlock() == 0) correction = Signed(total);
         }
     }
@@ -839,7 +852,7 @@ __device__ inline void AccumulateLegacyPairedNTT(
         using Value = NTTValueFor<N, 32>;
         constexpr uint32_t Threads = N / 2;
         constexpr uint32_t Rows = (targetP::k + 1) * targetP::l;
-#if defined(USE_CUDA_WORD32_REDUCTION)
+#if defined(CUFHE_WORD32_REDUCTION)
         // The full-word reducer accepts the lazy forward range [0,2p).
         // Two such products plus a canonical accumulator cannot overflow.
         constexpr uint64_t p = small_ntt31::P;
@@ -947,10 +960,10 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
     const uint32_t tid = ThisThreadRankInBlock();
     Value* const work0 = scratch;
     Value* const work1 = scratch + N;
-#if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
+#if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
     Value* const staged_monomials = scratch + 2 * N;
 #endif
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && defined(CUFHE_ASYNC_MONOMIALS_DEVICE) && defined(USE_CUDA_PAIRED_NTT_MADD4)
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && defined(CUFHE_STAGED_MONOMIALS_DEVICE) && defined(CUFHE_PAIRED_NTT_MADD4)
     constexpr bool CacheMonomials = RegisterMonomials && P::domainP::ell == 2;
 #else
     constexpr bool CacheMonomials = false;
@@ -969,15 +982,24 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
     constexpr T offset = offsetgen<targetP>() +
         (T{1} << (32 - targetP::l * targetP::Bgbit - 1));
 
-#if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
+#if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
     // Every digit pair uses these same monomials. Start their copy before
     // decomposition, keeping the copy's address calculations outside the loop.
     if constexpr (P::domainP::ell == 2 && !CacheMonomials) {
+#if defined(CUFHE_USE_HIP)
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * THREADS;
+            staged_monomials[i] = __ldg(block_xai_fft + bara[0] * N + i);
+            staged_monomials[N + i] = __ldg(block_xai_fft + bara[1] * N + i);
+        }
+#else
         const uint32_t exponent = tid < N / 4 ? bara[0] : bara[1];
         const uint32_t coefficient = 4 * (tid & (N / 4 - 1));
         __pipeline_memcpy_async(staged_monomials + 4 * tid,
             block_xai_fft + exponent * N + coefficient, 16);
         __pipeline_commit();
+#endif
     }
 #endif
 #pragma unroll
@@ -1008,7 +1030,7 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
             }
         }
         __syncthreads();
-#if defined(USE_CUDA_PAIRED_NTT_MADD4) && defined(USE_CUDA_WORD32_REDUCTION)
+#if defined(CUFHE_PAIRED_NTT_MADD4) && defined(CUFHE_WORD32_REDUCTION)
         // Native-word products accept the full uint64 range and normalize
         // each digit/monomial product before the four-product sum. This
         // consumer can therefore accept transform values in [0, 2p).
@@ -1018,10 +1040,12 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
 #endif
         SmallForwardNTTPair<targetP::nbit, 32, canonical_transform>(
             work0, work1, ntt.forward_root_, tid);
-#if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
+#if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
         if constexpr (P::domainP::ell == 2 && !CacheMonomials) {
             if (pair == 0) {
+#if !defined(CUFHE_USE_HIP)
                 __pipeline_wait_prior(0);
+#endif
                 __syncthreads();
             }
         }
@@ -1029,9 +1053,9 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
 #pragma unroll
         for (int e = 0; e < 2; ++e) {
             const uint32_t i = tid + e * THREADS;
-#ifdef USE_CUDA_PAIRED_NTT_MADD4
+#ifdef CUFHE_PAIRED_NTT_MADD4
             if constexpr (P::domainP::ell == 2) {
-#if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
+#if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
                 const Value x0 = CacheMonomials ? cached_x0[e] : staged_monomials[i];
                 const Value x1 = CacheMonomials ? cached_x1[e] : staged_monomials[N + i];
 #else
@@ -1163,8 +1187,10 @@ __device__ inline void AccumulateBlockBinaryPaired64(
     const uint32_t tid = ThisThreadRankInBlock();
     auto* const work0 = scratch;
     auto* const work1 = scratch + N;
+    constexpr bool RegisterAccum = USE_REGISTER_NTT_ACCUM<targetP>;
+    uint64_t local_accum[targetP::k + 1][2] = {};
     auto* const accum = scratch + 2 * N;
-    auto* const monomials = scratch + (targetP::k + 3) * N;
+    auto* const monomials = scratch + (RegisterAccum ? 2 : targetP::k + 3) * N;
     constexpr T offset = offsetgen<targetP>() +
         (T{1} << (64 - targetP::l * targetP::Bgbit - 1));
     if constexpr (StageMonomials64) {
@@ -1184,7 +1210,7 @@ __device__ inline void AccumulateBlockBinaryPaired64(
 #endif
     }
 #pragma unroll
-    for (int out = 0; out <= targetP::k; ++out) {
+    for (int out = 0; out <= targetP::k; ++out) if constexpr (!RegisterAccum) {
         accum[out * N + tid] = 0;
         accum[out * N + tid + THREADS] = 0;
     }
@@ -1236,11 +1262,12 @@ __device__ inline void AccumulateBlockBinaryPaired64(
             for (int out = 0; out <= targetP::k; ++out) {
                 const size_t index = block * 2 * TRGSW_SIZE +
                     (2 * pair * (targetP::k + 1) + out) * N + i;
-                accum[out * N + i] = small_mod64_madd4<NativeAdd>(
+                auto& sum = RegisterAccum ? local_accum[out][e] : accum[out * N + i];
+                sum = small_mod64_madd4<NativeAdd>(
                     a0, __ldg(bk + index), a1, __ldg(bk + index + TRGSW_SIZE),
                     a2, __ldg(bk + index + (targetP::k + 1) * N),
                     a3, __ldg(bk + index + TRGSW_SIZE + (targetP::k + 1) * N),
-                    accum[out * N + i]);
+                    sum);
             }
         }
     }
@@ -1269,9 +1296,10 @@ __device__ inline void AccumulateBlockBinaryPaired64(
             for (int out = 0; out <= targetP::k; ++out) {
                 const size_t index = block * 2 * TRGSW_SIZE +
                     (row * (targetP::k + 1) + out) * N + i;
-                accum[out * N + i] = small_mod64_madd2<NativeAdd>(
+                auto& sum = RegisterAccum ? local_accum[out][e] : accum[out * N + i];
+                sum = small_mod64_madd2<NativeAdd>(
                     a0, __ldg(bk + index), a1, __ldg(bk + index + TRGSW_SIZE),
-                    accum[out * N + i]);
+                    sum);
             }
         }
     }
@@ -1286,39 +1314,74 @@ __device__ inline void AccumulateBlockBinaryPaired64(
         if (tid == 0)
             asm volatile("" ::: "memory");
 #endif
-    SmallInverseNTTPair64<targetP::nbit, NativeAdd, StageMonomials64>(accum, accum + N,
-        ntt.inverse_root_, ntt.n_inverse_, tid);
-    SmallInverseNTT<targetP::nbit, 64, NativeAdd>(accum + 2 * N,
-        ntt.inverse_root_, ntt.n_inverse_, tid);
-
-#pragma unroll
-    for (int out = 0; out <= targetP::k; ++out) {
+    if constexpr (RegisterAccum) {
+        // Publish only the components being inverted. The two transform
+        // arrays replace the three LDS accumulators and are reused for #2.
 #pragma unroll
         for (int e = 0; e < 2; ++e) {
-            const uint32_t i = tid + e * THREADS;
-            trlwe[out * N + i] += ntt_mod_to_torus64<N, 64, true>(accum[out * N + i]);
+            work0[tid + e * THREADS] = local_accum[0][e];
+            work1[tid + e * THREADS] = local_accum[1][e];
+        }
+        __syncthreads();
+        SmallInverseNTTPair64<targetP::nbit, NativeAdd>(work0, work1,
+            ntt.inverse_root_, ntt.n_inverse_, tid);
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * THREADS;
+            trlwe[i] += ntt_mod_to_torus64<N, 64, true>(work0[i]);
+            trlwe[N + i] += ntt_mod_to_torus64<N, 64, true>(work1[i]);
+        }
+        __syncthreads();
+#pragma unroll
+        for (int e = 0; e < 2; ++e)
+            work0[tid + e * THREADS] = local_accum[2][e];
+        __syncthreads();
+        SmallInverseNTT<targetP::nbit, 64, NativeAdd>(work0,
+            ntt.inverse_root_, ntt.n_inverse_, tid);
+#pragma unroll
+        for (int e = 0; e < 2; ++e) {
+            const int i = tid + e * THREADS;
+            trlwe[2 * N + i] += ntt_mod_to_torus64<N, 64, true>(work0[i]);
+        }
+    } else {
+        SmallInverseNTTPair64<targetP::nbit, NativeAdd, StageMonomials64>(accum, accum + N,
+            ntt.inverse_root_, ntt.n_inverse_, tid);
+        SmallInverseNTT<targetP::nbit, 64, NativeAdd>(accum + 2 * N,
+            ntt.inverse_root_, ntt.n_inverse_, tid);
+
+#pragma unroll
+        for (int out = 0; out <= targetP::k; ++out) {
+#pragma unroll
+            for (int e = 0; e < 2; ++e) {
+                const uint32_t i = tid + e * THREADS;
+                trlwe[out * N + i] += ntt_mod_to_torus64<N, 64, true>(accum[out * N + i]);
+            }
         }
     }
     __syncthreads();
 }
+
 #endif
 
 template <class P, bool StageMonomials64 = false, bool PairUnstaged64 = false,
           bool NativeForwardSubtract = false, int Native64Add = 0,
           bool RegisterMonomials31 = false, bool KeySwitchAfter31 = false,
-          bool ReuseInput31 = false, bool AdjacentScalar64 = true>
+          bool ReuseInput31 = false, bool AdjacentScalar64 = true,
+          bool AllowPairedProducts = true>
 __device__ inline void AccumulateBlockBinary(
     typename P::targetP::T* const trlwe,
     NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t block,
     const uint32_t* const bara, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
     const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
 {
-    if constexpr (USE_PAIRED_NTT<typename P::targetP>) {
+    if constexpr (AllowPairedProducts && USE_PAIRED_NTT<typename P::targetP>) {
         AccumulateBlockBinaryPairedNTT<P, RegisterMonomials31, KeySwitchAfter31, ReuseInput31>(trlwe, sh_acc_ntt, block, bara, bk, ntt);
         return;
     }
 #ifdef CUFHE_HAS_PAIR_NTT64
-    if constexpr ((StageMonomials64 || PairUnstaged64) && USE_PAIRED_NTT64<typename P::targetP> && P::domainP::ell == 2) {
+    if constexpr (AllowPairedProducts && (StageMonomials64 || PairUnstaged64 ||
+                   USE_REGISTER_NTT_ACCUM<typename P::targetP>) &&
+                  USE_PAIRED_NTT64<typename P::targetP> && P::domainP::ell == 2) {
         // Carry/compare benefits the unstaged paired raw schedule only.
         constexpr int paired_add = PairUnstaged64 && !StageMonomials64 ? 2 : Native64Add;
         AccumulateBlockBinaryPaired64<P, StageMonomials64, paired_add>(

@@ -10,6 +10,8 @@
 #include <include/gatebootstrapping_gpu.cuh>
 
 namespace {
+using TestNTTHandler64 = cufhe::CuNTTHandler<TFHEpp::lvl2param::n, 64>;
+
 
 #if defined(CUFHE_HAS_PAIR_NTT64)
 __global__ void TestGoldilocksTorusKernel(const uint64_t* in, ulonglong3* out, size_t count)
@@ -1053,11 +1055,11 @@ bool TestPair64Compare() {
 #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
 // Compare the complete cached external product with the independently selected
 // uncached scalar schedule, including decomposition and final torus conversion.
-template <bool Cached, bool Paired = false>
+template <bool Cached, bool Paired = false, bool Staged = false>
 __global__ __launch_bounds__(TFHEpp::lvl2param::n / 2, 1)
 void TestScalarMonomialCacheKernel(
     uint64_t* out, const uint64_t* input, const uint64_t* key,
-    const uint32_t* exponents, cufhe::CuNTTHandler<TFHEpp::lvl2param::n, 64> ntt)
+    const uint32_t* exponents, TestNTTHandler64 ntt)
 {
     using P = TFHEpp::lvl02param;
     using Target = P::targetP;
@@ -1070,16 +1072,16 @@ void TestScalarMonomialCacheKernel(
     __syncthreads();
     const uint32_t bara[2] = {exponents[2 * sample], exponents[2 * sample + 1]};
     if constexpr (Paired)
-        cufhe::AccumulateBlockBinaryPaired64<P, false, 2>(
+        cufhe::AccumulateBlockBinaryPaired64<P, Staged, 2>(
             trlwe, scratch, 0, bara, key, ntt);
     else
-        cufhe::AccumulateBlockBinary<P, false, false, Cached>(
+        cufhe::AccumulateBlockBinary<P, false, false, Cached, 0, false, false, false, true, false>(
             trlwe, scratch, 0, bara, key, ntt);
     for (int i = tid; i < Words; i += N / 2)
         out[sample * Words + i] = trlwe[i];
 }
 
-template <bool Paired = false>
+template <bool Paired = false, bool Staged = false>
 bool TestScalarMonomialCache(bool& table_symmetry)
 {
     using Target = TFHEpp::lvl2param;
@@ -1140,11 +1142,11 @@ bool TestScalarMonomialCache(bool& table_symmetry)
         cudaMemcpy(dkey, key.data(), key.size() * sizeof(uint64_t), cudaMemcpyHostToDevice) == cudaSuccess &&
         cudaMemcpy(dpowers, exponents.data(), exponents.size() * sizeof(uint32_t), cudaMemcpyHostToDevice) == cudaSuccess &&
         cudaFuncSetAttribute(TestScalarMonomialCacheKernel<false>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess &&
-        cudaFuncSetAttribute(TestScalarMonomialCacheKernel<true, Paired>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
+        cudaFuncSetAttribute(TestScalarMonomialCacheKernel<true, Paired, Staged>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
     if (ok) {
         TestScalarMonomialCacheKernel<false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt);
         ok = cudaGetLastError() == cudaSuccess;
-        TestScalarMonomialCacheKernel<true, Paired><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
+        TestScalarMonomialCacheKernel<true, Paired, Staged><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
         ok = cudaGetLastError() == cudaSuccess && ok;
         std::vector<uint64_t> expected(input.size()), actual(input.size());
         ok = cudaMemcpy(expected.data(), dref, expected.size() * sizeof(uint64_t), cudaMemcpyDeviceToHost) == cudaSuccess &&
@@ -1163,7 +1165,7 @@ bool TestScalarMonomialCache(bool& table_symmetry)
 #endif
 
 #if defined(USE_BLOCK_BINARY) && defined(USE_CUDA_PAIRED_NTT) && !defined(USE_FFT)
-template <bool Cached, bool KeySwitchAfter31 = false>
+template <bool Cached, bool KeySwitchAfter31 = false, bool Paired = true>
 __global__ void TestPairedMonomialCache31Kernel(
     uint32_t* out, const uint32_t* input, const uint32_t* key,
     const uint32_t* exponents, cufhe::CuNTTHandler<TFHEpp::lvl1param::n, 32> ntt)
@@ -1178,8 +1180,12 @@ __global__ void TestPairedMonomialCache31Kernel(
         trlwe[i] = input[sample * Words + i];
     __syncthreads();
     const uint32_t bara[2] = {exponents[2 * sample], exponents[2 * sample + 1]};
-    cufhe::AccumulateBlockBinaryPairedNTT<P, Cached, KeySwitchAfter31, KeySwitchAfter31>(
-        trlwe, scratch31, 0, bara, key, ntt);
+    if constexpr (Paired)
+        cufhe::AccumulateBlockBinaryPairedNTT<P, Cached, KeySwitchAfter31, KeySwitchAfter31>(
+            trlwe, scratch31, 0, bara, key, ntt);
+    else
+        cufhe::AccumulateBlockBinary<P, false, false, false, 0, false, false, false, true, false>(
+            trlwe, scratch31, 0, bara, key, ntt);
     for (int i = tid; i < Words; i += N / 2)
         out[sample * Words + i] = trlwe[i];
 }
@@ -1228,7 +1234,7 @@ bool TestPairedMonomialCache31()
         cudaFuncSetAttribute(TestPairedMonomialCache31Kernel<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess &&
         cudaFuncSetAttribute(TestPairedMonomialCache31Kernel<true, true>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
     if (ok) {
-        TestPairedMonomialCache31Kernel<false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt);
+        TestPairedMonomialCache31Kernel<false, false, false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt);
         ok = cudaGetLastError() == cudaSuccess;
         for (bool key_switch_after : {false, true}) {
             if (key_switch_after)
@@ -1330,7 +1336,7 @@ bool TestOutputExponents()
 template <bool Cached>
 __global__ __launch_bounds__(512, 1) void TestFullOutputCacheBRKernel(
     uint64_t* out, uint16_t* a, uint16_t* b, uint16_t* workspace,
-    const uint64_t* key, cufhe::CuNTTHandler<TFHEpp::lvl2param::n, 64> ntt,
+    const uint64_t* key, TestNTTHandler64 ntt,
     int alias)
 {
     using P = TFHEpp::lvl02param;
@@ -1352,7 +1358,7 @@ __global__ __launch_bounds__(512, 1) void TestFullOutputCacheBRKernel(
 template <int Sign0, bool Optimized>
 __global__ __launch_bounds__(512, 1) void TestMuxPreAddBRKernel(
     uint64_t* out, const uint16_t* a, const uint16_t* b,
-    const uint64_t* key, cufhe::CuNTTHandler<TFHEpp::lvl2param::n, 64> ntt)
+    const uint64_t* key, TestNTTHandler64 ntt)
 {
     using P = TFHEpp::lvl02param;
     using Target = P::targetP;
@@ -1538,11 +1544,22 @@ int main()
     bool paired_symmetry = true;
     const bool paired_cache = TestScalarMonomialCache<true>(paired_symmetry);
     scalar_cache &= paired_cache && paired_symmetry;
+#if defined(USE_HIP_MONOMIAL_STAGING)
+    bool staged_symmetry = true;
+    const bool staged_cache = TestScalarMonomialCache<true, true>(staged_symmetry);
+    scalar_cache &= staged_cache && staged_symmetry;
+    std::cout << "64-bit staged paired / independent scalar external product: "
+              << (staged_cache && staged_symmetry ? "PASS" : "FAIL") << '\n';
+#endif
     std::cout << "64-bit raw paired / uncached scalar external product (49152 coefficients): "
               << (paired_cache && paired_symmetry ? "PASS" : "FAIL") << '\n';
     std::cout << "64-bit complete monomial adjacent-pair symmetry (1048576 pairs): "
               << (monomial_symmetry ? "PASS" : "FAIL") << '\n';
+#ifdef CUFHE_USE_HIP
+    std::cout << "64-bit scalar subtraction schedules / external product (49152 coefficients): "
+#else
     std::cout << "64-bit scalar cached / uncached external product (49152 coefficients): "
+#endif
               << (scalar_cache ? "PASS" : "FAIL") << '\n';
 #endif
     bool cache31 = true;
@@ -1560,7 +1577,11 @@ int main()
     bool full_output_br = true;
 #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
     full_output_br = TestFullOutputCacheBR();
+#ifdef CUFHE_USE_HIP
+    std::cout << "Full BR / MUX-sign schedule consistency (172032 coefficients): "
+#else
     std::cout << "Full BR original / output-cache / MUX signs (172032 coefficients / exact-forward aliases): "
+#endif
               << (full_output_br ? "PASS" : "FAIL") << '\n';
 #endif
     return full_output_br && output_exponents && cache31 && scalar_cache && monomial_symmetry && add64 && torus64 && sub64 && inverse64_scale && paired64 && compare64 && madd4wide && madd2 && reduce64 && inverse31 && lazy31 && reduce31 && correction && madd4 && paired31 && transform31 && transform64 && host31 && host64 && device31 && device64 && host31_madd3 &&

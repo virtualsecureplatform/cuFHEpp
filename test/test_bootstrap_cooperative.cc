@@ -34,6 +34,38 @@ void Check(cudaError_t error)
     if (error != cudaSuccess) throw std::runtime_error(cudaGetErrorString(error));
 }
 
+#ifdef USE_HIP_COOPERATIVE_BATCH
+void CheckHipCooperativeGraph(cudaGraph_t graph)
+{
+    size_t node_count = 0;
+    Check(cudaGraphGetNodes(graph, nullptr, &node_count));
+    std::vector<cudaGraphNode_t> nodes(node_count);
+    Check(cudaGraphGetNodes(graph, nodes.data(), &node_count));
+    bool cooperative_grid = false;
+    for (auto node : nodes) {
+        cudaGraphNodeType type;
+        Check(cudaGraphNodeGetType(node, &type));
+        if (type == cudaGraphNodeTypeKernel) {
+            cudaKernelNodeParams params{};
+            Check(cudaGraphKernelNodeGetParams(node, &params));
+            cooperative_grid |= params.gridDim.x > 1;
+            hipFuncAttributes attributes{};
+            Check(hipFuncGetAttributes(&attributes, params.func));
+            cudaDeviceProp device{};
+            Check(cudaGetDeviceProperties(&device, 0));
+            if (params.sharedMemBytes + attributes.sharedSizeBytes > device.sharedMemPerBlock)
+                throw std::runtime_error("Cooperative kernel exceeds the LDS limit");
+            std::cout << "HIP grid=" << params.gridDim.x
+                      << " dynamic_LDS=" << params.sharedMemBytes
+                      << " static_LDS=" << attributes.sharedSizeBytes << std::endl;
+        }
+    }
+    if (!cooperative_grid)
+        throw std::runtime_error("Expected cooperative HIP grid was not captured");
+    std::cout << "captured HIP cooperative grid: PASS" << std::endl;
+}
+#endif
+
 void Batch(T* out, const T* a, const T* b, unsigned count, cudaStream_t stream)
 {
     cufhe::NandBootstrapBatch<COOP_NAND_TEMPLATE>(
@@ -119,7 +151,7 @@ int main()
         upload(da, a);
         upload(db, b);
         upload(dref, blank);
-#ifdef USE_CUDA_COOPERATIVE_SCALAR
+#if defined(USE_CUDA_COOPERATIVE_SCALAR) || defined(USE_HIP_COOPERATIVE_SCALAR)
         // A capacity-sized launch exceeds every cooperative dispatch window,
         // preserving an independent one-CTA reference for scalar dispatch.
         Batch(dref + 1, da + 1, db + 1, capacity, stream);
@@ -133,6 +165,21 @@ int main()
         Check(cudaMemcpy(scalar_expected.data(), dref, words * sizeof(T), cudaMemcpyDeviceToHost));
         equal(dout, scalar_expected);
         std::cout << "cooperative scalar / ordinary batch reference: PASS" << std::endl;
+#ifdef USE_HIP_COOPERATIVE_SCALAR
+        cudaGraph_t scalar_graph;
+        cudaGraphExec_t scalar_exec;
+        Check(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
+        cufhe::NandBootstrap<COOP_NAND_TEMPLATE>(
+            dout + 1, da + 1, db + 1, stream, 0);
+        Check(cudaStreamEndCapture(stream, &scalar_graph));
+        CheckHipCooperativeGraph(scalar_graph);
+        Check(cudaGraphInstantiateWithFlags(&scalar_exec, scalar_graph, 0));
+        Check(cudaGraphLaunch(scalar_exec, stream));
+        Check(cudaStreamSynchronize(stream));
+        Check(cudaGraphExecDestroy(scalar_exec));
+        Check(cudaGraphDestroy(scalar_graph));
+        std::cout << "captured HIP cooperative scalar: PASS" << std::endl;
+#endif
 #else
         for (size_t i = 0; i < capacity; ++i)
             cufhe::NandBootstrap<COOP_NAND_TEMPLATE>(
@@ -142,7 +189,12 @@ int main()
         Check(cudaStreamSynchronize(stream));
         Check(cudaMemcpy(reference.data(), dref, words * sizeof(T), cudaMemcpyDeviceToHost));
         size_t compared = 0;
-        for (unsigned count : {1, 2, 4, 8, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 32, 35, 36, 37, 42, 43, 44, 48, 53, 54, 55, 63, 64, 65, 71, 72, 73, 96, 107, 108, 109, 127, 128, 129}) {
+#ifdef CUFHE_USE_HIP
+        // Cover every R9700 dispatch transition plus ordinary fallback batches.
+        for (unsigned count : {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 25, 32, 64, 109, 129}) {
+#else
+        for (unsigned count : {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 32, 35, 36, 37, 42, 43, 44, 48, 53, 54, 55, 63, 64, 65, 71, 72, 73, 96, 107, 108, 109, 127, 128, 129}) {
+#endif
             for (unsigned placement = 0; placement < 5; ++placement) {
                 upload(da, a);
                 upload(db, b);
@@ -170,7 +222,12 @@ int main()
                       << " separate/exact aliases/forward aliases/padding: PASS"
                       << std::endl;
         }
-        for (unsigned count : {1, 8, 12, 13, 14, 15, 20, 21, 22, 25, 26, 32, 35, 36, 37, 42, 43, 44, 48, 53, 54, 55, 63, 64, 65, 71, 72, 73, 107, 108, 109, 127, 128}) {
+#ifdef CUFHE_USE_HIP
+        // Cover every R9700 dispatch transition plus ordinary fallback batches.
+        for (unsigned count : {1, 3, 4, 6, 7, 10, 11, 16, 17, 32, 64, 109, 128}) {
+#else
+        for (unsigned count : {1, 3, 4, 6, 7, 10, 11, 16, 17, 8, 12, 13, 14, 15, 20, 21, 22, 25, 26, 32, 35, 36, 37, 42, 43, 44, 48, 53, 54, 55, 63, 64, 65, 71, 72, 73, 107, 108, 109, 127, 128}) {
+#endif
             upload(da, a);
             upload(db, b);
             upload(dref, a);
@@ -183,6 +240,11 @@ int main()
             Check(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
             Batch(da + 1, da + 1, db + 1, count, stream);
             Check(cudaStreamEndCapture(stream, &graph));
+#ifdef USE_HIP_COOPERATIVE_BATCH
+            if (count == 1) {
+                CheckHipCooperativeGraph(graph);
+            }
+#endif
             Check(cudaGraphInstantiateWithFlags(&executable, graph, 0));
             for (int depth = 0; depth < 4; ++depth) {
                 Check(cudaGraphLaunch(executable, stream));
@@ -247,7 +309,7 @@ int main()
             equal(da, fixture_a);
             equal(db, fixture_b);
             compared += 43 * elements;
-            for (unsigned count : {25, 32}) {
+            for (unsigned count : {1, 3, 4, 6, 7, 10, 11, 16, 17, 25, 32}) {
                 upload(dout, blank);
                 Batch(dout + 1, da + 1, db + 1, count, stream);
                 Check(cudaStreamSynchronize(stream));

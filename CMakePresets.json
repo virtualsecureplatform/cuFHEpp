@@ -76,6 +76,94 @@
       "cacheVariables": {
         "CUFHE_CUDA_FFT_MIN_BLOCKS_SM80": "2"
       }
+    },
+    {
+      "name": "r9700-base",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CUFHE_GPU_BACKEND": "HIP",
+        "CMAKE_HIP_ARCHITECTURES": "gfx1201",
+        "ENABLE_TEST": "ON",
+        "USE_BLOCK_BINARY": "ON",
+        "USE_KEY_BUNDLE": "OFF",
+        "USE_SUBSET_KEY": "ON",
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "1",
+        "USE_HIP_PAIRED_NTT": "OFF",
+        "USE_HIP_PAIRED_NTT64": "OFF",
+        "USE_HIP_FUSED_NTT": "OFF",
+        "USE_HIP_MONOMIAL_STAGING": "OFF",
+        "USE_HIP_PREPARED_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_KEYSWITCH": "OFF",
+        "USE_HIP_WAVE_MODSWITCH_CORRECTION": "OFF",
+        "USE_HIP_LOW_LDS": "OFF",
+        "USE_HIP_COOPERATIVE_BATCH": "OFF",
+        "USE_HIP_COOPERATIVE_SCALAR": "OFF",
+        "USE_CUDA_ASYNC_MONOMIALS": "OFF",
+        "USE_CUDA_WORD32_REDUCTION": "OFF",
+        "USE_CUDA_PAIRED_NTT_MADD4": "OFF",
+        "USE_CUDA_SHOUP_NTT": "ON",
+        "USE_CUDA_PAIRED_NTT": "ON",
+        "USE_CUDA_PAIRED_NTT_WARP": "OFF",
+        "USE_CUDA_WARP_TRANSFORM64": "OFF",
+        "USE_CUDA_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_CUDA_PACKED_PAIRED_ROOTS": "OFF",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+      }
+    },
+    {
+      "name": "r9700-ntt-baseline",
+      "inherits": "r9700-base",
+      "binaryDir": "${sourceDir}/build-r9700-ntt-baseline",
+      "cacheVariables": {
+        "USE_FFT": "OFF"
+      }
+    },
+    {
+      "name": "r9700-fft-baseline",
+      "inherits": "r9700-base",
+      "binaryDir": "${sourceDir}/build-r9700-fft-baseline",
+      "cacheVariables": {
+        "USE_FFT": "ON",
+        "USE_GPU_FFT": "ON"
+      }
+    },
+    {
+      "name": "r9700-ntt",
+      "inherits": "r9700-ntt-baseline",
+      "binaryDir": "${sourceDir}/build-r9700-ntt",
+      "cacheVariables": {
+        "USE_HIP_PAIRED_NTT": "ON",
+        "USE_HIP_PAIRED_NTT64": "ON",
+        "USE_HIP_FUSED_NTT": "ON",
+        "USE_HIP_LOW_LDS": "ON",
+        "USE_HIP_PREPARED_KEYSWITCH": "ON",
+        "USE_HIP_WAVE_MODSWITCH_CORRECTION": "ON",
+        "USE_HIP_COOPERATIVE_BATCH": "ON"
+      }
+    },
+    {
+      "name": "r9700-ntt-throughput",
+      "inherits": "r9700-ntt",
+      "binaryDir": "${sourceDir}/build-r9700-ntt-throughput",
+      "cacheVariables": {
+        "USE_HIP_PAIRED_NTT64": "OFF"
+      }
+    },
+    {
+      "name": "r9700-ntt-latency",
+      "inherits": "r9700-ntt",
+      "binaryDir": "${sourceDir}/build-r9700-ntt-latency",
+      "cacheVariables": {
+        "USE_HIP_COOPERATIVE_SCALAR": "ON"
+      }
+    },
+    {
+      "name": "r9700-fft",
+      "inherits": "r9700-fft-baseline",
+      "binaryDir": "${sourceDir}/build-r9700-fft",
+      "cacheVariables": {}
     }
   ]
 }

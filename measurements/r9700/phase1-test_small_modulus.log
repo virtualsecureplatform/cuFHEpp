@@ -1,0 +1,20 @@
+64-bit host/device fixed inverse scaling: PASS
+Block-binary rounding correction: PASS
+31-bit lazy butterfly range/residues (100245 cases): PASS
+31-bit inverse butterflies (100125 cases): PASS
+31-bit full uint64 reduction: PASS
+64-bit host/device full uint128 reduction (1000400 cases): PASS
+64-bit host/device madd2 (266384 cases): PASS
+31-bit host/device madd4: PASS
+31-bit host madd: PASS
+64-bit host madd: PASS
+31-bit device madd: PASS
+64-bit device madd: PASS
+31-bit host madd3: PASS
+64-bit host madd3: PASS
+31-bit device madd3: PASS
+64-bit device madd3: PASS
+31-bit roundtrip / negacyclic square: PASS
+64-bit roundtrip / negacyclic square: PASS
+31-bit paired roundtrip / negacyclic square: PASS
+31-bit register schedules / staged external product (65536 coefficients): PASS

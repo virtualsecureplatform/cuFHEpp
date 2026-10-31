@@ -7,6 +7,17 @@
 
 namespace cufhe {
 
+// Native unsigned sums commute with reduction to the 16-bit output torus.
+template <class P>
+using KeySwitchAccumulator =
+#ifdef USE_HIP_NATIVE_KEYSWITCH
+    std::conditional_t<sizeof(typename P::targetP::T) == 2, uint32_t,
+                       typename P::targetP::T>;
+#else
+    typename P::targetP::T;
+#endif
+
+
 extern std::vector<TFHEpp::lvl0param::T*> ksk_devs;
 extern std::vector<TFHEpp::lvl0param::T*> ksk_devs_lvl20;
 
@@ -78,7 +89,7 @@ __device__ inline void KeySwitch(typename P::targetP::T* const lwe,
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     for (int i = tid; i <= P::targetP::k * P::targetP::n; i += bdim) {
-        typename P::targetP::T res = 0;
+        KeySwitchAccumulator<P> res = 0;
         if (i == P::targetP::k * P::targetP::n) {
             res = KeySwitchTorusConvert<P>(tlwe[P::domainP::k * P::domainP::n]);
         }
@@ -142,7 +153,7 @@ __device__ inline void KeySwitchFromTLWE(
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     for (int i = tid; i <= P::targetP::k * P::targetP::n; i += bdim) {
-        typename P::targetP::T res = 0;
+        KeySwitchAccumulator<P> res = 0;
         if (i == P::targetP::k * P::targetP::n) {
             res = KeySwitchTorusConvert<P>(tlwe[P::domainP::k * P::domainP::n]);
         }
@@ -204,7 +215,7 @@ __device__ inline void IdentityKeySwitchPreAdd(
     const uint32_t tid = ThisThreadRankInBlock();
     const uint32_t bdim = ThisBlockSize();
     for (int i = tid; i <= P::targetP::k * P::targetP::n; i += bdim) {
-        typename P::targetP::T res = 0;
+        KeySwitchAccumulator<P> res = 0;
         if (i == P::targetP::k * P::targetP::n) {
             const typename P::domainP::T added =
                 casign * ina[P::domainP::k * P::domainP::n] +
@@ -286,7 +297,7 @@ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared(
     }
     __syncthreads();
     for (int i = tid; i < output_size; i += blockDim.x) {
-        typename P::targetP::T res = 0;
+        KeySwitchAccumulator<P> res = 0;
         if (i == output_size - 1) {
             const typename P::domainP::T added = casign * ina[P::domainP::k * P::domainP::n] +
                 cbsign * inb[P::domainP::k * P::domainP::n] + offset;
@@ -391,7 +402,7 @@ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared16(
     }
 #endif
     for (int i = tid; i < output_size; i += blockDim.x) {
-        typename P::targetP::T res = 0;
+        KeySwitchAccumulator<P> res = 0;
         if (i == output_size - 1) {
             const typename P::domainP::T added = casign * ina[P::domainP::k * P::domainP::n] +
                 cbsign * inb[P::domainP::k * P::domainP::n] + offset;
@@ -501,7 +512,7 @@ __device__ __forceinline__ void KeySwitchPrepared32(
     for (int slot = 0; slot < (output_size + Threads - 1) / Threads; ++slot) {
         const int i = tid + slot * Threads;
         if (i < output_size) {
-            typename P::targetP::T res = 0;
+            KeySwitchAccumulator<P> res = 0;
             if (i == output_size - 1) res = rows[count * P::t];
             else if constexpr (use_subset_key_switch<P>) res = KeySwitchTorusConvert<P>(saved[slot]);
             for (int key_index = 0; key_index < count; ++key_index) {
@@ -677,7 +688,7 @@ __device__ __forceinline__ void KeySwitchPrepared16(
     }
 #endif
     for (int i = tid; i < output_size; i += Threads) {
-        typename P::targetP::T res =
+        KeySwitchAccumulator<P> res =
             i == output_size - 1 ? rows[domain_size * P::t] : 0;
         for (int j = 0; j < domain_size; ++j) {
 #pragma unroll

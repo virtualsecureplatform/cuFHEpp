@@ -1,0 +1,20 @@
+CUDA 13.0, Release, CMAKE_CUDA_ARCHITECTURES=80-real;89-real
+[ 20%] Built target blake3
+[ 33%] Built target spqlios
+[ 70%] Built target tfhe++
+[ 93%] Built target cufhe_gpu
+[100%] Built target test_small_modulus
+[ 19%] Built target blake3
+[ 32%] Built target spqlios
+[ 67%] Built target tfhe++
+[ 90%] Built target cufhe_gpu
+[100%] Built target test_bootstrap_public_batch
+[100%] Built target test_bootstrap_public_binary
+[ 13%] Built target spqlios
+[ 34%] Built target blake3
+[ 68%] Built target tfhe++
+[100%] Built target test_bootstrap_public_mux
+[ 66%] Built target tfhe++
+[ 53%] Built target tfhe++
+[ 66%] Built target spqlios
+[100%] Built target test_bootstrap_bench_lvl02_br_iks

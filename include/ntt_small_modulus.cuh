@@ -43,6 +43,20 @@
 #define CUFHE_PAIRED_GPU_FFT_PLATFORM 1
 #endif
 
+#if defined(USE_CUDA_WORD32_REDUCTION) || defined(USE_HIP_FUSED_NTT)
+#define CUFHE_WORD32_REDUCTION 1
+#endif
+#if defined(USE_CUDA_PAIRED_NTT_MADD4) || defined(USE_HIP_FUSED_NTT)
+#define CUFHE_PAIRED_NTT_MADD4 1
+#endif
+
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(USE_KEY_BUNDLE) && \
+    ((defined(USE_HIP_COOPERATIVE_BATCH) && defined(CUFHE_USE_HIP)) || \
+     (!defined(CUFHE_USE_HIP) && defined(USE_CUDA_PAIRED_NTT) && \
+      defined(USE_CUDA_WARP_TRANSFORM64) && CUDART_VERSION >= 11040))
+#define CUFHE_COOPERATIVE_NAND 1
+#endif
+
 namespace cufhe {
 
 // The 64-bit CUDA option leaves all 31-bit transform schedules unchanged.
@@ -474,7 +488,7 @@ __host__ __device__ __forceinline__ uint32_t small_mod31_reduce64(uint64_t z)
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod31_mult(SmallNTTValue a, SmallNTTValue b)
 {
-#if defined(USE_CUDA_WORD32_REDUCTION)
+#if defined(CUFHE_WORD32_REDUCTION)
     return small_mod31_reduce64(uint64_t(uint32_t(a)) * uint32_t(b));
 #else
     constexpr uint32_t p = small_ntt31::P;
@@ -497,7 +511,7 @@ small_mod31_mult(SmallNTTValue a, SmallNTTValue b)
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod31_madd(SmallNTTValue a, SmallNTTValue b, SmallNTTValue c)
 {
-#if defined(USE_CUDA_WORD32_REDUCTION)
+#if defined(CUFHE_WORD32_REDUCTION)
     return small_mod31_reduce64(uint64_t(uint32_t(a)) * uint32_t(b) + uint32_t(c));
 #else
     constexpr uint32_t p = small_ntt31::P;
@@ -521,7 +535,7 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod31_madd3(
     SmallNTTValue a0, SmallNTTValue b0, SmallNTTValue a1, SmallNTTValue b1,
     SmallNTTValue a2, SmallNTTValue b2, SmallNTTValue c)
 {
-#if defined(USE_CUDA_WORD32_REDUCTION)
+#if defined(CUFHE_WORD32_REDUCTION)
     const uint64_t z = uint64_t(uint32_t(a0)) * uint32_t(b0) +
                        uint64_t(uint32_t(a1)) * uint32_t(b1) +
                        uint64_t(uint32_t(a2)) * uint32_t(b2) + uint32_t(c);
@@ -553,7 +567,7 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod31_madd4(
     SmallNTTValue a2, SmallNTTValue b2, SmallNTTValue a3, SmallNTTValue b3,
     SmallNTTValue c)
 {
-#if defined(USE_CUDA_WORD32_REDUCTION)
+#if defined(CUFHE_WORD32_REDUCTION)
     constexpr uint32_t p = small_ntt31::P;
     static_assert(uint64_t(p - 1) * (p - 1) <= (UINT64_MAX - (p - 1)) / 4);
     const uint64_t z = uint64_t(uint32_t(a0)) * uint32_t(b0) +
@@ -1694,8 +1708,8 @@ __device__ __forceinline__ void SmallForwardNTTPair(
         __syncthreads();
     }
 
-#if defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
-    __CUDA_ARCH__ >= 800
+#if defined(USE_HIP_PAIRED_NTT) || (defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
+    __CUDA_ARCH__ >= 800)
     SmallForwardNTTWarpPair31<N_POWER, CanonicalOutput>(sh0, sh1, root_table, tid);
 #else
     int in_shared_address = ((tid >> t_) << t_) + tid;
@@ -1746,8 +1760,8 @@ __device__ __forceinline__ void SmallInverseNTTPair(
     int m = 1 << (N_POWER - 1);
     int t = 1;
 
-#if defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
-    __CUDA_ARCH__ >= 800
+#if defined(USE_HIP_PAIRED_NTT) || (defined(USE_CUDA_PAIRED_NTT_WARP) && defined(__CUDA_ARCH__) && \
+    __CUDA_ARCH__ >= 800)
     SmallInverseNTTWarpPair31<N_POWER>(sh0, sh1, root_table, tid);
     t <<= 6; t_2 += 6; t_ += 6; m >>= 6;
 #else
@@ -2111,7 +2125,7 @@ class CuSmallNTTHandler {
 template <class P>
 constexpr bool USE_LOW_LDS_BOOTSTRAP =
 #if defined(CUFHE_LOW_LDS_PLATFORM) && \
-    (!defined(USE_BLOCK_BINARY) || (defined(USE_FFT) && defined(USE_GPU_FFT))) && \
+    (!defined(USE_BLOCK_BINARY) || defined(USE_HIP_LOW_LDS) || (defined(USE_FFT) && defined(USE_GPU_FFT))) && \
     (!defined(USE_FFT) || defined(USE_GPU_FFT))
 #if defined(USE_FFT) && defined(USE_GPU_FFT)
     P::n == TFHEpp::lvl1param::n || sizeof(typename P::T) == 8;
@@ -2122,7 +2136,8 @@ constexpr bool USE_LOW_LDS_BOOTSTRAP =
     false;
 #endif
 
-// Ada launch bounds trade register budget against resident gate blocks.
+// HIP launch bounds express a minimum wave count per execution unit.
+// CUDA/Ada launch bounds trade register budget against resident gate blocks.
 // The 32-bit lvl1 limit is configurable: three blocks suit shared-memory
 // tails, while the paired register tail benefits from a two-block budget.
 // The opt-in 64-bit register tail uses one block to avoid spills; other
@@ -2130,7 +2145,9 @@ constexpr bool USE_LOW_LDS_BOOTSTRAP =
 // block-binary lvl02 FFT budgets, both defaulting to unconstrained allocation.
 template <class P>
 constexpr uint32_t MIN_BLOCKS4HOMGATE =
-#if defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && \
+#if defined(CUFHE_USE_HIP) && defined(CUFHE_HIP_MIN_WAVES_PER_EU)
+    CUFHE_HIP_MIN_WAVES_PER_EU;
+#elif defined(USE_CUDA_MIN_BLOCKS) && !defined(CUFHE_USE_HIP) && \
     defined(USE_FFT) && defined(USE_GPU_FFT) && defined(USE_BLOCK_BINARY) && \
     defined(__CUDA_ARCH__) && __CUDA_ARCH__ == 800 && \
     defined(CUFHE_CUDA_FFT_MIN_BLOCKS_SM80)
@@ -3072,13 +3089,13 @@ using NTTValue = NTTValueFor<TFHEpp::lvl1param::n>;
 // The lvl02 low-LDS path requires register-resident accumulators to fit the
 // R9700's per-workgroup LDS limit.  lvl01 does not require them for capacity,
 // but benefits from avoiding an LDS read/write for every pointwise MAC.
-// Block-binary lvl1 also keeps coefficient-local sums in registers; lvl02
-// retains its shared-memory layout.
+// Block-binary lvl1 keeps coefficient-local sums in registers. The HIP
+// low-LDS option also enables register accumulators for block-binary lvl02.
 template <class P>
 constexpr bool USE_REGISTER_NTT_ACCUM =
 #if defined(CUFHE_REGISTER_NTT_ACCUM_PLATFORM)
 #if defined(USE_BLOCK_BINARY)
-    sizeof(typename P::T) == 4;
+    sizeof(typename P::T) == 4 || USE_LOW_LDS_BOOTSTRAP<P>;
 #else
     P::n == TFHEpp::lvl1param::n || USE_LOW_LDS_BOOTSTRAP<P>;
 #endif
@@ -3091,7 +3108,7 @@ constexpr bool USE_REGISTER_NTT_ACCUM =
 // register-accumulator layout and a second N-element transform buffer.
 template <class P>
 constexpr bool USE_PAIRED_NTT =
-#if defined(USE_CUDA_PAIRED_NTT) && !defined(CUFHE_USE_HIP)
+#if (defined(USE_CUDA_PAIRED_NTT) && !defined(CUFHE_USE_HIP)) || defined(USE_HIP_PAIRED_NTT)
     sizeof(typename P::T) == 4 && P::n == TFHEpp::lvl1param::n &&
     USE_REGISTER_NTT_ACCUM<P> && P::k == 1 && P::lₐ == P::l &&
     P::Bgₐbit == P::Bgbit && (((P::k + 1) * P::l) % 2 == 0);
@@ -3102,7 +3119,9 @@ constexpr bool USE_PAIRED_NTT =
 // Stage two unchanged monomial polynomials for the Torus64 block-binary path.
 template <class P>
 constexpr bool USE_ASYNC_MONOMIALS64 =
-#if defined(USE_CUDA_ASYNC_MONOMIALS) && defined(USE_CUDA_PAIRED_NTT_MADD4) && \
+#if defined(USE_HIP_MONOMIAL_STAGING)
+    sizeof(typename P::T) == 8 && USE_REGISTER_NTT_ACCUM<P>;
+#elif defined(USE_CUDA_ASYNC_MONOMIALS) && defined(CUFHE_PAIRED_NTT_MADD4) && \
     defined(USE_BLOCK_BINARY) && !defined(CUFHE_USE_HIP) && !defined(USE_KEY_BUNDLE)
     sizeof(typename P::T) == 8 && !USE_REGISTER_NTT_ACCUM<P>;
 #else
@@ -3113,7 +3132,11 @@ constexpr bool USE_ASYNC_MONOMIALS64 =
 // staged large batches or unstaged raw binary gates; other paths keep their workspace.
 template <class P>
 constexpr bool USE_PAIRED_NTT64 =
-#if defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && !defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_PAIRED_NTT64)
+    sizeof(typename P::T) == 8 && P::n == TFHEpp::lvl2param::n &&
+    P::nbit >= 8 && (P::nbit - 6) % 2 == 0 && P::k == 2 &&
+    P::lₐ == P::l && P::Bgₐbit == P::Bgbit;
+#elif defined(USE_CUDA_PAIRED_NTT) && defined(USE_CUDA_WARP_TRANSFORM64) && !defined(CUFHE_USE_HIP)
     USE_ASYNC_MONOMIALS64<P> && P::n == TFHEpp::lvl2param::n &&
     P::nbit >= 8 && (P::nbit - 6) % 2 == 0 && P::k == 2 &&
     P::lₐ == P::l && P::Bgₐbit == P::Bgbit;
@@ -3126,8 +3149,8 @@ constexpr bool USE_PAIRED_NTT64 =
 // extracted-TLWE scratch, with the larger determining the reusable prefix.
 template <class P = TFHEpp::lvl1param>
 constexpr uint32_t MEM4HOMGATE_WORK =
-    (USE_PAIRED_NTT<P> ? 2 : 1) * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>)
-#if defined(USE_CUDA_ASYNC_MONOMIALS) && defined(USE_CUDA_PAIRED_NTT_MADD4) && defined(USE_BLOCK_BINARY)
+    (USE_PAIRED_NTT<P> || USE_PAIRED_NTT64<P> ? 2 : 1) * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>)
+#if (defined(USE_CUDA_ASYNC_MONOMIALS) || defined(USE_HIP_MONOMIAL_STAGING)) && defined(CUFHE_PAIRED_NTT_MADD4) && defined(USE_BLOCK_BINARY)
     + (USE_PAIRED_NTT<P> ? 2 * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>) : 0)
 #endif
     ;
@@ -3138,8 +3161,9 @@ constexpr uint32_t MEM4HOMGATE_TLWE = (P::k * P::n + 1) * sizeof(typename P::T);
 template <class P = TFHEpp::lvl1param, bool StageMonomials64 = false, bool PairUnstaged64 = false>
 constexpr uint32_t MEM4HOMGATE =
     USE_REGISTER_NTT_ACCUM<P>
-        ? (MEM4HOMGATE_WORK<P> > MEM4HOMGATE_TLWE<P> ? MEM4HOMGATE_WORK<P>
-                                                     : MEM4HOMGATE_TLWE<P>)
+        ? ((MEM4HOMGATE_WORK<P> > MEM4HOMGATE_TLWE<P> ? MEM4HOMGATE_WORK<P>
+                                                     : MEM4HOMGATE_TLWE<P>) +
+           (StageMonomials64 && USE_ASYNC_MONOMIALS64<P> ? 2 * P::n * sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>) : 0))
         : ((P::k + 2) + (StageMonomials64 && USE_ASYNC_MONOMIALS64<P> ? 2 : 0) +
            ((StageMonomials64 || PairUnstaged64) && USE_PAIRED_NTT64<P> ? 1 : 0)) * P::n *
               sizeof(NTTValueFor<P::n, sizeof(typename P::T) * 8>);

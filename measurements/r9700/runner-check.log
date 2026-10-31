@@ -1,0 +1,12 @@
+r9700-ntt-throughput test_bootstrap_batch PASS
+r9700-ntt-throughput test_bootstrap_public_batch PASS
+r9700-ntt-throughput test_bootstrap_binary PASS
+r9700-ntt-throughput test_bootstrap_public_binary PASS
+r9700-ntt-throughput test_bootstrap_mux PASS
+r9700-ntt-throughput test_bootstrap_public_mux PASS
+r9700-ntt-throughput test_keyswitch_gpu PASS
+r9700-ntt-throughput test_keyswitch_gpu_lvl20 PASS
+r9700-ntt-throughput test_small_modulus PASS
+r9700-ntt-throughput test_bootstrap_cooperative PASS
+r9700-ntt-throughput test_bootstrap_public_cooperative PASS
+r9700-ntt-throughput check complete

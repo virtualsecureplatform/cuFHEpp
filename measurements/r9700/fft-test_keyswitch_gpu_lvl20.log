@@ -1,0 +1,2 @@
+prepared key-switch bit equivalence: PASS (4 sign/offset cases, 19 boundary/random samples, 256/512 threads)
+sample extraction / direct TLWE prepared key-switch bit equivalence: PASS (19 boundary/random samples, 256/512 threads, aliased scratch)

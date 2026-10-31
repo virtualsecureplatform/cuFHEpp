@@ -1,0 +1,14 @@
+{
+  "gpu": "AMD Radeon AI PRO R9700",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "cufhepp_base": "8693c81ace009822896ccdc96c527150020c0908",
+  "tfhepp": "1dd9a1addef4cae01da9bb6bfff0d22b55bec683",
+  "CooperativeLaunch": 1,
+  "MemoryPoolsSupported": 1,
+  "WarpSize": 32,
+  "MultiprocessorCount": 32,
+  "MaxSharedMemoryPerBlock": 65536,
+  "MaxThreadsPerBlock": 1024,
+  "MaxSharedMemoryPerMultiprocessor": 65536,
+  "MaxThreadsPerMultiProcessor": 2048
+}

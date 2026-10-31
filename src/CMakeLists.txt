@@ -22,6 +22,10 @@ if(USE_FFT AND NOT USE_GPU_FFT)
         ${PROJECT_SOURCE_DIR}/thirdparties/tfhe-rs-fft/fft_negacyclic.cu)
 endif()
 cufhe_set_gpu_sources(${CUFHE_GPU_SOURCES})
+if(CUFHE_GPU_BACKEND STREQUAL "HIP")
+    set_property(SOURCE bootstrap_gpu.cu APPEND PROPERTY COMPILE_DEFINITIONS
+        CUFHE_HIP_COOPERATIVE_GROUPS=${CUFHE_HIP_COOPERATIVE_GROUPS})
+endif()
 add_library(cufhe_gpu ${CUFHE_GPU_SOURCES})
 if(USE_AVX512)
     target_compile_options(cufhe_gpu PRIVATE
