@@ -1,0 +1,355 @@
+{
+  "status": "complete-critical-screen-not-original-qualified",
+  "variant": "multi",
+  "source": "00b58898b54a09cb",
+  "control": "current-source-baseline",
+  "points": 20,
+  "repetitions": 30,
+  "fresh_keys": 3,
+  "repeatable_wins": 3,
+  "median_regressions": 1,
+  "unresolved_regressions": 7,
+  "decision": "experimental-opt-in",
+  "comparisons": [
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.009993892036479268,
+      "median_improvement": -0.004336814228113717,
+      "max_improvement": -0.002833900579359616,
+      "improvements": [
+        -0.009993892036479268,
+        -0.002833900579359616,
+        -0.004336814228113717
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": -0.001517887790145167,
+      "median_improvement": -0.0005123109349158828,
+      "max_improvement": 0.0001289512822055805,
+      "improvements": [
+        -0.001517887790145167,
+        0.0001289512822055805,
+        -0.0005123109349158828
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.24936524798649873,
+      "median_improvement": 0.0003328572466049229,
+      "max_improvement": 0.19764341722639045,
+      "improvements": [
+        0.0003328572466049229,
+        -0.24936524798649873,
+        0.19764341722639045
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.00828478356198703,
+      "median_improvement": 0.004236961172880638,
+      "max_improvement": 0.009862474542916555,
+      "improvements": [
+        0.009862474542916555,
+        -0.00828478356198703,
+        0.004236961172880638
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.10811549819534072,
+      "median_improvement": -0.012716780890793533,
+      "max_improvement": 0.0029865177826470246,
+      "improvements": [
+        -0.10811549819534072,
+        -0.012716780890793533,
+        0.0029865177826470246
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.01813522080669605,
+      "median_improvement": 0.03053739519167198,
+      "max_improvement": 0.03276620135748187,
+      "improvements": [
+        0.01813522080669605,
+        0.03053739519167198,
+        0.03276620135748187
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": 0.00015232292460021224,
+      "median_improvement": 0.0018631740449900347,
+      "max_improvement": 0.003418391655581998,
+      "improvements": [
+        0.0018631740449900347,
+        0.003418391655581998,
+        0.00015232292460021224
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.2676325099914827,
+      "median_improvement": -0.008767804570081195,
+      "max_improvement": 0.0025070228781908233,
+      "improvements": [
+        0.0025070228781908233,
+        -0.2676325099914827,
+        -0.008767804570081195
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.008572689617708962,
+      "median_improvement": -0.0006454352441613853,
+      "max_improvement": 0.004222489526732653,
+      "improvements": [
+        0.004222489526732653,
+        -0.008572689617708962,
+        -0.0006454352441613853
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.002675857163422002,
+      "median_improvement": 0.001752922956483216,
+      "max_improvement": 0.0025116001873057847,
+      "improvements": [
+        0.001752922956483216,
+        0.0025116001873057847,
+        -0.002675857163422002
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.12593019237415048,
+      "median_improvement": 0.1351076471083582,
+      "max_improvement": 0.1426442312201619,
+      "improvements": [
+        0.12593019237415048,
+        0.1426442312201619,
+        0.1351076471083582
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": 0.016983615374898675,
+      "median_improvement": 0.02078949923930984,
+      "max_improvement": 0.021448904474022146,
+      "improvements": [
+        0.016983615374898675,
+        0.021448904474022146,
+        0.02078949923930984
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.15694189914882473,
+      "median_improvement": -0.1486300235653779,
+      "max_improvement": -0.1355266041206955,
+      "improvements": [
+        -0.1355266041206955,
+        -0.1486300235653779,
+        -0.15694189914882473
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.05943200737839427,
+      "median_improvement": -0.01159611657059667,
+      "max_improvement": 0.02794478448082849,
+      "improvements": [
+        -0.05943200737839427,
+        0.02794478448082849,
+        -0.01159611657059667
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.0021102648671045277,
+      "median_improvement": 0.026133658158463025,
+      "max_improvement": 0.07178530260738669,
+      "improvements": [
+        0.026133658158463025,
+        -0.0021102648671045277,
+        0.07178530260738669
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.17683849778666283,
+      "median_improvement": 0.1818423283413394,
+      "max_improvement": 0.18423792728227817,
+      "improvements": [
+        0.17683849778666283,
+        0.1818423283413394,
+        0.18423792728227817
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": 0.03192168024339981,
+      "median_improvement": 0.03386493004522895,
+      "max_improvement": 0.03584359012909555,
+      "improvements": [
+        0.03192168024339981,
+        0.03584359012909555,
+        0.03386493004522895
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.18039902358676052,
+      "median_improvement": 0.002255779807756264,
+      "max_improvement": 0.0063938809220284165,
+      "improvements": [
+        0.0063938809220284165,
+        0.002255779807756264,
+        -0.18039902358676052
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.10889409593428279,
+      "median_improvement": -0.012216638917558864,
+      "max_improvement": 0.08238321593410003,
+      "improvements": [
+        -0.012216638917558864,
+        0.08238321593410003,
+        -0.10889409593428279
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.08732505391314249,
+      "median_improvement": 0.0031760632695773117,
+      "max_improvement": 0.08068942288579195,
+      "improvements": [
+        0.08068942288579195,
+        0.0031760632695773117,
+        -0.08732505391314249
+      ]
+    }
+  ]
+}

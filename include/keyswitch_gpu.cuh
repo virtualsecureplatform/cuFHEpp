@@ -18,6 +18,62 @@ using KeySwitchAccumulator =
 #endif
 
 
+// HIP descriptor traversal shared by the pre/post-BR schedules. Each active
+// wave remains complete, including padding lanes in the final output group.
+// A sentinel is checked before forming a key pointer or issuing a load.
+#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+template <class P, class Row, int Outputs, bool Adjacent, int Threads, int Count>
+__device__ __forceinline__ void HipPreparedKeySwitchOutputs(
+    typename P::targetP::T* out, const typename P::targetP::T* key,
+    const Row* rows, uint32_t (&sums)[Outputs], int output_base = 0, uint32_t* exercised_policy = nullptr)
+{
+    constexpr int Size = P::targetP::k * P::targetP::n + 1;
+    constexpr uint32_t Sentinel = sizeof(Row) == 2 ? UINT16_MAX : UINT32_MAX;
+    constexpr uint32_t Sign = sizeof(Row) == 2 ? 0x8000U : 0x80000000U;
+    const int tid = threadIdx.x;
+    if (tid == 0 && exercised_policy)
+        *exercised_policy = Outputs
+#ifdef USE_HIP_WAVE_KEYSWITCH
+            | 0x100U
+#endif
+            ;
+    constexpr int Active = Adjacent ? ((Size + Outputs - 1) / Outputs + 31) / 32 * 32 : Threads;
+    if (tid < Active) {
+#ifdef USE_HIP_WAVE_KEYSWITCH
+        for (int base = 0; base < Count; base += 32) {
+            const int d = base + (tid & 31);
+            const uint32_t own = d < Count ? rows[d] : Sentinel;
+#pragma unroll
+            for (int lane = 0; lane < 32; ++lane) {
+                const uint32_t row = __shfl(own, lane, 32);
+#else
+        for (int d = 0; d < Count; ++d) {
+            const uint32_t row = rows[d];
+#endif
+            if (row != Sentinel) {
+                const size_t offset = sizeof(Row) == 2 ? size_t(row & ~Sign) * Size : row & ~Sign;
+#pragma unroll
+                for (int e = 0; e < Outputs; ++e) {
+                    const int i = output_base + (Adjacent ? Outputs * tid + e : tid + e * Threads);
+                    if (i < Size) {
+                        const uint32_t value = __ldg(key + offset + i);
+                        sums[e] = row & Sign ? sums[e] + value : sums[e] - value;
+                    }
+                }
+            }
+#ifdef USE_HIP_WAVE_KEYSWITCH
+            }
+#endif
+        }
+#pragma unroll
+        for (int e = 0; e < Outputs; ++e) {
+            const int i = output_base + (Adjacent ? Outputs * tid + e : tid + e * Threads);
+            if (i < Size) out[i] = sums[e];
+        }
+    }
+}
+#endif
+
 extern std::vector<TFHEpp::lvl0param::T*> ksk_devs;
 extern std::vector<TFHEpp::lvl0param::T*> ksk_devs_lvl20;
 
@@ -350,6 +406,32 @@ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared16(
             (val < 0 ? 0x8000U : 0U);
     }
     __syncthreads();
+#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+    if constexpr (std::is_same_v<P, TFHEpp::lvl20param> && !use_subset_key_switch<P> &&
+                  output_size > 512 && output_size <= 1024) {
+        if (blockDim.x == 512) {
+#ifdef USE_HIP_MULTIOUT_KEYSWITCH
+            constexpr int Outputs = 2;
+#else
+            constexpr int Outputs = 1;
+#endif
+            // A single-output control still covers both strided output groups.
+            for (int group = 0; group < 2; group += Outputs) {
+                uint32_t sums[Outputs] = {};
+#pragma unroll
+                for (int e = 0; e < Outputs; ++e)
+                    if (tid + (group + e) * 512 == output_size - 1) {
+                        const typename P::domainP::T added = casign * ina[P::domainP::k * P::domainP::n] +
+                            cbsign * inb[P::domainP::k * P::domainP::n] + offset;
+                        sums[e] = KeySwitchTorusConvert<P>(added);
+                    }
+                HipPreparedKeySwitchOutputs<P, uint16_t, Outputs, false, 512, count * P::t>(
+                    lwe, ksk, rows, sums, group * 512);
+            }
+            return;
+        }
+    }
+#endif
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890) && !defined(CUFHE_USE_HIP)
     if constexpr (std::is_same_v<P, TFHEpp::lvl20param> &&
                   !use_subset_key_switch<P> && output_size > 512 && output_size <= 1024) {
@@ -433,7 +515,7 @@ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared16(
 template <class P, int Threads, bool ExtractFromTRLWE>
 __device__ __forceinline__ void KeySwitchPrepared32(
     typename P::targetP::T* lwe, const typename P::domainP::T* input,
-    const typename P::targetP::T* ksk, uint32_t* rows)
+    const typename P::targetP::T* ksk, uint32_t* rows, uint32_t* exercised_policy = nullptr)
 {
     static_assert(std::is_same_v<P, TFHEpp::lvl10param>);
     constexpr int domain_size = P::domainP::k * P::domainP::n;
@@ -449,6 +531,7 @@ __device__ __forceinline__ void KeySwitchPrepared32(
     static_assert(domain_size % Threads == 0);
     static_assert(uint64_t(count) * P::t * halfbase * output_size < (1ULL << 31));
     const int tid = threadIdx.x;
+    if (tid == 0 && exercised_policy) *exercised_policy = 0;
     typename P::domainP::T saved[domain_size / Threads];
 #pragma unroll
     for (int slot = 0; slot < domain_size / Threads; ++slot) {
@@ -475,6 +558,28 @@ __device__ __forceinline__ void KeySwitchPrepared32(
     }
     if (tid == 0) rows[count * P::t] = body;
     __syncthreads();
+#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+    if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
+#ifdef USE_HIP_MULTIOUT_KEYSWITCH
+        constexpr int Outputs = 2;
+#else
+        constexpr int Outputs = 1;
+#endif
+        for (int group = 0; group < 2; group += Outputs) {
+            uint32_t sums[Outputs] = {};
+#pragma unroll
+            for (int slot = 0; slot < Outputs; ++slot) {
+                const int i = tid + (group + slot) * Threads;
+                if (i == output_size - 1) sums[slot] = rows[count * P::t];
+                else if constexpr (use_subset_key_switch<P>)
+                    if (i < output_size) sums[slot] = KeySwitchTorusConvert<P>(saved[group + slot]);
+            }
+            HipPreparedKeySwitchOutputs<P, uint32_t, Outputs, false, Threads, count * P::t>(
+                lwe, ksk, rows, sums, group * Threads, exercised_policy);
+        }
+        return;
+    }
+#endif
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
     if constexpr (!ExtractFromTRLWE && Threads == 512 &&
                   output_size > Threads && output_size <= 2 * Threads) {
@@ -538,7 +643,7 @@ __device__ __forceinline__ void KeySwitchPrepared32(
 template <class P, int Threads, bool ExtractFromTRLWE>
 __device__ __forceinline__ void KeySwitchPrepared16(
     typename P::targetP::T* lwe, const typename P::domainP::T* trlwe,
-    const typename P::targetP::T* ksk, uint16_t* rows)
+    const typename P::targetP::T* ksk, uint16_t* rows, uint32_t* exercised_policy = nullptr)
 {
     static_assert(std::is_same_v<P, TFHEpp::lvl20param>);
     static_assert(std::is_same_v<typename P::targetP::T, uint16_t>);
@@ -553,6 +658,7 @@ __device__ __forceinline__ void KeySwitchPrepared16(
     static_assert(domain_size % Threads == 0);
     static_assert(uint64_t(domain_size) * P::t * halfbase < (1ULL << 15));
     const int tid = threadIdx.x;
+    if (tid == 0 && exercised_policy) *exercised_policy = 0;
     typename P::domainP::T saved[domain_size / Threads];
 #pragma unroll
     for (int slot = 0; slot < domain_size / Threads; ++slot)
@@ -576,6 +682,27 @@ __device__ __forceinline__ void KeySwitchPrepared16(
     }
     if (tid == 0) rows[domain_size * P::t] = body;
     __syncthreads();
+#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+    if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
+#ifdef USE_HIP_MULTIOUT_KEYSWITCH
+        constexpr int Outputs = ExtractFromTRLWE ? 2 : 5;
+#else
+        constexpr int Outputs = 1;
+#endif
+        constexpr bool Adjacent = Outputs > 1;
+        for (int base = 0; base < output_size; base += Outputs * Threads) {
+            uint32_t sums[Outputs] = {};
+#pragma unroll
+            for (int e = 0; e < Outputs; ++e) {
+                const int i = base + (Adjacent ? Outputs * tid + e : tid + e * Threads);
+                if (i == output_size - 1) sums[e] = rows[domain_size * P::t];
+            }
+            HipPreparedKeySwitchOutputs<P, uint16_t, Outputs, Adjacent, Threads, domain_size * P::t>(
+                lwe, ksk, rows, sums, base, exercised_policy);
+        }
+        return;
+    }
+#endif
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890) && !defined(CUFHE_USE_HIP)
     if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
         if constexpr (!ExtractFromTRLWE) {

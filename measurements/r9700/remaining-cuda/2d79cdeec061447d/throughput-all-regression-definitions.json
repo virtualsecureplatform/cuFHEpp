@@ -1,0 +1,31 @@
+{
+  "r9700-ntt-throughput": {
+    "all": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "WAVE_KEYSWITCH": "ON",
+        "OUTPUT_EXPONENT_CACHE": "ON",
+        "SCALAR_MONOMIAL_CACHE64": "ON",
+        "REGISTER_NTT_IO64": "ON",
+        "REGISTER_MONOMIALS31": "ON",
+        "NATIVE_NTT64": "ON",
+        "FAST_TORUS64": "ON",
+        "SCALED_INVERSE64": "ON",
+        "PACKED_PAIRED_ROOTS": "ON",
+        "UNREDUCED_INVERSE_DIFF": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "batch",
+          1,
+          512,
+          false
+        ]
+      ]
+    }
+  }
+}

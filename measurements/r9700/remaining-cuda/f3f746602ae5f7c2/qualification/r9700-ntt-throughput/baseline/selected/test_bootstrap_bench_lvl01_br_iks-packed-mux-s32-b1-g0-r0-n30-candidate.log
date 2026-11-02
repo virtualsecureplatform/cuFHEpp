@@ -1,0 +1,66 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=mux backend=ntt block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=32
+resource_node=0 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=1 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=2 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=3 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=4 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=5 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=6 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=7 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=8 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=9 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=10 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=11 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=12 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=13 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=14 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=15 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=16 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=17 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=18 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=19 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=20 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=21 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=22 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=23 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=24 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=25 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=26 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=27 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=28 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=29 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=30 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=31 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+repeat=0 ms/gate=1.21759
+repeat=1 ms/gate=1.21865
+repeat=2 ms/gate=1.21426
+repeat=3 ms/gate=1.21356
+repeat=4 ms/gate=1.21302
+repeat=5 ms/gate=1.21087
+repeat=6 ms/gate=1.21076
+repeat=7 ms/gate=1.21191
+repeat=8 ms/gate=1.20751
+repeat=9 ms/gate=1.20856
+repeat=10 ms/gate=1.20409
+repeat=11 ms/gate=1.20461
+repeat=12 ms/gate=1.20229
+repeat=13 ms/gate=1.20016
+repeat=14 ms/gate=1.19908
+repeat=15 ms/gate=1.1994
+repeat=16 ms/gate=1.19688
+repeat=17 ms/gate=1.19902
+repeat=18 ms/gate=1.19424
+repeat=19 ms/gate=1.19759
+repeat=20 ms/gate=1.19291
+repeat=21 ms/gate=1.19271
+repeat=22 ms/gate=1.18943
+repeat=23 ms/gate=1.19325
+repeat=24 ms/gate=1.18672
+repeat=25 ms/gate=1.1908
+repeat=26 ms/gate=1.18687
+repeat=27 ms/gate=1.18801
+repeat=28 ms/gate=1.18733
+repeat=29 ms/gate=1.18754
+dispatch=packed streams=32 gates=32 median_ms/gate=1.1994 errors=0
+observed_noise_rms=0.00673306 observed_max_abs_noise=0.0154419

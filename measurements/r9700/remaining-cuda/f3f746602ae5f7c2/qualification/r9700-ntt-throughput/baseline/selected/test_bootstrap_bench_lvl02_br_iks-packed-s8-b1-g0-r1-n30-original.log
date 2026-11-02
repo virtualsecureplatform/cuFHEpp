@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=ntt block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=109 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=4.08438
+repeat=1 ms/gate=4.0752
+repeat=2 ms/gate=4.05637
+repeat=3 ms/gate=4.09786
+repeat=4 ms/gate=4.09223
+repeat=5 ms/gate=4.06741
+repeat=6 ms/gate=4.05563
+repeat=7 ms/gate=4.07825
+repeat=8 ms/gate=4.07638
+repeat=9 ms/gate=4.07311
+repeat=10 ms/gate=4.05477
+repeat=11 ms/gate=4.0732
+repeat=12 ms/gate=4.06888
+repeat=13 ms/gate=4.04096
+repeat=14 ms/gate=4.04575
+repeat=15 ms/gate=4.04252
+repeat=16 ms/gate=4.04859
+repeat=17 ms/gate=4.04798
+repeat=18 ms/gate=4.02257
+repeat=19 ms/gate=4.04172
+repeat=20 ms/gate=4.0464
+repeat=21 ms/gate=4.02593
+repeat=22 ms/gate=4.00568
+repeat=23 ms/gate=4.032
+repeat=24 ms/gate=4.03475
+repeat=25 ms/gate=4.02552
+repeat=26 ms/gate=3.99759
+repeat=27 ms/gate=4.0239
+repeat=28 ms/gate=4.00994
+repeat=29 ms/gate=3.99926
+dispatch=packed streams=8 gates=8 median_ms/gate=4.04798 errors=0
+observed_noise_rms=0.0112541 observed_max_abs_noise=0.0173645

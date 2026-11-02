@@ -608,3 +608,154 @@ Unary: `Not, Copy`
 [CGGI17]: Chillotti, I., Gama, N., Georgieva, M., & Izabachène, M. (2017, December). Faster Packed Homomorphic Operations and Efficient Circuit Bootstrapping for TFHE. In International Conference on the Theory and Application of Cryptology and Information Security (pp. 377-408). Springer, Cham.
 
 [OS23]: Özcan, A. Ş., & Savaş, E. (2023). Two Algorithms for Fast GPU Implementation of NTT. Cryptology ePrint Archive, Paper 2023/1410. https://eprint.iacr.org/2023/1410
+
+### Remaining CUDA ideas on R9700 (experimental)
+
+The second R9700 pass exposes the remaining schedules independently. These
+options default OFF; the existing production presets retain their measured
+settings until the new comparisons meet the promotion criteria. The TFHEpp
+revision, parameters, torus rounding, and public gate interfaces are unchanged.
+
+| HIP option (`USE_HIP_` prefix) | Candidate behavior |
+|---|---|
+| `MULTIOUT_KEYSWITCH` | Traverse prepared descriptors once for two outputs, or five adjacent outputs for lvl02 MUX/NMux |
+| `WAVE_KEYSWITCH` | Broadcast prepared descriptors within complete wave32 groups; usable independently of multiple-output scheduling |
+| `OUTPUT_EXPONENT_CACHE` | Cache public lvl02 binary-gate exponents in the output workspace after capturing overlapping inputs |
+| `SCALAR_MONOMIAL_CACHE64` | Retain scalar Goldilocks monomials and input coefficients, reconstruct adjacent monomials exactly |
+| `REGISTER_NTT_IO64` | Consume forward pairs and inverse return pairs directly in registers, including the low-LDS accumulator layout |
+| `REGISTER_MONOMIALS31` | Reuse monomials and input coefficients, select consumer-specific products and inverse additions without requiring staging |
+| `NATIVE_NTT64` | Use explicit 32-bit carry/borrow chains for Goldilocks arithmetic and four-product accumulation |
+| `FAST_TORUS64` | Use the exact word-based Goldilocks-to-torus conversion |
+| `SCALED_INVERSE64` | Normalize the final Goldilocks inverse butterfly through exact division by a power of two |
+| `PACKED_PAIRED_ROOTS` | Load a 31-bit root and its Shoup quotient together from the existing packed table |
+| `UNREDUCED_INVERSE_DIFF` | Pass the unreduced inverse difference directly to Shoup multiplication |
+| `MONOMIAL_PREFETCH` | Issue aligned vector monomial loads before decomposition and publish to LDS after the first forward transform |
+
+Multiple-output and wave key switching require prepared key switching.
+Register-31 caching requires paired/fused-31 support. Register-64 I/O requires
+scalar caching and low LDS. Prefetch requires monomial staging (and its existing
+paired-64 prerequisite). Packed roots and unreduced differences require Shoup
+NTT. The scalar-64 candidates are measured with paired-64 dispatch disabled so
+that the scalar branch actually executes.
+
+The experimental `r9700-remaining-all` preset exercises the scalar-64 and
+paired-31 paths together. `r9700-remaining-prefetch` exercises staged paired-64
+and paired-31 products. Neither is a performance recommendation. Focused tests
+record the policies actually executed; disabled cache paths report `SKIP`.
+
+The per-feature runner builds isolated configurations and uses an exclusive GPU
+lock. For example:
+
+```sh
+./bench_r9700.sh remaining build --profiles r9700-ntt-throughput --variants baseline scalar-cache register-io --focused
+./bench_r9700.sh remaining check --profiles r9700-ntt-throughput --variants baseline scalar-cache register-io --focused
+./bench_r9700.sh remaining screen --profiles r9700-ntt-throughput --variants baseline scalar-cache register-io
+./bench_r9700.sh remaining report --profiles r9700-ntt-throughput --variants baseline scalar-cache register-io
+```
+
+Use `run` for the full batch/concurrency grid and omit `--focused` from build/check
+for exhaustive batch/cooperative validation of final configurations. Screening
+and full measurements default to three independent fresh-key runs with 15
+repetitions after warmup. Each candidate is alternated with its matched control.
+Register I/O compares against scalar caching; prefetch compares against staging;
+FFT key-switch schedules compare against prepared-key switching. Logs, commands,
+effective caches, source hashes, and summaries are stored in
+`measurements/r9700/remaining-cuda/<source fingerprint>/`.
+
+The benchmark also accepts `packed-mux` and `packed-nmux` for resident-buffer
+measurements without timed transfers. `CUFHE_BENCH_RESOURCES=1` records kernel
+registers, private bytes, static/dynamic LDS, geometry, and the runtime occupancy
+limit from a captured submission; the runner enables this automatically. No NVIDIA runtime
+validation is implied by CUDA compile checks.
+
+A preset promotion requires a repeatable improvement of at least 3% in the
+intended workload in all three fresh-key runs, with no reproducible regression
+above 2% elsewhere enabled by the same profile. Uncertain points receive 30
+repetitions and otherwise remain experimental. The report identifies screening
+candidates; full validation and profile-specific review are required before
+changing a preset.
+
+Direct asynchronous global-to-LDS copying is unavailable through the installed
+gfx1201 builtins. The capability probe and native arithmetic instruction captures
+are retained with the measurements. Software prefetch supplies the corresponding
+load-overlap experiment without claiming CUDA `cp.async` equivalence.
+
+The register-return regression fixture deliberately delays peer-half LDS readers
+before workspace reuse. A control with the reuse barrier removed reproduces
+coefficient mismatches; the corrected schedule passes the same stress case.
+
+The runner also accepts `waves2`, `waves3`, `waves4`, `all-waves2`, `all-waves3`,
+`all-waves4`, and `groups2`, `groups3`, `groups5`, `groups9` as variants for the
+existing occupancy controls. `all-waves*` compares against the combined `all`
+configuration. Effective caches and captured kernel attributes record the
+actual resource budgets; register counts alone do not determine residency.
+
+Feature qualification is complete. Candidates selected from the individual
+screens passed exhaustive correctness checks, then completed the 116-point
+original-backend grid and required longer reruns. Paired multiple-output
+switching, its wave combination, throughput 31-bit register caching, and the FFT wave
+combination all failed the promotion gate through median regressions or
+unresolved variation. Earlier combined latency/throughput and paired native
+arithmetic candidates also failed their gates. The new feature switches remain
+experimental, and no new production preset has been promoted.
+
+The final feature comparisons against the original backend are below. Each
+row covers 116 workload points and three independent fresh-key runs, including
+the required 30-repetition reruns. Wins require at least 3% in every run;
+median losses above 2% and unresolved losses prevent promotion.
+
+| Profile / candidate | Winning points | Median regressions | Unresolved regressions |
+|---|---:|---:|---:|
+| Paired NTT / multiple outputs | 45 | 2 | 7 |
+| Paired NTT / multiple outputs + wave broadcast | 45 | 1 | 8 |
+| Throughput NTT / register-31 caching | 17 | 8 | 18 |
+| FFT / multiple outputs + wave broadcast | 37 | 5 | 24 |
+
+The [per-feature outcomes](measurements/r9700/remaining-cuda/f3f746602ae5f7c2/completed-feature-outcomes.json)
+reconcile all 26 feature experiments with their completed qualification results
+and retain references to the original screening evidence.
+
+Launch-setting screens are complete for all four profiles. Waves 2, 3, and 4
+produced no repeatable screen gains in any profile; forced groups 2, 3, 5, and 9
+also produced none in the three NTT profiles. Final configuration qualification
+is complete, and the existing production settings are retained. Captured launches limit
+forced groups of 2, 3, 5, and 9 to batches of 16, 10, 6, and 7 respectively in
+all three NTT profiles. The public API's initial count guard of 21 does not
+guarantee that a cooperative launch fits. Completed NTT group screens cover
+every batch count from 1 through 22, including the first nine-group fallback at
+eight, and found no repeatable gains. Final NTT qualification uses the same batch
+range. Every retained configuration passed exhaustive gate, batch, and graph
+checks. The final comparisons against the original backend are:
+
+| Retained profile | Workload points | Points rerun with 30 repetitions | Median regressions | Unresolved points |
+|---|---:|---:|---:|---:|
+| Paired NTT | 156 | 20 | 5 | 12 |
+| Throughput NTT | 156 | 33 | 7 | 17 |
+| Latency NTT | 156 | 15 | 3 | 6 |
+| FFT | 116 | 32 | 2 | 20 |
+
+These mixed timings do not establish performance equivalence with the original
+backend. No new feature or launch setting met the promotion gate. The
+[final measurement audit](measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json)
+verifies 3,504 selected raw logs, executable hashes, actual resources, and the
+required longer comparisons. The [requirement audit](measurements/r9700/remaining-cuda/f3f746602ae5f7c2/requirements-completion-audit.json)
+records the implementation, validation, and target limitations for every plan item.
+CUDA NTT and FFT compile checks include SM80 and
+SM89 images; NVIDIA runtime validation was unavailable.
+
+Latency raw level-01 NMux at 128 streams lost 2.2–3.0% in all three original
+longer runs. Its selected device kernel has identical normalized instructions
+and captured resources to the original. In an isolated confirmation, the
+original/candidate differences ranged from a 4.7% loss to a 4.1% gain, while
+an identical-binary original/original control showed 3.0–3.9% differences.
+The earlier loss did not reproduce consistently, and these controls do not
+establish a code-caused slowdown or performance equivalence. Both the original
+results and the [isolated confirmation](measurements/r9700/remaining-cuda/f3f746602ae5f7c2/latency-nmux-baseline-review/confirmation/summary.json)
+are preserved. A separate consumer-schedule experiment failed its targeted
+screens and was not adopted.
+
+Prepared MUX key switching executes only when its descriptor rows fit in the
+available workspace. With the current lvl02 parameters, the raw MUX pre-add
+workspace is too small and uses the original fallback. The public post-rotation
+MUX workspace can fit those rows. Performance reports must distinguish these
+paths before attributing a timing change to a prepared-key schedule.

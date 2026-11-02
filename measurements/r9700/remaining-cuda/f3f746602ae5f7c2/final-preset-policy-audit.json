@@ -1,0 +1,169 @@
+{
+  "status": "PASS",
+  "scope": "All pre-existing configure presets and their inherited settings compared with original backend; experimental presets are opt-in",
+  "original_backend": "b0818d28c5eab44dda1592225a132a4abd97517f",
+  "presets_sha256": "7464cb7b0f1591667bbbd99ed4e3f175c20336fbc8ce822181bed185798b18c2",
+  "original_presets": [
+    {
+      "preset": "a100-base",
+      "original_variables_preserved": true,
+      "added_variables": {}
+    },
+    {
+      "preset": "a100-ntt",
+      "original_variables_preserved": true,
+      "added_variables": {}
+    },
+    {
+      "preset": "a100-ntt-latency",
+      "original_variables_preserved": true,
+      "added_variables": {}
+    },
+    {
+      "preset": "a100-ntt-throughput",
+      "original_variables_preserved": true,
+      "added_variables": {}
+    },
+    {
+      "preset": "a100-fft",
+      "original_variables_preserved": true,
+      "added_variables": {}
+    },
+    {
+      "preset": "a100-fft-throughput",
+      "original_variables_preserved": true,
+      "added_variables": {}
+    },
+    {
+      "preset": "r9700-base",
+      "original_variables_preserved": true,
+      "added_variables": {
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF"
+      }
+    },
+    {
+      "preset": "r9700-ntt-baseline",
+      "original_variables_preserved": true,
+      "added_variables": {
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF"
+      }
+    },
+    {
+      "preset": "r9700-fft-baseline",
+      "original_variables_preserved": true,
+      "added_variables": {
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF"
+      }
+    },
+    {
+      "preset": "r9700-ntt",
+      "original_variables_preserved": true,
+      "added_variables": {
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF"
+      }
+    },
+    {
+      "preset": "r9700-ntt-throughput",
+      "original_variables_preserved": true,
+      "added_variables": {
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF"
+      }
+    },
+    {
+      "preset": "r9700-ntt-latency",
+      "original_variables_preserved": true,
+      "added_variables": {
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF"
+      }
+    },
+    {
+      "preset": "r9700-fft",
+      "original_variables_preserved": true,
+      "added_variables": {
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF"
+      }
+    }
+  ],
+  "new_experimental_presets": [
+    "r9700-remaining-all",
+    "r9700-remaining-prefetch"
+  ],
+  "production_new_flags": "OFF"
+}

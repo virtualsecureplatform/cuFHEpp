@@ -1,0 +1,125 @@
+{
+  "status": "instruction-comparison-only-no-causal-performance-claim",
+  "source": "00b58898b54a09cb",
+  "records": [
+    {
+      "variant": "baseline",
+      "binary": "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-remaining-r9700-ntt-throughput-baseline/test/test_bootstrap_bench_lvl02",
+      "sha256": "94c4d7ad956dbedde102119448b656da75b23dbdd3437ab7bf06faf8caac1dbe",
+      "symbol": "_ZN5cufhe16__MuxBootstrap__IN6TFHEpp10lvl20paramENS1_10lvl02paramETnNT0_7targetP1TELm2305843009213693952EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE",
+      "command": [
+        "/opt/rocm/llvm/bin/llvm-objdump",
+        "-d",
+        "--disassemble-symbols=_ZN5cufhe16__MuxBootstrap__IN6TFHEpp10lvl20paramENS1_10lvl02paramETnNT0_7targetP1TELm2305843009213693952EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE",
+        "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-remaining-r9700-ntt-throughput-baseline/test/test_bootstrap_bench_lvl02.0.hipv4-amdgcn-amd-amdhsa--gfx1201"
+      ],
+      "instructions": 7152
+    },
+    {
+      "variant": "multi",
+      "binary": "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-remaining-r9700-ntt-throughput-multi/test/test_bootstrap_bench_lvl02",
+      "sha256": "723489b72b9981aeba587bb57f683fe28e167f423b6d7a7965feb84159335f9c",
+      "symbol": "_ZN5cufhe16__MuxBootstrap__IN6TFHEpp10lvl20paramENS1_10lvl02paramETnNT0_7targetP1TELm2305843009213693952EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE",
+      "command": [
+        "/opt/rocm/llvm/bin/llvm-objdump",
+        "-d",
+        "--disassemble-symbols=_ZN5cufhe16__MuxBootstrap__IN6TFHEpp10lvl20paramENS1_10lvl02paramETnNT0_7targetP1TELm2305843009213693952EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE",
+        "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-remaining-r9700-ntt-throughput-multi/test/test_bootstrap_bench_lvl02.0.hipv4-amdgcn-amd-amdhsa--gfx1201"
+      ],
+      "instructions": 7152
+    }
+  ],
+  "comparisons": [
+    {
+      "a": "original",
+      "b": "baseline",
+      "instructions_a": 7152,
+      "instructions_b": 7152,
+      "exact_instruction_text_equal": true,
+      "changes_only_verified_pc_relative_address_adjustments": true,
+      "differences": []
+    },
+    {
+      "a": "baseline",
+      "b": "multi",
+      "instructions_a": 7152,
+      "instructions_b": 7152,
+      "exact_instruction_text_equal": false,
+      "changes_only_verified_pc_relative_address_adjustments": true,
+      "differences": [
+        {
+          "instruction": 517,
+          "a": "s_add_co_u32 s4, s4, 0xffe9b838",
+          "b": "s_add_co_u32 s4, s4, 0xffe9e238",
+          "verified_pc_relative_adjustment": true,
+          "preceding_getpc_instruction": 514,
+          "intervening_instructions": [
+            "s_wait_alu depctr_sa_sdst(0)",
+            "s_sext_i32_i16 s5, s5"
+          ]
+        },
+        {
+          "instruction": 528,
+          "a": "s_add_co_u32 s6, s6, 0xffe9b7e8",
+          "b": "s_add_co_u32 s6, s6, 0xffe9e1e8",
+          "verified_pc_relative_adjustment": true,
+          "preceding_getpc_instruction": 526,
+          "intervening_instructions": [
+            "s_sext_i32_i16 s7, s7"
+          ]
+        },
+        {
+          "instruction": 553,
+          "a": "s_add_co_u32 s10, s10, 0xffe9f73c",
+          "b": "s_add_co_u32 s10, s10, 0xffea213c",
+          "verified_pc_relative_adjustment": true,
+          "preceding_getpc_instruction": 551,
+          "intervening_instructions": [
+            "s_sext_i32_i16 s11, s11"
+          ]
+        },
+        {
+          "instruction": 571,
+          "a": "s_add_co_u32 s40, s40, 0xffe9f6d0",
+          "b": "s_add_co_u32 s40, s40, 0xffea20d0",
+          "verified_pc_relative_adjustment": true,
+          "preceding_getpc_instruction": 569,
+          "intervening_instructions": [
+            "s_sext_i32_i16 s41, s41"
+          ]
+        },
+        {
+          "instruction": 657,
+          "a": "s_add_co_u32 s10, s10, 0x101c38",
+          "b": "s_add_co_u32 s10, s10, 0x103738",
+          "verified_pc_relative_adjustment": true,
+          "preceding_getpc_instruction": 654,
+          "intervening_instructions": [
+            "s_wait_alu depctr_sa_sdst(0)",
+            "s_sext_i32_i16 s11, s11"
+          ]
+        },
+        {
+          "instruction": 4164,
+          "a": "s_add_co_u32 s10, s10, 0xfca7c",
+          "b": "s_add_co_u32 s10, s10, 0xfe57c",
+          "verified_pc_relative_adjustment": true,
+          "preceding_getpc_instruction": 4161,
+          "intervening_instructions": [
+            "s_wait_alu depctr_sa_sdst(0)",
+            "s_sext_i32_i16 s11, s11"
+          ]
+        }
+      ]
+    }
+  ],
+  "observed_resources": {
+    "registers": 111,
+    "static_lds": 1264,
+    "dynamic_lds": 40968,
+    "local_bytes": 12,
+    "threads": 512,
+    "resident_blocks": 1
+  },
+  "resources_equal_in_observed_logs": true
+}

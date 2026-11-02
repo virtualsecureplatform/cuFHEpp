@@ -1,0 +1,6 @@
+{
+  "r9700-ntt": "baseline",
+  "r9700-ntt-throughput": "baseline",
+  "r9700-ntt-latency": "baseline",
+  "r9700-fft": "baseline"
+}

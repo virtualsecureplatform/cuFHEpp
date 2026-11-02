@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "backend_commit": "b0818d28c5eab44dda1592225a132a4abd97517f",
+  "tfhepp": "1dd9a1addef4cae01da9bb6bfff0d22b55bec683",
+  "harness_sha256": "1ad57e03f176278f850679aa6ace28385ad1d4267bb1a8eb1d6779abdcc87197",
+  "profiles": [
+    "r9700-ntt",
+    "r9700-ntt-throughput",
+    "r9700-ntt-latency",
+    "r9700-fft"
+  ],
+  "reason": "Runner-only changes do not alter this original backend, sharedC++harness, dependency or already-built binary hashes. Carry forward provenance/receipts only; never relabel oldcandidate timings asnewsource."
+}

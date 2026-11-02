@@ -1,0 +1,63 @@
+[
+  {
+    "profile": "r9700-ntt",
+    "selected_features": "baseline",
+    "recommended_variant": "baseline",
+    "configuration": {
+      "flags": {},
+      "cache": {},
+      "control": "baseline"
+    },
+    "qualified_tuning_variants": [],
+    "promotion": "not-promoted-existing-production-settings-retained",
+    "review_status": "complete",
+    "performance_equivalence": "not-established",
+    "measurement_evidence": "final-measurement-audit.json"
+  },
+  {
+    "profile": "r9700-ntt-throughput",
+    "selected_features": "baseline",
+    "recommended_variant": "baseline",
+    "configuration": {
+      "flags": {},
+      "cache": {},
+      "control": "baseline"
+    },
+    "qualified_tuning_variants": [],
+    "promotion": "not-promoted-existing-production-settings-retained",
+    "review_status": "complete",
+    "performance_equivalence": "not-established",
+    "measurement_evidence": "final-measurement-audit.json"
+  },
+  {
+    "profile": "r9700-ntt-latency",
+    "selected_features": "baseline",
+    "recommended_variant": "baseline",
+    "configuration": {
+      "flags": {},
+      "cache": {},
+      "control": "baseline"
+    },
+    "qualified_tuning_variants": [],
+    "promotion": "not-promoted-existing-production-settings-retained",
+    "review_status": "complete",
+    "performance_equivalence": "not-established",
+    "measurement_evidence": "final-measurement-audit.json",
+    "baseline_variation_review": "latency-nmux-baseline-review/confirmation/summary.json"
+  },
+  {
+    "profile": "r9700-fft",
+    "selected_features": "baseline",
+    "recommended_variant": "baseline",
+    "configuration": {
+      "flags": {},
+      "cache": {},
+      "control": "baseline"
+    },
+    "qualified_tuning_variants": [],
+    "promotion": "not-promoted-existing-production-settings-retained",
+    "review_status": "complete",
+    "performance_equivalence": "not-established",
+    "measurement_evidence": "final-measurement-audit.json"
+  }
+]

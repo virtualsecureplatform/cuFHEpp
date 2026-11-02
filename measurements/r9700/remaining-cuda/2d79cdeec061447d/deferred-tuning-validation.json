@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "method": "isolated fake qualification grid and mocked subprocesses; no GPU mutations",
+  "results": [
+    {
+      "post_rerun_regressions": 0,
+      "status": "PASS",
+      "tuning_actions": [
+        "build",
+        "check",
+        "screen"
+      ],
+      "rerun_precedes_tuning": true
+    },
+    {
+      "post_rerun_regressions": 1,
+      "status": "PASS",
+      "tuning_actions": [],
+      "rerun_precedes_tuning": true
+    }
+  ]
+}

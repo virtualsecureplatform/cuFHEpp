@@ -1,0 +1,360 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -147,7 +147,7 @@
+ # R9700 features are independently selectable for reproducible comparisons.
+ foreach(feature PAIRED_NTT PAIRED_NTT64 FUSED_NTT MONOMIAL_STAGING
+                 PREPARED_KEYSWITCH NATIVE_KEYSWITCH OUTPUT_EXPONENT_CACHE FAST_TORUS64
+-                MULTIOUT_KEYSWITCH WAVE_KEYSWITCH SCALAR_MONOMIAL_CACHE64
++                MULTIOUT_KEYSWITCH MULTIOUT_MUX_KEYSWITCH WAVE_KEYSWITCH SCALAR_MONOMIAL_CACHE64
+                 REGISTER_NTT_IO64 REGISTER_MONOMIALS31 NATIVE_NTT64
+                 SCALED_INVERSE64 PACKED_PAIRED_ROOTS UNREDUCED_INVERSE_DIFF
+                 MONOMIAL_PREFETCH WAVE_MODSWITCH_CORRECTION LOW_LDS
+@@ -166,6 +166,9 @@
+     message(FATAL_ERROR "USE_HIP_${feature} requires USE_HIP_PREPARED_KEYSWITCH")
+   endif()
+ endforeach()
++if(USE_HIP_MULTIOUT_MUX_KEYSWITCH AND NOT USE_HIP_MULTIOUT_KEYSWITCH)
++  message(FATAL_ERROR "USE_HIP_MULTIOUT_MUX_KEYSWITCH requires USE_HIP_MULTIOUT_KEYSWITCH")
++endif()
+ if(USE_HIP_REGISTER_MONOMIALS31 AND (NOT USE_HIP_PAIRED_NTT OR NOT USE_HIP_FUSED_NTT))
+   message(FATAL_ERROR "USE_HIP_REGISTER_MONOMIALS31 requires paired and fused NTT")
+ endif()
+--- a/CMakePresets.json
++++ b/CMakePresets.json
+@@ -121,7 +121,8 @@
+         "USE_HIP_SCALED_INVERSE64": "OFF",
+         "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+         "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+-        "USE_HIP_MONOMIAL_PREFETCH": "OFF"
++        "USE_HIP_MONOMIAL_PREFETCH": "OFF",
++        "USE_HIP_MULTIOUT_MUX_KEYSWITCH": "OFF"
+       }
+     },
+     {
+@@ -193,7 +194,8 @@
+         "USE_HIP_FAST_TORUS64": "ON",
+         "USE_HIP_SCALED_INVERSE64": "ON",
+         "USE_HIP_PACKED_PAIRED_ROOTS": "ON",
+-        "USE_HIP_UNREDUCED_INVERSE_DIFF": "ON"
++        "USE_HIP_UNREDUCED_INVERSE_DIFF": "ON",
++        "USE_HIP_MULTIOUT_MUX_KEYSWITCH": "ON"
+       }
+     },
+     {
+--- a/bench_r9700_remaining.py
++++ b/bench_r9700_remaining.py
+@@ -19,7 +19,7 @@
+ import sys
+ 
+ ROOT = Path(__file__).resolve().parent
+-NEW = '''MULTIOUT_KEYSWITCH WAVE_KEYSWITCH OUTPUT_EXPONENT_CACHE
++NEW = '''MULTIOUT_KEYSWITCH MULTIOUT_MUX_KEYSWITCH WAVE_KEYSWITCH OUTPUT_EXPONENT_CACHE
+ SCALAR_MONOMIAL_CACHE64 REGISTER_NTT_IO64 REGISTER_MONOMIALS31 NATIVE_NTT64
+ FAST_TORUS64 SCALED_INVERSE64 PACKED_PAIRED_ROOTS UNREDUCED_INVERSE_DIFF
+ MONOMIAL_PREFETCH'''.split()
+@@ -27,6 +27,7 @@
+     'baseline': {},
+     'prepared': {'PREPARED_KEYSWITCH': 'ON'},
+     'multi': {'MULTIOUT_KEYSWITCH': 'ON'},
++    'multi-mux': {'MULTIOUT_KEYSWITCH': 'ON', 'MULTIOUT_MUX_KEYSWITCH': 'ON'},
+     'wave': {'WAVE_KEYSWITCH': 'ON'},
+     'multi-wave': {'MULTIOUT_KEYSWITCH': 'ON', 'WAVE_KEYSWITCH': 'ON'},
+     'exponents': {'OUTPUT_EXPONENT_CACHE': 'ON'},
+@@ -62,7 +63,7 @@
+ 
+ def applicable(profile, variant):
+     if 'fft' in profile:
+-        return variant in ('baseline', 'prepared', 'multi', 'wave', 'multi-wave', 'waves2', 'waves3', 'waves4')
++        return variant in ('baseline', 'prepared', 'multi', 'multi-mux', 'wave', 'multi-wave', 'waves2', 'waves3', 'waves4')
+     if variant == 'prepared':
+         return False  # already enabled by the NTT presets
+     if variant in ('scalar-cache', 'register-io'):
+@@ -79,7 +80,7 @@
+         return 'scalar-cache'
+     if variant == 'prefetch':
+         return 'staging'
+-    if 'fft' in profile and variant in ('multi', 'wave', 'multi-wave'):
++    if 'fft' in profile and variant in ('multi', 'multi-mux', 'wave', 'multi-wave'):
+         return 'prepared'
+     return 'baseline'
+ 
+@@ -172,7 +173,7 @@
+         options = {'USE_HIP_' + n: 'OFF' for n in NEW}
+         options.update({'USE_HIP_' + n: value for n, value in VARIANTS[v].items()})
+         options.update(CACHE_OPTIONS.get(v, {}))
+-        if 'fft' in p and v != 'baseline':
++        if 'fft' in p and v in ('prepared', 'multi', 'multi-mux', 'wave', 'multi-wave'):
+             options['USE_HIP_PREPARED_KEYSWITCH'] = 'ON'
+         build = ROOT / f'build-remaining-{p}-{v}'
+         dest = result_root / p / v
+--- a/include/keyswitch_gpu.cuh
++++ b/include/keyswitch_gpu.cuh
+@@ -18,10 +18,26 @@
+ #endif
+ 
+ 
++// MUX/NMux can retain their original prepared schedule independently of binary gates.
++inline constexpr bool UseHipMultiOutputMux =
++#if !defined(CUFHE_USE_HIP) || defined(USE_HIP_MULTIOUT_MUX_KEYSWITCH)
++    true;
++#else
++    false;
++#endif
++
+ // HIP descriptor traversal shared by the pre/post-BR schedules. Each active
+ // wave remains complete, including padding lanes in the final output group.
+ // A sentinel is checked before forming a key pointer or issuing a load.
+ #if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
++template <bool AllowMultipleOutputs>
++inline constexpr bool UseHipPreparedOutputSchedule =
++#ifdef USE_HIP_WAVE_KEYSWITCH
++    true;
++#else
++    AllowMultipleOutputs;
++#endif
++
+ template <class P, class Row, int Outputs, bool Adjacent, int Threads, int Count>
+ __device__ __forceinline__ void HipPreparedKeySwitchOutputs(
+     typename P::targetP::T* out, const typename P::targetP::T* key,
+@@ -380,7 +396,7 @@
+ // All CTA threads must participate. rows needs count * P::t uint16_t words
+ // disjoint from inputs, output and key; a caller barrier is required before
+ // reusing it. The arithmetic, rounding and key representation are unchanged.
+-template <class P, int casign, int cbsign, auto offset>
++template <class P, int casign, int cbsign, auto offset, bool AllowHipMultipleOutputs = true>
+ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared16(
+     typename P::targetP::T* lwe, const typename P::domainP::T* ina,
+     const typename P::domainP::T* inb, const typename P::targetP::T* ksk,
+@@ -407,11 +423,12 @@
+     }
+     __syncthreads();
+ #if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+-    if constexpr (std::is_same_v<P, TFHEpp::lvl20param> && !use_subset_key_switch<P> &&
++    if constexpr (UseHipPreparedOutputSchedule<AllowHipMultipleOutputs> &&
++                  std::is_same_v<P, TFHEpp::lvl20param> && !use_subset_key_switch<P> &&
+                   output_size > 512 && output_size <= 1024) {
+         if (blockDim.x == 512) {
+ #ifdef USE_HIP_MULTIOUT_KEYSWITCH
+-            constexpr int Outputs = 2;
++            constexpr int Outputs = AllowHipMultipleOutputs ? 2 : 1;
+ #else
+             constexpr int Outputs = 1;
+ #endif
+@@ -512,7 +529,7 @@
+ // extraction. Scratch may overlap the consumed input: every mask coefficient
+ // and the body are captured before the first barrier permits descriptor writes.
+ // rows needs (switched_count * P::t + 1) uint32_t words; output/key are disjoint.
+-template <class P, int Threads, bool ExtractFromTRLWE>
++template <class P, int Threads, bool ExtractFromTRLWE, bool AllowHipMultipleOutputs = true>
+ __device__ __forceinline__ void KeySwitchPrepared32(
+     typename P::targetP::T* lwe, const typename P::domainP::T* input,
+     const typename P::targetP::T* ksk, uint32_t* rows, uint32_t* exercised_policy = nullptr)
+@@ -559,9 +576,10 @@
+     if (tid == 0) rows[count * P::t] = body;
+     __syncthreads();
+ #if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+-    if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
++    if constexpr (UseHipPreparedOutputSchedule<AllowHipMultipleOutputs> &&
++                  Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
+ #ifdef USE_HIP_MULTIOUT_KEYSWITCH
+-        constexpr int Outputs = 2;
++        constexpr int Outputs = AllowHipMultipleOutputs ? 2 : 1;
+ #else
+         constexpr int Outputs = 1;
+ #endif
+@@ -640,7 +658,7 @@
+ // words and may overlap the consumed TRLWE: all coefficients are captured in
+ // registers before the first barrier permits scratch writes. Output and key
+ // must be disjoint from scratch. No TRLWE data is needed after this call.
+-template <class P, int Threads, bool ExtractFromTRLWE>
++template <class P, int Threads, bool ExtractFromTRLWE, bool AllowHipMultipleOutputs = true>
+ __device__ __forceinline__ void KeySwitchPrepared16(
+     typename P::targetP::T* lwe, const typename P::domainP::T* trlwe,
+     const typename P::targetP::T* ksk, uint16_t* rows, uint32_t* exercised_policy = nullptr)
+@@ -683,9 +701,10 @@
+     if (tid == 0) rows[domain_size * P::t] = body;
+     __syncthreads();
+ #if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+-    if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
++    if constexpr (UseHipPreparedOutputSchedule<AllowHipMultipleOutputs> &&
++                  Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
+ #ifdef USE_HIP_MULTIOUT_KEYSWITCH
+-        constexpr int Outputs = ExtractFromTRLWE ? 2 : 5;
++        constexpr int Outputs = AllowHipMultipleOutputs ? (ExtractFromTRLWE ? 2 : 5) : 1;
+ #else
+         constexpr int Outputs = 1;
+ #endif
+--- a/src/bootstrap_gpu.cu
++++ b/src/bootstrap_gpu.cu
+@@ -1318,13 +1318,14 @@
+     if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                   prepared_bytes <= MEM4HOMGATE_DYN<typename brP::targetP>) {
+         KeySwitchPrepared16<iksP, NUM_THREAD4HOMGATE<typename brP::targetP>,
+-                            ExtractFromTRLWE>(
++                            ExtractFromTRLWE, ExtractFromTRLWE || UseHipMultiOutputMux>(
+             out, input, ksk, reinterpret_cast<uint16_t*>(dyn_sh));
+     } else if constexpr (std::is_same_v<iksP, TFHEpp::lvl10param> &&
+         ((iksP::domainP::k * iksP::domainP::n -
+           (use_subset_key_switch<iksP> ? iksP::targetP::k * iksP::targetP::n : 0)) *
+              iksP::t + 1) * sizeof(uint32_t) <= MEM4HOMGATE_DYN<typename brP::targetP>) {
+-        KeySwitchPrepared32<iksP, NUM_THREAD4HOMGATE<typename brP::targetP>, ExtractFromTRLWE>(
++        KeySwitchPrepared32<iksP, NUM_THREAD4HOMGATE<typename brP::targetP>,
++                            ExtractFromTRLWE, ExtractFromTRLWE || UseHipMultiOutputMux>(
+             out, input, ksk, reinterpret_cast<uint32_t*>(dyn_sh));
+     } else
+ #endif
+@@ -1358,7 +1359,7 @@
+             out, in0, in1, ksk, reinterpret_cast<uint32_t*>(scratch));
+     } else if constexpr (std::is_same_v<iksP, TFHEpp::lvl20param> &&
+                          count * sizeof(uint16_t) <= MEM4HOMGATE<typename brP::targetP>) {
+-        IdentityKeySwitchPreAddPrepared16<iksP, Sign0, Sign1, Offset>(
++        IdentityKeySwitchPreAddPrepared16<iksP, Sign0, Sign1, Offset, UseHipMultiOutputMux>(
+             out, in0, in1, ksk, reinterpret_cast<uint16_t*>(scratch));
+     } else
+ #endif
+--- a/test/test_keyswitch_gpu.cu
++++ b/test/test_keyswitch_gpu.cu
+@@ -23,6 +23,15 @@
+     (1 << (P::basebit - 1)) * output_size;
+ constexpr int batch_size = 19;
+ 
++#ifdef CUFHE_USE_HIP
++#ifdef USE_HIP_MULTIOUT_MUX_KEYSWITCH
++static_assert(cufhe::UseHipMultiOutputMux, "MUX multi-output option must enable its consumer");
++#else
++static_assert(!cufhe::UseHipMultiOutputMux, "MUX multi-output must require its own opt-in");
++#endif
++#endif
++
++
+ void Check(cudaError_t error)
+ {
+     if (error != cudaSuccess) {
+@@ -31,7 +40,7 @@
+     }
+ }
+ 
+-template <bool prepared, int a_sign, int b_sign, auto offset>
++template <bool prepared, int a_sign, int b_sign, auto offset, bool AllowHipMultipleOutputs = true>
+ __global__ void TestKeySwitch(Output* out, const Input* a, const Input* b,
+                               const Output* key)
+ {
+@@ -39,7 +48,7 @@
+     const size_t sample = blockIdx.x;
+     if constexpr (prepared) {
+ #ifdef CUFHE_TEST_COMPACT_LVL20
+-        cufhe::IdentityKeySwitchPreAddPrepared16<P, a_sign, b_sign, offset>(
++        cufhe::IdentityKeySwitchPreAddPrepared16<P, a_sign, b_sign, offset, AllowHipMultipleOutputs>(
+ #else
+         cufhe::IdentityKeySwitchPreAddPrepared<P, a_sign, b_sign, offset>(
+ #endif
+@@ -52,14 +61,14 @@
+             b + sample * input_size, key);
+ }
+ 
+-template <int a_sign, int b_sign, auto offset>
++template <int a_sign, int b_sign, auto offset, bool AllowHipMultipleOutputs = true>
+ void Compare(Output* original, Output* prepared, const Input* a,
+              const Input* b, const Output* key, int threads)
+ {
+     TestKeySwitch<false, a_sign, b_sign, offset><<<batch_size, threads>>>(
+         original, a, b, key);
+     Check(cudaGetLastError());
+-    TestKeySwitch<true, a_sign, b_sign, offset>
++    TestKeySwitch<true, a_sign, b_sign, offset, AllowHipMultipleOutputs>
+         <<<batch_size, threads, switched_count * P::t * sizeof(Row)>>>(
+             prepared, a, b, key);
+     Check(cudaGetLastError());
+@@ -78,7 +87,7 @@
+ 
+ // The prepared path deliberately overwrites its own shared TRLWE input. The
+ // reference extracts to disjoint storage and runs the original key switch.
+-template <bool prepared, int Threads, bool ExtractFromTRLWE>
++template <bool prepared, int Threads, bool ExtractFromTRLWE, bool AllowHipMultipleOutputs = true>
+ __global__ void TestExtractKeySwitch(Output* out, const Input* input,
+                                      const Output* key, uint32_t* policies = nullptr)
+ {
+@@ -90,9 +99,9 @@
+             working[i] = trlwe[i];
+         __syncthreads();
+ #ifdef CUFHE_TEST_COMPACT_LVL20
+-        cufhe::KeySwitchPrepared16<P, Threads, ExtractFromTRLWE>(
+-#else
+-        cufhe::KeySwitchPrepared32<P, Threads, ExtractFromTRLWE>(
++        cufhe::KeySwitchPrepared16<P, Threads, ExtractFromTRLWE, AllowHipMultipleOutputs>(
++#else
++        cufhe::KeySwitchPrepared32<P, Threads, ExtractFromTRLWE, AllowHipMultipleOutputs>(
+ #endif
+             out + blockIdx.x * output_size, working, key,
+             reinterpret_cast<Row*>(working), policies ? policies + blockIdx.x : nullptr);
+@@ -111,7 +120,7 @@
+     }
+ }
+ 
+-template <int Threads, bool ExtractFromTRLWE>
++template <int Threads, bool ExtractFromTRLWE, bool AllowHipMultipleOutputs = true>
+ void CompareExtract(Output* original, Output* prepared, const Input* input,
+                     const Output* key)
+ {
+@@ -122,7 +131,7 @@
+     TestExtractKeySwitch<false, Threads, ExtractFromTRLWE><<<batch_size, Threads, scratch>>>(
+         original, input, key);
+     Check(cudaGetLastError());
+-    TestExtractKeySwitch<true, Threads, ExtractFromTRLWE><<<batch_size, Threads, scratch>>>(
++    TestExtractKeySwitch<true, Threads, ExtractFromTRLWE, AllowHipMultipleOutputs><<<batch_size, Threads, scratch>>>(
+         prepared, input, key, policies);
+     Check(cudaGetLastError());
+     std::vector<Output> expected(batch_size * output_size), actual(expected.size());
+@@ -134,17 +143,20 @@
+     uint32_t wanted = 0;
+ #if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+     if constexpr (Threads == 512) {
++#ifdef USE_HIP_WAVE_KEYSWITCH
++        wanted = 0x101U;
++#endif
+ #ifdef USE_HIP_MULTIOUT_KEYSWITCH
+-#ifdef CUFHE_TEST_COMPACT_LVL20
+-        wanted = ExtractFromTRLWE ? 2 : 5;
+-#else
+-        wanted = 2;
+-#endif
+-#else
+-        wanted = 1;
++        if constexpr (AllowHipMultipleOutputs) {
++#ifdef CUFHE_TEST_COMPACT_LVL20
++            wanted = ExtractFromTRLWE ? 2 : 5;
++#else
++            wanted = 2;
+ #endif
+ #ifdef USE_HIP_WAVE_KEYSWITCH
+-        wanted |= 0x100U;
++            wanted |= 0x100U;
++#endif
++        }
+ #endif
+     }
+ #endif
+@@ -156,7 +168,7 @@
+             std::exit(1);
+         }
+     }
+-    std::printf("key-switch exercised policy=%u threads=%d extracted=%d: %s\n", wanted, Threads, ExtractFromTRLWE, wanted ? "PASS" : "SKIP (generic control)");
++    std::printf("key-switch exercised policy=%u threads=%d extracted=%d allow_multi=%d: %s\n", wanted, Threads, ExtractFromTRLWE, AllowHipMultipleOutputs, wanted ? "PASS" : "SKIP (generic control)");
+ #endif
+     Check(cudaFree(policies));
+     if (expected != actual) {
+@@ -213,6 +225,14 @@
+     CompareExtract<512, true>(original, prepared, device_a, device_key);
+     CompareExtract<256, false>(original, prepared, device_a, device_key);
+     CompareExtract<512, false>(original, prepared, device_a, device_key);
++#ifdef CUFHE_USE_HIP
++    CompareExtract<512, false, false>(original, prepared, device_a, device_key);
++    CompareExtract<512, false, cufhe::UseHipMultiOutputMux>(original, prepared, device_a, device_key);
++    Compare<-1, -1, P::domainP::μ, cufhe::UseHipMultiOutputMux>(
++        original, prepared, device_a, device_b, device_key, 512);
++    Compare<1, 1, -P::domainP::μ, cufhe::UseHipMultiOutputMux>(
++        original, prepared, device_a, device_b, device_key, 512);
++#endif
+     std::puts("sample extraction / direct TLWE prepared key-switch bit equivalence: PASS "
+               "(19 boundary/random samples, 256/512 threads, aliased scratch)");
+     Check(cudaFree(device_a));

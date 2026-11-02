@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nmux backend=ntt block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=111 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=7.94591
+repeat=1 ms/gate=9.9551
+repeat=2 ms/gate=7.96355
+repeat=3 ms/gate=9.81053
+repeat=4 ms/gate=7.93959
+repeat=5 ms/gate=9.88982
+repeat=6 ms/gate=8.00342
+repeat=7 ms/gate=9.93563
+repeat=8 ms/gate=7.95845
+repeat=9 ms/gate=9.94045
+repeat=10 ms/gate=7.9554
+repeat=11 ms/gate=9.80867
+repeat=12 ms/gate=7.91956
+repeat=13 ms/gate=9.8716
+repeat=14 ms/gate=7.99896
+repeat=15 ms/gate=9.89884
+repeat=16 ms/gate=7.92367
+repeat=17 ms/gate=9.92547
+repeat=18 ms/gate=7.92956
+repeat=19 ms/gate=9.77933
+repeat=20 ms/gate=7.89939
+repeat=21 ms/gate=9.85398
+repeat=22 ms/gate=7.97604
+repeat=23 ms/gate=9.88775
+repeat=24 ms/gate=7.88653
+repeat=25 ms/gate=9.92766
+repeat=26 ms/gate=7.93291
+repeat=27 ms/gate=9.78029
+repeat=28 ms/gate=7.90781
+repeat=29 ms/gate=9.83918
+dispatch=packed streams=8 gates=8 median_ms/gate=9.77933 errors=0
+observed_noise_rms=7.54637e-09 observed_max_abs_noise=1.1442e-08

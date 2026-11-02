@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "configuration_checks": [
+    {
+      "case": "register-io",
+      "log": "../2d79cdeec061447d/configuration-checks/register-io.log",
+      "log_sha256": "7ef5f82829f2944d130bf4739a8c092bc9fe33ab7fbadb296f3e0da32b052c2f",
+      "status": "PASS"
+    },
+    {
+      "case": "register31",
+      "log": "../2d79cdeec061447d/configuration-checks/register31.log",
+      "log_sha256": "5f6e0ae839f3660a4e05b4629349f33ae3b7cf53685d11ee418ea6d0defe2892",
+      "status": "PASS"
+    },
+    {
+      "case": "prefetch",
+      "log": "../2d79cdeec061447d/configuration-checks/prefetch.log",
+      "log_sha256": "8e2d8cf8243adc2ef48279521dd47cd5f5843900e77a9ecf16d00c8a06072220",
+      "status": "PASS"
+    },
+    {
+      "case": "roots",
+      "log": "../2d79cdeec061447d/configuration-checks/roots.log",
+      "log_sha256": "bded344dfac6b1b8f9191ad7de2da00178029503c779dbbe0e8ec992fdf4a0c0",
+      "status": "PASS"
+    },
+    {
+      "case": "wave",
+      "log": "../2d79cdeec061447d/configuration-checks/wave.log",
+      "log_sha256": "717a76d8070ed30f7a1a221eb33c07af45ed9e0156a6ac9659254552240daa65",
+      "status": "PASS"
+    },
+    {
+      "case": "default-shoup",
+      "log": "../2d79cdeec061447d/configuration-checks/default-shoup.log",
+      "log_sha256": "27fde79ce65e278dbe1a0be13c1b2cc42fe57a5b517cd8557dcc9875f77fc585",
+      "status": "PASS"
+    }
+  ],
+  "async_copy_installed_builtin_probes": "Both output stores are -1 on gfx1201, indicating unavailable builtins; software-prefetch fallback validated separately",
+  "native_arithmetic_instruction_markers": {
+    "v_add_co": 73,
+    "v_sub_co": 13,
+    "v_mad_co_u64_u32": 35
+  },
+  "evidence_source": "2d79cdeec061447d",
+  "scope": "Archived compiler/configuration evidence applies to current byte-identical C++/CMake source verified by focused implementation audit"
+}

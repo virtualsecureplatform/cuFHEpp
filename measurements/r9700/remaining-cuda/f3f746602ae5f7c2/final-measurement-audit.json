@@ -1,0 +1,70 @@
+{
+  "scope": "Final configuration measurements, exhaustive receipts, dependency pin and compile-only CUDA compatibility; documentation and requirement review remain separate",
+  "source": "f3f746602ae5f7c2",
+  "tfhepp": "1dd9a1addef4cae01da9bb6bfff0d22b55bec683",
+  "profiles": [
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "standard_points": 116,
+      "transition_extra_points": 40,
+      "independent_runs": 3,
+      "verified_raw_logs": 936,
+      "resource_records_present": 936,
+      "longer_comparisons": 60,
+      "exhaustive_tests": 11,
+      "graph_tests": 2,
+      "wins": 1,
+      "median_regressions": 5,
+      "unresolved_regressions": 12
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "standard_points": 116,
+      "transition_extra_points": 40,
+      "independent_runs": 3,
+      "verified_raw_logs": 936,
+      "resource_records_present": 936,
+      "longer_comparisons": 99,
+      "exhaustive_tests": 11,
+      "graph_tests": 2,
+      "wins": 1,
+      "median_regressions": 7,
+      "unresolved_regressions": 17
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "standard_points": 116,
+      "transition_extra_points": 40,
+      "independent_runs": 3,
+      "verified_raw_logs": 936,
+      "resource_records_present": 936,
+      "longer_comparisons": 45,
+      "exhaustive_tests": 11,
+      "graph_tests": 2,
+      "wins": 0,
+      "median_regressions": 3,
+      "unresolved_regressions": 6
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "standard_points": 116,
+      "transition_extra_points": 0,
+      "independent_runs": 3,
+      "verified_raw_logs": 696,
+      "resource_records_present": 696,
+      "longer_comparisons": 96,
+      "exhaustive_tests": 9,
+      "graph_tests": 2,
+      "wins": 0,
+      "median_regressions": 2,
+      "unresolved_regressions": 20
+    }
+  ],
+  "status": "PASS",
+  "cuda": "NTT+FFT SM80/SM89 compile/images verified; NVIDIA runtime unavailable",
+  "stress": "Three corrected passes and three expected barrier-removed failures"
+}

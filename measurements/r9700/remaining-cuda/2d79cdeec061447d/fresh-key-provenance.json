@@ -1,0 +1,15 @@
+{
+  "detail": "Every benchmark executable constructs SecretKey and EvalKey in a fresh process. SecretKey contains lweKey, whose default constructor invokes keyGen. USE_BLAKE3 selects a thread-local generator seeded by std::random_device. No fixed benchmark key seed is installed.",
+  "files": {
+    "thirdparties/TFHEpp/include/utils.hpp": "2e4facb02b844102b5bc07e7b4669bcbb07736cc6d7a2bcb1957df31c61e339c",
+    "thirdparties/TFHEpp/include/BLAKE3PRNG.hpp": "d9792d350daf85763e5794d08e229d20677678cf8a750a4452f7f8244be44376",
+    "thirdparties/TFHEpp/include/tfhe/key.hpp": "d9fdf68b5a1bb1a2cfdd2d16b512f5e6deaba26f1c2d45cabb7687fd23839abb",
+    "test/test_bootstrap_bench.cc": "1ad57e03f176278f850679aa6ace28385ad1d4267bb1a8eb1d6779abdcc87197"
+  },
+  "source_locations": {
+    "generator": "thirdparties/TFHEpp/include/utils.hpp:25",
+    "seed": "thirdparties/TFHEpp/include/BLAKE3PRNG.hpp:48",
+    "key_generation": "thirdparties/TFHEpp/include/tfhe/key.hpp:150",
+    "benchmark": "test/test_bootstrap_bench.cc:124"
+  }
+}

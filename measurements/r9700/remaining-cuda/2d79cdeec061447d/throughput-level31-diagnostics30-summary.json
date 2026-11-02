@@ -1,0 +1,189 @@
+{
+  "status": "targeted-diagnostics-complete-initial-screens-pending",
+  "profile": "r9700-ntt-throughput",
+  "source": "2d79cdeec061447d",
+  "repetitions": 30,
+  "fresh_keys": 3,
+  "configurations": [
+    {
+      "variant": "register31",
+      "points": 3,
+      "repeatable_wins": 0,
+      "median_regressions": 0,
+      "unresolved_regressions": 2,
+      "comparisons": [
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "register31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed",
+          "streams": 8,
+          "count": 1,
+          "graph": false,
+          "min_improvement": 0.022103732157080613,
+          "median_improvement": 0.15538451711033952,
+          "max_improvement": 0.1624757596118669,
+          "improvements": [
+            0.022103732157080613,
+            0.1624757596118669,
+            0.15538451711033952
+          ]
+        },
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "register31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed-mux",
+          "streams": 128,
+          "count": 1,
+          "graph": false,
+          "min_improvement": -0.044551035772774084,
+          "median_improvement": -0.003601928320845049,
+          "max_improvement": 0.03795412878362692,
+          "improvements": [
+            0.03795412878362692,
+            -0.044551035772774084,
+            -0.003601928320845049
+          ]
+        },
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "register31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed-nmux",
+          "streams": 8,
+          "count": 1,
+          "graph": false,
+          "min_improvement": -0.25478172986997305,
+          "median_improvement": -0.010096738383464698,
+          "max_improvement": -0.002598790469482415,
+          "improvements": [
+            -0.002598790469482415,
+            -0.010096738383464698,
+            -0.25478172986997305
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "roots31",
+      "points": 3,
+      "repeatable_wins": 0,
+      "median_regressions": 0,
+      "unresolved_regressions": 1,
+      "comparisons": [
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "roots31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed",
+          "streams": 8,
+          "count": 1,
+          "graph": false,
+          "min_improvement": -0.11637292171179303,
+          "median_improvement": 0.018765389966038493,
+          "max_improvement": 0.11570560359829718,
+          "improvements": [
+            0.018765389966038493,
+            0.11570560359829718,
+            -0.11637292171179303
+          ]
+        },
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "roots31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed-mux",
+          "streams": 128,
+          "count": 1,
+          "graph": false,
+          "min_improvement": 0.007301171344678448,
+          "median_improvement": 0.010318949343339656,
+          "max_improvement": 0.038571818678317715,
+          "improvements": [
+            0.007301171344678448,
+            0.010318949343339656,
+            0.038571818678317715
+          ]
+        },
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "roots31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed-nmux",
+          "streams": 8,
+          "count": 1,
+          "graph": false,
+          "min_improvement": -0.011858199845544481,
+          "median_improvement": 0.007138652862252681,
+          "max_improvement": 0.2029290862392451,
+          "improvements": [
+            -0.011858199845544481,
+            0.007138652862252681,
+            0.2029290862392451
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "difference31",
+      "points": 3,
+      "repeatable_wins": 0,
+      "median_regressions": 0,
+      "unresolved_regressions": 2,
+      "comparisons": [
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "difference31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed",
+          "streams": 8,
+          "count": 1,
+          "graph": false,
+          "min_improvement": -0.0029919091189596347,
+          "median_improvement": 0.03072781451791806,
+          "max_improvement": 0.14421849210550908,
+          "improvements": [
+            -0.0029919091189596347,
+            0.14421849210550908,
+            0.03072781451791806
+          ]
+        },
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "difference31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed-mux",
+          "streams": 128,
+          "count": 1,
+          "graph": false,
+          "min_improvement": -0.03932768132655928,
+          "median_improvement": 0.0011132476469992714,
+          "max_improvement": 0.009470665736650341,
+          "improvements": [
+            0.009470665736650341,
+            -0.03932768132655928,
+            0.0011132476469992714
+          ]
+        },
+        {
+          "profile": "r9700-ntt-throughput",
+          "variant": "difference31",
+          "benchmark": "test_bootstrap_bench",
+          "mode": "packed-nmux",
+          "streams": 8,
+          "count": 1,
+          "graph": false,
+          "min_improvement": -0.24544893783474753,
+          "median_improvement": 0.00490065584085575,
+          "max_improvement": 0.18741481981705443,
+          "improvements": [
+            0.18741481981705443,
+            0.00490065584085575,
+            -0.24544893783474753
+          ]
+        }
+      ]
+    }
+  ]
+}

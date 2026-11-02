@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-ntt-throughput",
+  "variant": "register31",
+  "complete_points": 116,
+  "expected_points": 116,
+  "wins": 17,
+  "regressions": 8,
+  "unresolved_regressions": 18,
+  "needs_30": 0,
+  "decision": "experimental-opt-in"
+}

@@ -109,7 +109,19 @@
         "USE_CUDA_WARP_TRANSFORM64": "OFF",
         "USE_CUDA_UNREDUCED_INVERSE_DIFF": "OFF",
         "USE_CUDA_PACKED_PAIRED_ROOTS": "OFF",
-        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF"
       }
     },
     {
@@ -164,6 +176,35 @@
       "inherits": "r9700-fft-baseline",
       "binaryDir": "${sourceDir}/build-r9700-fft",
       "cacheVariables": {}
+    },
+    {
+      "name": "r9700-remaining-all",
+      "displayName": "R9700 experimental remaining CUDA ports (all scalar/paired-31 paths)",
+      "inherits": "r9700-ntt-throughput",
+      "binaryDir": "${sourceDir}/build-r9700-remaining-all",
+      "cacheVariables": {
+        "USE_HIP_MULTIOUT_KEYSWITCH": "ON",
+        "USE_HIP_WAVE_KEYSWITCH": "ON",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "ON",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "ON",
+        "USE_HIP_REGISTER_NTT_IO64": "ON",
+        "USE_HIP_REGISTER_MONOMIALS31": "ON",
+        "USE_HIP_NATIVE_NTT64": "ON",
+        "USE_HIP_FAST_TORUS64": "ON",
+        "USE_HIP_SCALED_INVERSE64": "ON",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "ON",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "ON"
+      }
+    },
+    {
+      "name": "r9700-remaining-prefetch",
+      "displayName": "R9700 experimental staged paired products with vector prefetch",
+      "inherits": "r9700-ntt",
+      "binaryDir": "${sourceDir}/build-r9700-remaining-prefetch",
+      "cacheVariables": {
+        "USE_HIP_MONOMIAL_STAGING": "ON",
+        "USE_HIP_MONOMIAL_PREFETCH": "ON"
+      }
     }
   ]
 }

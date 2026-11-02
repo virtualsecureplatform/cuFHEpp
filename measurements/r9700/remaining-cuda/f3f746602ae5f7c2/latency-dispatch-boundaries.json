@@ -1,0 +1,1570 @@
+{
+  "status": "PASS",
+  "source": "f3f746602ae5f7c2",
+  "profiles": [
+    "r9700-ntt-latency"
+  ],
+  "policy": "HIP dense=false; capacity=min(early_guard, resident_blocks*multiprocessors/groups)",
+  "boundaries": [
+    {
+      "variant": "groups2",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "early_guard_cap": 16,
+      "actual_capacity": 16,
+      "multiprocessors": 32,
+      "resident_blocks": 1,
+      "registers": 174,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 15,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              174,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b15-g0-r0-n15.log"
+        },
+        {
+          "count": 15,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              174,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b15-g0-r1-n15.log"
+        },
+        {
+          "count": 15,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              174,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b15-g0-r2-n15.log"
+        },
+        {
+          "count": 16,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 32,
+          "observed_nodes": [
+            [
+              174,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              32,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b16-g0-r0-n15.log"
+        },
+        {
+          "count": 16,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 32,
+          "observed_nodes": [
+            [
+              174,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              32,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b16-g0-r1-n15.log"
+        },
+        {
+          "count": 16,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 32,
+          "observed_nodes": [
+            [
+              174,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              32,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b16-g0-r2-n15.log"
+        },
+        {
+          "count": 17,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 17,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              17,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15.log"
+        },
+        {
+          "count": 17,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 17,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              17,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r1-n15.log"
+        },
+        {
+          "count": 17,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 17,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              17,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "variant": "groups2",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "early_guard_cap": 21,
+      "actual_capacity": 16,
+      "multiprocessors": 32,
+      "resident_blocks": 1,
+      "registers": 172,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 15,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              172,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b15-g0-r0-n15.log"
+        },
+        {
+          "count": 15,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              172,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b15-g0-r1-n15.log"
+        },
+        {
+          "count": 15,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              172,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b15-g0-r2-n15.log"
+        },
+        {
+          "count": 16,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 32,
+          "observed_nodes": [
+            [
+              172,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              32,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b16-g0-r0-n15.log"
+        },
+        {
+          "count": 16,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 32,
+          "observed_nodes": [
+            [
+              172,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              32,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b16-g0-r1-n15.log"
+        },
+        {
+          "count": 16,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 32,
+          "observed_nodes": [
+            [
+              172,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              32,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b16-g0-r2-n15.log"
+        },
+        {
+          "count": 17,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 17,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              17,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r0-n15.log"
+        },
+        {
+          "count": 17,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 17,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              17,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r1-n15.log"
+        },
+        {
+          "count": 17,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 17,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              17,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups2/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "variant": "groups3",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "early_guard_cap": 16,
+      "actual_capacity": 10,
+      "multiprocessors": 32,
+      "resident_blocks": 1,
+      "registers": 160,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 9,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 27,
+          "observed_nodes": [
+            [
+              160,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              27,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b9-g0-r0-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 27,
+          "observed_nodes": [
+            [
+              160,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              27,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b9-g0-r1-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 27,
+          "observed_nodes": [
+            [
+              160,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              27,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b9-g0-r2-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              160,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r0-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              160,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r1-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              160,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r2-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 11,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              11,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r0-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 11,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              11,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r1-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 11,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              11,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "variant": "groups3",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "early_guard_cap": 21,
+      "actual_capacity": 10,
+      "multiprocessors": 32,
+      "resident_blocks": 1,
+      "registers": 158,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 9,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 27,
+          "observed_nodes": [
+            [
+              158,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              27,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b9-g0-r0-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 27,
+          "observed_nodes": [
+            [
+              158,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              27,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b9-g0-r1-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 27,
+          "observed_nodes": [
+            [
+              158,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              27,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b9-g0-r2-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              158,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r0-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              158,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r1-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              158,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r2-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 11,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              11,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r0-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 11,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              11,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r1-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 11,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              11,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "variant": "groups5",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "early_guard_cap": 16,
+      "actual_capacity": 6,
+      "multiprocessors": 32,
+      "resident_blocks": 1,
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 5,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 25,
+          "observed_nodes": [
+            [
+              128,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              25,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b5-g0-r0-n15.log"
+        },
+        {
+          "count": 5,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 25,
+          "observed_nodes": [
+            [
+              128,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              25,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b5-g0-r1-n15.log"
+        },
+        {
+          "count": 5,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 25,
+          "observed_nodes": [
+            [
+              128,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              25,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b5-g0-r2-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              128,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b6-g0-r0-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              128,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b6-g0-r1-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              128,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b6-g0-r2-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 7,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              7,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b7-g0-r0-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 7,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              7,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b7-g0-r1-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 7,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              7,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02-batch-s1-b7-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "variant": "groups5",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "early_guard_cap": 21,
+      "actual_capacity": 6,
+      "multiprocessors": 32,
+      "resident_blocks": 1,
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 5,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 25,
+          "observed_nodes": [
+            [
+              126,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              25,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b5-g0-r0-n15.log"
+        },
+        {
+          "count": 5,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 25,
+          "observed_nodes": [
+            [
+              126,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              25,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b5-g0-r1-n15.log"
+        },
+        {
+          "count": 5,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 25,
+          "observed_nodes": [
+            [
+              126,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              25,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b5-g0-r2-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              126,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b6-g0-r0-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              126,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b6-g0-r1-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 30,
+          "observed_nodes": [
+            [
+              126,
+              1264,
+              40960,
+              12,
+              512,
+              1,
+              30,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b6-g0-r2-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 7,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              7,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b7-g0-r0-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 7,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              7,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b7-g0-r1-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 7,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              7,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups5/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b7-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "variant": "groups9",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "early_guard_cap": 16,
+      "actual_capacity": 7,
+      "multiprocessors": 32,
+      "resident_blocks": 2,
+      "registers": 79,
+      "static_lds": 1264,
+      "dynamic_lds": 28688,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 6,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b6-g0-r0-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b6-g0-r1-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b6-g0-r2-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b7-g0-r0-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b7-g0-r1-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b7-g0-r2-n15.log"
+        },
+        {
+          "count": 8,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 8,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              8,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b8-g0-r0-n15.log"
+        },
+        {
+          "count": 8,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 8,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              8,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b8-g0-r1-n15.log"
+        },
+        {
+          "count": 8,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 8,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              8,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b8-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "variant": "groups9",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "early_guard_cap": 21,
+      "actual_capacity": 7,
+      "multiprocessors": 32,
+      "resident_blocks": 2,
+      "registers": 79,
+      "static_lds": 1264,
+      "dynamic_lds": 28688,
+      "local_bytes": 12,
+      "threads": 512,
+      "evidence": [
+        {
+          "count": 6,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b6-g0-r0-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b6-g0-r1-n15.log"
+        },
+        {
+          "count": 6,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b6-g0-r2-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 0,
+          "cooperative": true,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b7-g0-r0-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 1,
+          "cooperative": true,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b7-g0-r1-n15.log"
+        },
+        {
+          "count": 7,
+          "run": 2,
+          "cooperative": true,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b7-g0-r2-n15.log"
+        },
+        {
+          "count": 8,
+          "run": 0,
+          "cooperative": false,
+          "expected_grid": 8,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              8,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b8-g0-r0-n15.log"
+        },
+        {
+          "count": 8,
+          "run": 1,
+          "cooperative": false,
+          "expected_grid": 8,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              8,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b8-g0-r1-n15.log"
+        },
+        {
+          "count": 8,
+          "run": 2,
+          "cooperative": false,
+          "expected_grid": 8,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              8,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b8-g0-r2-n15.log"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "status": "incomplete",
+  "requirements": [
+    {
+      "requirement": "prepared-key-schedules",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "include/keyswitch_gpu.cuh; all30 checked receipts; exercised policy counters in test_keyswitch_gpu[_lvl20].log"
+    },
+    {
+      "requirement": "output-exponent-cache",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "public lvl02 helper and full BR alias fixtures in test_small_modulus.log"
+    },
+    {
+      "requirement": "scalar64-cache-and-register-io",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "exercised policy7; inverse-reuse-regression/validation.json (3 pass,3 expected fail controls)"
+    },
+    {
+      "requirement": "register31-cache-and-inverse-add",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "exercised policies1/3 and independent external-product reference"
+    },
+    {
+      "requirement": "native-limb-arithmetic",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "host/device field references and capabilities/all-arithmetic.isa (ADD/SUB/MADD2/MADD4)"
+    },
+    {
+      "requirement": "fast-torus-and-scaled-inverse",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "exact independent conversion/normalization references in test_small_modulus.log"
+    },
+    {
+      "requirement": "packed-roots-and-unreduced-difference",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "independent paired/scalar transform and convolution fixtures; per-feature receipts"
+    },
+    {
+      "requirement": "vector-monomial-prefetch",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "r9700-ntt/prefetch/checked.json; staged64 vs independent scalar fixture"
+    },
+    {
+      "requirement": "direct-asynchronous-lds-copy",
+      "status": "unavailable-on-target",
+      "evidence_or_next_step": "capabilities/async-copy-probe.ll: both builtin probes return -1; software prefetch implemented"
+    },
+    {
+      "requirement": "independent-controls-and-prerequisites",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "runner-final-fixes.patch applied after old workers terminated; new snapshot f3f746602ae5f7c2; independent FFT wave control and scoped report fix."
+    },
+    {
+      "requirement": "public-library-compatibility",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "public bootstrap header unchanged; CUDA SM80/SM89 NTT+FFT compile/image receipts; no NVIDIA runtime hardware"
+    },
+    {
+      "requirement": "resident-mux-cli-and-resources",
+      "status": "implemented-validated",
+      "evidence_or_next_step": "same updated harness in original/candidate binaries; graph resource records in benchmark logs"
+    },
+    {
+      "requirement": "per-feature-measurements",
+      "status": "complete",
+      "evidence_or_next_step": "All initial screens and predefined30-repeat diagnostics complete; exploration-coverage.json. Remaining candidate qualification in f3f746602ae5f7c2"
+    },
+    {
+      "requirement": "original-backend-baseline",
+      "status": "built",
+      "evidence_or_next_step": "original-baseline/provenance.json and four profile built.json receipts"
+    },
+    {
+      "requirement": "combined-winner-selection",
+      "status": "reselection-required",
+      "evidence_or_next_step": "Paired bundleandnative-alone bothfailedfulloriginalgates after42/30longer points;latency/FFT broadcandidatesfailedtoo. RemainingTHfeature screens willdetermineotherpotentialconfigurations; no defaults changed."
+    },
+    {
+      "requirement": "occupancy-and-group-retuning",
+      "status": "pending-valid-combination",
+      "evidence_or_next_step": "Latency all and FFT multi rejected before sweeps. Retune final valid feature combinations after individual screens."
+    },
+    {
+      "requirement": "full-batch-concurrency-grid",
+      "status": "selected-candidate-full-grid-complete",
+      "evidence_or_next_step": "Paired multi-native64 full116/348 comparisons complete:46wins10preliminarymedianregressions at15reps;42points nowrerunning30. Gate/presetdecision remains pending."
+    },
+    {
+      "requirement": "thirty-repeat-uncertain-points",
+      "status": "qualified-candidates-longer-runs-complete",
+      "evidence_or_next_step": "All42pairedbundle and30native-only requiredpointsrerun30; bothremainopt-in. PriorFFT/latency longer runscomplete/rejected. Remainingpotentialselectedconfigurations mayneed30reps."
+    },
+    {
+      "requirement": "final-exhaustive-tests",
+      "status": "partial",
+      "evidence_or_next_step": "Latencybaseline/all, FFTprepared/multi, pairedbaseline/multi-native64 andnative64-only exhaustivePASS. Finalchosen configurations/presets stillneed verification; no newdefaultpromoted."
+    },
+    {
+      "requirement": "preset-promotion",
+      "status": "pending",
+      "evidence_or_next_step": ">=3% every intended key run, no reproducible >2% regression; production presets unchanged"
+    },
+    {
+      "requirement": "final-idea-outcomes-and-report",
+      "status": "pending",
+      "evidence_or_next_step": "README must replace in-progress status with actual enabled/opt-in/unavailable results"
+    },
+    {
+      "requirement": "dependency-and-parameter-invariants",
+      "status": "preserved",
+      "evidence_or_next_step": "TFHEpp1dd9a1a; unchanged parameters/rounding/primes; same pinned dependency in original baseline"
+    }
+  ]
+}

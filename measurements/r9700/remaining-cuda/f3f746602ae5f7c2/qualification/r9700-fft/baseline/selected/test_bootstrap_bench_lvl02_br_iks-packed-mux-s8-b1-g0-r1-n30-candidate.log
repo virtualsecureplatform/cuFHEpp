@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=mux backend=fft block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=10.5986
+repeat=1 ms/gate=7.3861
+repeat=2 ms/gate=10.6074
+repeat=3 ms/gate=7.44435
+repeat=4 ms/gate=9.97113
+repeat=5 ms/gate=7.34258
+repeat=6 ms/gate=10.5735
+repeat=7 ms/gate=7.4162
+repeat=8 ms/gate=9.89824
+repeat=9 ms/gate=7.31815
+repeat=10 ms/gate=10.5076
+repeat=11 ms/gate=7.38314
+repeat=12 ms/gate=9.88731
+repeat=13 ms/gate=7.29453
+repeat=14 ms/gate=9.90107
+repeat=15 ms/gate=7.2882
+repeat=16 ms/gate=9.81802
+repeat=17 ms/gate=7.27697
+repeat=18 ms/gate=10.4658
+repeat=19 ms/gate=7.3711
+repeat=20 ms/gate=10.4796
+repeat=21 ms/gate=7.33406
+repeat=22 ms/gate=9.87957
+repeat=23 ms/gate=7.2836
+repeat=24 ms/gate=10.4005
+repeat=25 ms/gate=7.2904
+repeat=26 ms/gate=9.87006
+repeat=27 ms/gate=7.34272
+repeat=28 ms/gate=9.86192
+repeat=29 ms/gate=7.26771
+dispatch=packed streams=8 gates=8 median_ms/gate=9.81802 errors=0
+observed_noise_rms=0.0087462 observed_max_abs_noise=0.0137024

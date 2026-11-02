@@ -1,0 +1,7 @@
+[
+  "cmake",
+  "--preset",
+  "r9700-ntt",
+  "-B",
+  "/home/nimda/sources/cuFHEpp/build-remaining-original/r9700-ntt"
+]

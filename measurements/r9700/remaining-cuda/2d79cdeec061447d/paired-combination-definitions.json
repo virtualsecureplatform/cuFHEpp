@@ -1,0 +1,11 @@
+{
+  "r9700-ntt": {
+    "multi-native64": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "baseline"
+    }
+  }
+}

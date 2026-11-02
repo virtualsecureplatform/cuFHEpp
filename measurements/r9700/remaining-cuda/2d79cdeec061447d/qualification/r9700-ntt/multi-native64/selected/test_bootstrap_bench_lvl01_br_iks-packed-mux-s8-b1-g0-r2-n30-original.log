@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=mux backend=ntt block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=1 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=2 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=3 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=4 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=5 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=6 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=7 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+repeat=0 ms/gate=1.67717
+repeat=1 ms/gate=1.55404
+repeat=2 ms/gate=1.55816
+repeat=3 ms/gate=1.54529
+repeat=4 ms/gate=1.56769
+repeat=5 ms/gate=1.55676
+repeat=6 ms/gate=1.68545
+repeat=7 ms/gate=1.5435
+repeat=8 ms/gate=1.67424
+repeat=9 ms/gate=1.55147
+repeat=10 ms/gate=1.6828
+repeat=11 ms/gate=1.55874
+repeat=12 ms/gate=1.69502
+repeat=13 ms/gate=1.55323
+repeat=14 ms/gate=1.68393
+repeat=15 ms/gate=1.5446
+repeat=16 ms/gate=1.67802
+repeat=17 ms/gate=1.54887
+repeat=18 ms/gate=1.67666
+repeat=19 ms/gate=1.5535
+repeat=20 ms/gate=1.68903
+repeat=21 ms/gate=1.55203
+repeat=22 ms/gate=1.68111
+repeat=23 ms/gate=1.53868
+repeat=24 ms/gate=1.67113
+repeat=25 ms/gate=1.5414
+repeat=26 ms/gate=1.66952
+repeat=27 ms/gate=1.54014
+repeat=28 ms/gate=1.68371
+repeat=29 ms/gate=1.54193
+dispatch=packed streams=8 gates=8 median_ms/gate=1.55874 errors=0
+observed_noise_rms=0.00606121 observed_max_abs_noise=0.0130157

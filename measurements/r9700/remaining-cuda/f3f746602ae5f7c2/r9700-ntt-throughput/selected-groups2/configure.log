@@ -1,0 +1,65 @@
+Preset CMake variables:
+
+  CMAKE_BUILD_TYPE="Release"
+  CMAKE_HIP_ARCHITECTURES="gfx1201"
+  CUFHE_GPU_BACKEND="HIP"
+  ENABLE_TEST="ON"
+  USE_BLOCK_BINARY="ON"
+  USE_CUDA_ASYNC_MONOMIALS="OFF"
+  USE_CUDA_PACKED_PAIRED_ROOTS="OFF"
+  USE_CUDA_PAIRED_NTT="ON"
+  USE_CUDA_PAIRED_NTT_MADD4="OFF"
+  USE_CUDA_PAIRED_NTT_WARP="OFF"
+  USE_CUDA_SHOUP_NTT="ON"
+  USE_CUDA_UNREDUCED_INVERSE_DIFF="OFF"
+  USE_CUDA_WARP_TRANSFORM64="OFF"
+  USE_CUDA_WORD32_REDUCTION="OFF"
+  USE_FFT="OFF"
+  USE_HIP_COOPERATIVE_BATCH="ON"
+  USE_HIP_COOPERATIVE_SCALAR="OFF"
+  USE_HIP_FUSED_NTT="ON"
+  USE_HIP_LOW_LDS="ON"
+  USE_HIP_MONOMIAL_STAGING="OFF"
+  USE_HIP_NATIVE_KEYSWITCH="OFF"
+  USE_HIP_PAIRED_NTT="ON"
+  USE_HIP_PAIRED_NTT64="OFF"
+  USE_HIP_PREPARED_KEYSWITCH="ON"
+  USE_HIP_WAVE_MODSWITCH_CORRECTION="ON"
+  USE_KEY_BUNDLE="OFF"
+  USE_SUBSET_KEY="ON"
+
+-- The HIP compiler identification is Clang 23.0.0
+-- The CXX compiler identification is Clang 23.0.0
+-- The C compiler identification is Clang 23.0.0
+-- Detecting HIP compiler ABI info
+-- Detecting HIP compiler ABI info - done
+-- Check for working HIP compiler: /opt/rocm/core-10.0/lib/llvm/bin/clang++ - skipped
+-- Detecting HIP compile features
+-- Detecting HIP compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/rocm/core-10.0/lib/llvm/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/rocm/core-10.0/lib/llvm/bin/clang - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- cuFHEpp GPU backend: HIP
+-- USE_FFT=OFF selects the NTT backend; disabling USE_GPU_FFT
+-- Found OpenMP_C: -fopenmp=libomp (found version "5.1") 
+-- Found OpenMP_CXX: -fopenmp=libomp (found version "5.1") 
+-- Found OpenMP: TRUE (found version "5.1")  
+-- AVX-512 support detected, USE_AVX512 defaults to ON
+-- The ASM compiler identification is Clang with GNU-like command-line
+-- Found assembler: /opt/rocm/core-10.0/lib/llvm/bin/clang
+-- BLAKE3 SIMD configuration: 
+-- 
+ * AMD64 assembly, The library uses hand written amd64 SIMD assembly.
+
+-- Found OpenMP_C: -fopenmp=libomp (found version "5.1") 
+-- Found OpenMP_CXX: -fopenmp=libomp (found version "5.1") 
+-- Configuring done (1.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/nimda/sources/cuFHEpp/build-remaining-r9700-ntt-throughput-selected-groups2

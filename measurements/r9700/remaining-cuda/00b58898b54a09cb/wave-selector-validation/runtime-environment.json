@@ -1,0 +1,5 @@
+{
+  "HIP_VISIBLE_DEVICES": "0",
+  "OMP_NUM_THREADS": "8",
+  "LD_LIBRARY_PATH": "/opt/rocm/lib:"
+}

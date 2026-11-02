@@ -1,0 +1,525 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "selected-waves3",
+  "control": "baseline",
+  "complete_points": 32,
+  "runs": 3,
+  "repetitions": 15,
+  "wins": 0,
+  "median_regressions": 1,
+  "scope": "Exploratory screen, not final original-backend qualification",
+  "points": [
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        0.0054206170365216355,
+        0.000490527562393428,
+        -0.0020213324007691824
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        0.0026254465411126304,
+        -0.0025939777817485243,
+        0.0012570245489499365
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        -0.0014270687884063715,
+        0.0022677827353516644,
+        0.001456507577526911
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "batch",
+        1,
+        512,
+        false
+      ],
+      "gains": [
+        -0.003217753120665856,
+        -2.5925989940667193e-05,
+        0.0009510445092282271
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "packed",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        0.005427507484119132,
+        0.0031417393085396705,
+        0.004411472616463241
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "packed",
+        128,
+        1,
+        false
+      ],
+      "gains": [
+        -0.016828382120867236,
+        -0.02734478525146522,
+        0.001228566466737524
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "packed-mux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.015249907257617323,
+        0.004951335863769946,
+        0.0012408070415799166
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench",
+        "packed-nmux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.0005301404225606099,
+        0.0024091640256045377,
+        0.0012167786201472408
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.007507518032763949,
+        -0.002851362259285173,
+        -0.00119076804538909
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        0.0009695571333018238,
+        0.00014136273678277966,
+        -1.8455178523169025e-05
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        0.005196774331603038,
+        0.00047894778855062103,
+        -0.002322894646280771
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "batch",
+        1,
+        512,
+        false
+      ],
+      "gains": [
+        -0.0012451367420587278,
+        0.0012029711251339004,
+        0.0011238192784797096
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "packed",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        0.0008873021838073925,
+        0.0039036336235767077,
+        -0.0014693184033871542
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "packed",
+        128,
+        1,
+        false
+      ],
+      "gains": [
+        0.004011778843428515,
+        -0.025479835095895353,
+        -0.024412192251782372
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "packed-mux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.021199517539875812,
+        0.00207329715226523,
+        0.0012262614860502064
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl01_br_iks",
+        "packed-nmux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        7.313475891934651e-05,
+        -0.0006486983329063722,
+        0.0034807189695120755
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        0.0023577623712353057,
+        0.0032223515715950057,
+        -0.010522349394752828
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        0.0008809948656266497,
+        0.001354634304714386,
+        0.00018158119913236348
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        -0.00044884252092836086,
+        0.00037406313340626607,
+        0.0010054742486872437
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        512,
+        false
+      ],
+      "gains": [
+        -0.002494953478293205,
+        0.0016554622500329907,
+        -0.001441167810819488
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "packed",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        0.006696442593395302,
+        0.0013991567244606706,
+        0.004937649578032555
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "packed",
+        128,
+        1,
+        false
+      ],
+      "gains": [
+        -0.00036435604209983374,
+        -0.014987200496984876,
+        0.02478269756233986
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "packed-mux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.006495541633804391,
+        -0.0012925876782450274,
+        0.003312954677413882
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "packed-nmux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.0013473355925712749,
+        0.0025133274746016454,
+        0.004144577653505177
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.0014674680101318671,
+        -0.00033847311019186144,
+        0.003807675078393191
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        0.0024101001576531944,
+        0.0004886918524931172,
+        -0.0008404440345983755
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        -0.002774468659404672,
+        -0.00045456723515635566,
+        0.0007009227518226524
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        512,
+        false
+      ],
+      "gains": [
+        -0.0018525148409334058,
+        0.0014548680049241147,
+        -0.0006582106605288462
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "packed",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.0011967354626070126,
+        0.0020261305481663605,
+        0.0019524745492657258
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "packed",
+        128,
+        1,
+        false
+      ],
+      "gains": [
+        -0.014730010881883526,
+        0.004390615775264672,
+        -0.031314957981260605
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "packed-mux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.010992573382058168,
+        0.002973884793202597,
+        -0.0004880103775197764
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "packed-nmux",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.0007885974648051963,
+        0.0009496834388537101,
+        -0.004144372751479608
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    }
+  ]
+}

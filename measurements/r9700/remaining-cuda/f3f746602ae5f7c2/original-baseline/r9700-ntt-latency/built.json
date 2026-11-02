@@ -1,0 +1,9 @@
+{
+  "backend_commit": "b0818d28c5eab44dda1592225a132a4abd97517f",
+  "binaries": {
+    "test_bootstrap_bench": "0109eb7c4f6e156994c14eaa0d04ca82e0e4c263d4024e7803f46c64897a9dab",
+    "test_bootstrap_bench_lvl02": "59a9622d28f91554e86c93128bf74a39f5ee35fa4cce348756de4fb5d74988d1",
+    "test_bootstrap_bench_lvl01_br_iks": "56676b9c5d3a47690bf6b92ccbeb16da0a5c31a4343b0b9f46d527032f9db6a9",
+    "test_bootstrap_bench_lvl02_br_iks": "940d9aa5de09fc07c8d892aae3eef72fb53f18bb45f3c2e781bc5d25e2d9c087"
+  }
+}

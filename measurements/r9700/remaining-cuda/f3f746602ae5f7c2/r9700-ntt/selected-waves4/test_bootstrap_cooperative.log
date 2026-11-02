@@ -1,0 +1,41 @@
+count=1 separate/exact aliases/forward aliases/padding: PASS
+count=2 separate/exact aliases/forward aliases/padding: PASS
+count=3 separate/exact aliases/forward aliases/padding: PASS
+count=4 separate/exact aliases/forward aliases/padding: PASS
+count=5 separate/exact aliases/forward aliases/padding: PASS
+count=6 separate/exact aliases/forward aliases/padding: PASS
+count=7 separate/exact aliases/forward aliases/padding: PASS
+count=8 separate/exact aliases/forward aliases/padding: PASS
+count=9 separate/exact aliases/forward aliases/padding: PASS
+count=10 separate/exact aliases/forward aliases/padding: PASS
+count=11 separate/exact aliases/forward aliases/padding: PASS
+count=12 separate/exact aliases/forward aliases/padding: PASS
+count=13 separate/exact aliases/forward aliases/padding: PASS
+count=14 separate/exact aliases/forward aliases/padding: PASS
+count=15 separate/exact aliases/forward aliases/padding: PASS
+count=16 separate/exact aliases/forward aliases/padding: PASS
+count=17 separate/exact aliases/forward aliases/padding: PASS
+count=25 separate/exact aliases/forward aliases/padding: PASS
+count=32 separate/exact aliases/forward aliases/padding: PASS
+count=64 separate/exact aliases/forward aliases/padding: PASS
+count=109 separate/exact aliases/forward aliases/padding: PASS
+count=129 separate/exact aliases/forward aliases/padding: PASS
+HIP grid=5 dynamic_LDS=40960 static_LDS=1264
+captured HIP cooperative grid: PASS
+count=1 captured in-place chain / four replays: PASS
+count=3 captured in-place chain / four replays: PASS
+count=4 captured in-place chain / four replays: PASS
+count=6 captured in-place chain / four replays: PASS
+count=7 captured in-place chain / four replays: PASS
+count=10 captured in-place chain / four replays: PASS
+count=11 captured in-place chain / four replays: PASS
+count=16 captured in-place chain / four replays: PASS
+count=17 captured in-place chain / four replays: PASS
+count=32 captured in-place chain / four replays: PASS
+count=64 captured in-place chain / four replays: PASS
+count=109 captured in-place chain / four replays: PASS
+count=128 captured in-place chain / four replays: PASS
+concurrent independent small batches: PASS
+paired full-word boundary fixtures / padding: PASS
+caller-pool isolation / three cleanup-reinitialize cycles: PASS
+reference_coefficients=11667006 PASS

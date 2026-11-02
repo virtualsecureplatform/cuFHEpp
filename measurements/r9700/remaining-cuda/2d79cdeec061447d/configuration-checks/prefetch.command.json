@@ -1,0 +1,8 @@
+[
+  "cmake",
+  "--preset",
+  "r9700-ntt-throughput",
+  "-B",
+  "build-remaining-invalid-prefetch",
+  "-DUSE_HIP_MONOMIAL_PREFETCH=ON"
+]

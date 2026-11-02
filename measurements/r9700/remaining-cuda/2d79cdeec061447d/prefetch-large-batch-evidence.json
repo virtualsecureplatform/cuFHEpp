@@ -1,0 +1,31 @@
+{
+  "status": "reproducible-screen-regression-relative-to-staging",
+  "comparison": {
+    "profile": "r9700-ntt",
+    "variant": "prefetch",
+    "benchmark": "test_bootstrap_bench_lvl02",
+    "mode": "batch",
+    "streams": 1,
+    "count": 512,
+    "graph": false,
+    "min_improvement": -0.49125276014763064,
+    "median_improvement": -0.47908278541775795,
+    "max_improvement": -0.4775911958821981,
+    "improvements": [
+      -0.49125276014763064,
+      -0.4775911958821981,
+      -0.47908278541775795
+    ]
+  },
+  "repetitions": 15,
+  "fresh_keys": 3,
+  "preset_decision": "standalone-prefetch-bundle-ineligible",
+  "resources": {
+    "staging_registers": 186,
+    "prefetch_registers": 194,
+    "dynamic_lds": 57352,
+    "private_bytes": 12,
+    "resident_blocks": 1
+  },
+  "cause": "not established"
+}

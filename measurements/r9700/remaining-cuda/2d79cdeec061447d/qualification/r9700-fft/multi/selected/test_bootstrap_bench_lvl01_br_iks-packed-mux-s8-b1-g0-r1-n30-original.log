@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=mux backend=fft block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=5.05084
+repeat=1 ms/gate=6.78527
+repeat=2 ms/gate=5.04878
+repeat=3 ms/gate=6.76069
+repeat=4 ms/gate=5.02553
+repeat=5 ms/gate=6.75679
+repeat=6 ms/gate=5.01418
+repeat=7 ms/gate=6.72448
+repeat=8 ms/gate=5.01141
+repeat=9 ms/gate=6.73466
+repeat=10 ms/gate=5.00181
+repeat=11 ms/gate=6.68659
+repeat=12 ms/gate=4.97634
+repeat=13 ms/gate=6.68702
+repeat=14 ms/gate=4.96058
+repeat=15 ms/gate=6.6577
+repeat=16 ms/gate=4.95588
+repeat=17 ms/gate=6.67981
+repeat=18 ms/gate=4.95204
+repeat=19 ms/gate=6.63259
+repeat=20 ms/gate=4.93197
+repeat=21 ms/gate=6.63634
+repeat=22 ms/gate=4.94195
+repeat=23 ms/gate=6.62971
+repeat=24 ms/gate=4.92317
+repeat=25 ms/gate=6.66647
+repeat=26 ms/gate=4.93345
+repeat=27 ms/gate=6.60511
+repeat=28 ms/gate=4.92003
+repeat=29 ms/gate=6.61888
+dispatch=packed streams=8 gates=8 median_ms/gate=6.60511 errors=0
+observed_noise_rms=0.00575403 observed_max_abs_noise=0.0102997

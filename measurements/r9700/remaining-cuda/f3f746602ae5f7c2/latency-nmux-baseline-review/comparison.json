@@ -1,0 +1,31 @@
+{
+  "scope": "Selected raw31 NMux device kernel only; not a timing-equivalence assertion",
+  "binaries": [
+    {
+      "member": "original",
+      "binary_sha256": "0109eb7c4f6e156994c14eaa0d04ca82e0e4c263d4024e7803f46c64897a9dab",
+      "device_object": "build-remaining-original/r9700-ntt-latency/test/test_bootstrap_bench.0.hipv4-amdgcn-amd-amdhsa--gfx1201",
+      "symbols": [
+        "_ZN5cufhe17__NMuxBootstrap__IN6TFHEpp10lvl01paramETnNT_7targetP1TELj536870912ENS1_10lvl10paramEEEvPNT1_7targetP1TEPKNS3_7domainP1TESE_SE_PKNSt11conditionalIXeqmlstS5_Li8ELi32EEjmE4typeEPKS9_NS_17CuSmallNTTHandlerIXsrNS3_7targetPE1nEXmlstS5_Li8EEEE",
+        "_ZN5cufhe17__NMuxBootstrap__IN6TFHEpp10lvl10paramENS1_10lvl01paramETnNT0_7targetP1TELj536870912EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE"
+      ],
+      "selected_symbol": "_ZN5cufhe17__NMuxBootstrap__IN6TFHEpp10lvl10paramENS1_10lvl01paramETnNT0_7targetP1TELj536870912EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE",
+      "instruction_count": 7013,
+      "normalized_sha256": "7423d23bcfb15b966ef3c14188c4f4216e34751297fd83bdba6e597d31dc63ce"
+    },
+    {
+      "member": "candidate",
+      "binary_sha256": "a03ec594acd5b0ead532f1e6b82ff947a179ab942c0b7680409e2eda11294977",
+      "device_object": "build-remaining-r9700-ntt-latency-baseline/test/test_bootstrap_bench.0.hipv4-amdgcn-amd-amdhsa--gfx1201",
+      "symbols": [
+        "_ZN5cufhe17__NMuxBootstrap__IN6TFHEpp10lvl01paramETnNT_7targetP1TELj536870912ENS1_10lvl10paramEEEvPNT1_7targetP1TEPKNS3_7domainP1TESE_SE_PKNSt11conditionalIXeqmlstS5_Li8ELi32EEjmE4typeEPKS9_NS_17CuSmallNTTHandlerIXsrNS3_7targetPE1nEXmlstS5_Li8EEEE",
+        "_ZN5cufhe17__NMuxBootstrap__IN6TFHEpp10lvl10paramENS1_10lvl01paramETnNT0_7targetP1TELj536870912EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE"
+      ],
+      "selected_symbol": "_ZN5cufhe17__NMuxBootstrap__IN6TFHEpp10lvl10paramENS1_10lvl01paramETnNT0_7targetP1TELj536870912EEEvPS6_PKNT_7domainP1TESC_SC_PKNSt11conditionalIXeqmlstS6_Li8ELi32EEjmE4typeEPKNS8_7targetP1TENS_17CuSmallNTTHandlerIXsrNS4_7targetPE1nEXmlstS6_Li8EEEE",
+      "instruction_count": 7013,
+      "normalized_sha256": "7423d23bcfb15b966ef3c14188c4f4216e34751297fd83bdba6e597d31dc63ce"
+    }
+  ],
+  "normalized_instructions_identical": true,
+  "diff_lines": 0
+}

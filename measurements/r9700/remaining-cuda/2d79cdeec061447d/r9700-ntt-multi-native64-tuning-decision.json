@@ -1,0 +1,9 @@
+{
+  "profile": "r9700-ntt",
+  "candidate": "multi-native64",
+  "status": "experimental-opt-in",
+  "reason": "Full original qualification has regressions, unresolved variation, or no repeatable improvement; tuning not launched",
+  "regressions": 5,
+  "unresolved_regressions": 16,
+  "wins": 49
+}

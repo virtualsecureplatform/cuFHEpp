@@ -1,0 +1,37 @@
+[
+  {
+    "case": "register-io",
+    "exit": 1,
+    "expected_diagnostic": "requires scalar caching and low LDS",
+    "status": "passed"
+  },
+  {
+    "case": "register31",
+    "exit": 1,
+    "expected_diagnostic": "requires paired and fused NTT",
+    "status": "passed"
+  },
+  {
+    "case": "prefetch",
+    "exit": 1,
+    "expected_diagnostic": "requires monomial staging",
+    "status": "passed"
+  },
+  {
+    "case": "roots",
+    "exit": 1,
+    "expected_diagnostic": "require Shoup NTT",
+    "status": "passed"
+  },
+  {
+    "case": "wave",
+    "exit": 1,
+    "expected_diagnostic": "requires USE_HIP_PREPARED_KEYSWITCH",
+    "status": "passed"
+  },
+  {
+    "case": "default-shoup",
+    "status": "passed",
+    "detail": "HIP packed roots accepts the declared default Shoup=ON without an explicit Shoup override."
+  }
+]

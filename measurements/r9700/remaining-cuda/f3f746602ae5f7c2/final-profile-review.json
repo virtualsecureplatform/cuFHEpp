@@ -1,0 +1,72 @@
+{
+  "status": "complete-no-new-promotion",
+  "production_new_flags": "OFF",
+  "original_presets_preserved": true,
+  "profiles": [
+    {
+      "profile": "r9700-ntt",
+      "selected_features": "baseline",
+      "recommended_variant": "baseline",
+      "configuration": {
+        "flags": {},
+        "cache": {},
+        "control": "baseline"
+      },
+      "qualified_tuning_variants": [],
+      "promotion": "not-promoted-existing-production-settings-retained",
+      "review_status": "complete",
+      "performance_equivalence": "not-established",
+      "measurement_evidence": "final-measurement-audit.json"
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "selected_features": "baseline",
+      "recommended_variant": "baseline",
+      "configuration": {
+        "flags": {},
+        "cache": {},
+        "control": "baseline"
+      },
+      "qualified_tuning_variants": [],
+      "promotion": "not-promoted-existing-production-settings-retained",
+      "review_status": "complete",
+      "performance_equivalence": "not-established",
+      "measurement_evidence": "final-measurement-audit.json"
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "selected_features": "baseline",
+      "recommended_variant": "baseline",
+      "configuration": {
+        "flags": {},
+        "cache": {},
+        "control": "baseline"
+      },
+      "qualified_tuning_variants": [],
+      "promotion": "not-promoted-existing-production-settings-retained",
+      "review_status": "complete",
+      "performance_equivalence": "not-established",
+      "measurement_evidence": "final-measurement-audit.json",
+      "baseline_variation_review": "latency-nmux-baseline-review/confirmation/summary.json"
+    },
+    {
+      "profile": "r9700-fft",
+      "selected_features": "baseline",
+      "recommended_variant": "baseline",
+      "configuration": {
+        "flags": {},
+        "cache": {},
+        "control": "baseline"
+      },
+      "qualified_tuning_variants": [],
+      "promotion": "not-promoted-existing-production-settings-retained",
+      "review_status": "complete",
+      "performance_equivalence": "not-established",
+      "measurement_evidence": "final-measurement-audit.json"
+    }
+  ],
+  "original_latency_loss_preserved": true,
+  "isolated_confirmation": "Original/candidate mixed; original/original also showed3-4% differences. No causal attribution or performance-equivalence claim.",
+  "cuda_runtime": "unavailable-no-NVIDIA-device",
+  "direct_async_lds": "installed gfx1201 builtins unavailable; software-prefetch fallback validated"
+}

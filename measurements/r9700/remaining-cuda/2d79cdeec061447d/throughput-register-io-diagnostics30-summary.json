@@ -1,0 +1,66 @@
+{
+  "status": "targeted30-diagnostics-complete",
+  "source": "2d79cdeec061447d",
+  "profile": "r9700-ntt-throughput",
+  "variant": "register-io",
+  "control": "scalar-cache",
+  "points": 3,
+  "repetitions": 30,
+  "fresh_keys": 3,
+  "repeatable_wins": 0,
+  "median_regressions": 0,
+  "unresolved_regressions": 1,
+  "comparisons": [
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "register-io",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.013523261427589084,
+      "median_improvement": 0.09591670538420394,
+      "max_improvement": 0.14021214071814392,
+      "improvements": [
+        0.09591670538420394,
+        -0.013523261427589084,
+        0.14021214071814392
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "register-io",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.05587651891020906,
+      "median_improvement": 0.08696171220644278,
+      "max_improvement": 0.09318893899833847,
+      "improvements": [
+        0.09318893899833847,
+        -0.05587651891020906,
+        0.08696171220644278
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "register-io",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.010242026484650335,
+      "median_improvement": 0.02365606293233591,
+      "max_improvement": 0.10451550959944367,
+      "improvements": [
+        0.10451550959944367,
+        -0.010242026484650335,
+        0.02365606293233591
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=ntt block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=180 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=4.01395
+repeat=1 ms/gate=4.00094
+repeat=2 ms/gate=4.02423
+repeat=3 ms/gate=4.0344
+repeat=4 ms/gate=4.02982
+repeat=5 ms/gate=4.04356
+repeat=6 ms/gate=3.98722
+repeat=7 ms/gate=4.04217
+repeat=8 ms/gate=4.01213
+repeat=9 ms/gate=4.01035
+repeat=10 ms/gate=4.02964
+repeat=11 ms/gate=4.04035
+repeat=12 ms/gate=4.03334
+repeat=13 ms/gate=4.03465
+repeat=14 ms/gate=3.99368
+repeat=15 ms/gate=4.37636
+repeat=16 ms/gate=3.99919
+repeat=17 ms/gate=4.00918
+repeat=18 ms/gate=4.02464
+repeat=19 ms/gate=4.03521
+repeat=20 ms/gate=4.01921
+repeat=21 ms/gate=4.0285
+repeat=22 ms/gate=3.9744
+repeat=23 ms/gate=4.03307
+repeat=24 ms/gate=3.99646
+repeat=25 ms/gate=4.00482
+repeat=26 ms/gate=4.0206
+repeat=27 ms/gate=4.02524
+repeat=28 ms/gate=4.0248
+repeat=29 ms/gate=4.02817
+dispatch=packed streams=8 gates=8 median_ms/gate=4.0248 errors=0
+observed_noise_rms=0.00571946 observed_max_abs_noise=0.0109558

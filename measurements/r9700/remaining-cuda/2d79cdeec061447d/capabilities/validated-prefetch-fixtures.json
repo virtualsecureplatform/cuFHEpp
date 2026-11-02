@@ -1,0 +1,41 @@
+{
+  "source": "2d79cdeec061447d",
+  "binary": "build-remaining-r9700-ntt-prefetch/test/test_small_modulus",
+  "sha256": "084b0124820ee426f7251e5813f3c5b4ab56730d46e488a64cf0b0790dc87a80",
+  "validated_receipt": "r9700-ntt/prefetch/checked.json",
+  "command": [
+    "/opt/rocm/llvm/bin/llvm-objdump",
+    "-d",
+    "--disassemble-symbols=_ZN12_GLOBAL__N_129TestScalarMonomialCacheKernelILb1ELb1ELb1ELb0EEEvPmPKmS3_PKjN5cufhe17CuSmallNTTHandlerILj1024ELj64EEEPj.intern.d199fb6aa7f74809,_ZN12_GLOBAL__N_131TestPairedMonomialCache31KernelILb0ELb0ELb1EEEvPjPKjS3_S3_N5cufhe17CuSmallNTTHandlerILj1024ELj32EEES1_.intern.d199fb6aa7f74809",
+    "/home/nimda/sources/cuFHEpp/build-remaining-r9700-ntt-prefetch/test/test_small_modulus.0.hipv4-amdgcn-amd-amdhsa--gfx1201"
+  ],
+  "symbols": [
+    "_ZN12_GLOBAL__N_129TestScalarMonomialCacheKernelILb1ELb1ELb1ELb0EEEvPmPKmS3_PKjN5cufhe17CuSmallNTTHandlerILj1024ELj64EEEPj.intern.d199fb6aa7f74809",
+    "_ZN12_GLOBAL__N_131TestPairedMonomialCache31KernelILb0ELb0ELb1EEEvPjPKjS3_S3_N5cufhe17CuSmallNTTHandlerILj1024ELj32EEES1_.intern.d199fb6aa7f74809"
+  ],
+  "hip_options": {
+    "USE_HIP_COOPERATIVE_BATCH:BOOL": "ON",
+    "USE_HIP_COOPERATIVE_SCALAR:BOOL": "OFF",
+    "USE_HIP_FAST_TORUS64:BOOL": "OFF",
+    "USE_HIP_FUSED_NTT:BOOL": "ON",
+    "USE_HIP_LOW_LDS:BOOL": "ON",
+    "USE_HIP_MONOMIAL_PREFETCH:BOOL": "ON",
+    "USE_HIP_MONOMIAL_STAGING:BOOL": "ON",
+    "USE_HIP_MULTIOUT_KEYSWITCH:BOOL": "OFF",
+    "USE_HIP_NATIVE_KEYSWITCH:BOOL": "OFF",
+    "USE_HIP_NATIVE_NTT64:BOOL": "OFF",
+    "USE_HIP_OUTPUT_EXPONENT_CACHE:BOOL": "OFF",
+    "USE_HIP_PACKED_PAIRED_ROOTS:BOOL": "OFF",
+    "USE_HIP_PAIRED_NTT:BOOL": "ON",
+    "USE_HIP_PAIRED_NTT64:BOOL": "ON",
+    "USE_HIP_PREPARED_KEYSWITCH:BOOL": "ON",
+    "USE_HIP_REGISTER_MONOMIALS31:BOOL": "OFF",
+    "USE_HIP_REGISTER_NTT_IO64:BOOL": "OFF",
+    "USE_HIP_SCALAR_MONOMIAL_CACHE64:BOOL": "OFF",
+    "USE_HIP_SCALED_INVERSE64:BOOL": "OFF",
+    "USE_HIP_UNREDUCED_INVERSE_DIFF:BOOL": "OFF",
+    "USE_HIP_WAVE_KEYSWITCH:BOOL": "OFF",
+    "USE_HIP_WAVE_MODSWITCH_CORRECTION:BOOL": "ON"
+  },
+  "isa_sha256": "377a984a8127d8e70129df692ea00004f74152c8d7762cd9ad3c3bc2d7726d5c"
+}

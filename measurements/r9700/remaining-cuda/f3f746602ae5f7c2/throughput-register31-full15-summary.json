@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-ntt-throughput",
+  "variant": "register31",
+  "complete_points": 116,
+  "expected_points": 116,
+  "wins": 11,
+  "regressions": 10,
+  "needs_30": 69,
+  "unresolved_regressions": 0,
+  "status": "full15-complete-longer-runs-pending"
+}

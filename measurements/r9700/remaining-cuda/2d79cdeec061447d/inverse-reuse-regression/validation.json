@@ -1,0 +1,28 @@
+{
+  "stress": "Delay upper-quarter peer readers by 4096 s_nop 7 instructions with a compiler memory clobber after inverse publication.",
+  "cases_per_run": 49152,
+  "results": [
+    {
+      "variant": "corrected",
+      "binary": "build-r9700-remaining-all/test/test_small_modulus",
+      "sha256": "8a660f2f65c31033ce07e62683bddfc194b77285a1bdf7eb3eb384949f0b9a7d",
+      "expected_exit": 0,
+      "exits": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "variant": "barrier-removed",
+      "binary": "/tmp/cufhepp-inverse-reuse-negative/negative",
+      "sha256": "e0d5f20433ce9f67390edccfef4e1af8c10ad0a98ab312f5154f3c4fe72cb2ec",
+      "expected_exit": 1,
+      "exits": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

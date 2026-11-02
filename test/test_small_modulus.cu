@@ -1055,11 +1055,11 @@ bool TestPair64Compare() {
 #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
 // Compare the complete cached external product with the independently selected
 // uncached scalar schedule, including decomposition and final torus conversion.
-template <bool Cached, bool Paired = false, bool Staged = false>
+template <bool Cached, bool Paired = false, bool Staged = false, bool StressReaders = false>
 __global__ __launch_bounds__(TFHEpp::lvl2param::n / 2, 1)
 void TestScalarMonomialCacheKernel(
     uint64_t* out, const uint64_t* input, const uint64_t* key,
-    const uint32_t* exponents, TestNTTHandler64 ntt)
+    const uint32_t* exponents, TestNTTHandler64 ntt, uint32_t* policies)
 {
     using P = TFHEpp::lvl02param;
     using Target = P::targetP;
@@ -1075,13 +1075,13 @@ void TestScalarMonomialCacheKernel(
         cufhe::AccumulateBlockBinaryPaired64<P, Staged, 2>(
             trlwe, scratch, 0, bara, key, ntt);
     else
-        cufhe::AccumulateBlockBinary<P, false, false, Cached, 0, false, false, false, true, false>(
-            trlwe, scratch, 0, bara, key, ntt);
+        cufhe::AccumulateBlockBinary<P, false, false, Cached, 0, false, false, false, true, false, StressReaders>(
+            trlwe, scratch, 0, bara, key, ntt, policies ? policies + sample : nullptr);
     for (int i = tid; i < Words; i += N / 2)
         out[sample * Words + i] = trlwe[i];
 }
 
-template <bool Paired = false, bool Staged = false>
+template <bool Paired = false, bool Staged = false, bool StressReaders = false>
 bool TestScalarMonomialCache(bool& table_symmetry)
 {
     using Target = TFHEpp::lvl2param;
@@ -1133,7 +1133,9 @@ bool TestScalarMonomialCache(bool& table_symmetry)
                  i % 16 == 2 ? p / 2 : rng() % p;
     uint64_t *dinput = nullptr, *dkey = nullptr, *dref = nullptr, *dgot = nullptr;
     uint32_t* dpowers = nullptr;
-    bool ok = cudaMalloc(&dinput, input.size() * sizeof(uint64_t)) == cudaSuccess &&
+    uint32_t* dpolicy = nullptr;
+    bool ok = cudaMalloc(&dpolicy, Cases * sizeof(uint32_t)) == cudaSuccess &&
+        cudaMalloc(&dinput, input.size() * sizeof(uint64_t)) == cudaSuccess &&
         cudaMalloc(&dkey, key.size() * sizeof(uint64_t)) == cudaSuccess &&
         cudaMalloc(&dref, input.size() * sizeof(uint64_t)) == cudaSuccess &&
         cudaMalloc(&dgot, input.size() * sizeof(uint64_t)) == cudaSuccess &&
@@ -1142,15 +1144,29 @@ bool TestScalarMonomialCache(bool& table_symmetry)
         cudaMemcpy(dkey, key.data(), key.size() * sizeof(uint64_t), cudaMemcpyHostToDevice) == cudaSuccess &&
         cudaMemcpy(dpowers, exponents.data(), exponents.size() * sizeof(uint32_t), cudaMemcpyHostToDevice) == cudaSuccess &&
         cudaFuncSetAttribute(TestScalarMonomialCacheKernel<false>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess &&
-        cudaFuncSetAttribute(TestScalarMonomialCacheKernel<true, Paired, Staged>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
+        cudaFuncSetAttribute(TestScalarMonomialCacheKernel<true, Paired, Staged, StressReaders>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
     if (ok) {
-        TestScalarMonomialCacheKernel<false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt);
+        TestScalarMonomialCacheKernel<false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt, nullptr);
         ok = cudaGetLastError() == cudaSuccess;
-        TestScalarMonomialCacheKernel<true, Paired, Staged><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
+        TestScalarMonomialCacheKernel<true, Paired, Staged, StressReaders><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt, dpolicy);
         ok = cudaGetLastError() == cudaSuccess && ok;
         std::vector<uint64_t> expected(input.size()), actual(input.size());
         ok = cudaMemcpy(expected.data(), dref, expected.size() * sizeof(uint64_t), cudaMemcpyDeviceToHost) == cudaSuccess &&
             cudaMemcpy(actual.data(), dgot, actual.size() * sizeof(uint64_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
+#if defined(CUFHE_USE_HIP) && defined(USE_HIP_SCALAR_MONOMIAL_CACHE64)
+        if constexpr (!Paired) {
+            constexpr uint32_t Wanted =
+#ifdef USE_HIP_REGISTER_NTT_IO64
+                7;
+#else
+                1;
+#endif
+            std::vector<uint32_t> policies(Cases);
+            ok = cudaMemcpy(policies.data(), dpolicy, Cases * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
+            for (auto policy : policies) ok = (policy == Wanted) && ok;
+            std::cout << "scalar64 exercised policy=" << Wanted << " " << (ok ? "PASS" : "FAIL") << '\n';
+        }
+#endif
         if (ok && actual != expected) {
             for (size_t i = 0; i < actual.size(); ++i) if (actual[i] != expected[i]) {
                 std::cerr << "scalar monomial cache mismatch at coefficient " << i << '\n'; break;
@@ -1158,7 +1174,7 @@ bool TestScalarMonomialCache(bool& table_symmetry)
             ok = false;
         }
     }
-    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers);
+    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers); cudaFree(dpolicy);
     cufhe::DeleteXaiNTT_lvl02(); ntt.Destroy();
     return ok;
 }
@@ -1168,7 +1184,7 @@ bool TestScalarMonomialCache(bool& table_symmetry)
 template <bool Cached, bool KeySwitchAfter31 = false, bool Paired = true>
 __global__ void TestPairedMonomialCache31Kernel(
     uint32_t* out, const uint32_t* input, const uint32_t* key,
-    const uint32_t* exponents, cufhe::CuNTTHandler<TFHEpp::lvl1param::n, 32> ntt)
+    const uint32_t* exponents, cufhe::CuNTTHandler<TFHEpp::lvl1param::n, 32> ntt, uint32_t* policies)
 {
     using P = TFHEpp::lvl01param;
     using Target = P::targetP;
@@ -1182,7 +1198,7 @@ __global__ void TestPairedMonomialCache31Kernel(
     const uint32_t bara[2] = {exponents[2 * sample], exponents[2 * sample + 1]};
     if constexpr (Paired)
         cufhe::AccumulateBlockBinaryPairedNTT<P, Cached, KeySwitchAfter31, KeySwitchAfter31>(
-            trlwe, scratch31, 0, bara, key, ntt);
+            trlwe, scratch31, 0, bara, key, ntt, policies ? policies + sample : nullptr);
     else
         cufhe::AccumulateBlockBinary<P, false, false, false, 0, false, false, false, true, false>(
             trlwe, scratch31, 0, bara, key, ntt);
@@ -1222,7 +1238,9 @@ bool TestPairedMonomialCache31()
                  i % 16 == 2 ? p / 2 : rng() % p;
     uint32_t *dinput = nullptr, *dkey = nullptr, *dref = nullptr, *dgot = nullptr;
     uint32_t* dpowers = nullptr;
-    bool ok = cudaMalloc(&dinput, input.size() * sizeof(uint32_t)) == cudaSuccess &&
+    uint32_t* dpolicy = nullptr;
+    bool ok = cudaMalloc(&dpolicy, Cases * sizeof(uint32_t)) == cudaSuccess &&
+        cudaMalloc(&dinput, input.size() * sizeof(uint32_t)) == cudaSuccess &&
         cudaMalloc(&dkey, key.size() * sizeof(uint32_t)) == cudaSuccess &&
         cudaMalloc(&dref, input.size() * sizeof(uint32_t)) == cudaSuccess &&
         cudaMalloc(&dgot, input.size() * sizeof(uint32_t)) == cudaSuccess &&
@@ -1234,17 +1252,23 @@ bool TestPairedMonomialCache31()
         cudaFuncSetAttribute(TestPairedMonomialCache31Kernel<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess &&
         cudaFuncSetAttribute(TestPairedMonomialCache31Kernel<true, true>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
     if (ok) {
-        TestPairedMonomialCache31Kernel<false, false, false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt);
+        TestPairedMonomialCache31Kernel<false, false, false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt, nullptr);
         ok = cudaGetLastError() == cudaSuccess;
         for (bool key_switch_after : {false, true}) {
             if (key_switch_after)
-                TestPairedMonomialCache31Kernel<true, true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
+                TestPairedMonomialCache31Kernel<true, true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt, dpolicy);
             else
-                TestPairedMonomialCache31Kernel<true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
+                TestPairedMonomialCache31Kernel<true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt, dpolicy);
             ok = cudaGetLastError() == cudaSuccess && ok;
             std::vector<uint32_t> expected(input.size()), actual(input.size());
             ok = cudaMemcpy(expected.data(), dref, expected.size() * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess &&
                 cudaMemcpy(actual.data(), dgot, actual.size() * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
+#if defined(CUFHE_USE_HIP) && defined(USE_HIP_REGISTER_MONOMIALS31)
+            std::vector<uint32_t> policies(Cases);
+            ok = cudaMemcpy(policies.data(), dpolicy, Cases * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
+            for (auto policy : policies) ok = (policy == (key_switch_after ? 3U : 1U)) && ok;
+            std::cout << "register31 exercised policy=" << (key_switch_after ? 3 : 1) << " " << (ok ? "PASS" : "FAIL") << '\n';
+#endif
             if (ok && actual != expected) {
                 for (size_t i = 0; i < actual.size(); ++i) if (actual[i] != expected[i]) {
                     std::cerr << "31-bit paired monomial cache mismatch at coefficient " << i << '\n'; break;
@@ -1253,13 +1277,13 @@ bool TestPairedMonomialCache31()
             }
         }
     }
-    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers);
+    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers); cudaFree(dpolicy);
     cufhe::DeleteXaiNTT(); ntt.Destroy();
     return ok;
 }
 #endif
 
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
 template <int Sign0, int Sign1>
 __global__ void TestOutputExponentsKernel(uint16_t* seen, uint16_t* out,
     uint16_t* a, uint16_t* b, int alias)
@@ -1541,6 +1565,12 @@ int main()
 #endif
 #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
     scalar_cache = TestScalarMonomialCache(monomial_symmetry);
+#if defined(USE_HIP_REGISTER_NTT_IO64)
+    bool stressed_symmetry = true;
+    const bool stressed = TestScalarMonomialCache<false, false, true>(stressed_symmetry);
+    scalar_cache &= stressed && stressed_symmetry;
+    std::cout << "scalar64 delayed peer-readers / workspace reuse: " << (stressed ? "PASS" : "FAIL") << '\n';
+#endif
     bool paired_symmetry = true;
     const bool paired_cache = TestScalarMonomialCache<true>(paired_symmetry);
     scalar_cache &= paired_cache && paired_symmetry;
@@ -1555,29 +1585,42 @@ int main()
               << (paired_cache && paired_symmetry ? "PASS" : "FAIL") << '\n';
     std::cout << "64-bit complete monomial adjacent-pair symmetry (1048576 pairs): "
               << (monomial_symmetry ? "PASS" : "FAIL") << '\n';
-#ifdef CUFHE_USE_HIP
+#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_SCALAR_MONOMIAL_CACHE64)
     std::cout << "64-bit scalar subtraction schedules / external product (49152 coefficients): "
 #else
     std::cout << "64-bit scalar cached / uncached external product (49152 coefficients): "
 #endif
               << (scalar_cache ? "PASS" : "FAIL") << '\n';
 #endif
+#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_SCALAR_MONOMIAL_CACHE64)
+    std::cout << "scalar64 register cache / I/O: SKIP (disabled)\n";
+#endif
     bool cache31 = true;
-#if defined(USE_BLOCK_BINARY) && defined(USE_CUDA_PAIRED_NTT) && !defined(USE_FFT)
+#if defined(USE_BLOCK_BINARY) && (defined(USE_CUDA_PAIRED_NTT) || defined(USE_HIP_PAIRED_NTT)) && !defined(USE_FFT)
     cache31 = TestPairedMonomialCache31();
-    std::cout << "31-bit register schedules / staged external product (65536 coefficients): "
+#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_REGISTER_MONOMIALS31)
+    std::cout << "31-bit paired / scalar external product consistency (65536 coefficients): "
+#else
+    std::cout << "31-bit register schedules / external product (65536 coefficients): "
+#endif
               << (cache31 ? "PASS" : "FAIL") << '\n';
 #endif
+#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_REGISTER_MONOMIALS31)
+    std::cout << "register31 cache: SKIP (disabled)\n";
+#endif
     bool output_exponents = true;
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
     output_exponents = TestOutputExponents();
     std::cout << "Output exponent cache (4762800 exponents / body-padding / both aliases): "
               << (output_exponents ? "PASS" : "FAIL") << '\n';
 #endif
+#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_OUTPUT_EXPONENT_CACHE)
+    std::cout << "output exponent cache: SKIP (disabled)\n";
+#endif
     bool full_output_br = true;
 #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
     full_output_br = TestFullOutputCacheBR();
-#ifdef CUFHE_USE_HIP
+#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_OUTPUT_EXPONENT_CACHE)
     std::cout << "Full BR / MUX-sign schedule consistency (172032 coefficients): "
 #else
     std::cout << "Full BR original / output-cache / MUX signs (172032 coefficients / exact-forward aliases): "

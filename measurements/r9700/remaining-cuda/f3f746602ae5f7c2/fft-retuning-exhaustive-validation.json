@@ -1,0 +1,80 @@
+{
+  "profile": "r9700-fft",
+  "status": "PASS",
+  "configurations": [
+    {
+      "variant": "baseline",
+      "source": "f3f746602ae5f7c2",
+      "exhaustive": true,
+      "tests": [
+        "test_keyswitch_gpu",
+        "test_keyswitch_gpu_lvl20",
+        "test_bootstrap_binary",
+        "test_bootstrap_public_binary",
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux",
+        "test_bootstrap_batch",
+        "test_bootstrap_public_batch",
+        "test_fft_roundtrip"
+      ],
+      "graph_tests": 2,
+      "binary_hashes_verified": 13
+    },
+    {
+      "variant": "selected-waves2",
+      "source": "f3f746602ae5f7c2",
+      "exhaustive": true,
+      "tests": [
+        "test_keyswitch_gpu",
+        "test_keyswitch_gpu_lvl20",
+        "test_bootstrap_binary",
+        "test_bootstrap_public_binary",
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux",
+        "test_bootstrap_batch",
+        "test_bootstrap_public_batch",
+        "test_fft_roundtrip"
+      ],
+      "graph_tests": 2,
+      "binary_hashes_verified": 13
+    },
+    {
+      "variant": "selected-waves3",
+      "source": "f3f746602ae5f7c2",
+      "exhaustive": true,
+      "tests": [
+        "test_keyswitch_gpu",
+        "test_keyswitch_gpu_lvl20",
+        "test_bootstrap_binary",
+        "test_bootstrap_public_binary",
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux",
+        "test_bootstrap_batch",
+        "test_bootstrap_public_batch",
+        "test_fft_roundtrip"
+      ],
+      "graph_tests": 2,
+      "binary_hashes_verified": 13
+    },
+    {
+      "variant": "selected-waves4",
+      "source": "f3f746602ae5f7c2",
+      "exhaustive": true,
+      "tests": [
+        "test_keyswitch_gpu",
+        "test_keyswitch_gpu_lvl20",
+        "test_bootstrap_binary",
+        "test_bootstrap_public_binary",
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux",
+        "test_bootstrap_batch",
+        "test_bootstrap_public_batch",
+        "test_fft_roundtrip"
+      ],
+      "graph_tests": 2,
+      "binary_hashes_verified": 13
+    }
+  ],
+  "total_binary_hashes_verified": 52,
+  "scope": "All4 FFT launch configurations exhaustive checks and current binaries; timing/preset qualification remains separate"
+}

@@ -1,0 +1,12 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "multi",
+  "full_grid_complete": true,
+  "complete_points": 116,
+  "expected_points": 116,
+  "wins": 43,
+  "regressions": 3,
+  "needs_30": 41,
+  "unresolved_regressions": 0,
+  "status": "full15-complete-longer-runs-pending"
+}

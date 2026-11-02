@@ -1,0 +1,70 @@
+{
+  "status": "build-configuration-verified-correctness-pending",
+  "source": "f3f746602ae5f7c2",
+  "configurations": [
+    {
+      "variant": "baseline",
+      "waves": "1",
+      "groups": "0",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    },
+    {
+      "variant": "selected-waves2",
+      "waves": "2",
+      "groups": "0",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    },
+    {
+      "variant": "selected-waves3",
+      "waves": "3",
+      "groups": "0",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    },
+    {
+      "variant": "selected-waves4",
+      "waves": "4",
+      "groups": "0",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    },
+    {
+      "variant": "selected-groups2",
+      "waves": "1",
+      "groups": "2",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    },
+    {
+      "variant": "selected-groups3",
+      "waves": "1",
+      "groups": "3",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    },
+    {
+      "variant": "selected-groups5",
+      "waves": "1",
+      "groups": "5",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    },
+    {
+      "variant": "selected-groups9",
+      "waves": "1",
+      "groups": "9",
+      "new_features": "all OFF",
+      "source": "f3f746602ae5f7c2",
+      "binaries_built": 15
+    }
+  ]
+}

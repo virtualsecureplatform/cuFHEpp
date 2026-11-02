@@ -1,0 +1,6 @@
+{
+  "backend_commit": "b0818d28c5eab44dda1592225a132a4abd97517f",
+  "tfhepp": "1dd9a1addef4cae01da9bb6bfff0d22b55bec683",
+  "harness_sha256": "1ad57e03f176278f850679aa6ace28385ad1d4267bb1a8eb1d6779abdcc87197",
+  "notes": "Original b0818d2 backend with only the host benchmark harness updated to the current resident MUX/resource CLI. TFHEpp is the identical pinned checkout."
+}

@@ -1,0 +1,13 @@
+{
+  "reason": "Deduplicate shared control builds/checks; defer tuning until original qualification completes",
+  "stopped_before_any_build": true,
+  "stopped_pgid": 3181001,
+  "dependency_pid": 3176223,
+  "replacement_session": 73392,
+  "replacement_helper": "tune_after_qualification.py",
+  "replacement_sequence": [
+    "complete116point3key-original-qualification",
+    "30repetition-uncertain-points",
+    "reject-regressing-candidate-or-build-check-screen-tuning"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "r9700-fft": {
+    "fft-multi-waves2": {
+      "flags": {
+        "PREPARED_KEYSWITCH": "ON",
+        "MULTIOUT_KEYSWITCH": "ON"
+      },
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "2"
+      },
+      "control": "multi"
+    },
+    "fft-multi-waves3": {
+      "flags": {
+        "PREPARED_KEYSWITCH": "ON",
+        "MULTIOUT_KEYSWITCH": "ON"
+      },
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "3"
+      },
+      "control": "multi"
+    },
+    "fft-multi-waves4": {
+      "flags": {
+        "PREPARED_KEYSWITCH": "ON",
+        "MULTIOUT_KEYSWITCH": "ON"
+      },
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "4"
+      },
+      "control": "multi"
+    }
+  }
+}

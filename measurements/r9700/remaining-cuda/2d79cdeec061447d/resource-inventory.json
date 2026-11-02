@@ -1,0 +1,2040 @@
+{
+  "source": "2d79cdeec061447d",
+  "status": "observed-completed-measurements",
+  "completed_logs": 1713,
+  "shapes": [
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 88,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 93,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 86,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 94,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 100,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 105,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 98,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 114,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/baseline/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 87,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 93,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 87,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 95,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 100,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 105,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 100,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 115,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 87,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 93,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 87,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 95,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 32,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 100,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 105,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 99,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 115,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 32,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/multi-wave/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 87,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 1596,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 93,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 24,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 87,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 1596,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 95,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 24,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 100,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 1596,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 105,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 24,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 100,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 1596,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 115,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 24,
+      "example_log": "r9700-fft/prepared/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15-against-multi-wave.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 87,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 93,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 87,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 95,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 100,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 105,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 99,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 115,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 32,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-fft/wave/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 151,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 162,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 150,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 163,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 166,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 792,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15-against-staging.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 195,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 164,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 792,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r0-n15-against-staging.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 204,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt/baseline/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15-against-staging.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 154,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 399,
+      "example_log": "r9700-ntt/prefetch/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 170,
+      "static_lds": 1264,
+      "dynamic_lds": 32768,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/prefetch/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 3,
+      "example_log": "r9700-ntt/prefetch/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 194,
+      "static_lds": 1264,
+      "dynamic_lds": 57352,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/prefetch/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 166,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 3,
+      "example_log": "r9700-ntt/prefetch/screen/test_bootstrap_bench_lvl02-packed-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 154,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15-against-prefetch.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 172,
+      "static_lds": 1264,
+      "dynamic_lds": 32768,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15-against-prefetch.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 152,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 399,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 186,
+      "static_lds": 16,
+      "dynamic_lds": 32768,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15-against-prefetch.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 186,
+      "static_lds": 1264,
+      "dynamic_lds": 57352,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 15,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15-against-prefetch.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 195,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 166,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 390,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl02-packed-s1-b1-g0-r0-n15-against-prefetch.log",
+      "example_mode": "packed",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 3,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 164,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 396,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 204,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt/staging/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 101,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 143,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 145,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 399,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 148,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 32,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 390,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 181,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 9,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 191,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 125,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 390,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 179,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 9,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 192,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 32,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-latency/all/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 151,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 162,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 150,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 163,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 780,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 166,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 18,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 195,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 780,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 164,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 18,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 204,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-latency/baseline/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 101,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 3,
+      "observed_nodes": 399,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 143,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 145,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 399,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 148,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 32,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 3,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 122,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 399,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 123,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 125,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 3,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 120,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 9,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r0-n15.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 131,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 32,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 119,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 16,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 387,
+      "example_log": "r9700-ntt-throughput/all/screen/test_bootstrap_bench_lvl02_br_iks-packed-s1-b1-g0-r0-n15.log",
+      "example_mode": "packed",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 151,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench",
+      "registers": 162,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 150,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "registers": 163,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 2,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 110,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 798,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl02-batch-s1-b17-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "registers": 111,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 6,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        5,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 109,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 792,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b17-g0-r0-n15-against-all.log",
+      "example_mode": "batch",
+      "example_grid": [
+        17,
+        1,
+        1
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "registers": 119,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "observed_nodes": 12,
+      "example_log": "r9700-ntt-throughput/baseline/screen/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15-against-all.log",
+      "example_mode": "packed-mux",
+      "example_grid": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

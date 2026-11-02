@@ -1,0 +1,230 @@
+{
+  "profile": "r9700-ntt-latency",
+  "variant": "baseline",
+  "wins": 0,
+  "regressions": 3,
+  "unresolved_regressions": 6,
+  "needs_30": 0,
+  "total_points": 156,
+  "standard_points": 116,
+  "transition_extra_points": 40,
+  "longer_points": 15,
+  "repeatable_regressions": 1,
+  "scope": "Completed retained latency-setting measurements; no new promotion and no performance-equivalence claim",
+  "decision": "retain-existing-settings-no-qualified-launch-winner",
+  "mixed_or_regressing_points": [
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.1466828732281018
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.16786755672444964
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.21933575077832979
+        }
+      ],
+      "median_gain": -0.16786755672444964,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.010706102243667415
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.005306861459699164
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.08557388289969903
+        }
+      ],
+      "median_gain": -0.010706102243667415,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.1941216306096042
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.2407414355934112
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.011304893658920845
+        }
+      ],
+      "median_gain": -0.011304893658920845,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.013626898113666464
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.0955955637551158
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.09105336860121338
+        }
+      ],
+      "median_gain": 0.013626898113666464,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.021911175941156324
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.030240873904672005
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.02745165475948541
+        }
+      ],
+      "median_gain": -0.02745165475948541,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.18187821134520532
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.012217571840148045
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.10726672171758866
+        }
+      ],
+      "median_gain": 0.012217571840148045,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.0019621466527708353
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.270631721526837
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.09878483885906597
+        }
+      ],
+      "median_gain": -0.09878483885906597,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    }
+  ],
+  "review_status": "complete-isolated-loss-not-consistent-self-control-differences-observed",
+  "review_evidence": "latency-nmux-baseline-review/confirmation/summary.json",
+  "review_limitation": "Original repeatable loss is preserved. Isolated A/B was mixed and A/A also differed by3-4%; no causal attribution or performance-equivalence claim."
+}

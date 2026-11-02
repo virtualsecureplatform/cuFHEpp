@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=10.2251
+repeat=1 ms/gate=7.47099
+repeat=2 ms/gate=10.1984
+repeat=3 ms/gate=7.46774
+repeat=4 ms/gate=10.1687
+repeat=5 ms/gate=7.42634
+repeat=6 ms/gate=10.1484
+repeat=7 ms/gate=7.43139
+repeat=8 ms/gate=10.1049
+repeat=9 ms/gate=7.38776
+repeat=10 ms/gate=10.0877
+repeat=11 ms/gate=7.45181
+repeat=12 ms/gate=10.0547
+repeat=13 ms/gate=7.33964
+repeat=14 ms/gate=10.0738
+repeat=15 ms/gate=7.35412
+repeat=16 ms/gate=10.0069
+repeat=17 ms/gate=7.36069
+repeat=18 ms/gate=9.97981
+repeat=19 ms/gate=7.34575
+repeat=20 ms/gate=9.99801
+repeat=21 ms/gate=7.30482
+repeat=22 ms/gate=9.99797
+repeat=23 ms/gate=7.41326
+repeat=24 ms/gate=9.95354
+repeat=25 ms/gate=7.33597
+repeat=26 ms/gate=9.98419
+repeat=27 ms/gate=7.34109
+repeat=28 ms/gate=9.96505
+repeat=29 ms/gate=7.27782
+dispatch=packed streams=8 gates=8 median_ms/gate=9.95354 errors=0
+observed_noise_rms=0.00801047 observed_max_abs_noise=0.0112

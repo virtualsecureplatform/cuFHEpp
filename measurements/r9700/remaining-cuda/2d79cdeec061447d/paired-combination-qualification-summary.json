@@ -1,0 +1,3780 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "multi-native64",
+  "full_grid_complete": true,
+  "expected_points": 116,
+  "complete_points": 116,
+  "wins": 49,
+  "regressions": 5,
+  "unresolved_regressions": 16,
+  "needs_30": 0,
+  "points": [
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.00620175775131715
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.0007550111671419391
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.004464863239525663
+        }
+      ],
+      "median_gain": -0.004464863239525663,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 2,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.0013227700360756156
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.00244440048605421
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.0027085130758242038
+        }
+      ],
+      "median_gain": 0.00244440048605421,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 3,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0026995322655846143
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.0033671799493317778
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.0005295221941183925
+        }
+      ],
+      "median_gain": -0.0005295221941183925,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 4,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.00047212191618539734
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0017046783792573628
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.0017115899499096088
+        }
+      ],
+      "median_gain": -0.00047212191618539734,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 5,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.0003804580930795165
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.0014095505557605303
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.0031829744878688615
+        }
+      ],
+      "median_gain": 0.0014095505557605303,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 6,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.002721491351320937
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.0021977784734290573
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.002664618398596774
+        }
+      ],
+      "median_gain": -0.002664618398596774,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 7,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0011604820541541994
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.0005976336732531617
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.00041109917326176415
+        }
+      ],
+      "median_gain": -0.00041109917326176415,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 9,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.0007314099959365716
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.0017501626545217697
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0014332560913382641
+        }
+      ],
+      "median_gain": 0.0014332560913382641,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 10,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.000760079193012908
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.00016994688255955737
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.00034377940218555114
+        }
+      ],
+      "median_gain": 0.00016994688255955737,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 11,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0017353855461489376
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.0005100373761764976
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.0008014354066983032
+        }
+      ],
+      "median_gain": 0.0005100373761764976,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 16,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.0010173117391960584
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.0007851347814709086
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.0009062917562308037
+        }
+      ],
+      "median_gain": -0.0009062917562308037,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.00022842326213123876
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.0035993914430962892
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0009134280089121427
+        }
+      ],
+      "median_gain": 0.00022842326213123876,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.000492017023788982
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0015518483622457557
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.011211231523345022
+        }
+      ],
+      "median_gain": -0.000492017023788982,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 32,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.0011354941779799788
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.001981110931760899
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.00047092829710704276
+        }
+      ],
+      "median_gain": 0.0011354941779799788,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 64,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.0003127869471839517
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.0026432277746533117
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.000898074026737472
+        }
+      ],
+      "median_gain": -0.0003127869471839517,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 128,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.002377521495456003
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.00030016976814750684
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.00017778187480865792
+        }
+      ],
+      "median_gain": 0.00017778187480865792,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.0010967332524005613
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.0010558243438989479
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.00039862637836718395
+        }
+      ],
+      "median_gain": -0.0010558243438989479,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.00011515028857356224
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.003155675328483376
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.002814245761108114
+        }
+      ],
+      "median_gain": 0.002814245761108114,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.16556719844504775
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.01835113076618844
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.009399299944198525
+        }
+      ],
+      "median_gain": -0.009399299944198525,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.06644604222069006
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.0011850158823090151
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.0007858617979786819
+        }
+      ],
+      "median_gain": 0.0007858617979786819,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.004503049799173042
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.003968098005907139
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.029531498567089143
+        }
+      ],
+      "median_gain": -0.003968098005907139,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.0005722709712310259
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.004026574277405048
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.018316812736805854
+        }
+      ],
+      "median_gain": -0.004026574277405048,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.017742314576540963
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.015134094828663569
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.20216091206388775
+        }
+      ],
+      "median_gain": 0.017742314576540963,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.018858847971889414
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.08356182472056739
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.013241897547117909
+        }
+      ],
+      "median_gain": -0.018858847971889414,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.011878848187076296
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.032135230199108245
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.06590887681728264
+        }
+      ],
+      "median_gain": -0.032135230199108245,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0016145546921144671
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.011958163657980414
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 8.721793349164564e-05
+        }
+      ],
+      "median_gain": 8.721793349164564e-05,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.23733353397035595
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.003953049191476987
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.008203858736891778
+        }
+      ],
+      "median_gain": -0.008203858736891778,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.09250192855560746
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.0029587188277839793
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.09630082543564655
+        }
+      ],
+      "median_gain": -0.09250192855560746,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.0039499670836076195
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.04081680719770131
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.002745885061762987
+        }
+      ],
+      "median_gain": 0.002745885061762987,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.032228550675545975
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.015020621105549359
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.027955044839513388
+        }
+      ],
+      "median_gain": 0.027955044839513388,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 2,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.031179678186217363
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.031885717516999756
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.03349947756346894
+        }
+      ],
+      "median_gain": 0.031885717516999756,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 3,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.03246818297109555
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.03068579915584413
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.02912773615944453
+        }
+      ],
+      "median_gain": 0.03068579915584413,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 4,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.028150342550297913
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.0309841208166437
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.02899877157782893
+        }
+      ],
+      "median_gain": 0.02899877157782893,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 5,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.03068856379741214
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.028294479143510687
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.030645051816340363
+        }
+      ],
+      "median_gain": 0.030645051816340363,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 6,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.029946634666138006
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.03186708371285685
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.02813817832338872
+        }
+      ],
+      "median_gain": 0.029946634666138006,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 7,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.029751874604865725
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.03032513861914199
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.02961989231877271
+        }
+      ],
+      "median_gain": 0.029751874604865725,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 9,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.027103595315283835
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.027564364395516017
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.030348084659786667
+        }
+      ],
+      "median_gain": 0.027564364395516017,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 10,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.03013540558570582
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.028677814343953445
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.026789870001479144
+        }
+      ],
+      "median_gain": 0.028677814343953445,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 11,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.028213800021410163
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.027754382061754068
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.02896039800678707
+        }
+      ],
+      "median_gain": 0.028213800021410163,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 16,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.025833708487723817
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.026842353699674137
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.026780722030400717
+        }
+      ],
+      "median_gain": 0.026780722030400717,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.026064558961843787
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.026307526550715887
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.02749963095999608
+        }
+      ],
+      "median_gain": 0.026307526550715887,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.02541555289273978
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.02433625597953748
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.024723435359733648
+        }
+      ],
+      "median_gain": 0.024723435359733648,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 32,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.02509479665279324
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.02164936133281803
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.023832190249856944
+        }
+      ],
+      "median_gain": 0.023832190249856944,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 64,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.014183553301970186
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.010447624289121271
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.014385295234956685
+        }
+      ],
+      "median_gain": 0.014183553301970186,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 128,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.00790015159571833
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.00556440508204592
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.008950929194067925
+        }
+      ],
+      "median_gain": 0.00790015159571833,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.0016783529762792737
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.0035224500794189817
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0027942149140337547
+        }
+      ],
+      "median_gain": 0.0027942149140337547,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.031207731499975466
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.032728922706410035
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.030311006295929754
+        }
+      ],
+      "median_gain": 0.031207731499975466,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.05907798493941341
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.09500032849352857
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.027192307606040744
+        }
+      ],
+      "median_gain": 0.05907798493941341,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.03128449926777066
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.03298089173618912
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.03040478153919879
+        }
+      ],
+      "median_gain": 0.03128449926777066,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.009649659009566935
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.029572057388540074
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.00267956399335878
+        }
+      ],
+      "median_gain": 0.009649659009566935,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.02447416242277889
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0184602385442435
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.0021468914580000664
+        }
+      ],
+      "median_gain": 0.0184602385442435,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.22949237598919126
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.25151445315072096
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.02698333269178954
+        }
+      ],
+      "median_gain": 0.02698333269178954,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.016338413829506515
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.01527164238148604
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.015891332300286942
+        }
+      ],
+      "median_gain": 0.015891332300286942,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.012840522732449733
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.013990164490418788
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.01441506945442561
+        }
+      ],
+      "median_gain": 0.013990164490418788,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.02017691470853067
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.001615195357252408
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.009628323369114233
+        }
+      ],
+      "median_gain": 0.009628323369114233,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.01907508767329813
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.014209739605719807
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.015145054692752957
+        }
+      ],
+      "median_gain": 0.015145054692752957,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.016310309330543338
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.07477155211765574
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.018567121076994986
+        }
+      ],
+      "median_gain": 0.016310309330543338,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.006362476497448255
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.023722972141303922
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.013806835947142382
+        }
+      ],
+      "median_gain": 0.013806835947142382,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1365763002136049
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.13875968992248078
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.13760133165309307
+        }
+      ],
+      "median_gain": 0.13760133165309307,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 2,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1508703637600033
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.15244048283450007
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.15204113344064263
+        }
+      ],
+      "median_gain": 0.15204113344064263,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 3,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.15004669566713347
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.1505883146632485
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14818670031964176
+        }
+      ],
+      "median_gain": 0.15004669566713347,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 4,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.144866967871486
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.14456285523236378
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14453254254468084
+        }
+      ],
+      "median_gain": 0.14456285523236378,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 5,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1420626117783167
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.14378831709971074
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14134414573358345
+        }
+      ],
+      "median_gain": 0.1420626117783167,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 6,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.13854500294136884
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.13600784698381552
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.13620027183856964
+        }
+      ],
+      "median_gain": 0.13620027183856964,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 7,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.12468895884575937
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.12707946587919927
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.126172379176825
+        }
+      ],
+      "median_gain": 0.126172379176825,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 9,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1230394671790902
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.11903956017241535
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.121171436312844
+        }
+      ],
+      "median_gain": 0.121171436312844,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 10,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.11643012544748332
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.10443853216620314
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.10466565722661081
+        }
+      ],
+      "median_gain": 0.10466565722661081,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 11,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.10157804682995775
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.10238904363974
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.10480193972724916
+        }
+      ],
+      "median_gain": 0.10238904363974,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 16,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0986161663973536
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.09756147362460255
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.09602600812073647
+        }
+      ],
+      "median_gain": 0.09756147362460255,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.14615730056757936
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14527681353915978
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.14440512577740405
+        }
+      ],
+      "median_gain": 0.14527681353915978,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1411394612912068
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.14045326075578357
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14237439270350016
+        }
+      ],
+      "median_gain": 0.1411394612912068,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 32,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.12641092762997874
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1307623697869712
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.12836130868393658
+        }
+      ],
+      "median_gain": 0.12836130868393658,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 64,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.09109993123167681
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.09336932021693445
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.09463537694762592
+        }
+      ],
+      "median_gain": 0.09336932021693445,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 128,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.0906924098707228
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.08847192032046025
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.08928846146630287
+        }
+      ],
+      "median_gain": 0.08928846146630287,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.09476026453033426
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.09246214001986108
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.09062861249101761
+        }
+      ],
+      "median_gain": 0.09246214001986108,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1532403453838126
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.1520902909360523
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.15597757621567143
+        }
+      ],
+      "median_gain": 0.1532403453838126,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.26913614191107804
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.15564283348317798
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.26684293546946425
+        }
+      ],
+      "median_gain": 0.26684293546946425,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14599572629136226
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.08601761203765634
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.17720165189216508
+        }
+      ],
+      "median_gain": 0.14599572629136226,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.18608431659633107
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1462561665279114
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.12972036938484577
+        }
+      ],
+      "median_gain": 0.1462561665279114,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.012310056987192453
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.017339600165204083
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.010107832967457098
+        }
+      ],
+      "median_gain": 0.012310056987192453,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.013090049493979516
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.01235063612096332
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.01081982516935065
+        }
+      ],
+      "median_gain": 0.01235063612096332,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.047568386799601736
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.013081808702246733
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.01439585645578989
+        }
+      ],
+      "median_gain": 0.013081808702246733,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.014090106921046175
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.020352122376374293
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.017950816650075474
+        }
+      ],
+      "median_gain": -0.017950816650075474,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.009642185333168518
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.009736102194742635
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.014766058900282042
+        }
+      ],
+      "median_gain": 0.009736102194742635,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.12378881166149913
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.008093388878506524
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.14842892592217138
+        }
+      ],
+      "median_gain": -0.12378881166149913,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.0929673036782439
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.06509534389617966
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.06859282596295646
+        }
+      ],
+      "median_gain": -0.06859282596295646,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.031794841570956134
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.01492546117625193
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.012088195236868104
+        }
+      ],
+      "median_gain": -0.01492546117625193,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1830635924973245
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.192506578087969
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.19133914081590786
+        }
+      ],
+      "median_gain": 0.19133914081590786,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 2,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.19729563858955557
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.19334022248371785
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.19657588911644652
+        }
+      ],
+      "median_gain": 0.19657588911644652,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 3,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.19070363287541314
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.18916528775371233
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.19297276393569407
+        }
+      ],
+      "median_gain": 0.19070363287541314,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 4,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1861751808308797
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.18803861529657007
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1866442298434865
+        }
+      ],
+      "median_gain": 0.1866442298434865,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 5,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.18303131639624481
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.18159255649469264
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1812227074235807
+        }
+      ],
+      "median_gain": 0.18159255649469264,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 6,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1806629436373517
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.18080479945508365
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.18011401941340877
+        }
+      ],
+      "median_gain": 0.1806629436373517,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 7,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.16694168627676065
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.16578381836084888
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1668221817085599
+        }
+      ],
+      "median_gain": 0.1668221817085599,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 9,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1648206578220529
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.16283504816829408
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.16414650380133677
+        }
+      ],
+      "median_gain": 0.16414650380133677,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 10,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.16910823763601834
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.16084253216374889
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.14971444169595605
+        }
+      ],
+      "median_gain": 0.16084253216374889,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 11,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14135382905824623
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.14198838654620338
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.14279701478700235
+        }
+      ],
+      "median_gain": 0.14198838654620338,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 16,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.14068420372373347
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.13729386782751296
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.13661474321294054
+        }
+      ],
+      "median_gain": 0.13729386782751296,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.13620226656491174
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.13718280165281727
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.14162771690049514
+        }
+      ],
+      "median_gain": 0.13718280165281727,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1360434335079973
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.13847164633121156
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.1367106392134193
+        }
+      ],
+      "median_gain": 0.1367106392134193,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 32,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.12238713245600075
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.12194998915439603
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.12372690406760611
+        }
+      ],
+      "median_gain": 0.12238713245600075,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 64,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.08165045163890883
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.08192043895747603
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.0814741298488223
+        }
+      ],
+      "median_gain": 0.08165045163890883,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 128,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.08317643532856356
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.08356215412856716
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.08144278415856798
+        }
+      ],
+      "median_gain": 0.08317643532856356,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.05531525260811565
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.058047910316810225
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.058015115271565
+        }
+      ],
+      "median_gain": 0.058015115271565,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.15760448026082274
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1605775340814548
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.15660645609345414
+        }
+      ],
+      "median_gain": 0.15760448026082274,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1101213504275178
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.15191961565170564
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.16024935388149708
+        }
+      ],
+      "median_gain": 0.15191961565170564,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.09853852012588571
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.15877781976879624
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.1503932750742102
+        }
+      ],
+      "median_gain": 0.1503932750742102,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.17913386377302032
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.20024672852203595
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.13946164632324198
+        }
+      ],
+      "median_gain": 0.17913386377302032,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.041856575371105875
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.04127999331159604
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.0401438487915029
+        }
+      ],
+      "median_gain": 0.04127999331159604,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.04105450954044132
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.03564023673621164
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.033943506391036715
+        }
+      ],
+      "median_gain": 0.03564023673621164,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.049218916046758876
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.0300809429616391
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.04345466043635604
+        }
+      ],
+      "median_gain": 0.0300809429616391,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.00280639074895217
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.003448051181899614
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.04121279825742552
+        }
+      ],
+      "median_gain": 0.003448051181899614,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.04403550226690156
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": 0.03831102042864187
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.045314388099504055
+        }
+      ],
+      "median_gain": 0.04403550226690156,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.18929178062220164
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.036079201565612395
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.17099221943129206
+        }
+      ],
+      "median_gain": -0.17099221943129206,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.03370414444279157
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.027170771800514304
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.07432068266598812
+        }
+      ],
+      "median_gain": 0.027170771800514304,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.03908174652750973
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.033423801648219675
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.0384974629984024
+        }
+      ],
+      "median_gain": 0.0384974629984024,
+      "repeatable_win": true,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": false
+    }
+  ],
+  "resources": [
+    {
+      "member": "candidate",
+      "registers": 151,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench-batch-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 151,
+      "static_lds": 1264,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench-batch-s1-b1-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 162,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 162,
+      "static_lds": 1264,
+      "dynamic_lds": 24576,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench-packed-mux-s1-b1-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 150,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 150,
+      "static_lds": 16,
+      "dynamic_lds": 16384,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl01_br_iks-batch-s1-b1-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 163,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 163,
+      "static_lds": 16,
+      "dynamic_lds": 24576,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 2,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl01_br_iks-packed-mux-s1-b1-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 129,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 160,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 133,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 174,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 181,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b128-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 166,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-batch-s1-b128-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 191,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 195,
+      "static_lds": 1264,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02-packed-mux-s1-b1-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 125,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 126,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b1-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 128,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 158,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 132,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 172,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 180,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b128-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 164,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 12,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-batch-s1-b128-g0-r0-n15-original.log"
+    },
+    {
+      "member": "candidate",
+      "registers": 192,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15-candidate.log"
+    },
+    {
+      "member": "original",
+      "registers": 204,
+      "static_lds": 16,
+      "dynamic_lds": 40968,
+      "local_bytes": 20,
+      "threads": 512,
+      "resident_blocks": 1,
+      "example_log": "qualification/r9700-ntt/multi-native64/full/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n15-original.log"
+    }
+  ],
+  "status": "experimental-opt-in",
+  "reason": "Full original-backend gate failed after all42 required30-repeat reruns; no tuning launched",
+  "source": "2d79cdeec061447d",
+  "longer_points": 42,
+  "crypto_and_params_unchanged": true
+}

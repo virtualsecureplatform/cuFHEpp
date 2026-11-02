@@ -1,0 +1,883 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "selected-groups3",
+  "control": "baseline",
+  "complete_points": 46,
+  "runs": 3,
+  "repetitions": 15,
+  "wins": 0,
+  "median_regressions": 24,
+  "scope": "Matched exploratory screen, not final original-backend qualification",
+  "points": [
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.06742446960041981,
+        -0.06390122994902514,
+        -0.07166905813615432
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        2,
+        false
+      ],
+      "gains": [
+        -0.0925407581027069,
+        -0.0948802114162377,
+        -0.09562527441823332
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        3,
+        false
+      ],
+      "gains": [
+        -0.06273051426890985,
+        -0.06262891660937031,
+        -0.060943432653324026
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        4,
+        false
+      ],
+      "gains": [
+        -0.056591109017305685,
+        -0.06017614774005042,
+        -0.05953742268815687
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      "gains": [
+        -0.06174804252339405,
+        -0.0604329270229913,
+        -0.06143556505550585
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      "gains": [
+        -0.07455242466521494,
+        -0.0738308912312764,
+        -0.07476422170334329
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      "gains": [
+        0.0,
+        -0.0017909079186784194,
+        0.002192293410266055
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        8,
+        false
+      ],
+      "gains": [
+        0.0004281773642390574,
+        0.001941412130535447,
+        -0.0033165306779086023
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      "gains": [
+        -0.001596102150537515,
+        -0.0018200825104071061,
+        -0.0003356236540095203
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        10,
+        false
+      ],
+      "gains": [
+        -0.011508023591448424,
+        -0.008613282477942796,
+        0.0015395372673835395
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      "gains": [
+        -0.1736757237646882,
+        -0.17328693591974242,
+        -0.17108589951377629
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        12,
+        false
+      ],
+      "gains": [
+        -0.16826032844610372,
+        -0.16926009798981245,
+        -0.17081637551025364
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        13,
+        false
+      ],
+      "gains": [
+        -0.16739959601741417,
+        -0.16717191445815627,
+        -0.16713914663300278
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        14,
+        false
+      ],
+      "gains": [
+        -0.16567159929000597,
+        -0.1713121725218716,
+        -0.1663513486229924
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      "gains": [
+        -0.16396553348972143,
+        -0.1642913097474763,
+        -0.16372587733265398
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      "gains": [
+        -0.1599339795010426,
+        -0.1600090116866919,
+        -0.15958941963903794
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        0.0006825013612732356,
+        -0.00042320350113778105,
+        -0.001009515084221757
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        0.0008772835816067692,
+        -0.0005727954534984203,
+        0.00036333366099716713
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        18,
+        false
+      ],
+      "gains": [
+        -0.0007381447872980562,
+        -0.0006675382116057005,
+        0.00024028591383240538
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        19,
+        false
+      ],
+      "gains": [
+        -0.00013115723939116641,
+        0.0029724832579867133,
+        -8.796499272545333e-05
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        20,
+        false
+      ],
+      "gains": [
+        0.0038408226680561874,
+        -0.006251128162183095,
+        -0.0009175811794233102
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        21,
+        false
+      ],
+      "gains": [
+        -0.00209826053427431,
+        -0.0009300698867820145,
+        0.007635948170170659
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        22,
+        false
+      ],
+      "gains": [
+        -7.684283841102868e-05,
+        0.001373870967214974,
+        -0.00014060466545906536
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.05286741690266794,
+        -0.05943675704053697,
+        -0.060290181715734636
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        2,
+        false
+      ],
+      "gains": [
+        -0.09009337235461601,
+        -0.09421923722715286,
+        -0.09101507850147672
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        3,
+        false
+      ],
+      "gains": [
+        -0.05528609426338882,
+        -0.05705738022469986,
+        -0.05779848171152513
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        4,
+        false
+      ],
+      "gains": [
+        -0.058144490123333004,
+        -0.0558870725102798,
+        -0.05422784133165104
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      "gains": [
+        -0.05884915091282861,
+        -0.05951501559751504,
+        -0.055808770859310686
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      "gains": [
+        -0.07014211203154286,
+        -0.07384281076552512,
+        -0.07432401504005237
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      "gains": [
+        -0.0017603356852375907,
+        0.001277707591592847,
+        -0.0008402335418356
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        8,
+        false
+      ],
+      "gains": [
+        -0.0007941957527073384,
+        0.002610469967203932,
+        0.0034345819469785432
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      "gains": [
+        -0.002406254388839457,
+        0.00046809466746544626,
+        -0.0009266973069612661
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        10,
+        false
+      ],
+      "gains": [
+        -0.0010746320335353055,
+        -0.013000359802182615,
+        -0.000515987704930998
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      "gains": [
+        -0.12490973392338023,
+        -0.12488422924461906,
+        -0.1244007625816721
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        12,
+        false
+      ],
+      "gains": [
+        -0.1208538837038724,
+        -0.12107941456374549,
+        -0.12036116759420512
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        13,
+        false
+      ],
+      "gains": [
+        -0.12304431454891174,
+        -0.12261546806083201,
+        -0.12022056235923406
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        14,
+        false
+      ],
+      "gains": [
+        -0.1186367466090732,
+        -0.12135382059800648,
+        -0.11977809382261495
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      "gains": [
+        -0.1165598785773585,
+        -0.11448806907517994,
+        -0.11685215738704247
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      "gains": [
+        -0.11335946690764898,
+        -0.11684895585657795,
+        -0.11588284091634216
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        0.0009791067693236677,
+        -0.0006366659967194099,
+        -8.690069326000582e-05
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        0.0016778110460861084,
+        -0.00029426291029910345,
+        0.0015580887099491125
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        18,
+        false
+      ],
+      "gains": [
+        0.0014346196814980505,
+        -0.001031615076730663,
+        -2.2030131712647005e-05
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        19,
+        false
+      ],
+      "gains": [
+        -0.0012031593480534841,
+        -0.0006505338161157947,
+        6.981046458853779e-05
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        20,
+        false
+      ],
+      "gains": [
+        5.830939579209993e-05,
+        -0.0011462434823705792,
+        -0.00021476806582954033
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        21,
+        false
+      ],
+      "gains": [
+        -0.0015092110296692773,
+        0.006543546511909137,
+        0.0025982823273255073
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        22,
+        false
+      ],
+      "gains": [
+        0.004060470188224308,
+        -0.004654057464091199,
+        -0.00025849988435533433
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    }
+  ],
+  "actual_boundaries": [
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "actual_capacity": 10,
+      "resident_blocks": 1,
+      "registers": 160,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "neighbours": [
+        {
+          "count": 9,
+          "run": 0,
+          "grid": 27,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b9-g0-r0-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 1,
+          "grid": 27,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b9-g0-r1-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 2,
+          "grid": 27,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b9-g0-r2-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 0,
+          "grid": 30,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r0-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 1,
+          "grid": 30,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r1-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 2,
+          "grid": 30,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b10-g0-r2-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 0,
+          "grid": 11,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r0-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 1,
+          "grid": 11,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r1-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 2,
+          "grid": 11,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02-batch-s1-b11-g0-r2-n15.log"
+        }
+      ]
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "actual_capacity": 10,
+      "resident_blocks": 1,
+      "registers": 158,
+      "static_lds": 1264,
+      "dynamic_lds": 40960,
+      "local_bytes": 12,
+      "threads": 512,
+      "neighbours": [
+        {
+          "count": 9,
+          "run": 0,
+          "grid": 27,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b9-g0-r0-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 1,
+          "grid": 27,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b9-g0-r1-n15.log"
+        },
+        {
+          "count": 9,
+          "run": 2,
+          "grid": 27,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b9-g0-r2-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 0,
+          "grid": 30,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r0-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 1,
+          "grid": 30,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r1-n15.log"
+        },
+        {
+          "count": 10,
+          "run": 2,
+          "grid": 30,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b10-g0-r2-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 0,
+          "grid": 11,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r0-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 1,
+          "grid": 11,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r1-n15.log"
+        },
+        {
+          "count": 11,
+          "run": 2,
+          "grid": 11,
+          "log": "r9700-ntt/selected-groups3/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b11-g0-r2-n15.log"
+        }
+      ]
+    }
+  ]
+}

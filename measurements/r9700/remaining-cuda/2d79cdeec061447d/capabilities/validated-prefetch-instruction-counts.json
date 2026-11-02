@@ -1,0 +1,11 @@
+{
+  "status": "instruction-presence-only-not-proof-of-overlap",
+  "counts": {
+    "global_load_b128": 4,
+    "global_load_b64": 69,
+    "ds_store_b128": 2,
+    "ds_store_b64": 7,
+    "s_barrier_signal": 45,
+    "s_barrier_wait": 45
+  }
+}

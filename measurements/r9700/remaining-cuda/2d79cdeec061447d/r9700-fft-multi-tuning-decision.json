@@ -1,0 +1,8 @@
+{
+  "profile": "r9700-fft",
+  "candidate": "multi",
+  "status": "experimental-opt-in",
+  "reason": "Full original qualification has regressions or no repeatable improvement; tuning not launched",
+  "regressions": 7,
+  "wins": 38
+}

@@ -1,0 +1,91 @@
+{
+  "profile": "r9700-fft",
+  "configurations": [
+    {
+      "variant": "baseline",
+      "source": "f3f746602ae5f7c2",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "1",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0",
+        "USE_HIP_PREPARED_KEYSWITCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF"
+      }
+    },
+    {
+      "variant": "selected-waves2",
+      "source": "f3f746602ae5f7c2",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "2",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0",
+        "USE_HIP_PREPARED_KEYSWITCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF"
+      }
+    },
+    {
+      "variant": "selected-waves3",
+      "source": "f3f746602ae5f7c2",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "3",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0",
+        "USE_HIP_PREPARED_KEYSWITCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF"
+      }
+    },
+    {
+      "variant": "selected-waves4",
+      "source": "f3f746602ae5f7c2",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "4",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0",
+        "USE_HIP_PREPARED_KEYSWITCH": "OFF",
+        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
+        "USE_HIP_WAVE_KEYSWITCH": "OFF",
+        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
+        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
+        "USE_HIP_REGISTER_NTT_IO64": "OFF",
+        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
+        "USE_HIP_NATIVE_NTT64": "OFF",
+        "USE_HIP_FAST_TORUS64": "OFF",
+        "USE_HIP_SCALED_INVERSE64": "OFF",
+        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
+        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
+        "USE_HIP_MONOMIAL_PREFETCH": "OFF"
+      }
+    }
+  ],
+  "status": "PASS",
+  "prepared_key_switch_preserved": "OFF"
+}

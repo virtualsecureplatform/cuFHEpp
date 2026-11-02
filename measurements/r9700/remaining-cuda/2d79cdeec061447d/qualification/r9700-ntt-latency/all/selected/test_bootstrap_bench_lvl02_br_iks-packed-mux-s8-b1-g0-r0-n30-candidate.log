@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=mux backend=ntt block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=6.74438
+repeat=1 ms/gate=5.54966
+repeat=2 ms/gate=6.74108
+repeat=3 ms/gate=5.47945
+repeat=4 ms/gate=6.74747
+repeat=5 ms/gate=5.52702
+repeat=6 ms/gate=6.70222
+repeat=7 ms/gate=5.50541
+repeat=8 ms/gate=6.74138
+repeat=9 ms/gate=5.55486
+repeat=10 ms/gate=6.73575
+repeat=11 ms/gate=5.47949
+repeat=12 ms/gate=6.77539
+repeat=13 ms/gate=5.52688
+repeat=14 ms/gate=6.70812
+repeat=15 ms/gate=5.49919
+repeat=16 ms/gate=6.73567
+repeat=17 ms/gate=5.54305
+repeat=18 ms/gate=6.7382
+repeat=19 ms/gate=5.48552
+repeat=20 ms/gate=6.78398
+repeat=21 ms/gate=5.52437
+repeat=22 ms/gate=6.70608
+repeat=23 ms/gate=5.50676
+repeat=24 ms/gate=6.71185
+repeat=25 ms/gate=5.54524
+repeat=26 ms/gate=6.74179
+repeat=27 ms/gate=5.48424
+repeat=28 ms/gate=6.7763
+repeat=29 ms/gate=5.52207
+dispatch=packed streams=8 gates=8 median_ms/gate=6.70222 errors=0
+observed_noise_rms=0.00852122 observed_max_abs_noise=0.0150299

@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "clean_bundle_skips": true,
+  "regression_requires_individual_qualification": true,
+  "unresolved_requires_individual_qualification": true,
+  "incomplete_bundle_blocks": true
+}

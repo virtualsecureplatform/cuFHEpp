@@ -1,0 +1,9 @@
+[
+  "cmake",
+  "--preset",
+  "r9700-ntt-throughput",
+  "-B",
+  "build-remaining-invalid-roots",
+  "-DUSE_HIP_PACKED_PAIRED_ROOTS=ON",
+  "-DUSE_CUDA_SHOUP_NTT=OFF"
+]

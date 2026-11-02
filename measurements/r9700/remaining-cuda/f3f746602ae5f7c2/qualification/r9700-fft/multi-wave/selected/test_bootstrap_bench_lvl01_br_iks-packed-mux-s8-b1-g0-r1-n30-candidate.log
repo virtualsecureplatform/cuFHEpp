@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=mux backend=fft block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=6.66258
+repeat=1 ms/gate=4.99677
+repeat=2 ms/gate=6.67351
+repeat=3 ms/gate=4.95432
+repeat=4 ms/gate=6.63628
+repeat=5 ms/gate=4.9259
+repeat=6 ms/gate=6.62739
+repeat=7 ms/gate=4.91642
+repeat=8 ms/gate=6.61727
+repeat=9 ms/gate=4.9866
+repeat=10 ms/gate=6.62426
+repeat=11 ms/gate=4.92603
+repeat=12 ms/gate=6.59306
+repeat=13 ms/gate=4.89722
+repeat=14 ms/gate=6.59383
+repeat=15 ms/gate=4.89041
+repeat=16 ms/gate=6.57242
+repeat=17 ms/gate=4.97325
+repeat=18 ms/gate=6.60254
+repeat=19 ms/gate=4.90771
+repeat=20 ms/gate=6.56372
+repeat=21 ms/gate=4.88427
+repeat=22 ms/gate=6.5655
+repeat=23 ms/gate=4.88171
+repeat=24 ms/gate=6.56914
+repeat=25 ms/gate=4.97036
+repeat=26 ms/gate=6.60114
+repeat=27 ms/gate=4.8992
+repeat=28 ms/gate=6.55798
+repeat=29 ms/gate=4.88153
+dispatch=packed streams=8 gates=8 median_ms/gate=6.55798 errors=0
+observed_noise_rms=0.00650429 observed_max_abs_noise=0.0125427

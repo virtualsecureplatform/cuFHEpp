@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=mux backend=ntt block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=32 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=5.50223
+repeat=1 ms/gate=7.33889
+repeat=2 ms/gate=5.45747
+repeat=3 ms/gate=7.23454
+repeat=4 ms/gate=5.50251
+repeat=5 ms/gate=7.22823
+repeat=6 ms/gate=5.46581
+repeat=7 ms/gate=7.25495
+repeat=8 ms/gate=5.48294
+repeat=9 ms/gate=7.31923
+repeat=10 ms/gate=5.44819
+repeat=11 ms/gate=7.23115
+repeat=12 ms/gate=5.49709
+repeat=13 ms/gate=7.22879
+repeat=14 ms/gate=5.47691
+repeat=15 ms/gate=7.26305
+repeat=16 ms/gate=5.47171
+repeat=17 ms/gate=7.31118
+repeat=18 ms/gate=5.4415
+repeat=19 ms/gate=7.20281
+repeat=20 ms/gate=5.4851
+repeat=21 ms/gate=7.20733
+repeat=22 ms/gate=5.47097
+repeat=23 ms/gate=7.25713
+repeat=24 ms/gate=5.46972
+repeat=25 ms/gate=7.31761
+repeat=26 ms/gate=5.4398
+repeat=27 ms/gate=7.20599
+repeat=28 ms/gate=5.488
+repeat=29 ms/gate=7.21413
+dispatch=packed streams=8 gates=8 median_ms/gate=7.20281 errors=0
+observed_noise_rms=0.0103987 observed_max_abs_noise=0.0224152

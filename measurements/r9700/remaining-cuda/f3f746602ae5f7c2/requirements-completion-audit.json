@@ -1,0 +1,536 @@
+{
+  "status": "complete-with-documented-target-limitations",
+  "source": "f3f746602ae5f7c2",
+  "objective": "Implement the plan",
+  "scope_preserved": true,
+  "evidence_paths_relative_to_repository_root": true,
+  "requirements": [
+    {
+      "requirement": "prepared-key-schedules",
+      "status": "satisfied",
+      "review": "Reviewed complete wave32 participation, output bounds/body initialization, sentinel-before-pointer guards and shared descriptor lifetime. Independent multi-output/wave controls and exact aliased extraction references exercise the intended policies.",
+      "evidence": [
+        {
+          "path": "include/keyswitch_gpu.cuh",
+          "sha256": "e8c1146645b5061ce443c28e274862bb1eec2d8a527904de2349d7a9ea4c5744"
+        },
+        {
+          "path": "test/test_keyswitch_gpu.cu",
+          "sha256": "98fdd42222e7f485bdfaf1ff079f85797ada5ac20f6a361bd4a3f0f559c5657d"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/completed-feature-outcomes.json",
+          "sha256": "d76d2223f06e42efae4ea2d205624146bd5b6d8fa9c223d6f5d83f50f08770f6"
+        }
+      ]
+    },
+    {
+      "requirement": "output-exponent-cache",
+      "status": "satisfied",
+      "review": "Reviewed capture-before-publication and saved-body ordering for output/input aliases. Exact exponent, padding, both-alias and full blind-rotation/MUX-sign references passed.",
+      "evidence": [
+        {
+          "path": "include/gatebootstrapping_gpu.cuh",
+          "sha256": "4a846a6b8486afd915960eef59d46506c83eb247dcfddfeb5c3cfe76d785b383"
+        },
+        {
+          "path": "src/bootstrap_gpu.cu",
+          "sha256": "2a79cb11cecf5dc820d2260e9bcfc0e57a3724362622a70944c67befb5aec0b0"
+        },
+        {
+          "path": "test/test_small_modulus.cu",
+          "sha256": "3b49b563815a6bc8695c3f81f981d0d83c87ff140ddb16695b092fb80018be99"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        }
+      ]
+    },
+    {
+      "requirement": "scalar64-cache-and-register-io",
+      "status": "satisfied",
+      "review": "Scalar monomial/input reuse, adjacent reconstruction, vector key loads, direct forward/inverse pairs and low-LDS register accumulation are implemented. Reviewed peer-reader ownership/reuse barrier; policy7 and independent uncached product references passed. Three corrected stress runs pass and three barrier-removed controls fail as expected.",
+      "evidence": [
+        {
+          "path": "include/gatebootstrapping_gpu.cuh",
+          "sha256": "4a846a6b8486afd915960eef59d46506c83eb247dcfddfeb5c3cfe76d785b383"
+        },
+        {
+          "path": "include/ntt_pair64.cuh",
+          "sha256": "767fd79b4f20c7b1734e1ce9b82d925c82a36cbafd29fba54e7b9c98587758c1"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/2d79cdeec061447d/inverse-reuse-regression/validation.json",
+          "sha256": "3d427aff41949ddf0e8bee7d7a4aa8ea488ad52e5666705fe59fcb67a7512967"
+        }
+      ]
+    },
+    {
+      "requirement": "register31-cache-and-inverse-add",
+      "status": "satisfied",
+      "review": "Reviewed independent monomial/input caching and consumer-specific product/inverse-add selection without requiring staging. Both raw/public consumer policies1/3 and independent scalar product references passed.",
+      "evidence": [
+        {
+          "path": "include/gatebootstrapping_gpu.cuh",
+          "sha256": "4a846a6b8486afd915960eef59d46506c83eb247dcfddfeb5c3cfe76d785b383"
+        },
+        {
+          "path": "src/bootstrap_gpu.cu",
+          "sha256": "2a79cb11cecf5dc820d2260e9bcfc0e57a3724362622a70944c67befb5aec0b0"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        }
+      ]
+    },
+    {
+      "requirement": "native-limb-arithmetic",
+      "status": "satisfied",
+      "review": "Reviewed add/borrow chains and wide-product carry reduction without changing modulus/constants. Host/device full-width references passed and actual gfx1201 ADD/SUB/carry-MAD instructions are captured.",
+      "evidence": [
+        {
+          "path": "include/ntt_small_modulus.cuh",
+          "sha256": "0f49343f54e016065a7f4edf3476fc25a3a5774d2023be61bd38ce26b4cb37a1"
+        },
+        {
+          "path": "include/ntt_pair64.cuh",
+          "sha256": "767fd79b4f20c7b1734e1ce9b82d925c82a36cbafd29fba54e7b9c98587758c1"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-control-capability-audit.json",
+          "sha256": "95c0db977bf3af6360f193581ad5b408cbe6b8e5dfa6b98972cac491ccee37b0"
+        }
+      ]
+    },
+    {
+      "requirement": "fast-torus-and-scaled-inverse",
+      "status": "satisfied",
+      "review": "Reviewed exact integer conversion/normalization ports and unchanged torus rounding contract. Boundary/random host/device conversion, inverse scaling and complete product references passed.",
+      "evidence": [
+        {
+          "path": "include/ntt_small_modulus.cuh",
+          "sha256": "0f49343f54e016065a7f4edf3476fc25a3a5774d2023be61bd38ce26b4cb37a1"
+        },
+        {
+          "path": "include/ntt_pair64.cuh",
+          "sha256": "767fd79b4f20c7b1734e1ce9b82d925c82a36cbafd29fba54e7b9c98587758c1"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        }
+      ]
+    },
+    {
+      "requirement": "packed-roots-and-unreduced-difference",
+      "status": "satisfied",
+      "review": "Reviewed packed root/quotient alignment and canonical inverse inputs giving an unreduced difference below2p. Independent paired/scalar, butterfly and convolution references passed; controls require Shoup.",
+      "evidence": [
+        {
+          "path": "include/ntt_small_modulus.cuh",
+          "sha256": "0f49343f54e016065a7f4edf3476fc25a3a5774d2023be61bd38ce26b4cb37a1"
+        },
+        {
+          "path": "CMakeLists.txt",
+          "sha256": "de10037a37cb43ca2e38e3e12db37e7561d3cd6dfc345268937a122766b08c7f"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-control-capability-audit.json",
+          "sha256": "95c0db977bf3af6360f193581ad5b408cbe6b8e5dfa6b98972cac491ccee37b0"
+        }
+      ]
+    },
+    {
+      "requirement": "vector-monomial-prefetch",
+      "status": "satisfied",
+      "review": "Reviewed aligned vector loads, publication after the first forward transform, and barriers before staged consumers. Independent staged-paired versus scalar references passed; this is a software-prefetch experiment, not a claimed asynchronous DMA equivalent.",
+      "evidence": [
+        {
+          "path": "include/gatebootstrapping_gpu.cuh",
+          "sha256": "4a846a6b8486afd915960eef59d46506c83eb247dcfddfeb5c3cfe76d785b383"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/focused-implementation-audit.json",
+          "sha256": "daccb0cd6b5ab3e23a993541d4d2508947a331463d532879e65c069142664f96"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/completed-feature-outcomes.json",
+          "sha256": "d76d2223f06e42efae4ea2d205624146bd5b6d8fa9c223d6f5d83f50f08770f6"
+        }
+      ]
+    },
+    {
+      "requirement": "direct-asynchronous-lds-copy",
+      "status": "satisfied-with-target-limitation",
+      "review": "Both installed gfx1201 builtin probes compile to unavailable(-1) result stores. The plan capability gate is documented; tested software vector prefetch supplies the fallback. Direct asynchronous LDS copying itself is not claimed implemented on this toolchain.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/2d79cdeec061447d/capabilities/async-copy-probe.cu",
+          "sha256": "d358aea2b4a7052828b8698099ed1767ad3676e46aa894b3eb984a0f2a780d3d"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/2d79cdeec061447d/capabilities/async-copy-probe.ll",
+          "sha256": "7b4f3d520f4dbe0efcb169bdab9bc6398698fdd537123f709ecd13517f9819a6"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-control-capability-audit.json",
+          "sha256": "95c0db977bf3af6360f193581ad5b408cbe6b8e5dfa6b98972cac491ccee37b0"
+        },
+        {
+          "path": "README.md",
+          "sha256": "62bf6d95bd61b57e4719d2b71d5b35fe5e3f1cbdbe7db311884710403b5a70fc"
+        }
+      ]
+    },
+    {
+      "requirement": "independent-controls-and-prerequisites",
+      "status": "satisfied",
+      "review": "All12 new HIP options defaultOFF and reject CUDA activation. Reviewed dependency checks and explicit prerequisite error logs. FFT wave-only configurations preserve prepared-key-switchOFF; runner report scoping and helper batching were validated before the final campaign.",
+      "evidence": [
+        {
+          "path": "CMakeLists.txt",
+          "sha256": "de10037a37cb43ca2e38e3e12db37e7561d3cd6dfc345268937a122766b08c7f"
+        },
+        {
+          "path": "CMakePresets.json",
+          "sha256": "7464cb7b0f1591667bbbd99ed4e3f175c20336fbc8ce822181bed185798b18c2"
+        },
+        {
+          "path": "bench_r9700_remaining.py",
+          "sha256": "637832c1751ad0f048aacf3267d9b406914ece54b902210924facec99aae8393"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-control-capability-audit.json",
+          "sha256": "95c0db977bf3af6360f193581ad5b408cbe6b8e5dfa6b98972cac491ccee37b0"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/fft-retuning-build-policy.json",
+          "sha256": "fada3803933f9844a882a83298de642e1a311f0d8971ca5570d77f09ba22fa6c"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/runner-migration-validation.json",
+          "sha256": "9b6c76df39ca51ec49157e734f8ad62803a260afa6aea7276475059786b67bf7"
+        }
+      ]
+    },
+    {
+      "requirement": "public-library-compatibility",
+      "status": "satisfied-with-runtime-limitation",
+      "review": "Public bootstrap/key-generation headers are byte-identical to the original backend. Reviewed CUDA predicates: added reuse barrier is eliminated on existing CUDA paths and HIP-only code stays disabled. NTT/FFT SM80/SM89 images compile; NVIDIA runtime hardware was unavailable, so no runtime/performance claim is made.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-interface-dependency-audit.json",
+          "sha256": "8f284bdad8ae096839016b97901db8db1101e02128b0634b4283d27bc0a15130"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/2d79cdeec061447d/cuda-compatibility/inverse-barrier-policy-audit.json",
+          "sha256": "159ea89aa6f05f4d7638d5ac199f611ac942dfae3f0c0ae9b9ec6920b5f2bc3f"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/2d79cdeec061447d/cuda-compatibility/validation.json",
+          "sha256": "e3768765ed7b1c79202a52f4a29c9702a863465e156c0c05ae64b7ed4c73b741"
+        }
+      ]
+    },
+    {
+      "requirement": "resident-mux-cli-and-resources",
+      "status": "satisfied",
+      "review": "Reviewed resident buffer setup outside timing, all8 MUX truth cases, stream fork/join graph capture and resource querying from submitted kernels. Timed transfers are rejected by the parser. Registers/private bytes/static and dynamic LDS/geometry/runtime occupancy limits are recorded, not inferred from register counts alone.",
+      "evidence": [
+        {
+          "path": "test/test_bootstrap_bench.cc",
+          "sha256": "1ad57e03f176278f850679aa6ace28385ad1d4267bb1a8eb1d6779abdcc87197"
+        },
+        {
+          "path": "bench_r9700_remaining.py",
+          "sha256": "637832c1751ad0f048aacf3267d9b406914ece54b902210924facec99aae8393"
+        },
+        {
+          "path": "measurements/r9700/summarize.py",
+          "sha256": "5f091587435b978f0533377944bd8897aba947d6ca8f41d5383ce7624c8e3bc7"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/resource-inventory.json",
+          "sha256": "7e7cbeb6c48de4e14a93e82d20abc25b52ff6413576c4a58ba960bafcc161c2d"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        }
+      ]
+    },
+    {
+      "requirement": "per-feature-measurements",
+      "status": "satisfied",
+      "review": "All planned initial per-feature screens and targeted diagnostics are complete. The reconciled26 experiments preserve original screening evidence and eight full-grid feature qualifications, with no pending feature decisions and no promotion.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/completed-feature-outcomes.json",
+          "sha256": "d76d2223f06e42efae4ea2d205624146bd5b6d8fa9c223d6f5d83f50f08770f6"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/2d79cdeec061447d/exploration-coverage.json",
+          "sha256": "d0900b79752b8e3caccf52045037bc962c888310fd2b500f88aa9306e9a71370"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/completed-feature-selection-review.json",
+          "sha256": "644dad0a063697ed7987f11e2c957a1929210d155a3f5f862f69cb1b1c0f5d38"
+        }
+      ]
+    },
+    {
+      "requirement": "original-backend-baseline",
+      "status": "satisfied",
+      "review": "Original backend b0818d28c5eab44dda1592225a132a4abd97517f uses the same TFHEpp pin and updated harness. Reviewed provenance, actual binary hashes and alternating independent process invocations; final audit matches every original/candidate record to its measured executable.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/original-baseline/provenance.json",
+          "sha256": "602b46b129b67feccad51ee0f28149e17e1861f548f186f23ca9fa17a5d306bd"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/qualify_original.py",
+          "sha256": "bcb318f683252214b84e05d4fb7957aa3052802c5cb9363670a88a0bf41a87fb"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        }
+      ]
+    },
+    {
+      "requirement": "combined-winner-selection",
+      "status": "satisfied",
+      "review": "Promising individual and combined feature candidates received complete original-backend qualification and required longer runs. Each failed the no-regression/uncertainty gate; therefore there are no qualified new features to combine or enable. Retained baseline settings were then retuned and fully qualified.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/completed-feature-outcomes.json",
+          "sha256": "d76d2223f06e42efae4ea2d205624146bd5b6d8fa9c223d6f5d83f50f08770f6"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/retuning-feature-selection.json",
+          "sha256": "ac9fd280f016a632976fc4b8e331320e8e7e2473591d9eccacb67e7c6ee9f674"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-profile-review.json",
+          "sha256": "a716017ba452d6f0c30325b6f6dc8c98213d1124e081eb4d8735c762fae90efa"
+        }
+      ]
+    },
+    {
+      "requirement": "occupancy-and-group-retuning",
+      "status": "satisfied",
+      "review": "Waves1(control),2,3,4 were measured in all four profiles and forced groups2,3,5,9 in all three NTT profiles. Group screens cover all1..22 batches in both orders;216 capacity-neighbor captures verify actual limits16/10/6/7 in all3 runs. No new launch setting qualified.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-capacity-boundary-audit.json",
+          "sha256": "a90df79084c8a0588400f6d5c56529cab381b904aea699967863c4cf2c738d70"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/r9700-ntt-retuning-screen-summary.json",
+          "sha256": "1c62f5c70ef8661fd0f219dbafcc27ac897581ce6465e2a46746f778e9f3f484"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/r9700-ntt-throughput-retuning-screen-summary.json",
+          "sha256": "f88a6e8a7910d35f420c8c8c8c8256269c4babd5493f39b435752c3759dfd22c"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/r9700-ntt-latency-retuning-screen-summary.json",
+          "sha256": "ef788200f3f8ba149360d06f4ea7dfa6024f3ec1919570b3e4ed79c32e871ad7"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/r9700-fft-retuning-screen-summary.json",
+          "sha256": "707ed9566763c4ebc339a6bef8a8fbaf91a45cf4f58b9ea53abdb18878ee86b7"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-profile-review.json",
+          "sha256": "a716017ba452d6f0c30325b6f6dc8c98213d1124e081eb4d8735c762fae90efa"
+        }
+      ]
+    },
+    {
+      "requirement": "full-batch-concurrency-grid",
+      "status": "satisfied",
+      "review": "All four final settings completed584 workloads(156 for each NTT profile,116 for FFT), each with3 original/candidate pairs. Literal workload coverage includes the full standard batch/concurrency/graph grid and40 transition extras per NTT profile. All3504 selected raw logs were reparsed with zero errors, resources and binary hashes verified.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/throughput-final-expanded-grid-coverage.json",
+          "sha256": "c4135c27894aaf5c42756b92fd0df664d2047bc50be46157e0d51751cf699813"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/latency-final-expanded-grid-coverage.json",
+          "sha256": "56d5099459bd2d8af041e5a3a1227feca9ebb6656d75c37f0822ed291b89511b"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/fft-final-standard-grid-coverage.json",
+          "sha256": "5e42612f6b6f3228cf746e4b58458f3093e982ca604d8799938cc71cd627cfd1"
+        }
+      ]
+    },
+    {
+      "requirement": "thirty-repeat-uncertain-points",
+      "status": "satisfied",
+      "review": "All required feature qualification reruns and100 final workload reruns at30 repetitions are complete(20paired,33throughput,15latency,32FFT;300 comparisons). Original repeatable latency loss is preserved; isolated A/B was mixed and identical-binary A/A also differed3-4%. Confirmation integrity was verified; no causal slowdown or equivalence claim is used to pass a promotion gate.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/qualification-audit.json",
+          "sha256": "045d72e0a22f9007d2e3bcbcf025931a3cf74c8fe9fc04ccead12da4935e52e2"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/latency-final-qualification-summary.json",
+          "sha256": "2997b328c2e8ce9528a2f7b4123f7e09435e46b8d7af6df998ee70e5aefa89de"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/latency-nmux-baseline-review/confirmation/summary.json",
+          "sha256": "1c6ba40be5e89a439d4d1eead88b0e4a8c86c5ddfcd1c491d51409d1e9ed8d90"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/latency-nmux-baseline-review/confirmation/validation.json",
+          "sha256": "cd742ba18cbda20dacb94238938b661fa47eaeff01afbd5e2cda392cd1a2c8ce"
+        }
+      ]
+    },
+    {
+      "requirement": "final-exhaustive-tests",
+      "status": "satisfied",
+      "review": "All four retained settings passed exhaustive key-switch, binary/MUX, batch and applicable transform/cooperative tests plus raw/public MUX graph modes. Current executable hashes are verified:15 per NTT profile and13 FFT. Focused feature fixtures are explicitly distinguished from this exhaustive final coverage.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/paired-final-correctness-validation.json",
+          "sha256": "efff7cc1494cc3747d9bb86805c4c383bba67a0ccbbfd146b6d34cb094dc0f2b"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/throughput-final-correctness-validation.json",
+          "sha256": "88f485934fe749c5cae8158477466bf9b4ef4fa4b0fe1578fec359a4bd074994"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/latency-final-correctness-validation.json",
+          "sha256": "e5e1f073306b61875d79de3364da084382a9da9446ed2aca29bc748fd4520d19"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/fft-final-correctness-validation.json",
+          "sha256": "898b2e9a29cb3822c2e7fd5c40fd625b2d8e690873d9ec7516938b0e5dcaccc0"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        }
+      ]
+    },
+    {
+      "requirement": "preset-promotion",
+      "status": "satisfied",
+      "review": "No feature or launch candidate met the full promotion rule. Existing13 preset definitions preserve every prior inherited setting; only two explicitly experimental presets were added and all12 new production flags areOFF. Timing uncertainty is documented rather than treated as performance equivalence.",
+      "evidence": [
+        {
+          "path": "CMakePresets.json",
+          "sha256": "7464cb7b0f1591667bbbd99ed4e3f175c20336fbc8ce822181bed185798b18c2"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-preset-policy-audit.json",
+          "sha256": "e45de34786584e4d05a882c58eb86c80387fce262ad7c6f22403fc381e5ccad4"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-profile-review.json",
+          "sha256": "a716017ba452d6f0c30325b6f6dc8c98213d1124e081eb4d8735c762fae90efa"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-retuning-recommendations.json",
+          "sha256": "48dd67c76fba5a6c3d8f1fe3faa590bc905d3729debd91a64994f0207a537db5"
+        }
+      ]
+    },
+    {
+      "requirement": "final-idea-outcomes-and-report",
+      "status": "satisfied",
+      "review": "README and linked per-feature/final measurement reports contain completed decisions, exact workload/rerun scope, target limits, and retained baseline uncertainty. Original latency loss and independent confirmation are both retained. The rejected optional consumer-schedule prototype was not integrated.",
+      "evidence": [
+        {
+          "path": "README.md",
+          "sha256": "62bf6d95bd61b57e4719d2b71d5b35fe5e3f1cbdbe7db311884710403b5a70fc"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/completed-feature-outcomes.json",
+          "sha256": "d76d2223f06e42efae4ea2d205624146bd5b6d8fa9c223d6f5d83f50f08770f6"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-profile-review.json",
+          "sha256": "a716017ba452d6f0c30325b6f6dc8c98213d1124e081eb4d8735c762fae90efa"
+        }
+      ]
+    },
+    {
+      "requirement": "dependency-and-parameter-invariants",
+      "status": "satisfied",
+      "review": "TFHEpp remains pinned to1dd9a1addef4cae01da9bb6bfff0d22b55bec683 with a clean tracked worktree. Reviewed diffs preserve cryptographic parameter constants, primes, rounding contracts and public interfaces. KeyBundle/AES/ASCON optimization scope was not expanded.",
+      "evidence": [
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-interface-dependency-audit.json",
+          "sha256": "8f284bdad8ae096839016b97901db8db1101e02128b0634b4283d27bc0a15130"
+        },
+        {
+          "path": "measurements/r9700/remaining-cuda/f3f746602ae5f7c2/final-measurement-audit.json",
+          "sha256": "6c6af26f13482d45c2e502e516a0d95292b0236a46756f235a3c3f75fe748a6f"
+        },
+        {
+          "path": "include/ntt_small_modulus.cuh",
+          "sha256": "0f49343f54e016065a7f4edf3476fc25a3a5774d2023be61bd38ce26b4cb37a1"
+        },
+        {
+          "path": "include/ntt_pair64.cuh",
+          "sha256": "767fd79b4f20c7b1734e1ce9b82d925c82a36cbafd29fba54e7b9c98587758c1"
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "requirements": 22,
+    "final_workloads": 584,
+    "independent_runs": 3,
+    "verified_preferred_raw_logs": 3504,
+    "final_30_repetition_workload_points": 100
+  },
+  "review_conclusions": [
+    "All planned HIP ports are implemented behind default-off controls and correctness-validated.",
+    "No candidate qualified for production promotion; existing presets remain unchanged.",
+    "Installed direct async-LDS builtins and NVIDIA runtime validation are unavailable; fallback/compile-only evidence is explicit.",
+    "Timing results do not establish performance equivalence; original latency loss and A/B+A/A confirmation are preserved."
+  ]
+}

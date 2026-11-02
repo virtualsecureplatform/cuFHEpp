@@ -1,0 +1,7 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "multi-native64",
+  "wins": 15,
+  "regressions": 0,
+  "status": "proceed-to-original-full-grid"
+}

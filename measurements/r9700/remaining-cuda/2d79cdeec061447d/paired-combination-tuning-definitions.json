@@ -1,0 +1,452 @@
+{
+  "r9700-ntt": {
+    "multi-native64": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "baseline"
+    },
+    "multi-native64-waves2": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "multi-native64",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "2",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+      }
+    },
+    "multi-native64-waves3": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "multi-native64",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "3",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+      }
+    },
+    "multi-native64-waves4": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "multi-native64",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "4",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+      }
+    },
+    "multi-native64-groups2": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "multi-native64",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "1",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "2"
+      },
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02",
+        "test_bootstrap_bench_lvl02_br_iks"
+      ],
+      "cases": [
+        [
+          "batch",
+          1,
+          1,
+          false
+        ],
+        [
+          "batch",
+          1,
+          5,
+          false
+        ],
+        [
+          "batch",
+          1,
+          6,
+          false
+        ],
+        [
+          "batch",
+          1,
+          7,
+          false
+        ],
+        [
+          "batch",
+          1,
+          9,
+          false
+        ],
+        [
+          "batch",
+          1,
+          10,
+          false
+        ],
+        [
+          "batch",
+          1,
+          11,
+          false
+        ],
+        [
+          "batch",
+          1,
+          15,
+          false
+        ],
+        [
+          "batch",
+          1,
+          16,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          false
+        ],
+        [
+          "batch",
+          1,
+          20,
+          false
+        ],
+        [
+          "batch",
+          1,
+          21,
+          false
+        ],
+        [
+          "batch",
+          1,
+          22,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          true
+        ]
+      ],
+      "scope": "Both64-bit orders, including automatic-group and fallback transition neighbours; above-limit cases deliberately exercise fallback."
+    },
+    "multi-native64-groups3": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "multi-native64",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "1",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "3"
+      },
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02",
+        "test_bootstrap_bench_lvl02_br_iks"
+      ],
+      "cases": [
+        [
+          "batch",
+          1,
+          1,
+          false
+        ],
+        [
+          "batch",
+          1,
+          5,
+          false
+        ],
+        [
+          "batch",
+          1,
+          6,
+          false
+        ],
+        [
+          "batch",
+          1,
+          7,
+          false
+        ],
+        [
+          "batch",
+          1,
+          9,
+          false
+        ],
+        [
+          "batch",
+          1,
+          10,
+          false
+        ],
+        [
+          "batch",
+          1,
+          11,
+          false
+        ],
+        [
+          "batch",
+          1,
+          15,
+          false
+        ],
+        [
+          "batch",
+          1,
+          16,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          false
+        ],
+        [
+          "batch",
+          1,
+          20,
+          false
+        ],
+        [
+          "batch",
+          1,
+          21,
+          false
+        ],
+        [
+          "batch",
+          1,
+          22,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          true
+        ]
+      ],
+      "scope": "Both64-bit orders, including automatic-group and fallback transition neighbours; above-limit cases deliberately exercise fallback."
+    },
+    "multi-native64-groups5": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "multi-native64",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "1",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "5"
+      },
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02",
+        "test_bootstrap_bench_lvl02_br_iks"
+      ],
+      "cases": [
+        [
+          "batch",
+          1,
+          1,
+          false
+        ],
+        [
+          "batch",
+          1,
+          5,
+          false
+        ],
+        [
+          "batch",
+          1,
+          6,
+          false
+        ],
+        [
+          "batch",
+          1,
+          7,
+          false
+        ],
+        [
+          "batch",
+          1,
+          9,
+          false
+        ],
+        [
+          "batch",
+          1,
+          10,
+          false
+        ],
+        [
+          "batch",
+          1,
+          11,
+          false
+        ],
+        [
+          "batch",
+          1,
+          15,
+          false
+        ],
+        [
+          "batch",
+          1,
+          16,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          false
+        ],
+        [
+          "batch",
+          1,
+          20,
+          false
+        ],
+        [
+          "batch",
+          1,
+          21,
+          false
+        ],
+        [
+          "batch",
+          1,
+          22,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          true
+        ]
+      ],
+      "scope": "Both64-bit orders, including automatic-group and fallback transition neighbours; above-limit cases deliberately exercise fallback."
+    },
+    "multi-native64-groups9": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "multi-native64",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "1",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "9"
+      },
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02",
+        "test_bootstrap_bench_lvl02_br_iks"
+      ],
+      "cases": [
+        [
+          "batch",
+          1,
+          1,
+          false
+        ],
+        [
+          "batch",
+          1,
+          5,
+          false
+        ],
+        [
+          "batch",
+          1,
+          6,
+          false
+        ],
+        [
+          "batch",
+          1,
+          7,
+          false
+        ],
+        [
+          "batch",
+          1,
+          9,
+          false
+        ],
+        [
+          "batch",
+          1,
+          10,
+          false
+        ],
+        [
+          "batch",
+          1,
+          11,
+          false
+        ],
+        [
+          "batch",
+          1,
+          15,
+          false
+        ],
+        [
+          "batch",
+          1,
+          16,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          false
+        ],
+        [
+          "batch",
+          1,
+          20,
+          false
+        ],
+        [
+          "batch",
+          1,
+          21,
+          false
+        ],
+        [
+          "batch",
+          1,
+          22,
+          false
+        ],
+        [
+          "batch",
+          1,
+          17,
+          true
+        ]
+      ],
+      "scope": "Both64-bit orders, including automatic-group and fallback transition neighbours; above-limit cases deliberately exercise fallback."
+    }
+  }
+}

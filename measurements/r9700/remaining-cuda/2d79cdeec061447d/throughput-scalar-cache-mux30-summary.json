@@ -1,0 +1,48 @@
+{
+  "status": "mux-diagnostics-complete-initial-and-nmux-pending",
+  "source": "2d79cdeec061447d",
+  "profile": "r9700-ntt-throughput",
+  "variant": "scalar-cache",
+  "points": 2,
+  "repetitions": 30,
+  "fresh_keys": 3,
+  "repeatable_wins": 0,
+  "median_regressions": 0,
+  "unresolved_regressions": 1,
+  "comparisons": [
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "scalar-cache",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.01762220051296448,
+      "median_improvement": 0.11898786484352986,
+      "max_improvement": 0.18786738503926048,
+      "improvements": [
+        0.18786738503926048,
+        0.11898786484352986,
+        -0.01762220051296448
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "scalar-cache",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.0952506955460879,
+      "median_improvement": -0.007832831879752922,
+      "max_improvement": 0.07230134465255722,
+      "improvements": [
+        -0.007832831879752922,
+        0.07230134465255722,
+        -0.0952506955460879
+      ]
+    }
+  ]
+}

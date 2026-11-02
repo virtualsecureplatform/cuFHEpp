@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=4.9825
+repeat=1 ms/gate=6.71278
+repeat=2 ms/gate=4.98415
+repeat=3 ms/gate=6.67607
+repeat=4 ms/gate=4.95716
+repeat=5 ms/gate=6.68037
+repeat=6 ms/gate=4.9471
+repeat=7 ms/gate=6.64133
+repeat=8 ms/gate=4.94379
+repeat=9 ms/gate=6.65822
+repeat=10 ms/gate=4.94054
+repeat=11 ms/gate=6.62764
+repeat=12 ms/gate=4.9199
+repeat=13 ms/gate=6.63776
+repeat=14 ms/gate=4.91622
+repeat=15 ms/gate=6.60517
+repeat=16 ms/gate=4.92885
+repeat=17 ms/gate=6.64629
+repeat=18 ms/gate=4.93195
+repeat=19 ms/gate=6.60838
+repeat=20 ms/gate=4.92205
+repeat=21 ms/gate=6.63053
+repeat=22 ms/gate=4.92211
+repeat=23 ms/gate=6.60713
+repeat=24 ms/gate=4.92498
+repeat=25 ms/gate=6.63845
+repeat=26 ms/gate=4.93343
+repeat=27 ms/gate=6.61039
+repeat=28 ms/gate=4.92071
+repeat=29 ms/gate=6.62876
+dispatch=packed streams=8 gates=8 median_ms/gate=6.60517 errors=0
+observed_noise_rms=0.00533681 observed_max_abs_noise=0.0088501

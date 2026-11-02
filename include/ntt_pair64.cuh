@@ -29,6 +29,21 @@ __host__ __device__ __forceinline__ uint64_t small_mod64_madd4(
           "l"(static_cast<uint64_t>(p2)), "l"(static_cast<uint64_t>(p2 >> 64)),
           "l"(static_cast<uint64_t>(p3)), "l"(static_cast<uint64_t>(p3 >> 64)));
     carry = top;
+#elif defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
+    uint32_t limbs[4] = {uint32_t(first), uint32_t(first >> 32),
+                         uint32_t(first >> 64), uint32_t(first >> 96)};
+    carry = 0;
+    const unsigned __int128 products[3] = {p1, p2, p3};
+#pragma unroll
+    for (int product = 0; product < 3; ++product) {
+        unsigned next = 0;
+#pragma unroll
+        for (int limb = 0; limb < 4; ++limb)
+            limbs[limb] = __builtin_addc(limbs[limb], uint32_t(products[product] >> (32 * limb)), next, &next);
+        carry += next;
+    }
+    lo = (uint64_t(limbs[1]) << 32) | limbs[0];
+    hi = (uint64_t(limbs[3]) << 32) | limbs[2];
 #else
     auto sum = first;
     carry = 0;
@@ -38,8 +53,12 @@ __host__ __device__ __forceinline__ uint64_t small_mod64_madd4(
     lo = static_cast<uint64_t>(sum); hi = static_cast<uint64_t>(sum >> 64);
 #endif
     const uint64_t subtraction = (hi >> 32) | (carry << 32);
+#ifdef USE_HIP_NATIVE_NTT64
+    const uint64_t corrected = small_mod64_sub(lo, subtraction);
+#else
     const uint64_t difference = lo - subtraction;
     const uint64_t corrected = difference - (lo < subtraction ? uint64_t{UINT32_MAX} : 0);
+#endif
     const uint64_t hi_lo = static_cast<uint32_t>(hi);
     return small_mod64_add<NativeAdd>(corrected, (hi_lo << 32) - hi_lo);
 }
@@ -172,8 +191,13 @@ __device__ __forceinline__ void SmallInverseNTTPair64(
         if (stage == (Power - 6) / 2 - 1) {
             SmallGentlemanSandeUnit<Power, 64, NativeAdd>(a, b, d_const_inverse_root_64[rlo]);
             SmallGentlemanSandeUnit<Power, 64, NativeAdd>(c, d, d_const_inverse_root_64[rhi]);
+#ifdef USE_HIP_SCALED_INVERSE64
+            SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(a, c, d_const_inverse_root_64[r1]);
+            SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(b, d, d_const_inverse_root_64[r1]);
+#else
             SmallGentlemanSandeScaledUnit<Power, 64, NativeAdd>(a, c, d_const_inverse_root_64[r1], n_inverse);
             SmallGentlemanSandeScaledUnit<Power, 64, NativeAdd>(b, d, d_const_inverse_root_64[r1], n_inverse);
+#endif
         } else {
             SmallGentlemanSandeRadix4Unit<Power, 64, NativeAdd>(a, b, c, d,
                 d_const_inverse_root_64[rlo], d_const_inverse_root_64[rhi],
@@ -188,7 +212,7 @@ __device__ __forceinline__ void SmallInverseNTTPair64(
 
 // The final scalar inverse stage has N/4 workers. Retain its low/even-quarter
 // outputs, publish the other half, then return two coefficients to every worker.
-template <int Power, int NativeAdd = 0>
+template <int Power, int NativeAdd = 0, bool StressReaders = false>
 __device__ __forceinline__ void SmallInverseNTTReturnPair64(
     uint64_t* sh, const uint64_t* roots, uint64_t n_inverse, int tid,
     uint64_t* output_pair)
@@ -232,7 +256,7 @@ __device__ __forceinline__ void SmallInverseNTTReturnPair64(
             if (stage == (Power - 6) / 2 - 1) {
                 SmallGentlemanSandeUnit<Power, 64, NativeAdd>(a, b, d_const_inverse_root_64[rlo]);
                 SmallGentlemanSandeUnit<Power, 64, NativeAdd>(c, d, d_const_inverse_root_64[rhi]);
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if defined(USE_HIP_SCALED_INVERSE64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890)
                 SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(a, c, d_const_inverse_root_64[r1]);
                 SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(b, d, d_const_inverse_root_64[r1]);
 #else
@@ -251,6 +275,14 @@ __device__ __forceinline__ void SmallInverseNTTReturnPair64(
         t <<= 2; shift += 2; m >>= 2;
         __syncthreads();
     }
+#if defined(__HIP_DEVICE_COMPILE__)
+    // Test-only scheduling skew: production instantiations eliminate this.
+    // Delay peer-half readers after publication to exercise workspace reuse.
+    if constexpr (StressReaders) {
+        if (tid >= Quarter)
+            for (int delay = 0; delay < 4096; ++delay) asm volatile("s_nop 7" ::: "memory");
+    }
+#endif
     if (tid >= Quarter) {
         output_pair[0] = sh[tid]; output_pair[1] = sh[tid + N / 2];
     }

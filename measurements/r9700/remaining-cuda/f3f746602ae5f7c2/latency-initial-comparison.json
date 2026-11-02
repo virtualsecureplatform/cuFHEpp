@@ -1,0 +1,6748 @@
+[
+  {
+    "profile": "r9700-ntt-latency",
+    "variant": "waves2",
+    "control": "baseline",
+    "repeatable_wins": [],
+    "regressions": [],
+    "decision": "experimental-opt-in",
+    "comparisons": [
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.010165096138511687
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0013305711350275473
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.009731358366628973
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.002536999337427681
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.023701907931681587
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.001360221411748297
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.022510821317685892
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0008340842574043883
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.008205945326893227
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.000587544065804968
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.001002994123197487
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.0017749400649578195
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 7.01632740660596e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0003393867589798205
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.00040445694340696114
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.01948470475466446
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00204611192232218
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0014566552225010465
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.0011122923669705242
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0003854537225504995
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.008416265438196957
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00708776678381795
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0030563091934672215
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.00042412057091234523
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0008871323314580959
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0008444741574241688
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0029603668767010927
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.000448716192146259
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.002933311092458757
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.003711950982795753
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0004247555914547174
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0024854026004951235
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0003049914453618907
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.687217523514415
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0005106974368849215
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -2.1042494275223835
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0023275765601105114
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0016793000751510467
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.009473377836614727
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0008171808095926991
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0012084929163722613
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00047514505797119355
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0011320817772431102
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0016526339707541027
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.10313847774946083
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0014880147178183423
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0015845999541336253
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0044567498397831695
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.003329167987765058
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0019748091419212743
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0005472966329198581
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0012147422116657314
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.000962698021158892
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.001225281267195788
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0009756808300832587
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.00041373228019658814
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0015773842532688098
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0020117632266447583
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0004445959363931218
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.00025559416515030797
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0024172986534811702
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0006696565706210134
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.008207917652511165
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.007904226962913707
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.10957358132004225
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0010689227907847432
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 8.644429899840045e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.000498281123257005
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.006221411207112837
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.004050808615613022
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.031650966640718314
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.00493697380400393
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.000462320850670217
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.0015602540634176432
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.00491886858219015
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.003484585548649277
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0016993781396477114
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.005249379899822104
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0013878009214998155
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.0027516231345139364
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0021384472113956665
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.004518592514447528
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.00027666757157307487
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.000897134306484304
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.002492884407046869
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.002966007140731919
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0002802810596180816
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0013558244347614545
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0023422889065081165
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.012882541533080771
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0031992797325113287
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.02095762254880973
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.0002893358203901464
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0009542685164796172
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0056511412750799295
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.002249164329827691
+      }
+    ]
+  },
+  {
+    "profile": "r9700-ntt-latency",
+    "variant": "waves3",
+    "control": "baseline",
+    "repeatable_wins": [],
+    "regressions": [],
+    "decision": "experimental-opt-in",
+    "comparisons": [
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.1548353402867929
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0009507966247419564
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.002920462015212566
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0009013263111453673
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0005201325991373018
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0015011502563839763
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.002342504418323732
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.002488938053097245
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.0017321635821343495
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0008634100229993891
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0001265012724540604
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.001379131209182649
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0021575062203962325
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0010767726524500976
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0014651280518462872
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.024692904691630435
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.002487655244650666
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00023125110979882457
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.002015007479015507
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0006112721586157832
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0060574036099465545
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0006865798166550974
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.001432143786546769
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0009566422743592096
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0030895454738602
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.006047100812752393
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00011912916579803756
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0021583820027314404
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0006251040364366744
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0014310655714245835
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00010206990732763987
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0020073716188921953
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00027553543236724654
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.003114308517466524
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0013103361661153112
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0011251471310602668
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0021197826476384574
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0020330535152152107
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0008682439765574923
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00038906110769465485
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0020723436322531708
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.000653656788014878
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0002590121610386298
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.0002780850291739245
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0034656761397483526
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0007004210265617594
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0249600888457
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.00038941951368620664
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.004378891305978461
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 3.905792289948806e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.022648467378383552
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0021723176280639134
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.010371629657613957
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.027410268952864136
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.001348663313233578
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.0019574024515620625
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.000266334677394342
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0014760432224723008
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.003821700953755558
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.005039598310143667
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.002098640179345912
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.0003513725103407861
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0001296304298173956
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.004618829018663506
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0049211634511802105
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00044020504698982776
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0008550450757458528
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0003440531001503988
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00046904025723171205
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0006211393273850563
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.029793344446006564
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.009615024879344403
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.002379543299701803
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.001250939745375046
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0001225557302625413
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.004805312871850154
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.003141115799343508
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0027518150999849
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00018585057613684786
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.000258364713620729
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.003531353019692096
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.001931968450767596
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.0018055730808306247
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0061692885856106106
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.002157769915633212
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.003237977249690216
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.002490978478153605
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.006272796316958873
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0014711245449094967
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0012950549257713106
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0034787695272175956
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.016054740083520702
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.002266159507990251
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00047597549441180664
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00011941137217719167
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0015983460232320557
+      }
+    ]
+  },
+  {
+    "profile": "r9700-ntt-latency",
+    "variant": "waves4",
+    "control": "baseline",
+    "repeatable_wins": [],
+    "regressions": [],
+    "decision": "experimental-opt-in",
+    "comparisons": [
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.005866569007894729
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0018109096812295444
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0014797748494470575
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.001017456324872268
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.008547197344860202
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0032546003845096427
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.02264453561578006
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0007388059701491922
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.0029426842257194163
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00044649501413907
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.00022325082974883337
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -6.796206481118894e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0008270990740626427
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0014170090589575857
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0008540927713163171
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.022070827910808166
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0029526087606519535
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0006108029582672092
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.00022176500301851476
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0022790200213906875
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0010023586972138787
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0006184961806987577
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0010087723805316529
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0011189874406980493
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.000931176315131399
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0011813973501089148
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.00014148695341353879
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.014046202527282503
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": 7.439751299731512e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0016532510527198507
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.008325306901563856
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0003347292876887398
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0020399806425194233
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0014927481810036447
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.002428129461164552
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0021570399117187833
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0013016936980070337
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.004344495104267931
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.008813271750400586
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0035527409858646664
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00022467492347011397
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.002799282990672558
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.001988279614901556
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.0010395736003151468
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0003796934327098267
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0009668823458884868
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.005776175340656331
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.002056985178836568
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0005891815053119531
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0006043617865378881
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.01777134081440246
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0002676760283570889
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.015109403860240622
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.01933185367150081
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.001379376693344092
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.002762035977955657
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0004149506084911714
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00925631945292471
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0005427085617850658
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.002295828665352939
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0022941829580238604
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0011900724525975015
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0010129209180522736
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.002024234586296969
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.008314378152328938
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0021903060456082146
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0011441789124733148
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0009468416069253749
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0016400315675250132
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00548297778401452
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.016649338241492728
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.005602583779813708
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0044895533119136966
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.00019718761168829868
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0003469551115454772
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.006621041900792157
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.004002743664671682
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0006647068094758346
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0005066513435528774
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.0009127398280009968
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.007386995509382599
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.005318347829361025
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.00017425590129316326
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.005231560891938214
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0023166413364998917
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0005719965492667622
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.0005197728073058627
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.003695345557122698
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0026732025336775322
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0012864222698675265
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0035892816623461776
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed-mux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.014126161083735322
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.0013661877797284117
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "packed-nmux",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 3.679694830627245e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.006186132927962218
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 512,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0024770375296123692
+      }
+    ]
+  },
+  {
+    "profile": "r9700-ntt-latency",
+    "variant": "groups2",
+    "control": "baseline",
+    "repeatable_wins": [],
+    "regressions": [
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        10,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        10,
+        false
+      ]
+    ],
+    "decision": "experimental-opt-in",
+    "comparisons": [
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.002403895263713429
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.2441413970297588
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0016793807283563833
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0008997569700444075
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.0013110045572419793
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.25164391876512204
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.001945629560576645
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.2393368859019751
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.25347466540356756
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.23813758436379628
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.23906671947574987
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0003183892784872633
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.24505018012171154
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00022031973902114643
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0012417914163893595
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0019896020624800004
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0007714561234328787
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.001838715125831003
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.3470845892682415
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.003221183839107411
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.28431400269554485
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00012396102767531225
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.3479097657733148
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.2360093909887664
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -3.956656870540698e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0007251699035896175
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.0026127480644577705
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00040070076039977476
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.3316588554052682
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.007252996796022204
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.2783336621663517
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0005189964194360908
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.003032737168243038
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.23196570904294966
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0028399567954113802
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": -8.607414270156433e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.001859540774278301
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00015387535070765512
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0008836900444398887
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.3222819562053103
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.0016000915824775364
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0013212376427491623
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0010736807250540936
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0024638393084003285
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0008485455356546101
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.34627869839524594
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.00035981449563804446
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0003249918752030734
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.272735760971055
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00025209352797850304
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00011467934742237507
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.24425291573458918
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.34806398133768446
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": -5.214588463053893e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.3481492180626864
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.23409897802245183
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0010778138419669236
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.3287476204949371
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00013160210031037956
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.32581044664260617
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.3311519440654842
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00035309422040519234
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0002551621516417857
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.2789976021439655
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.24381519525694517
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.25661119966535995
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.2422139471902507
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.00014389245352897095
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": -1.4785987615173468e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.23345580289604495
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0029268823937813604
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0015767461930848992
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.2833033027367149
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0009639338087372717
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.0006941577444170566
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0016089131930882017
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0007070096283547933
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.3258631616507517
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.3441547816183739
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.23762894793449507
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.0008212884206142412
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.2840476818198938
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.25281552906638294
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.23112518265952264
+      }
+    ]
+  },
+  {
+    "profile": "r9700-ntt-latency",
+    "variant": "groups3",
+    "control": "baseline",
+    "repeatable_wins": [],
+    "regressions": [
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        1,
+        false
+      ]
+    ],
+    "decision": "experimental-opt-in",
+    "comparisons": [
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.11483735955516017
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.00037600345923172185
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0011449942750286768
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.11485775074329685
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.00020855109439377184
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.011130041188752493
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.006782159373456054
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.000770526982846631
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.012302572384478405
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.001623315692677263
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0024628590769320002
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00015269431583098125
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.001734890045482218
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.002052751462054192
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.006154955671884843
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0012721319323925062
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.00040431452415434777
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.16352543083824833
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0717841942094477
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.001218716398523334
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.060711734406136086
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.16389602780574353
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.07389291927912556
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.00015919540768072338
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.16502829704246746
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.17275314866147018
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.000988992141894185
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.11966311957954945
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.054068843871365235
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.008359806322800645
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.06211443771577341
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.1153856957897399
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.1605807849300418
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0012515464510747254
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.12212698383217413
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.006833539751863071
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0016636877370072023
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0007229978258787018
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.1128216316630879
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.06019314161057743
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.0005386518574359567
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": 2.32829954970315e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0002036121451360895
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0027478510692524605
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.11591517509939986
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.07421038500075317
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0015194375565905638
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.11941364742030469
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.06981455655648117
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.16329492890128527
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0009090127704574069
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.009542470115018298
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.07521108663729814
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.006283810340806495
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.07352777359133489
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.000200964630225009
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0004917019515480181
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.05887088604895441
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0008417446155710717
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.06263946360765393
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0574508574040804
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.17319677773436748
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0014185227842088421
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.05809425265732293
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.012008496261979196
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0010653908778418542
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0005176957831325435
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.0009286640985708416
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.004225217051347263
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0016890184925870688
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.15900105986175483
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0003754086052177863
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.06266671675996527
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0001282073197830247
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.0017765059364147628
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.12333847669684528
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.17147940458669453
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.058447790479440265
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.07322578112733558
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0009445254928365232
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.00104901202849772
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.061480175550470806
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.011285366443467892
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0002734226034146747
+      }
+    ]
+  },
+  {
+    "profile": "r9700-ntt-latency",
+    "variant": "groups5",
+    "control": "baseline",
+    "repeatable_wins": [],
+    "regressions": [
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        10,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        10,
+        false
+      ]
+    ],
+    "decision": "experimental-opt-in",
+    "comparisons": [
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.11488892402992579
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.4016711936019317
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.001355135626177728
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.11109248461951537
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.001796787803864941
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.4480170318201455
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0006564544293571339
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.3982220491856465
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.46320215901453876
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.4564328582145536
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.39776787970228766
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0012848760883243937
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.3932982584475142
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0005790887669286926
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0019085494554054172
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.002229663941901938
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0009585772011296845
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.16111473397521947
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0013631299560914467
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0008512633241215539
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.008337798332440305
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.16638836823357628
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.001890235097990356
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.4511377972991917
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.16697781622284502
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.17164860133348236
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0015243463284797532
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.12104175586871935
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -1.0684502663282913e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.006076598531178035
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0011976720250014283
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.1164275505751966
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.16143922018348622
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.4520772045633923
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.12214712690695118
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.003323562746707198
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0012743750285039157
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0023181651765398215
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.11798020050800151
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0010179717312981396
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.0013701609678651305
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0002729835692130145
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0015499594840919784
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0030948589750137145
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.11454592780252737
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0035344246414850122
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.002613712003550095
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.11809803368626137
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0029826947427660233
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.16102377944649593
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0014275936247190035
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.4083005943813185
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0018909899888766013
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.00016367116033111362
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.002128690822395085
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.45245095572536664
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.00043744531933498365
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00039444577703151573
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0007921841776388217
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00048475679591741816
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0003566580607383685
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.1741909633895209
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0013001614128247407
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.00472378581732813
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.40923297876734765
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.3959191465303935
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.39897840156532216
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.002696205456100831
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0008742981534528571
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.3941866578323838
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.1582253631723598
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.00030875196870427946
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0013730321439990867
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0012103619289884904
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.0009300050857621311
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.12117888710232072
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.17289950193176007
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.0003783417971767733
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0026941279809116203
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.45480582933198566
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -4.822405155024967e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.011879904274286535
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.4658898723079212
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.4549631824196052
+      }
+    ]
+  },
+  {
+    "profile": "r9700-ntt-latency",
+    "variant": "groups9",
+    "control": "baseline",
+    "repeatable_wins": [],
+    "regressions": [
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        10,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      [
+        "screen",
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        10,
+        false
+      ]
+    ],
+    "decision": "experimental-opt-in",
+    "comparisons": [
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.11724496436889353
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.39582648856180014
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.001691359430141981
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.11524464654590583
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": -0.0014836980862047433
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.4677999173978642
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0031979319931392247
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.07976865290012158
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.47133374840391284
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.45756709277117436
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.08091756995210475
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": -7.547578457889337e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.3959601835086173
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 2.624960625585704e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0031515324384613352
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": 1.7071634285104054e-06
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.000507930471074225
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.16494952063450286
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.14685842071783162
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0023042150765473224
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.10725266434028113
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.16279464914219433
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.14574447873058305
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.4553887544723345
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.1646590730718569
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.17368215468174553
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": 0.0014556058928320015
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.12506170194931587
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.12228304363135845
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0020401949338686443
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.10555764175741666
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.11448913522384063
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.16114922976689905
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.07635508591828999
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.12398139534883734
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.0003832826200886874
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.001306680354458134
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0008133722516512343
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.11576302663627303
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.11542998012942429
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": -0.0014443193367872365
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": 0.008280481124506744
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 0,
+        "improvement": 0.0015100037750095385
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0010298200743998898
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.11299067151980124
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.15008433916815989
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.000843031410341144
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.11717991976713527
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.10781280853024433
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 15,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.1641394429589278
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.0006594810171125509
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.4104599401817408
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.14994725703840084
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 21,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.006631308386827461
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.1498080563735802
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.07709700110538487
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 1,
+        "improvement": 0.0003742071197909702
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.1201151109808416
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.00620240198334332
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.12262496735579265
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.11961025989757101
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.16952269497617656
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.001014791993694919
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.10579622755280882
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.4083680938285017
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.4070092380462813
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.395268748592448
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 0,
+        "improvement": 0.0010445129958156496
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 20,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0018571844374741797
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.07946433073758996
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 16,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.15929702513173294
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 1,
+        "improvement": -8.205586034737422e-05
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.10551272781904042
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 22,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0008731788837663679
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 2,
+        "improvement": 0.0031377911458136953
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.12374261387428453
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 11,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.17057610875863594
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 5,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.12075250166777862
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 6,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.14658172208995057
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 9,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.4530356809265832
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "run": 1,
+        "improvement": -0.0019542818079585356
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "run": 0,
+        "improvement": -0.1163295482550093
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 10,
+        "graph": false,
+        "run": 1,
+        "improvement": -0.46559006761438604
+      },
+      {
+        "phase": "screen",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 7,
+        "graph": false,
+        "run": 2,
+        "improvement": -0.0759816749234663
+      }
+    ]
+  }
+]

@@ -1,0 +1,68 @@
+Preset CMake variables:
+
+  CMAKE_BUILD_TYPE="Release"
+  CMAKE_HIP_ARCHITECTURES="gfx1201"
+  CUFHE_GPU_BACKEND="HIP"
+  CUFHE_HIP_COOPERATIVE_GROUPS="0"
+  CUFHE_HIP_MIN_WAVES_PER_EU="1"
+  ENABLE_TEST="ON"
+  USE_BLOCK_BINARY="ON"
+  USE_CUDA_ASYNC_MONOMIALS="OFF"
+  USE_CUDA_PACKED_PAIRED_ROOTS="OFF"
+  USE_CUDA_PAIRED_NTT="ON"
+  USE_CUDA_PAIRED_NTT_MADD4="OFF"
+  USE_CUDA_PAIRED_NTT_WARP="OFF"
+  USE_CUDA_SHOUP_NTT="ON"
+  USE_CUDA_UNREDUCED_INVERSE_DIFF="OFF"
+  USE_CUDA_WARP_TRANSFORM64="OFF"
+  USE_CUDA_WORD32_REDUCTION="OFF"
+  USE_FFT="OFF"
+  USE_HIP_COOPERATIVE_BATCH="ON"
+  USE_HIP_COOPERATIVE_SCALAR="OFF"
+  USE_HIP_FAST_TORUS64="OFF"
+  USE_HIP_FUSED_NTT="ON"
+  USE_HIP_LOW_LDS="ON"
+  USE_HIP_MONOMIAL_PREFETCH="OFF"
+  USE_HIP_MONOMIAL_STAGING="OFF"
+  USE_HIP_NATIVE_KEYSWITCH="OFF"
+  USE_HIP_NATIVE_NTT64="OFF"
+  USE_HIP_OUTPUT_EXPONENT_CACHE="OFF"
+  USE_HIP_PACKED_PAIRED_ROOTS="OFF"
+  USE_HIP_PAIRED_NTT="ON"
+  USE_HIP_PAIRED_NTT64="OFF"
+  USE_HIP_PREPARED_KEYSWITCH="ON"
+  USE_HIP_REGISTER_MONOMIALS31="OFF"
+  USE_HIP_REGISTER_NTT_IO64="OFF"
+  USE_HIP_SCALAR_MONOMIAL_CACHE64="OFF"
+  USE_HIP_SCALED_INVERSE64="OFF"
+  USE_HIP_UNREDUCED_INVERSE_DIFF="OFF"
+  USE_HIP_WAVE_KEYSWITCH="OFF"
+  USE_HIP_WAVE_MODSWITCH_CORRECTION="ON"
+  USE_KEY_BUNDLE="OFF"
+  USE_SUBSET_KEY="ON"
+
+-- The HIP compiler identification is Clang 23.0.0
+-- The CXX compiler identification is Clang 23.0.0
+-- The C compiler identification is Clang 23.0.0
+-- Detecting HIP compiler ABI info
+-- Detecting HIP compiler ABI info - done
+-- Check for working HIP compiler: /opt/rocm/core-10.0/lib/llvm/bin/clang++ - skipped
+-- Detecting HIP compile features
+-- Detecting HIP compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/rocm/core-10.0/lib/llvm/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/rocm/core-10.0/lib/llvm/bin/clang - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- cuFHEpp GPU backend: HIP
+-- USE_FFT=OFF selects the NTT backend; disabling USE_GPU_FFT
+CMake Error at CMakeLists.txt:170 (message):
+  USE_HIP_MULTIOUT_MUX_KEYSWITCH requires USE_HIP_MULTIOUT_KEYSWITCH
+
+
+-- Configuring incomplete, errors occurred!

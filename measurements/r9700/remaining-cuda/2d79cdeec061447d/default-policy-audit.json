@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "source": "2d79cdeec061447d",
+  "profiles": {
+    "r9700-ntt": {
+      "MULTIOUT_KEYSWITCH": "OFF",
+      "WAVE_KEYSWITCH": "OFF",
+      "OUTPUT_EXPONENT_CACHE": "OFF",
+      "SCALAR_MONOMIAL_CACHE64": "OFF",
+      "REGISTER_NTT_IO64": "OFF",
+      "REGISTER_MONOMIALS31": "OFF",
+      "NATIVE_NTT64": "OFF",
+      "FAST_TORUS64": "OFF",
+      "SCALED_INVERSE64": "OFF",
+      "PACKED_PAIRED_ROOTS": "OFF",
+      "UNREDUCED_INVERSE_DIFF": "OFF",
+      "MONOMIAL_PREFETCH": "OFF"
+    },
+    "r9700-ntt-throughput": {
+      "MULTIOUT_KEYSWITCH": "OFF",
+      "WAVE_KEYSWITCH": "OFF",
+      "OUTPUT_EXPONENT_CACHE": "OFF",
+      "SCALAR_MONOMIAL_CACHE64": "OFF",
+      "REGISTER_NTT_IO64": "OFF",
+      "REGISTER_MONOMIALS31": "OFF",
+      "NATIVE_NTT64": "OFF",
+      "FAST_TORUS64": "OFF",
+      "SCALED_INVERSE64": "OFF",
+      "PACKED_PAIRED_ROOTS": "OFF",
+      "UNREDUCED_INVERSE_DIFF": "OFF",
+      "MONOMIAL_PREFETCH": "OFF"
+    },
+    "r9700-ntt-latency": {
+      "MULTIOUT_KEYSWITCH": "OFF",
+      "WAVE_KEYSWITCH": "OFF",
+      "OUTPUT_EXPONENT_CACHE": "OFF",
+      "SCALAR_MONOMIAL_CACHE64": "OFF",
+      "REGISTER_NTT_IO64": "OFF",
+      "REGISTER_MONOMIALS31": "OFF",
+      "NATIVE_NTT64": "OFF",
+      "FAST_TORUS64": "OFF",
+      "SCALED_INVERSE64": "OFF",
+      "PACKED_PAIRED_ROOTS": "OFF",
+      "UNREDUCED_INVERSE_DIFF": "OFF",
+      "MONOMIAL_PREFETCH": "OFF"
+    },
+    "r9700-fft": {
+      "MULTIOUT_KEYSWITCH": "OFF",
+      "WAVE_KEYSWITCH": "OFF",
+      "OUTPUT_EXPONENT_CACHE": "OFF",
+      "SCALAR_MONOMIAL_CACHE64": "OFF",
+      "REGISTER_NTT_IO64": "OFF",
+      "REGISTER_MONOMIALS31": "OFF",
+      "NATIVE_NTT64": "OFF",
+      "FAST_TORUS64": "OFF",
+      "SCALED_INVERSE64": "OFF",
+      "PACKED_PAIRED_ROOTS": "OFF",
+      "UNREDUCED_INVERSE_DIFF": "OFF",
+      "MONOMIAL_PREFETCH": "OFF"
+    }
+  },
+  "presets_sha256": "7464cb7b0f1591667bbbd99ed4e3f175c20336fbc8ce822181bed185798b18c2",
+  "header_sha256": "4a846a6b8486afd915960eef59d46506c83eb247dcfddfeb5c3cfe76d785b383",
+  "reason": "InHIP, disabling scalar cache makes CACHE_SCALAR_MONOMIALS64 false, hence DIRECT_SCALAR_NTT64 false regardless of the adjacent default. Disabling registerI/O explicitly makes DIRECT false even when cache is enabled. Allnewflags remainOFF in all4productionprofiles.",
+  "scope": "Defaultcontrol inheritance and scalar-cache/register-I/O selectors; measuredperformance and othercompatibility evidence remain separate."
+}

@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "checks": [
+    "profile file handle redirected",
+    "profile integer descriptor redirected",
+    "common GPU handle forwarded unchanged"
+  ]
+}

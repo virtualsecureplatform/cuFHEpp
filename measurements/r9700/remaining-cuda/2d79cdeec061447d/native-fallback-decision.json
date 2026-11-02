@@ -1,0 +1,7 @@
+{
+  "profile": "r9700-ntt",
+  "candidate": "native64",
+  "status": "qualify-individual-native-path",
+  "bundle_regressions": 5,
+  "bundle_unresolved_regressions": 16
+}

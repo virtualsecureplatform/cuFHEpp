@@ -1,0 +1,317 @@
+{
+  "profile": "r9700-ntt-latency",
+  "variant": "all",
+  "full_grid_complete": true,
+  "expected_points": 116,
+  "complete_points": 116,
+  "wins": 85,
+  "regressions": 8,
+  "unresolved_regressions": 8,
+  "needs_30": 0,
+  "status": "rejected-for-preset-experimental-opt-in",
+  "longer_repetition_points": 41,
+  "selected_repetitions": 30,
+  "reason": "Median regressions and unresolved key-run regressions remain after longer measurements",
+  "problem_points": [
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.000933302925588686
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.2741703690746895
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.15051682751187967
+        }
+      ],
+      "median_gain": -0.000933302925588686,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.03027702771851648
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.004953993028295134
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.041040058426719206
+        }
+      ],
+      "median_gain": -0.03027702771851648,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.23672973625445115
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.008890161716855416
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.021208821467908257
+        }
+      ],
+      "median_gain": -0.021208821467908257,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.04295172731650676
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.04251208587033073
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.1325607717155679
+        }
+      ],
+      "median_gain": 0.04251208587033073,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.08345686837557231
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.037616099300114
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.09217532279886953
+        }
+      ],
+      "median_gain": -0.08345686837557231,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.1371653491982603
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.2148221113304989
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.21269321419724796
+        }
+      ],
+      "median_gain": -0.21269321419724796,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.2665506114877043
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.17872525277040574
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.041163041622442664
+        }
+      ],
+      "median_gain": -0.17872525277040574,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.03861711462778583
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.041398681753618716
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.04566168171557561
+        }
+      ],
+      "median_gain": -0.03861711462778583,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.035608554809211546
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.15357390627586187
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.18119186199862858
+        }
+      ],
+      "median_gain": -0.15357390627586187,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.04439065188216018
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.0920224761097892
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.05582447545902314
+        }
+      ],
+      "median_gain": -0.05582447545902314,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    }
+  ]
+}

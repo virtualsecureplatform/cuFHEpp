@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "properties": {
+    "multiProcessorCount": 32,
+    "warpSize": 32
+  },
+  "boundaries": {
+    "five_to_three": 6,
+    "three_to_two": 10,
+    "raw_cooperative_limit": 16,
+    "public_cooperative_limit": 21
+  },
+  "transition_counts": [
+    1,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    15,
+    16,
+    17,
+    20,
+    21,
+    22
+  ],
+  "source": "HIP TryCooperativeNandBatch; dense=false",
+  "gpu_settings_changed": false
+}

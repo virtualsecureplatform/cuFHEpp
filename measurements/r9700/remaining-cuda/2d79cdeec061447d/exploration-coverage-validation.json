@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "case": "Two extra completed diagnostics cannot replace one missing initial point",
+  "initial_expected": 32,
+  "initial_complete": 31,
+  "diagnostic_complete": 2,
+  "decision": "awaiting-initial-screen"
+}

@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=ntt block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=1 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=2 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=3 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=4 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=5 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=6 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=7 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+repeat=0 ms/gate=1.23031
+repeat=1 ms/gate=1.56322
+repeat=2 ms/gate=1.22554
+repeat=3 ms/gate=1.5635
+repeat=4 ms/gate=1.23103
+repeat=5 ms/gate=1.56186
+repeat=6 ms/gate=1.22668
+repeat=7 ms/gate=1.55945
+repeat=8 ms/gate=1.22759
+repeat=9 ms/gate=1.56123
+repeat=10 ms/gate=1.22972
+repeat=11 ms/gate=1.56457
+repeat=12 ms/gate=1.23196
+repeat=13 ms/gate=1.56535
+repeat=14 ms/gate=1.22542
+repeat=15 ms/gate=1.56207
+repeat=16 ms/gate=1.23173
+repeat=17 ms/gate=1.56101
+repeat=18 ms/gate=1.22557
+repeat=19 ms/gate=1.55867
+repeat=20 ms/gate=1.22393
+repeat=21 ms/gate=1.55721
+repeat=22 ms/gate=1.22065
+repeat=23 ms/gate=1.55729
+repeat=24 ms/gate=1.22853
+repeat=25 ms/gate=1.55725
+repeat=26 ms/gate=1.22406
+repeat=27 ms/gate=1.55984
+repeat=28 ms/gate=1.22634
+repeat=29 ms/gate=1.56087
+dispatch=packed streams=8 gates=8 median_ms/gate=1.55721 errors=0
+observed_noise_rms=0.00441883 observed_max_abs_noise=0.00798035

@@ -1,0 +1,20 @@
+[
+  [
+    "cmake",
+    "--preset",
+    "a100-ntt",
+    "-B",
+    "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-policy-cuda-ntt",
+    "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.0/bin/nvcc",
+    "-DCMAKE_CUDA_ARCHITECTURES=80-real;89-real"
+  ],
+  [
+    "cmake",
+    "--build",
+    "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-policy-cuda-ntt",
+    "--parallel",
+    "4",
+    "--target",
+    "test_bootstrap_bench"
+  ]
+]

@@ -1,0 +1,23 @@
+{
+  "previous": "2d79cdeec061447d",
+  "source": "f3f746602ae5f7c2",
+  "reason": "Runner report scoping and independent FFT wave controls; C++ unchanged",
+  "candidate_selection": [
+    [
+      "r9700-ntt",
+      "multi"
+    ],
+    [
+      "r9700-ntt",
+      "multi-wave"
+    ],
+    [
+      "r9700-ntt-throughput",
+      "register31"
+    ],
+    [
+      "r9700-fft",
+      "multi-wave"
+    ]
+  ]
+}

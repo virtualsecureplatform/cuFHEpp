@@ -1,0 +1,35 @@
+-- The HIP compiler identification is Clang 23.0.0
+-- The CXX compiler identification is Clang 23.0.0
+-- The C compiler identification is Clang 23.0.0
+-- Detecting HIP compiler ABI info
+-- Detecting HIP compiler ABI info - done
+-- Check for working HIP compiler: /opt/rocm/llvm/bin/clang++ - skipped
+-- Detecting HIP compile features
+-- Detecting HIP compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/rocm/llvm/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/rocm/llvm/bin/clang - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- cuFHEpp GPU backend: HIP
+-- Block-binary keys are incompatible with key bundling; disabling USE_KEY_BUNDLE
+-- Found OpenMP_C: -fopenmp=libomp (found version "5.1") 
+-- Found OpenMP_CXX: -fopenmp=libomp (found version "5.1") 
+-- Found OpenMP: TRUE (found version "5.1")  
+-- AVX-512 support detected, USE_AVX512 defaults to ON
+-- The ASM compiler identification is Clang with GNU-like command-line
+-- Found assembler: /opt/rocm/llvm/bin/clang
+-- BLAKE3 SIMD configuration: 
+-- 
+ * AMD64 assembly, The library uses hand written amd64 SIMD assembly.
+
+-- Found OpenMP_C: -fopenmp=libomp (found version "5.1") 
+-- Found OpenMP_CXX: -fopenmp=libomp (found version "5.1") 
+-- Configuring done (1.7s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/nimda/sources/cuFHEpp/build-remaining-default-shoup

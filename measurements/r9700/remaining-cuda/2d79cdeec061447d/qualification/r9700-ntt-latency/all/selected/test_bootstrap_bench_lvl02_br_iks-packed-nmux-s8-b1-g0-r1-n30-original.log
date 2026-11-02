@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nmux backend=ntt block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=204 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=5.70922
+repeat=1 ms/gate=5.71503
+repeat=2 ms/gate=5.7314
+repeat=3 ms/gate=5.6869
+repeat=4 ms/gate=5.71649
+repeat=5 ms/gate=5.6957
+repeat=6 ms/gate=5.67683
+repeat=7 ms/gate=5.69365
+repeat=8 ms/gate=5.68738
+repeat=9 ms/gate=5.68876
+repeat=10 ms/gate=5.71244
+repeat=11 ms/gate=5.65178
+repeat=12 ms/gate=5.69722
+repeat=13 ms/gate=5.66633
+repeat=14 ms/gate=5.65665
+repeat=15 ms/gate=5.66497
+repeat=16 ms/gate=5.68946
+repeat=17 ms/gate=5.66365
+repeat=18 ms/gate=5.70998
+repeat=19 ms/gate=5.6371
+repeat=20 ms/gate=5.68609
+repeat=21 ms/gate=5.65658
+repeat=22 ms/gate=5.65521
+repeat=23 ms/gate=5.6652
+repeat=24 ms/gate=5.67215
+repeat=25 ms/gate=5.65987
+repeat=26 ms/gate=5.70422
+repeat=27 ms/gate=5.62288
+repeat=28 ms/gate=5.68879
+repeat=29 ms/gate=5.65838
+dispatch=packed streams=8 gates=8 median_ms/gate=5.6869 errors=0
+observed_noise_rms=0.0101348 observed_max_abs_noise=0.0175018

@@ -1,0 +1,9 @@
+[
+  "cmake",
+  "--preset",
+  "r9700-ntt-throughput",
+  "-B",
+  "build-remaining-invalid-wave",
+  "-DUSE_HIP_WAVE_KEYSWITCH=ON",
+  "-DUSE_HIP_PREPARED_KEYSWITCH=OFF"
+]

@@ -1,0 +1,13 @@
+[
+  "/opt/rocm/llvm/bin/clang++",
+  "-x",
+  "hip",
+  "--offload-arch=gfx1201",
+  "--cuda-device-only",
+  "-O2",
+  "-S",
+  "-emit-llvm",
+  "measurements/r9700/remaining-cuda/63dd14de3ac61cd3/capabilities/async-copy-probe.cu",
+  "-o",
+  "measurements/r9700/remaining-cuda/63dd14de3ac61cd3/capabilities/async-copy-probe.ll"
+]

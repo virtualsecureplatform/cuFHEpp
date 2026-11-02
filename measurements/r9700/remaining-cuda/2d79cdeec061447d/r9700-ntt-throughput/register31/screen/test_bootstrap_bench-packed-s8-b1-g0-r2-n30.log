@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=32 order=iks-br gate=nand backend=ntt block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=100 static_lds=1264 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=0.698022
+repeat=1 ms/gate=0.700059
+repeat=2 ms/gate=0.70078
+repeat=3 ms/gate=0.704891
+repeat=4 ms/gate=0.698983
+repeat=5 ms/gate=0.697916
+repeat=6 ms/gate=0.70216
+repeat=7 ms/gate=0.702635
+repeat=8 ms/gate=0.697645
+repeat=9 ms/gate=0.698192
+repeat=10 ms/gate=0.700511
+repeat=11 ms/gate=0.70363
+repeat=12 ms/gate=0.696804
+repeat=13 ms/gate=0.697519
+repeat=14 ms/gate=0.70366
+repeat=15 ms/gate=0.709111
+repeat=16 ms/gate=0.697442
+repeat=17 ms/gate=0.70601
+repeat=18 ms/gate=0.702325
+repeat=19 ms/gate=0.707048
+repeat=20 ms/gate=0.696085
+repeat=21 ms/gate=0.705801
+repeat=22 ms/gate=0.701757
+repeat=23 ms/gate=0.711075
+repeat=24 ms/gate=0.697206
+repeat=25 ms/gate=0.698887
+repeat=26 ms/gate=0.704975
+repeat=27 ms/gate=0.703586
+repeat=28 ms/gate=0.697771
+repeat=29 ms/gate=0.697592
+dispatch=packed streams=8 gates=8 median_ms/gate=0.70078 errors=0
+observed_noise_rms=0.00200968 observed_max_abs_noise=0.0034682

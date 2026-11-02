@@ -1,0 +1,20 @@
+{
+  "status": "feature-and-launch-qualification-complete-no-new-promotion",
+  "profiles": {
+    "r9700-ntt": [
+      "baseline"
+    ],
+    "r9700-ntt-throughput": [
+      "baseline"
+    ],
+    "r9700-ntt-latency": [
+      "baseline"
+    ],
+    "r9700-fft": [
+      "baseline"
+    ]
+  },
+  "source": "f3f746602ae5f7c2",
+  "previous_source": "2d79cdeec061447d",
+  "note": "Latency all-features and earlier paired/native/FFT candidates failed in the previous C++-identical snapshot; source transition changed the runner only."
+}

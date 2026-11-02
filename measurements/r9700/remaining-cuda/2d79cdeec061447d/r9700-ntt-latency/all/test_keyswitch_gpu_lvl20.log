@@ -1,0 +1,6 @@
+prepared key-switch bit equivalence: PASS (4 sign/offset cases, 19 boundary/random samples, 256/512 threads)
+key-switch exercised policy=0 threads=256 extracted=1: SKIP (generic control)
+key-switch exercised policy=258 threads=512 extracted=1: PASS
+key-switch exercised policy=0 threads=256 extracted=0: SKIP (generic control)
+key-switch exercised policy=261 threads=512 extracted=0: PASS
+sample extraction / direct TLWE prepared key-switch bit equivalence: PASS (19 boundary/random samples, 256/512 threads, aliased scratch)

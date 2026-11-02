@@ -1,0 +1,8 @@
+[
+  "cmake",
+  "--preset",
+  "r9700-ntt-throughput",
+  "-B",
+  "build-remaining-invalid-register-io",
+  "-DUSE_HIP_REGISTER_NTT_IO64=ON"
+]

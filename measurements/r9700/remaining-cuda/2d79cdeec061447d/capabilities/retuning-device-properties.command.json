@@ -1,0 +1,11 @@
+[
+  "/opt/rocm/llvm/bin/clang++",
+  "-D__HIP_PLATFORM_AMD__",
+  "-I/opt/rocm/include",
+  "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/capabilities/retuning-device-properties.cc",
+  "-L/opt/rocm/lib",
+  "-Wl,-rpath,/opt/rocm/lib",
+  "-lamdhip64",
+  "-o",
+  "/home/nimda/sources/cuFHEpp/build-retuning-device-properties"
+]

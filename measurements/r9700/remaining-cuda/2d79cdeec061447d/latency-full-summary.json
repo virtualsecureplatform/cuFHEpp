@@ -1,0 +1,135 @@
+{
+  "profile": "r9700-ntt-latency",
+  "variant": "all",
+  "full_grid_complete": true,
+  "expected_points": 116,
+  "complete_points": 116,
+  "wins": 82,
+  "regressions": 4,
+  "unresolved_regressions": 0,
+  "needs_30": 41,
+  "status": "full-measurements-complete-not-preset-qualified",
+  "comparison_rows": 348,
+  "regression_points": [
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": 0.03236466028734897
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.13379177187425273
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": -0.14481856191834286
+        }
+      ],
+      "median_gain": -0.13379177187425273,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": true,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.07940102048362063
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.04114989696634619
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.045635565429589464
+        }
+      ],
+      "median_gain": -0.04114989696634619,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": true,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.028635877657539943
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.07506607430081713
+        },
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.04013177491879327
+        }
+      ],
+      "median_gain": -0.028635877657539943,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": true,
+      "unresolved_regression": false
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 15,
+          "gain": 0.04633139836841116
+        },
+        {
+          "run": 2,
+          "repetitions": 15,
+          "gain": -0.06302594079295298
+        },
+        {
+          "run": 0,
+          "repetitions": 15,
+          "gain": -0.054029229478661955
+        }
+      ],
+      "median_gain": -0.054029229478661955,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": true,
+      "unresolved_regression": false
+    }
+  ]
+}

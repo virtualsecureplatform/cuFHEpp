@@ -1,0 +1,15 @@
+{
+  "source": "09d8d1af49607366",
+  "base_snapshot": "2d79cdeec061447d",
+  "worktree": "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source",
+  "status": "unbuilt-isolated-experiment-not-integrated",
+  "pipeline_log": "/tmp/r9700-consumer-policy-probe.log",
+  "new_control": "USE_HIP_MULTIOUT_MUX_KEYSWITCH",
+  "behavior": "Multiple outputs remain enabled for binary gates; MUX/NMux opt in separately; wave scheduling remains independent.",
+  "pending": [
+    "exhaustive build/check both schedules",
+    "30rep critical cases all levels/orders",
+    "full original qualification of selected policy",
+    "CUDA compile after final integration"
+  ]
+}

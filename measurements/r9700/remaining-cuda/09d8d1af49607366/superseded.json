@@ -1,0 +1,5 @@
+{
+  "status": "superseded-before-any-build",
+  "reason": "Make policy expectation independent of selector implementation; add configuration assertion",
+  "timings_qualified": false
+}

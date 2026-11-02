@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "report_calls": 1,
+  "retained_variants": [
+    "waves2",
+    "waves3",
+    "waves4",
+    "groups2",
+    "groups3",
+    "groups5",
+    "groups9"
+  ],
+  "reason": "Report is collected jointly; later variants cannot overwrite preceding variants."
+}

@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=mux backend=ntt block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=192 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=5.54386
+repeat=1 ms/gate=5.55755
+repeat=2 ms/gate=5.52904
+repeat=3 ms/gate=5.51406
+repeat=4 ms/gate=5.53029
+repeat=5 ms/gate=5.52825
+repeat=6 ms/gate=5.52754
+repeat=7 ms/gate=5.49435
+repeat=8 ms/gate=5.53
+repeat=9 ms/gate=5.54129
+repeat=10 ms/gate=5.48871
+repeat=11 ms/gate=5.46755
+repeat=12 ms/gate=5.4976
+repeat=13 ms/gate=5.49768
+repeat=14 ms/gate=5.50075
+repeat=15 ms/gate=5.4738
+repeat=16 ms/gate=5.50852
+repeat=17 ms/gate=5.52249
+repeat=18 ms/gate=5.46722
+repeat=19 ms/gate=5.44959
+repeat=20 ms/gate=5.49196
+repeat=21 ms/gate=5.47872
+repeat=22 ms/gate=5.47791
+repeat=23 ms/gate=5.46207
+repeat=24 ms/gate=5.50476
+repeat=25 ms/gate=5.50814
+repeat=26 ms/gate=5.45747
+repeat=27 ms/gate=5.44251
+repeat=28 ms/gate=5.48745
+repeat=29 ms/gate=5.4829
+dispatch=packed streams=8 gates=8 median_ms/gate=5.49768 errors=0
+observed_noise_rms=0.00633901 observed_max_abs_noise=0.0128479

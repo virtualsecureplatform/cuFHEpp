@@ -1,0 +1,4 @@
+
+/home/nimda/sources/cuFHEpp/build-remaining-r9700-ntt-latency-baseline/test/test_bootstrap_bench:	file format elf64-x86-64
+Extracting offload bundle: /home/nimda/sources/cuFHEpp/build-remaining-r9700-ntt-latency-baseline/test/test_bootstrap_bench.0.host-x86_64-unknown-linux-gnu-
+Extracting offload bundle: /home/nimda/sources/cuFHEpp/build-remaining-r9700-ntt-latency-baseline/test/test_bootstrap_bench.0.hipv4-amdgcn-amd-amdhsa--gfx1201

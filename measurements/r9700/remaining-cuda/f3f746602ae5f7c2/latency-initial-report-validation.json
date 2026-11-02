@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "variants": [
+    "groups2",
+    "groups3",
+    "groups5",
+    "groups9",
+    "waves2",
+    "waves3",
+    "waves4"
+  ],
+  "all_seven_variants_retained": true,
+  "matched_three_run_points": {
+    "waves2": 32,
+    "waves3": 32,
+    "waves4": 32,
+    "groups2": 28,
+    "groups3": 28,
+    "groups5": 28,
+    "groups9": 28
+  },
+  "scope": "Initial screens only; supplemental batch counts and final qualification remain pending"
+}

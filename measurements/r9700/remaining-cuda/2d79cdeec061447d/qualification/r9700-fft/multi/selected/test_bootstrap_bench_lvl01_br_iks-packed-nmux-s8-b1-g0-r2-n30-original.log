@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=4.97827
+repeat=1 ms/gate=4.98184
+repeat=2 ms/gate=4.98243
+repeat=3 ms/gate=4.98343
+repeat=4 ms/gate=4.95092
+repeat=5 ms/gate=4.95131
+repeat=6 ms/gate=4.9555
+repeat=7 ms/gate=4.96012
+repeat=8 ms/gate=4.95622
+repeat=9 ms/gate=4.94483
+repeat=10 ms/gate=4.95036
+repeat=11 ms/gate=4.94462
+repeat=12 ms/gate=4.92097
+repeat=13 ms/gate=4.93484
+repeat=14 ms/gate=4.92622
+repeat=15 ms/gate=4.92934
+repeat=16 ms/gate=4.92814
+repeat=17 ms/gate=4.9244
+repeat=18 ms/gate=4.92967
+repeat=19 ms/gate=4.92926
+repeat=20 ms/gate=4.91256
+repeat=21 ms/gate=4.92844
+repeat=22 ms/gate=4.91519
+repeat=23 ms/gate=4.92527
+repeat=24 ms/gate=4.92078
+repeat=25 ms/gate=4.92247
+repeat=26 ms/gate=4.92738
+repeat=27 ms/gate=4.93095
+repeat=28 ms/gate=4.91027
+repeat=29 ms/gate=4.93095
+dispatch=packed streams=8 gates=8 median_ms/gate=4.93095 errors=0
+observed_noise_rms=0.00544349 observed_max_abs_noise=0.00794983

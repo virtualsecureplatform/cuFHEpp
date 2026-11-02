@@ -1,0 +1,61 @@
+Preset CMake variables:
+
+  CMAKE_BUILD_TYPE="Release"
+  CUFHE_CUDA_FFT_MIN_BLOCKS_SM80="1"
+  CUFHE_CUDA_NTT_MIN_BLOCKS_SM80="1"
+  CUFHE_GPU_BACKEND="CUDA"
+  ENABLE_TEST="ON"
+  USE_BLOCK_BINARY="ON"
+  USE_CUDA_ASYNC_MONOMIALS="ON"
+  USE_CUDA_COOPERATIVE_SCALAR="OFF"
+  USE_CUDA_MIN_BLOCKS="ON"
+  USE_CUDA_PACKED_PAIRED_ROOTS="ON"
+  USE_CUDA_PAIRED_NTT="ON"
+  USE_CUDA_PAIRED_NTT_MADD4="ON"
+  USE_CUDA_PAIRED_NTT_WARP="ON"
+  USE_CUDA_UNREDUCED_INVERSE_DIFF="ON"
+  USE_CUDA_WARP_MODSWITCH_CORRECTION="ON"
+  USE_CUDA_WARP_TRANSFORM64="ON"
+  USE_CUDA_WORD32_REDUCTION="ON"
+  USE_FFT="OFF"
+
+-- The CUDA compiler identification is NVIDIA 13.0.48
+-- The CXX compiler identification is GNU 13.3.0
+-- The C compiler identification is GNU 13.3.0
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: /usr/local/cuda-13.0/bin/nvcc - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Found CUDAToolkit: /usr/local/cuda-13.0/targets/x86_64-linux/include (found version "13.0.48") 
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- cuFHEpp GPU backend: CUDA
+-- Block-binary keys are incompatible with key bundling; disabling USE_KEY_BUNDLE
+-- USE_FFT=OFF selects the NTT backend; disabling USE_GPU_FFT
+-- Found OpenMP_C: -fopenmp (found version "4.5") 
+-- Found OpenMP_CXX: -fopenmp (found version "4.5") 
+-- Found OpenMP: TRUE (found version "4.5")  
+-- AVX-512 support detected, USE_AVX512 defaults to ON
+-- The ASM compiler identification is GNU
+-- Found assembler: /usr/bin/cc
+-- BLAKE3 SIMD configuration: 
+-- 
+ * AMD64 assembly, The library uses hand written amd64 SIMD assembly.
+
+-- Found OpenMP_C: -fopenmp (found version "4.5") 
+-- Found OpenMP_CXX: -fopenmp (found version "4.5") 
+-- Configuring done (1.7s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-policy-cuda-ntt

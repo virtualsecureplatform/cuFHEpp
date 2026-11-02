@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "multi-wave",
+  "complete_points": 116,
+  "expected_points": 116,
+  "wins": 43,
+  "regressions": 3,
+  "needs_30": 37,
+  "unresolved_regressions": 0,
+  "status": "full15-complete-longer-runs-pending"
+}

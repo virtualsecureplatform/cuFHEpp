@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=6.66424
+repeat=1 ms/gate=6.66979
+repeat=2 ms/gate=6.72868
+repeat=3 ms/gate=6.67141
+repeat=4 ms/gate=6.65571
+repeat=5 ms/gate=6.65015
+repeat=6 ms/gate=6.62398
+repeat=7 ms/gate=6.60964
+repeat=8 ms/gate=6.60231
+repeat=9 ms/gate=6.58791
+repeat=10 ms/gate=6.69908
+repeat=11 ms/gate=6.60124
+repeat=12 ms/gate=6.6008
+repeat=13 ms/gate=6.60553
+repeat=14 ms/gate=6.6026
+repeat=15 ms/gate=6.56371
+repeat=16 ms/gate=6.60894
+repeat=17 ms/gate=6.57359
+repeat=18 ms/gate=6.65628
+repeat=19 ms/gate=6.58409
+repeat=20 ms/gate=6.56752
+repeat=21 ms/gate=6.58106
+repeat=22 ms/gate=6.56414
+repeat=23 ms/gate=6.55517
+repeat=24 ms/gate=6.61573
+repeat=25 ms/gate=6.57155
+repeat=26 ms/gate=6.65633
+repeat=27 ms/gate=6.5655
+repeat=28 ms/gate=6.58228
+repeat=29 ms/gate=6.58323
+dispatch=packed streams=8 gates=8 median_ms/gate=6.6026 errors=0
+observed_noise_rms=0.00541244 observed_max_abs_noise=0.00891113

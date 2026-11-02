@@ -1,0 +1,1 @@
+{"reason":"Synchronization audit found that register-return consumers need a barrier before reusing the shared inverse workspace. This build-only snapshot is superseded; no timings from it qualify a preset."}

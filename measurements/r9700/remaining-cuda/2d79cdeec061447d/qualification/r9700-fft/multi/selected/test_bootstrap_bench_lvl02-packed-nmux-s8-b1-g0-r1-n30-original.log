@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=105 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=10.6336
+repeat=1 ms/gate=10.7942
+repeat=2 ms/gate=10.6479
+repeat=3 ms/gate=10.7842
+repeat=4 ms/gate=10.5539
+repeat=5 ms/gate=10.7454
+repeat=6 ms/gate=10.6071
+repeat=7 ms/gate=10.7457
+repeat=8 ms/gate=10.5172
+repeat=9 ms/gate=10.7013
+repeat=10 ms/gate=10.544
+repeat=11 ms/gate=10.6641
+repeat=12 ms/gate=10.4994
+repeat=13 ms/gate=10.7129
+repeat=14 ms/gate=10.5799
+repeat=15 ms/gate=10.7148
+repeat=16 ms/gate=10.4993
+repeat=17 ms/gate=10.6868
+repeat=18 ms/gate=10.5477
+repeat=19 ms/gate=10.6729
+repeat=20 ms/gate=10.4952
+repeat=21 ms/gate=10.699
+repeat=22 ms/gate=10.5699
+repeat=23 ms/gate=10.7447
+repeat=24 ms/gate=10.5029
+repeat=25 ms/gate=10.6797
+repeat=26 ms/gate=10.5427
+repeat=27 ms/gate=10.6777
+repeat=28 ms/gate=10.5026
+repeat=29 ms/gate=10.6799
+dispatch=packed streams=8 gates=8 median_ms/gate=10.6641 errors=0
+observed_noise_rms=7.51255e-08 observed_max_abs_noise=1.62388e-07

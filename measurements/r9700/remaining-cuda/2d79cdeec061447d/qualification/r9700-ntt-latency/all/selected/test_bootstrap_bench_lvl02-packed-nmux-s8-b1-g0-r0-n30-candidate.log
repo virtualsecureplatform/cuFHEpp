@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nmux backend=ntt block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=191 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=6.55283
+repeat=1 ms/gate=8.26825
+repeat=2 ms/gate=6.50779
+repeat=3 ms/gate=8.25752
+repeat=4 ms/gate=6.51258
+repeat=5 ms/gate=8.33746
+repeat=6 ms/gate=6.5202
+repeat=7 ms/gate=8.20607
+repeat=8 ms/gate=6.54723
+repeat=9 ms/gate=8.23637
+repeat=10 ms/gate=6.48497
+repeat=11 ms/gate=8.2206
+repeat=12 ms/gate=6.4816
+repeat=13 ms/gate=8.30498
+repeat=14 ms/gate=6.50568
+repeat=15 ms/gate=8.18506
+repeat=16 ms/gate=6.5272
+repeat=17 ms/gate=8.21464
+repeat=18 ms/gate=6.47262
+repeat=19 ms/gate=8.22139
+repeat=20 ms/gate=6.48497
+repeat=21 ms/gate=8.29197
+repeat=22 ms/gate=6.50167
+repeat=23 ms/gate=8.17582
+repeat=24 ms/gate=6.51553
+repeat=25 ms/gate=8.19956
+repeat=26 ms/gate=6.46561
+repeat=27 ms/gate=8.23632
+repeat=28 ms/gate=6.47085
+repeat=29 ms/gate=8.30662
+dispatch=packed streams=8 gates=8 median_ms/gate=8.17582 errors=0
+observed_noise_rms=7.0336e-09 observed_max_abs_noise=1.46582e-08

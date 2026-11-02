@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "source": "2d79cdeec061447d",
+  "profile": "r9700-ntt",
+  "variant": "native64",
+  "receipt": "r9700-ntt/native64/checked.json",
+  "tests": [
+    "test_keyswitch_gpu",
+    "test_keyswitch_gpu_lvl20",
+    "test_bootstrap_binary",
+    "test_bootstrap_public_binary",
+    "test_bootstrap_mux",
+    "test_bootstrap_public_mux",
+    "test_bootstrap_batch",
+    "test_bootstrap_public_batch",
+    "test_small_modulus",
+    "test_bootstrap_cooperative",
+    "test_bootstrap_public_cooperative"
+  ],
+  "graph_tests": [
+    "test_bootstrap_mux",
+    "test_bootstrap_public_mux"
+  ],
+  "binaries_verified": true,
+  "performance_qualification": "full-grid-launched-not-yet-qualified"
+}

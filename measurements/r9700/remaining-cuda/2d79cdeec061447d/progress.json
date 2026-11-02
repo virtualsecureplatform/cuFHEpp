@@ -1,0 +1,215 @@
+{
+  "status": "in-progress",
+  "configurations": [
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "built": true,
+      "checked": true,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "built": true,
+      "checked": true,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "built": true,
+      "checked": true,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "built": true,
+      "checked": true,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "built": true,
+      "checked": true,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "baseline",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "inverse64",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "multi",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "multi-wave",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "native64",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "staging",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "wave",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "all",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-latency",
+      "variant": "baseline",
+      "built": true,
+      "checked": true,
+      "exhaustive": true
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "all",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "baseline",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "difference31",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "exponents",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "inverse64",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi-wave",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "native64",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "register-io",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "register31",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "roots31",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "scalar-cache",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "torus64",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "wave",
+      "built": true,
+      "checked": false,
+      "exhaustive": false
+    }
+  ]
+}

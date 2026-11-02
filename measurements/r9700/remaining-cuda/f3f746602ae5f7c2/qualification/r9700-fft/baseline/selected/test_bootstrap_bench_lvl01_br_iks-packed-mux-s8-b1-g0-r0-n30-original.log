@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=mux backend=fft block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=94 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=5.01234
+repeat=1 ms/gate=5.01596
+repeat=2 ms/gate=5.02364
+repeat=3 ms/gate=5.0195
+repeat=4 ms/gate=4.99873
+repeat=5 ms/gate=4.99158
+repeat=6 ms/gate=4.98912
+repeat=7 ms/gate=4.99175
+repeat=8 ms/gate=4.97001
+repeat=9 ms/gate=4.9663
+repeat=10 ms/gate=4.97976
+repeat=11 ms/gate=4.96944
+repeat=12 ms/gate=4.95863
+repeat=13 ms/gate=4.94685
+repeat=14 ms/gate=4.95212
+repeat=15 ms/gate=4.95744
+repeat=16 ms/gate=4.93745
+repeat=17 ms/gate=4.94021
+repeat=18 ms/gate=4.94884
+repeat=19 ms/gate=4.94643
+repeat=20 ms/gate=4.93875
+repeat=21 ms/gate=4.91704
+repeat=22 ms/gate=4.92346
+repeat=23 ms/gate=4.93761
+repeat=24 ms/gate=4.93119
+repeat=25 ms/gate=4.92355
+repeat=26 ms/gate=4.93759
+repeat=27 ms/gate=4.93487
+repeat=28 ms/gate=4.92155
+repeat=29 ms/gate=4.92084
+dispatch=packed streams=8 gates=8 median_ms/gate=4.95212 errors=0
+observed_noise_rms=0.00605143 observed_max_abs_noise=0.0114899

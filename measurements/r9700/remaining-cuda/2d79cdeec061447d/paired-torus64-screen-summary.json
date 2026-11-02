@@ -1,0 +1,282 @@
+{
+  "status": "complete-exploratory-not-original-qualified",
+  "profile": "r9700-ntt",
+  "variant": "torus64",
+  "points": 16,
+  "repeatable_wins": 0,
+  "median_regressions": 1,
+  "comparisons": [
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.0003668413082125177,
+      "median_improvement": 0.002516935514053631,
+      "max_improvement": 0.005634382838530905,
+      "improvements": [
+        0.002516935514053631,
+        0.005634382838530905,
+        0.0003668413082125177
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "min_improvement": 0.010868438309964756,
+      "median_improvement": 0.01224382783482636,
+      "max_improvement": 0.013537996226829496,
+      "improvements": [
+        0.01224382783482636,
+        0.010868438309964756,
+        0.013537996226829496
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "min_improvement": 0.012598163449954791,
+      "median_improvement": 0.013391258116812188,
+      "max_improvement": 0.014472665720186684,
+      "improvements": [
+        0.014472665720186684,
+        0.012598163449954791,
+        0.013391258116812188
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": 0.009016192584006766,
+      "median_improvement": 0.01096814365328913,
+      "max_improvement": 0.012066423377437574,
+      "improvements": [
+        0.009016192584006766,
+        0.012066423377437574,
+        0.01096814365328913
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.0037726741527361884,
+      "median_improvement": 0.004932252754210387,
+      "max_improvement": 0.00505480269758829,
+      "improvements": [
+        0.0037726741527361884,
+        0.004932252754210387,
+        0.00505480269758829
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.02356249447538228,
+      "median_improvement": -0.01617525260891184,
+      "max_improvement": 0.00808070751821055,
+      "improvements": [
+        -0.02356249447538228,
+        -0.01617525260891184,
+        0.00808070751821055
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.006994018907968358,
+      "median_improvement": 0.011703834014591075,
+      "max_improvement": 0.012249872612342227,
+      "improvements": [
+        0.006994018907968358,
+        0.011703834014591075,
+        0.012249872612342227
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.0018931170432636701,
+      "median_improvement": 0.00776318328417458,
+      "max_improvement": 0.011920721515541022,
+      "improvements": [
+        0.0018931170432636701,
+        0.00776318328417458,
+        0.011920721515541022
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.005572260853222932,
+      "median_improvement": 0.0060190133318331895,
+      "max_improvement": 0.008347417840375626,
+      "improvements": [
+        0.005572260853222932,
+        0.008347417840375626,
+        0.0060190133318331895
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "min_improvement": 0.011235677147744427,
+      "median_improvement": 0.012049133500859566,
+      "max_improvement": 0.012543347183604614,
+      "improvements": [
+        0.012049133500859566,
+        0.012543347183604614,
+        0.011235677147744427
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "min_improvement": 0.011419525450361623,
+      "median_improvement": 0.01240684777827239,
+      "max_improvement": 0.013177522973928268,
+      "improvements": [
+        0.013177522973928268,
+        0.011419525450361623,
+        0.01240684777827239
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": 0.009658246656760738,
+      "median_improvement": 0.010875922400169213,
+      "max_improvement": 0.01275715721369064,
+      "improvements": [
+        0.009658246656760738,
+        0.01275715721369064,
+        0.010875922400169213
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.002048408518736222,
+      "median_improvement": 0.004923647311714907,
+      "max_improvement": 0.009185713158517683,
+      "improvements": [
+        0.004923647311714907,
+        0.009185713158517683,
+        0.002048408518736222
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.0648207745127185,
+      "median_improvement": -0.02544082637291689,
+      "max_improvement": 0.009337454718379878,
+      "improvements": [
+        -0.0648207745127185,
+        0.009337454718379878,
+        -0.02544082637291689
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.004222292523463067,
+      "median_improvement": 0.01064057163212695,
+      "max_improvement": 0.011978031192352967,
+      "improvements": [
+        0.004222292523463067,
+        0.011978031192352967,
+        0.01064057163212695
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "torus64",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.009076920489707985,
+      "median_improvement": 0.00920746165306241,
+      "max_improvement": 0.012435905485444043,
+      "improvements": [
+        0.012435905485444043,
+        0.009076920489707985,
+        0.00920746165306241
+      ]
+    }
+  ]
+}

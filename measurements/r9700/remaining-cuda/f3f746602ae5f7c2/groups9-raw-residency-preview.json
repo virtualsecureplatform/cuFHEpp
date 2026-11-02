@@ -1,0 +1,17 @@
+{
+  "status": "observed-preview-public-and-neighbour-validation-pending",
+  "profile": "r9700-ntt-latency",
+  "groups": 9,
+  "registers": 79,
+  "static_lds": 1264,
+  "dynamic_lds": 28688,
+  "local_bytes": 12,
+  "threads": 512,
+  "active_blocks_per_multiprocessor": 2,
+  "multiprocessors": 32,
+  "early_cap": 16,
+  "raw_capacity": 7,
+  "first_fallback_count": 8,
+  "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b1-g0-r0-n15.log",
+  "supplemental_count8_queued": true
+}

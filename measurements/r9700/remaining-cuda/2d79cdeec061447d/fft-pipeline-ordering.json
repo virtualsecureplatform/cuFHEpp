@@ -1,0 +1,16 @@
+{
+  "reason": "Prevent focused occupancy control rebuilds invalidating exhaustive multi receipts between full build/check/qualification actions",
+  "stopped_before_any_build": true,
+  "stopped_pgid": 3160175,
+  "dependency_pid": 3147229,
+  "replacement_session": 35149,
+  "replacement_requires": "qualification/r9700-fft/multi/full-comparison.json:348 comparison rows",
+  "replacement_coverage": "exhaustive build/check followed by occupancy screen",
+  "latency_order_verified": "PID3176224 owns profile flock; PID3181002 waits on same profile flock",
+  "replacement_helper": "tune_after_qualification.py",
+  "replacement_sequence": [
+    "complete116point3key-original-qualification",
+    "30repetition-uncertain-points",
+    "reject-regressing-candidate-or-build-check-screen-tuning"
+  ]
+}

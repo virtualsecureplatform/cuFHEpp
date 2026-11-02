@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-fft",
+  "variant": "multi-wave",
+  "complete_points": 116,
+  "expected_points": 116,
+  "wins": 37,
+  "regressions": 5,
+  "unresolved_regressions": 24,
+  "needs_30": 0,
+  "decision": "experimental-opt-in"
+}

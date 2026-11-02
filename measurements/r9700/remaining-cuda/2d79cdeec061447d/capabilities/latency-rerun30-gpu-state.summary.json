@@ -1,0 +1,725 @@
+{
+  "status": "observational-window-not-causal-proof",
+  "metadata": {
+    "type": "metadata",
+    "parent": 3242481,
+    "parent_starttime": "321607595",
+    "paths": {
+      "gpu_busy_percent": "/sys/class/drm/card1/device/gpu_busy_percent",
+      "mem_busy_percent": "/sys/class/drm/card1/device/mem_busy_percent",
+      "pp_dpm_sclk": "/sys/class/drm/card1/device/pp_dpm_sclk",
+      "pp_dpm_mclk": "/sys/class/drm/card1/device/pp_dpm_mclk",
+      "freq1_input": "/sys/class/drm/card1/device/hwmon/hwmon3/freq1_input",
+      "freq2_input": "/sys/class/drm/card1/device/hwmon/hwmon3/freq2_input",
+      "power1_average": "/sys/class/drm/card1/device/hwmon/hwmon3/power1_average",
+      "temp1_input": "/sys/class/drm/card1/device/hwmon/hwmon3/temp1_input",
+      "temp2_input": "/sys/class/drm/card1/device/hwmon/hwmon3/temp2_input",
+      "temp3_input": "/sys/class/drm/card1/device/hwmon/hwmon3/temp3_input"
+    },
+    "interval_seconds": 0.5,
+    "read_only": true
+  },
+  "samples_filtered": "GPU busy >=90%; last completed repetition1..28",
+  "rows": [
+    {
+      "pid": 3261040,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02-packed-nmux-s128-b1-g0-r0-n30-original.log",
+      "active_timed_samples": 43,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3261000000,
+          "median": 3269000000,
+          "max": 3275000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 61000,
+          "median": 62000,
+          "max": 64000
+        },
+        "power1_average": {
+          "min": 104000000,
+          "median": 105000000,
+          "max": 105000000
+        }
+      },
+      "median_ms_per_gate": 6.76636
+    },
+    {
+      "pid": 3261436,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02-packed-nmux-s128-b1-g0-r0-n30-candidate.log",
+      "active_timed_samples": 48,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3282000000,
+          "median": 3293000000.0,
+          "max": 3303000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000.0,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 65000.0,
+          "max": 66000
+        },
+        "power1_average": {
+          "min": 108000000,
+          "median": 110000000.0,
+          "max": 112000000
+        }
+      },
+      "median_ms_per_gate": 6.6655
+    },
+    {
+      "pid": 3261822,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02-packed-nmux-s128-b1-g0-r1-n30-candidate.log",
+      "active_timed_samples": 49,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3250000000,
+          "median": 3257000000,
+          "max": 3266000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000,
+          "max": 1124000000
+        },
+        "temp2_input": {
+          "min": 66000,
+          "median": 67000,
+          "max": 68000
+        },
+        "power1_average": {
+          "min": 106000000,
+          "median": 109000000,
+          "max": 112000000
+        }
+      },
+      "median_ms_per_gate": 6.85344
+    },
+    {
+      "pid": 3262228,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02-packed-nmux-s128-b1-g0-r1-n30-original.log",
+      "active_timed_samples": 49,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3258000000,
+          "median": 3262000000,
+          "max": 3269000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 67000,
+          "median": 67000,
+          "max": 68000
+        },
+        "power1_average": {
+          "min": 106000000,
+          "median": 107000000,
+          "max": 108000000
+        }
+      },
+      "median_ms_per_gate": 6.77491
+    },
+    {
+      "pid": 3262633,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02-packed-nmux-s128-b1-g0-r2-n30-original.log",
+      "active_timed_samples": 48,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3258000000,
+          "median": 3263000000.0,
+          "max": 3268000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000.0,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 67000,
+          "median": 68000.0,
+          "max": 69000
+        },
+        "power1_average": {
+          "min": 107000000,
+          "median": 108000000.0,
+          "max": 109000000
+        }
+      },
+      "median_ms_per_gate": 6.77199
+    },
+    {
+      "pid": 3263019,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02-packed-nmux-s128-b1-g0-r2-n30-candidate.log",
+      "active_timed_samples": 47,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3262000000,
+          "median": 3268000000,
+          "max": 3273000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 69000,
+          "median": 70000,
+          "max": 71000
+        },
+        "power1_average": {
+          "min": 109000000,
+          "median": 110000000,
+          "max": 111000000
+        }
+      },
+      "median_ms_per_gate": 6.69735
+    },
+    {
+      "pid": 3263413,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n30-original.log",
+      "active_timed_samples": 1,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3223000000,
+          "median": 3223000000,
+          "max": 3223000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 64000,
+          "max": 64000
+        },
+        "power1_average": {
+          "min": 89000000,
+          "median": 89000000,
+          "max": 89000000
+        }
+      },
+      "median_ms_per_gate": 23.8519
+    },
+    {
+      "pid": 3263444,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r0-n30-candidate.log",
+      "active_timed_samples": 1,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3219000000,
+          "median": 3219000000,
+          "max": 3219000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 62000,
+          "median": 62000,
+          "max": 62000
+        },
+        "power1_average": {
+          "min": 91000000,
+          "median": 91000000,
+          "max": 91000000
+        }
+      },
+      "median_ms_per_gate": 22.8728
+    },
+    {
+      "pid": 3263517,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r1-n30-candidate.log",
+      "active_timed_samples": 1,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3227000000,
+          "median": 3227000000,
+          "max": 3227000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 63000,
+          "median": 63000,
+          "max": 63000
+        },
+        "power1_average": {
+          "min": 88000000,
+          "median": 88000000,
+          "max": 88000000
+        }
+      },
+      "median_ms_per_gate": 22.8327
+    },
+    {
+      "pid": 3263533,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r1-n30-original.log",
+      "active_timed_samples": 1,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3228000000,
+          "median": 3228000000,
+          "max": 3228000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 62000,
+          "median": 62000,
+          "max": 62000
+        },
+        "power1_average": {
+          "min": 88000000,
+          "median": 88000000,
+          "max": 88000000
+        }
+      },
+      "median_ms_per_gate": 23.8322
+    },
+    {
+      "pid": 3263592,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r2-n30-original.log",
+      "active_timed_samples": 1,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3226000000,
+          "median": 3226000000,
+          "max": 3226000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 62000,
+          "median": 62000,
+          "max": 62000
+        },
+        "power1_average": {
+          "min": 88000000,
+          "median": 88000000,
+          "max": 88000000
+        }
+      },
+      "median_ms_per_gate": 23.7909
+    },
+    {
+      "pid": 3263602,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s1-b1-g0-r2-n30-candidate.log",
+      "active_timed_samples": 1,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3223000000,
+          "median": 3223000000,
+          "max": 3223000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 60000,
+          "median": 60000,
+          "max": 60000
+        },
+        "power1_average": {
+          "min": 89000000,
+          "median": 89000000,
+          "max": 89000000
+        }
+      },
+      "median_ms_per_gate": 22.8501
+    },
+    {
+      "pid": 3263675,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s8-b1-g0-r0-n30-original.log",
+      "active_timed_samples": 3,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3203000000,
+          "median": 3230000000,
+          "max": 3242000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 65000,
+          "median": 66000,
+          "max": 66000
+        },
+        "power1_average": {
+          "min": 105000000,
+          "median": 106000000,
+          "max": 106000000
+        }
+      },
+      "median_ms_per_gate": 5.68599
+    },
+    {
+      "pid": 3263709,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s8-b1-g0-r0-n30-candidate.log",
+      "active_timed_samples": 3,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3205000000,
+          "median": 3206000000,
+          "max": 3206000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 65000,
+          "max": 65000
+        },
+        "power1_average": {
+          "min": 101000000,
+          "median": 102000000,
+          "max": 102000000
+        }
+      },
+      "median_ms_per_gate": 6.70222
+    },
+    {
+      "pid": 3263836,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s8-b1-g0-r1-n30-candidate.log",
+      "active_timed_samples": 3,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3180000000,
+          "median": 3229000000,
+          "max": 3241000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 63000,
+          "median": 64000,
+          "max": 65000
+        },
+        "power1_average": {
+          "min": 103000000,
+          "median": 105000000,
+          "max": 106000000
+        }
+      },
+      "median_ms_per_gate": 5.44745
+    },
+    {
+      "pid": 3263867,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s8-b1-g0-r1-n30-original.log",
+      "active_timed_samples": 2,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3221000000,
+          "median": 3231500000.0,
+          "max": 3242000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000.0,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 64000.0,
+          "max": 64000
+        },
+        "power1_average": {
+          "min": 103000000,
+          "median": 104000000.0,
+          "max": 105000000
+        }
+      },
+      "median_ms_per_gate": 5.68131
+    },
+    {
+      "pid": 3263942,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s8-b1-g0-r2-n30-original.log",
+      "active_timed_samples": 2,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3223000000,
+          "median": 3230000000.0,
+          "max": 3237000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000.0,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 64000.0,
+          "max": 64000
+        },
+        "power1_average": {
+          "min": 103000000,
+          "median": 104000000.0,
+          "max": 105000000
+        }
+      },
+      "median_ms_per_gate": 5.68695
+    },
+    {
+      "pid": 3263958,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s8-b1-g0-r2-n30-candidate.log",
+      "active_timed_samples": 3,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3163000000,
+          "median": 3217000000,
+          "max": 3220000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 62000,
+          "median": 63000,
+          "max": 63000
+        },
+        "power1_average": {
+          "min": 97000000,
+          "median": 101000000,
+          "max": 102000000
+        }
+      },
+      "median_ms_per_gate": 7.20281
+    },
+    {
+      "pid": 3264020,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s32-b1-g0-r0-n30-original.log",
+      "active_timed_samples": 10,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3258000000,
+          "median": 3266000000.0,
+          "max": 3269000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000.0,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 65000.0,
+          "max": 65000
+        },
+        "power1_average": {
+          "min": 107000000,
+          "median": 108000000.0,
+          "max": 108000000
+        }
+      },
+      "median_ms_per_gate": 5.63931
+    },
+    {
+      "pid": 3264121,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s32-b1-g0-r0-n30-candidate.log",
+      "active_timed_samples": 11,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3250000000,
+          "median": 3278000000,
+          "max": 3283000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 65000,
+          "max": 65000
+        },
+        "power1_average": {
+          "min": 106000000,
+          "median": 110000000,
+          "max": 111000000
+        }
+      },
+      "median_ms_per_gate": 5.87277
+    },
+    {
+      "pid": 3264270,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s32-b1-g0-r1-n30-candidate.log",
+      "active_timed_samples": 10,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3236000000,
+          "median": 3259000000.0,
+          "max": 3264000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000.0,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 65000.0,
+          "max": 66000
+        },
+        "power1_average": {
+          "min": 106000000,
+          "median": 109000000.0,
+          "max": 109000000
+        }
+      },
+      "median_ms_per_gate": 5.41148
+    },
+    {
+      "pid": 3264351,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s32-b1-g0-r1-n30-original.log",
+      "active_timed_samples": 10,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3238000000,
+          "median": 3244500000.0,
+          "max": 3248000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000.0,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 65000,
+          "median": 65000.0,
+          "max": 65000
+        },
+        "power1_average": {
+          "min": 105000000,
+          "median": 106000000.0,
+          "max": 106000000
+        }
+      },
+      "median_ms_per_gate": 5.6704
+    },
+    {
+      "pid": 3264484,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s32-b1-g0-r2-n30-original.log",
+      "active_timed_samples": 10,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3238000000,
+          "median": 3247500000.0,
+          "max": 3256000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000.0,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 64000,
+          "median": 65000.0,
+          "max": 66000
+        },
+        "power1_average": {
+          "min": 105000000,
+          "median": 107000000.0,
+          "max": 108000000
+        }
+      },
+      "median_ms_per_gate": 5.66381
+    },
+    {
+      "pid": 3264620,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s32-b1-g0-r2-n30-candidate.log",
+      "active_timed_samples": 10,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3248000000,
+          "median": 3268500000.0,
+          "max": 3271000000
+        },
+        "freq2_input": {
+          "min": 875000000,
+          "median": 875000000.0,
+          "max": 875000000
+        },
+        "temp2_input": {
+          "min": 65000,
+          "median": 66000.0,
+          "max": 66000
+        },
+        "power1_average": {
+          "min": 106000000,
+          "median": 109000000.0,
+          "max": 109000000
+        }
+      },
+      "median_ms_per_gate": 5.88253
+    },
+    {
+      "pid": 3264750,
+      "log": "/home/nimda/sources/cuFHEpp/measurements/r9700/remaining-cuda/2d79cdeec061447d/qualification/r9700-ntt-latency/all/selected/test_bootstrap_bench_lvl02_br_iks-packed-mux-s128-b1-g0-r0-n30-original.log",
+      "active_timed_samples": 41,
+      "raw_sysfs_statistics": {
+        "freq1_input": {
+          "min": 3261000000,
+          "median": 3266000000,
+          "max": 3270000000
+        },
+        "freq2_input": {
+          "min": 772000000,
+          "median": 772000000,
+          "max": 772000000
+        },
+        "temp2_input": {
+          "min": 65000,
+          "median": 67000,
+          "max": 68000
+        },
+        "power1_average": {
+          "min": 109000000,
+          "median": 110000000,
+          "max": 111000000
+        }
+      },
+      "median_ms_per_gate": 5.63888
+    }
+  ]
+}

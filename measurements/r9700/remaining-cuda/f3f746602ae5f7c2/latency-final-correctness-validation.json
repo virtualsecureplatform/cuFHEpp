@@ -1,0 +1,21 @@
+{
+  "profile": "r9700-ntt-latency",
+  "variant": "baseline",
+  "source": "f3f746602ae5f7c2",
+  "exhaustive": true,
+  "tests": [
+    "test_keyswitch_gpu",
+    "test_keyswitch_gpu_lvl20",
+    "test_bootstrap_binary",
+    "test_bootstrap_public_binary",
+    "test_bootstrap_mux",
+    "test_bootstrap_public_mux",
+    "test_bootstrap_batch",
+    "test_bootstrap_public_batch",
+    "test_small_modulus",
+    "test_bootstrap_cooperative",
+    "test_bootstrap_public_cooperative"
+  ],
+  "binary_hashes_verified": 15,
+  "scope": "Final retained latency setting correctness; original-backend performance grid remains running"
+}

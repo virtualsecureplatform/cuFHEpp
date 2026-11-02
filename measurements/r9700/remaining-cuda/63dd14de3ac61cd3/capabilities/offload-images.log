@@ -1,0 +1,4 @@
+
+build-r9700-remaining-all/test/test_small_modulus:	file format elf64-x86-64
+Extracting offload bundle: build-r9700-remaining-all/test/test_small_modulus.0.host-x86_64-unknown-linux-gnu-
+Extracting offload bundle: build-r9700-remaining-all/test/test_small_modulus.0.hipv4-amdgcn-amd-amdhsa--gfx1201

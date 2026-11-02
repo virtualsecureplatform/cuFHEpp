@@ -1,0 +1,9 @@
+WAIT main controller 3775684; no GPU work before its terminal success
+START isolated confirmation and original/original self-control
+Traceback (most recent call last):
+  File "/tmp/cufhepp-latency-nmux-confirm.py", line 45, in <module>
+    with prefix.with_suffix('.log').open('w') as log:subprocess.run(argv,cwd=REPO,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/home/nimda/sources/cuFHEpp/build-remaining-original/r9700-ntt-latency/test/test_bootstrap_bench', '128', '1', '30', 'packed-nmux']' returned non-zero exit status 127.

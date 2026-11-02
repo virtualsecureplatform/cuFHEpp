@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=ntt block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=1 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=2 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=3 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=4 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=5 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=6 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=7 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+repeat=0 ms/gate=1.55633
+repeat=1 ms/gate=1.22841
+repeat=2 ms/gate=1.55712
+repeat=3 ms/gate=1.22637
+repeat=4 ms/gate=1.55781
+repeat=5 ms/gate=1.22192
+repeat=6 ms/gate=1.55301
+repeat=7 ms/gate=1.22337
+repeat=8 ms/gate=1.55477
+repeat=9 ms/gate=1.22665
+repeat=10 ms/gate=1.55594
+repeat=11 ms/gate=1.22436
+repeat=12 ms/gate=1.55669
+repeat=13 ms/gate=1.22098
+repeat=14 ms/gate=1.55385
+repeat=15 ms/gate=1.22514
+repeat=16 ms/gate=1.5585
+repeat=17 ms/gate=1.22594
+repeat=18 ms/gate=1.55587
+repeat=19 ms/gate=1.22343
+repeat=20 ms/gate=1.55659
+repeat=21 ms/gate=1.22252
+repeat=22 ms/gate=1.55108
+repeat=23 ms/gate=1.22282
+repeat=24 ms/gate=1.55556
+repeat=25 ms/gate=1.22351
+repeat=26 ms/gate=1.5531
+repeat=27 ms/gate=1.22199
+repeat=28 ms/gate=1.55493
+repeat=29 ms/gate=1.21577
+dispatch=packed streams=8 gates=8 median_ms/gate=1.55108 errors=0
+observed_noise_rms=0.00549631 observed_max_abs_noise=0.0102844

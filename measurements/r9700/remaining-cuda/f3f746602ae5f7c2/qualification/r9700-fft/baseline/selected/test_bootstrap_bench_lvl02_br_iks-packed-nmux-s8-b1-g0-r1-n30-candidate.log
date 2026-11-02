@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=10.6346
+repeat=1 ms/gate=7.40434
+repeat=2 ms/gate=10.0375
+repeat=3 ms/gate=7.39012
+repeat=4 ms/gate=10.0059
+repeat=5 ms/gate=7.3636
+repeat=6 ms/gate=9.95799
+repeat=7 ms/gate=7.3485
+repeat=8 ms/gate=9.94607
+repeat=9 ms/gate=7.3074
+repeat=10 ms/gate=9.92129
+repeat=11 ms/gate=7.32873
+repeat=12 ms/gate=9.92858
+repeat=13 ms/gate=7.30188
+repeat=14 ms/gate=9.90407
+repeat=15 ms/gate=7.30122
+repeat=16 ms/gate=9.91808
+repeat=17 ms/gate=7.26214
+repeat=18 ms/gate=9.89124
+repeat=19 ms/gate=7.3083
+repeat=20 ms/gate=9.89826
+repeat=21 ms/gate=7.26885
+repeat=22 ms/gate=9.87002
+repeat=23 ms/gate=7.28084
+repeat=24 ms/gate=9.90045
+repeat=25 ms/gate=7.25873
+repeat=26 ms/gate=9.8953
+repeat=27 ms/gate=7.31229
+repeat=28 ms/gate=9.90147
+repeat=29 ms/gate=7.2688
+dispatch=packed streams=8 gates=8 median_ms/gate=9.87002 errors=0
+observed_noise_rms=0.00676874 observed_max_abs_noise=0.0157928

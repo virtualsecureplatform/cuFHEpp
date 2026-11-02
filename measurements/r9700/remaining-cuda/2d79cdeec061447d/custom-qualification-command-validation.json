@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "direct": [
+    "python3",
+    "-B",
+    "measurements/r9700/remaining-cuda/2d79cdeec061447d/qualify_original.py",
+    "--profiles",
+    "r9700-ntt",
+    "--variants",
+    "native64",
+    "--repeats",
+    "30"
+  ],
+  "composed": [
+    "python3",
+    "-B",
+    "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+    "qualify",
+    "measurements/r9700/remaining-cuda/2d79cdeec061447d/paired-combination-definitions.json",
+    "--profiles",
+    "r9700-ntt",
+    "--variants",
+    "multi-native64",
+    "--repeats",
+    "30"
+  ]
+}

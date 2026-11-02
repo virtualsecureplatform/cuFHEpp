@@ -1,0 +1,7 @@
+{
+  "exit_code": 127,
+  "stage": "host-dynamic-loader",
+  "gpu_tests_executed": false,
+  "reason": "LD_LIBRARY_PATH did not include /opt/rocm/lib",
+  "remedy": "Use the same HIP runtime path and OMP/HIP settings as bench_r9700_remaining.py"
+}

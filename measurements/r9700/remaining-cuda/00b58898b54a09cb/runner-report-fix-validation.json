@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "old_collector_records": 5,
+  "old_included_qualification_array": true,
+  "new_timing_records": 3,
+  "screen_and_run_retained": true,
+  "unselected_profile_excluded": true,
+  "apply_checks": [
+    "main2d",
+    "isolated00b"
+  ],
+  "status_of_patch": "prepared-not-applied-while-source-frozen"
+}

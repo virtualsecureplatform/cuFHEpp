@@ -1,0 +1,79 @@
+{
+  "source": "00b58898b54a09cb",
+  "profile": "r9700-ntt-throughput",
+  "configurations": [
+    {
+      "variant": "baseline",
+      "status": "PASS",
+      "exhaustive": true,
+      "tests": [
+        "test_keyswitch_gpu",
+        "test_keyswitch_gpu_lvl20",
+        "test_bootstrap_binary",
+        "test_bootstrap_public_binary",
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux",
+        "test_bootstrap_batch",
+        "test_bootstrap_public_batch",
+        "test_small_modulus",
+        "test_bootstrap_cooperative",
+        "test_bootstrap_public_cooperative"
+      ],
+      "graph_tests": [
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux"
+      ],
+      "receipt": "r9700-ntt-throughput/baseline/checked.json",
+      "actual_binaries_verified": true
+    },
+    {
+      "variant": "multi",
+      "status": "PASS",
+      "exhaustive": true,
+      "tests": [
+        "test_keyswitch_gpu",
+        "test_keyswitch_gpu_lvl20",
+        "test_bootstrap_binary",
+        "test_bootstrap_public_binary",
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux",
+        "test_bootstrap_batch",
+        "test_bootstrap_public_batch",
+        "test_small_modulus",
+        "test_bootstrap_cooperative",
+        "test_bootstrap_public_cooperative"
+      ],
+      "graph_tests": [
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux"
+      ],
+      "receipt": "r9700-ntt-throughput/multi/checked.json",
+      "actual_binaries_verified": true
+    },
+    {
+      "variant": "multi-mux",
+      "status": "PASS",
+      "exhaustive": true,
+      "tests": [
+        "test_keyswitch_gpu",
+        "test_keyswitch_gpu_lvl20",
+        "test_bootstrap_binary",
+        "test_bootstrap_public_binary",
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux",
+        "test_bootstrap_batch",
+        "test_bootstrap_public_batch",
+        "test_small_modulus",
+        "test_bootstrap_cooperative",
+        "test_bootstrap_public_cooperative"
+      ],
+      "graph_tests": [
+        "test_bootstrap_mux",
+        "test_bootstrap_public_mux"
+      ],
+      "receipt": "r9700-ntt-throughput/multi-mux/checked.json",
+      "actual_binaries_verified": true
+    }
+  ],
+  "remaining": "Wave broadcast with the new consumer selector still requires validation; performance screening is not qualification."
+}

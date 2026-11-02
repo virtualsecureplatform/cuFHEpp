@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "patch_status": "prepared-not-applied-while-source-frozen",
+  "fft_prepared_control_cases": [
+    {
+      "profile": "r9700-fft",
+      "variant": "baseline",
+      "old": false,
+      "fixed": false,
+      "expected": false
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "prepared",
+      "old": true,
+      "fixed": true,
+      "expected": true
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi",
+      "old": true,
+      "fixed": true,
+      "expected": true
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "wave",
+      "old": true,
+      "fixed": true,
+      "expected": true
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "multi-wave",
+      "old": true,
+      "fixed": true,
+      "expected": true
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "waves2",
+      "old": true,
+      "fixed": false,
+      "expected": false
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "waves3",
+      "old": true,
+      "fixed": false,
+      "expected": false
+    },
+    {
+      "profile": "r9700-fft",
+      "variant": "waves4",
+      "old": true,
+      "fixed": false,
+      "expected": false
+    }
+  ],
+  "non_fft_unchanged": true,
+  "old_report_records": 4,
+  "fixed_report_records": 2,
+  "report_qualification_array_excluded": true,
+  "report_unselected_profile_excluded": true,
+  "main_apply_check": "PASS",
+  "cpp_headers_and_sources_changed": false
+}

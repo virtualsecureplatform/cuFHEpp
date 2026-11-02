@@ -1,0 +1,41 @@
+{
+  "status": "diagnostics-only-not-full-qualification",
+  "repetitions": 30,
+  "fresh_key_runs": 3,
+  "comparisons": [
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.14594650999135927,
+      "median_improvement": -0.017378765321123257,
+      "max_improvement": 0.025802323511083247,
+      "improvements": [
+        -0.017378765321123257,
+        -0.14594650999135927,
+        0.025802323511083247
+      ]
+    },
+    {
+      "profile": "r9700-ntt-throughput",
+      "variant": "multi",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.07344034208762795,
+      "median_improvement": -0.06594767518741929,
+      "max_improvement": 0.07297864458255554,
+      "improvements": [
+        -0.06594767518741929,
+        0.07297864458255554,
+        -0.07344034208762795
+      ]
+    }
+  ]
+}

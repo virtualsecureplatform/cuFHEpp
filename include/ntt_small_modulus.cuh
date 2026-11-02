@@ -231,6 +231,17 @@ template <int NativeAdd = 0>
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_add(SmallNTTValue a, SmallNTTValue b)
 {
+#if defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
+    unsigned carry;
+    const uint32_t lo = __builtin_addc(uint32_t(a), uint32_t(b), 0, &carry);
+    const uint32_t hi = __builtin_addc(uint32_t(a >> 32), uint32_t(b >> 32), carry, &carry);
+    const uint64_t sum = (uint64_t(hi) << 32) | lo;
+    const uint32_t correction = -(carry != 0 || sum >= small_ntt::P);
+    const uint32_t outlo = __builtin_addc(lo, correction, 0, &carry);
+    const uint32_t outhi = hi + carry;
+    return (uint64_t(outhi) << 32) | outlo;
+#endif
+
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
     if constexpr (NativeAdd == 1) {
         uint32_t lo, hi;
@@ -269,13 +280,27 @@ small_mod64_add(SmallNTTValue a, SmallNTTValue b)
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_sub(SmallNTTValue a, SmallNTTValue b)
 {
+#if defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
+    unsigned borrow;
+    const uint32_t lo = __builtin_subc(uint32_t(a), uint32_t(b), 0, &borrow);
+    const uint32_t hi = __builtin_subc(uint32_t(a >> 32), uint32_t(b >> 32), borrow, &borrow);
+    const uint32_t correction = -borrow;
+    const uint32_t outlo = __builtin_subc(lo, correction, 0, &borrow);
+    return (uint64_t(hi - borrow) << 32) | outlo;
+#else
+
     SmallNTTValue tmp = a - b;
     return tmp - static_cast<uint32_t>(-(tmp > a));
+#endif
 }
 
 __host__ __device__ __forceinline__ SmallNTTValue
 small_mod64_sub_borrow(SmallNTTValue a, SmallNTTValue b)
 {
+#if defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
+    return small_mod64_sub(a, b);
+#endif
+
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
     uint32_t lo, hi;
     // Export the full-width borrow directly, then subtract its existing
@@ -309,9 +334,13 @@ small_mod64_reduce_wide(unsigned __int128 value)
     // can be noncanonical, but remains below 2^64. Since folded_hi <= p-B,
     // a carried sum wraps to at most p-B-1: its B-1 correction stays below p.
     // A sum without carry uses the usual >=p correction.
+#ifdef USE_HIP_NATIVE_NTT64
+    const SmallNTTValue corrected = small_mod64_sub(lo, hi_hi);
+#else
     const SmallNTTValue difference = lo - hi_hi;
     const SmallNTTValue corrected = difference -
         (lo < hi_hi ? SmallNTTValue{UINT32_MAX} : 0);
+#endif
     const SmallNTTValue folded_hi = (hi_lo << 32) - hi_lo;
     return small_mod64_add<NativeAdd>(corrected, folded_hi);
 }
@@ -372,6 +401,16 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod64_madd2(
           "l"(static_cast<uint64_t>(product1)),
           "l"(static_cast<uint64_t>(product1 >> 64)));
     const uint64_t carry = carry_word;
+#elif defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
+    unsigned next = 0;
+    uint32_t limbs[4];
+#pragma unroll
+    for (int limb = 0; limb < 4; ++limb)
+        limbs[limb] = __builtin_addc(uint32_t(first >> (32 * limb)),
+            uint32_t(product1 >> (32 * limb)), next, &next);
+    const uint64_t carry = next;
+    const uint64_t lo = (uint64_t(limbs[1]) << 32) | limbs[0];
+    const uint64_t hi = (uint64_t(limbs[3]) << 32) | limbs[2];
 #else
     const unsigned __int128 with_addend = first + product1;
     const uint64_t carry = with_addend < first;
@@ -379,8 +418,12 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod64_madd2(
     const uint64_t hi = static_cast<uint64_t>(with_addend >> 64);
 #endif
     const uint64_t subtraction = (hi >> 32) | (carry << 32);
+#ifdef USE_HIP_NATIVE_NTT64
+    const uint64_t corrected = small_mod64_sub(lo, subtraction);
+#else
     const uint64_t difference = lo - subtraction;
     const uint64_t corrected = difference - (lo < subtraction ? uint64_t{UINT32_MAX} : 0);
+#endif
     const uint64_t hi_lo = static_cast<uint32_t>(hi);
     return small_mod64_add<NativeAdd>(corrected, (hi_lo << 32) - hi_lo);
 }
@@ -703,7 +746,7 @@ ntt_abs_to_torus64_goldilocks(SmallNTTValue val)
 __host__ __device__ __forceinline__ uint64_t
 ntt_magnitude_to_torus64_goldilocks(SmallNTTValue val)
 {
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_FAST_TORUS64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
     const uint32_t hi = static_cast<uint32_t>(val >> 32);
     const uint32_t lo = static_cast<uint32_t>(val);
     return val + hi + static_cast<uint64_t>(lo > hi + 0x80000000u);
@@ -725,7 +768,7 @@ ntt_mod_to_torus64(SmallNTTValue val)
         return neg ? static_cast<uint64_t>(-torus64) : torus64;
     }
     else {
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_FAST_TORUS64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
         if constexpr (DirectSigned) {
             // For a canonical residue v=h*2^32+l, combine the existing signed
             // magnitude conversion into v+h+(l>threshold), modulo 2^64.
@@ -877,7 +920,7 @@ __device__ __forceinline__ void SmallGentlemanSandeShoupUnit(uint32_t& U,
     const uint32_t u = U;
     const uint32_t v = V;
     U = small_mod31_add(u, v);
-#if defined(USE_CUDA_UNREDUCED_INVERSE_DIFF)
+#if (defined(USE_CUDA_UNREDUCED_INVERSE_DIFF) || defined(USE_HIP_UNREDUCED_INVERSE_DIFF))
     // Canonical inputs give u + p - v < 2p < 2^32. Shoup accepts this
     // unreduced difference and returns the same canonical product.
     V = small_mod31_mult_shoup(u + small_ntt31::P - v, root, root_shoup);
@@ -917,7 +960,7 @@ __device__ __forceinline__ void SmallGentlemanSandeScaledShoupUnit(
     const uint32_t u = U;
     const uint32_t v = V;
     U = small_mod31_mult(small_mod31_add(u, v), n_inverse);
-#if defined(USE_CUDA_UNREDUCED_INVERSE_DIFF)
+#if (defined(USE_CUDA_UNREDUCED_INVERSE_DIFF) || defined(USE_HIP_UNREDUCED_INVERSE_DIFF))
     V = small_mod31_mult_shoup(u + small_ntt31::P - v, scaled_root,
                                scaled_root_shoup);
 #else
@@ -1429,7 +1472,7 @@ __device__ __forceinline__ void SmallInverseNTT(
                 if ((N_POWER - 6) % 2 == 0 && lp == (N_POWER - 6) / 2 - 1) {
                     SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(a, b, root0_lo);
                     SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(c, d, root0_hi);
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_SCALED_INVERSE64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
                     SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(a, c, root1);
                     SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(b, d, root1);
 #else
@@ -1462,7 +1505,7 @@ __device__ __forceinline__ void SmallInverseNTT(
         if constexpr (Q_BITS == 64) {
             // Entry 1 is pre-scaled by 1/N, so this final butterfly also
             // performs the inverse normalization.
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_SCALED_INVERSE64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
             SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(
                 sh[in_shared_address], sh[in_shared_address + t],
                 d_const_inverse_root_64[1]);
@@ -1510,7 +1553,7 @@ __device__ __forceinline__ void SmallNTTPairButterfly31(
                            : d_const_forward_root_31_shoup[index];
 #endif
     } else {
-#if defined(USE_CUDA_PACKED_PAIRED_ROOTS) && defined(USE_CUDA_SHOUP_NTT)
+#if (defined(USE_CUDA_PACKED_PAIRED_ROOTS) || defined(USE_HIP_PACKED_PAIRED_ROOTS)) && defined(USE_CUDA_SHOUP_NTT)
         const uint2 pair = __ldg(
             reinterpret_cast<const uint2*>(roots + (2U << N_POWER)) + index);
         root = pair.x;
@@ -1518,7 +1561,7 @@ __device__ __forceinline__ void SmallNTTPairButterfly31(
         root = __ldg(&roots[index]);
 #endif
 #if defined(USE_CUDA_SHOUP_NTT)
-#if defined(USE_CUDA_PACKED_PAIRED_ROOTS)
+#if (defined(USE_CUDA_PACKED_PAIRED_ROOTS) || defined(USE_HIP_PACKED_PAIRED_ROOTS))
         quotient = pair.y;
 #else
         quotient = __ldg(&roots[(1U << N_POWER) + index]);

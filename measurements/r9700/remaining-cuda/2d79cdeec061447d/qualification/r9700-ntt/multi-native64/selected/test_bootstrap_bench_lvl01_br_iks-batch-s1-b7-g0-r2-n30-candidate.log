@@ -1,0 +1,35 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nand backend=ntt block_binary=1 mode=batch timed_transfers=0
+graph_nodes=1
+resource_node=0 registers=150 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=2 grid=7,1,1
+repeat=0 ms/gate=0.382548
+repeat=1 ms/gate=0.384159
+repeat=2 ms/gate=0.386639
+repeat=3 ms/gate=0.386248
+repeat=4 ms/gate=0.385438
+repeat=5 ms/gate=0.382223
+repeat=6 ms/gate=0.385068
+repeat=7 ms/gate=0.385682
+repeat=8 ms/gate=0.38689
+repeat=9 ms/gate=0.382468
+repeat=10 ms/gate=0.384928
+repeat=11 ms/gate=0.384069
+repeat=12 ms/gate=0.385425
+repeat=13 ms/gate=0.385625
+repeat=14 ms/gate=0.383346
+repeat=15 ms/gate=0.384862
+repeat=16 ms/gate=0.385745
+repeat=17 ms/gate=0.385896
+repeat=18 ms/gate=0.383098
+repeat=19 ms/gate=0.38558
+repeat=20 ms/gate=0.385648
+repeat=21 ms/gate=0.385585
+repeat=22 ms/gate=0.385958
+repeat=23 ms/gate=0.383265
+repeat=24 ms/gate=0.38734
+repeat=25 ms/gate=0.38444
+repeat=26 ms/gate=0.38974
+repeat=27 ms/gate=0.386406
+repeat=28 ms/gate=0.384498
+repeat=29 ms/gate=0.384633
+dispatch=batch streams=1 gates=7 median_ms/gate=0.385438 errors=0
+observed_noise_rms=0.00819595 observed_max_abs_noise=0.0128479

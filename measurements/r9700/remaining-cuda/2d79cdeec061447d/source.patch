@@ -1,0 +1,1428 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7ac924e..b4fc516 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -146,7 +146,11 @@ endif()
+ # cause spills. The Torus64 option also relaxes the Ada register budget.
+ # R9700 features are independently selectable for reproducible comparisons.
+ foreach(feature PAIRED_NTT PAIRED_NTT64 FUSED_NTT MONOMIAL_STAGING
+-                PREPARED_KEYSWITCH NATIVE_KEYSWITCH WAVE_MODSWITCH_CORRECTION LOW_LDS
++                PREPARED_KEYSWITCH NATIVE_KEYSWITCH OUTPUT_EXPONENT_CACHE FAST_TORUS64
++                MULTIOUT_KEYSWITCH WAVE_KEYSWITCH SCALAR_MONOMIAL_CACHE64
++                REGISTER_NTT_IO64 REGISTER_MONOMIALS31 NATIVE_NTT64
++                SCALED_INVERSE64 PACKED_PAIRED_ROOTS UNREDUCED_INVERSE_DIFF
++                MONOMIAL_PREFETCH WAVE_MODSWITCH_CORRECTION LOW_LDS
+                 COOPERATIVE_BATCH COOPERATIVE_SCALAR)
+   option(USE_HIP_${feature} "Enable HIP ${feature} scheduling" OFF)
+   if(USE_HIP_${feature})
+@@ -157,6 +161,21 @@ foreach(feature PAIRED_NTT PAIRED_NTT64 FUSED_NTT MONOMIAL_STAGING
+   endif()
+ endforeach()
+ 
++foreach(feature MULTIOUT_KEYSWITCH WAVE_KEYSWITCH)
++  if(USE_HIP_${feature} AND NOT USE_HIP_PREPARED_KEYSWITCH)
++    message(FATAL_ERROR "USE_HIP_${feature} requires USE_HIP_PREPARED_KEYSWITCH")
++  endif()
++endforeach()
++if(USE_HIP_REGISTER_MONOMIALS31 AND (NOT USE_HIP_PAIRED_NTT OR NOT USE_HIP_FUSED_NTT))
++  message(FATAL_ERROR "USE_HIP_REGISTER_MONOMIALS31 requires paired and fused NTT")
++endif()
++if(USE_HIP_REGISTER_NTT_IO64 AND (NOT USE_HIP_SCALAR_MONOMIAL_CACHE64 OR NOT USE_HIP_LOW_LDS))
++  message(FATAL_ERROR "USE_HIP_REGISTER_NTT_IO64 requires scalar caching and low LDS")
++endif()
++if(USE_HIP_MONOMIAL_PREFETCH AND NOT USE_HIP_MONOMIAL_STAGING)
++  message(FATAL_ERROR "USE_HIP_MONOMIAL_PREFETCH requires monomial staging")
++endif()
++
+ set(CUFHE_HIP_MIN_WAVES_PER_EU "1" CACHE STRING
+     "Minimum HIP waves per execution unit requested by gate launch bounds (1-4)")
+ set_property(CACHE CUFHE_HIP_MIN_WAVES_PER_EU PROPERTY STRINGS 1 2 3 4)
+@@ -216,6 +235,10 @@ option(USE_CUDA_WORD32_REDUCTION
+ option(USE_CUDA_SHOUP_NTT
+        "Use Shoup precomputed-quotient twiddle multiplication in the lvl1 NTT"
+        ON)
++if((USE_HIP_PACKED_PAIRED_ROOTS OR USE_HIP_UNREDUCED_INVERSE_DIFF) AND NOT USE_CUDA_SHOUP_NTT)
++  message(FATAL_ERROR "HIP root/difference controls require Shoup NTT")
++endif()
++
+ option(USE_CUDA_MIN_BLOCKS
+        "Apply architecture-specific minimum-residency bounds to GPU gate blocks"
+        ON)
+diff --git a/CMakePresets.json b/CMakePresets.json
+index 33c357f..bf167d5 100644
+--- a/CMakePresets.json
++++ b/CMakePresets.json
+@@ -109,7 +109,19 @@
+         "USE_CUDA_WARP_TRANSFORM64": "OFF",
+         "USE_CUDA_UNREDUCED_INVERSE_DIFF": "OFF",
+         "USE_CUDA_PACKED_PAIRED_ROOTS": "OFF",
+-        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
++        "CUFHE_HIP_COOPERATIVE_GROUPS": "0",
++        "USE_HIP_MULTIOUT_KEYSWITCH": "OFF",
++        "USE_HIP_WAVE_KEYSWITCH": "OFF",
++        "USE_HIP_OUTPUT_EXPONENT_CACHE": "OFF",
++        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "OFF",
++        "USE_HIP_REGISTER_NTT_IO64": "OFF",
++        "USE_HIP_REGISTER_MONOMIALS31": "OFF",
++        "USE_HIP_NATIVE_NTT64": "OFF",
++        "USE_HIP_FAST_TORUS64": "OFF",
++        "USE_HIP_SCALED_INVERSE64": "OFF",
++        "USE_HIP_PACKED_PAIRED_ROOTS": "OFF",
++        "USE_HIP_UNREDUCED_INVERSE_DIFF": "OFF",
++        "USE_HIP_MONOMIAL_PREFETCH": "OFF"
+       }
+     },
+     {
+@@ -164,6 +176,35 @@
+       "inherits": "r9700-fft-baseline",
+       "binaryDir": "${sourceDir}/build-r9700-fft",
+       "cacheVariables": {}
++    },
++    {
++      "name": "r9700-remaining-all",
++      "displayName": "R9700 experimental remaining CUDA ports (all scalar/paired-31 paths)",
++      "inherits": "r9700-ntt-throughput",
++      "binaryDir": "${sourceDir}/build-r9700-remaining-all",
++      "cacheVariables": {
++        "USE_HIP_MULTIOUT_KEYSWITCH": "ON",
++        "USE_HIP_WAVE_KEYSWITCH": "ON",
++        "USE_HIP_OUTPUT_EXPONENT_CACHE": "ON",
++        "USE_HIP_SCALAR_MONOMIAL_CACHE64": "ON",
++        "USE_HIP_REGISTER_NTT_IO64": "ON",
++        "USE_HIP_REGISTER_MONOMIALS31": "ON",
++        "USE_HIP_NATIVE_NTT64": "ON",
++        "USE_HIP_FAST_TORUS64": "ON",
++        "USE_HIP_SCALED_INVERSE64": "ON",
++        "USE_HIP_PACKED_PAIRED_ROOTS": "ON",
++        "USE_HIP_UNREDUCED_INVERSE_DIFF": "ON"
++      }
++    },
++    {
++      "name": "r9700-remaining-prefetch",
++      "displayName": "R9700 experimental staged paired products with vector prefetch",
++      "inherits": "r9700-ntt",
++      "binaryDir": "${sourceDir}/build-r9700-remaining-prefetch",
++      "cacheVariables": {
++        "USE_HIP_MONOMIAL_STAGING": "ON",
++        "USE_HIP_MONOMIAL_PREFETCH": "ON"
++      }
+     }
+   ]
+ }
+diff --git a/include/gatebootstrapping_gpu.cuh b/include/gatebootstrapping_gpu.cuh
+index 2bac2e0..6b1111b 100644
+--- a/include/gatebootstrapping_gpu.cuh
++++ b/include/gatebootstrapping_gpu.cuh
+@@ -34,7 +34,7 @@ __device__ inline uint32_t modSwitchFromTorus(
+                       P::targetP::nbit));
+ }
+ 
+-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
++#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
+ // Capture before the caller's correction barrier; publish only after it.
+ // The existing test-vector barrier makes the output metadata ready to consume.
+ template <class P, int Sign0, int Sign1, int Threads>
+@@ -945,7 +945,7 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
+     NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const scratch,
+     const uint32_t block, const uint32_t* const bara,
+     const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
+-    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
++    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt, uint32_t* exercised_policy = nullptr)
+ {
+     using targetP = typename P::targetP;
+     using T = typename targetP::T;
+@@ -963,11 +963,14 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
+ #if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
+     Value* const staged_monomials = scratch + 2 * N;
+ #endif
+-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && defined(CUFHE_STAGED_MONOMIALS_DEVICE) && defined(CUFHE_PAIRED_NTT_MADD4)
++#if defined(USE_HIP_REGISTER_MONOMIALS31) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && defined(CUFHE_STAGED_MONOMIALS_DEVICE) && defined(CUFHE_PAIRED_NTT_MADD4))
+     constexpr bool CacheMonomials = RegisterMonomials && P::domainP::ell == 2;
+ #else
+     constexpr bool CacheMonomials = false;
+ #endif
++    if (exercised_policy && tid == 0)
++        *exercised_policy = (CacheMonomials ? 1U : 0U) |
++            (CacheMonomials && KeySwitchAfter31 ? 2U : 0U);
+     Value cached_x0[2], cached_x1[2];
+     if constexpr (CacheMonomials) {
+ #pragma unroll
+@@ -977,6 +980,9 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
+             cached_x1[e] = __ldg(block_xai_fft + bara[1] * N + i);
+         }
+     }
++#ifdef USE_HIP_MONOMIAL_PREFETCH
++    uint2 prefetched[2];
++#endif
+     Value accum[2][2] = {};
+     T cached_input[2][2];
+     constexpr T offset = offsetgen<targetP>() +
+@@ -986,7 +992,10 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
+     // Every digit pair uses these same monomials. Start their copy before
+     // decomposition, keeping the copy's address calculations outside the loop.
+     if constexpr (P::domainP::ell == 2 && !CacheMonomials) {
+-#if defined(CUFHE_USE_HIP)
++#if defined(USE_HIP_MONOMIAL_PREFETCH)
++        prefetched[0] = __ldg(reinterpret_cast<const uint2*>(block_xai_fft + bara[0] * N) + tid);
++        prefetched[1] = __ldg(reinterpret_cast<const uint2*>(block_xai_fft + bara[1] * N) + tid);
++#elif defined(CUFHE_USE_HIP)
+ #pragma unroll
+         for (int e = 0; e < 2; ++e) {
+             const int i = tid + e * THREADS;
+@@ -1043,6 +1052,10 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
+ #if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
+         if constexpr (P::domainP::ell == 2 && !CacheMonomials) {
+             if (pair == 0) {
++#ifdef USE_HIP_MONOMIAL_PREFETCH
++                reinterpret_cast<uint2*>(staged_monomials)[tid] = prefetched[0];
++                reinterpret_cast<uint2*>(staged_monomials + N)[tid] = prefetched[1];
++#endif
+ #if !defined(CUFHE_USE_HIP)
+                 __pipeline_wait_prior(0);
+ #endif
+@@ -1059,8 +1072,8 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
+                 const Value x0 = CacheMonomials ? cached_x0[e] : staged_monomials[i];
+                 const Value x1 = CacheMonomials ? cached_x1[e] : staged_monomials[N + i];
+ #else
+-                const Value x0 = __ldg(&block_xai_fft[bara[0] * N + i]);
+-                const Value x1 = __ldg(&block_xai_fft[bara[1] * N + i]);
++                const Value x0 = CacheMonomials ? cached_x0[e] : __ldg(&block_xai_fft[bara[0] * N + i]);
++                const Value x1 = CacheMonomials ? cached_x1[e] : __ldg(&block_xai_fft[bara[1] * N + i]);
+ #endif
+                 const Value d0 = work0[i], d1 = work1[i];
+                 if constexpr (CacheMonomials && !KeySwitchAfter31) {
+@@ -1193,8 +1206,14 @@ __device__ inline void AccumulateBlockBinaryPaired64(
+     auto* const monomials = scratch + (RegisterAccum ? 2 : targetP::k + 3) * N;
+     constexpr T offset = offsetgen<targetP>() +
+         (T{1} << (64 - targetP::l * targetP::Bgbit - 1));
++#ifdef USE_HIP_MONOMIAL_PREFETCH
++    ulonglong2 prefetched[2];
++#endif
+     if constexpr (StageMonomials64) {
+-#if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
++#if defined(USE_HIP_MONOMIAL_PREFETCH)
++    prefetched[0] = __ldg(reinterpret_cast<const ulonglong2*>(block_xai_fft_lvl02 + bara[0] * N) + tid);
++    prefetched[1] = __ldg(reinterpret_cast<const ulonglong2*>(block_xai_fft_lvl02 + bara[1] * N) + tid);
++#elif defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
+     __pipeline_memcpy_async(monomials + 2 * tid,
+         block_xai_fft_lvl02 + bara[0] * N + 2 * tid, 16);
+     __pipeline_memcpy_async(monomials + N + 2 * tid,
+@@ -1245,6 +1264,10 @@ __device__ inline void AccumulateBlockBinaryPaired64(
+         // Uniform constant roots benefit the staged paired schedule.
+         SmallForwardNTTPair64<targetP::nbit, StageMonomials64, NativeAdd, StageMonomials64>(work0, work1, ntt.forward_root_, tid);
+         if (StageMonomials64 && pair == 0) {
++#ifdef USE_HIP_MONOMIAL_PREFETCH
++            reinterpret_cast<ulonglong2*>(monomials)[tid] = prefetched[0];
++            reinterpret_cast<ulonglong2*>(monomials + N)[tid] = prefetched[1];
++#endif
+ #if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
+             __pipeline_wait_prior(0);
+ #endif
+@@ -1367,12 +1390,12 @@ template <class P, bool StageMonomials64 = false, bool PairUnstaged64 = false,
+           bool NativeForwardSubtract = false, int Native64Add = 0,
+           bool RegisterMonomials31 = false, bool KeySwitchAfter31 = false,
+           bool ReuseInput31 = false, bool AdjacentScalar64 = true,
+-          bool AllowPairedProducts = true>
++          bool AllowPairedProducts = true, bool StressInverseReaders = false>
+ __device__ inline void AccumulateBlockBinary(
+     typename P::targetP::T* const trlwe,
+     NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t block,
+     const uint32_t* const bara, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
+-    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
++    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt, uint32_t* exercised_policy = nullptr)
+ {
+     if constexpr (AllowPairedProducts && USE_PAIRED_NTT<typename P::targetP>) {
+         AccumulateBlockBinaryPairedNTT<P, RegisterMonomials31, KeySwitchAfter31, ReuseInput31>(trlwe, sh_acc_ntt, block, bara, bk, ntt);
+@@ -1440,7 +1463,7 @@ __device__ inline void AccumulateBlockBinary(
+     // Adjacent NTT values of x^a-1 are equal for even a and add to -2
+     // for odd a. Preserve the existing lane cache when no register tail is available.
+     constexpr bool CACHE_SCALAR_MONOMIALS64 =
+-#if !defined(CUFHE_USE_HIP) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
++#if defined(USE_HIP_SCALAR_MONOMIAL_CACHE64) || (!defined(CUFHE_USE_HIP) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890)
+         sizeof(T) == 8 && NativeForwardSubtract && !StageMonomials64 &&
+         P::domainP::ell == 2 && NUM_THREADS % 32 == 0;
+ #else
+@@ -1448,10 +1471,19 @@ __device__ inline void AccumulateBlockBinary(
+ #endif
+     constexpr bool DIRECT_SCALAR_NTT64 =
+ #if defined(CUFHE_WARP_TRANSFORM_TAIL)
+-        AdjacentScalar64 && CACHE_SCALAR_MONOMIALS64 && UseWarpNTTTail<64>;
++        AdjacentScalar64 && CACHE_SCALAR_MONOMIALS64 && UseWarpNTTTail<64>
++#ifdef CUFHE_USE_HIP
++#if !defined(USE_HIP_REGISTER_NTT_IO64)
++        && false
++#endif
++#endif
++        ;
+ #else
+         false;
+ #endif
++    if (exercised_policy && tid == 0)
++        *exercised_policy = (CACHE_SCALAR_MONOMIALS64 ? 1U : 0U) |
++            (DIRECT_SCALAR_NTT64 ? 2U : 0U);
+     // The forward warp tail owns adjacent coefficients. Cache each polynomial
+     // at the even coordinate, then reconstruct its odd partner exactly.
+     Value cached_monomial[2];
+@@ -1668,7 +1700,15 @@ __device__ inline void AccumulateBlockBinary(
+ 
+     // The next inverse uses a disjoint shared segment while upper threads
+     // finish loading the previous component's published half.
+-    constexpr bool RETURN_INVERSE_PAIR64 = DIRECT_SCALAR_NTT64 && !REGISTER_ACCUM;
++    constexpr bool RETURN_INVERSE_PAIR64 = DIRECT_SCALAR_NTT64 && (
++#ifdef USE_HIP_REGISTER_NTT_IO64
++        true
++#else
++        !REGISTER_ACCUM
++#endif
++        );
++    if (exercised_policy && tid == 0 && RETURN_INVERSE_PAIR64)
++        *exercised_policy |= 4U;
+     for (int component = 0; component <= targetP::k; component++) {
+         Value* const sh_result = REGISTER_ACCUM ? sh_work : &sh_accum[component * N];
+         if constexpr (REGISTER_ACCUM) {
+@@ -1684,7 +1724,7 @@ __device__ inline void AccumulateBlockBinary(
+         if (tid < NUM_THREADS) {
+ #if defined(CUFHE_HAS_PAIR_NTT64)
+             if constexpr (RETURN_INVERSE_PAIR64)
+-                SmallInverseNTTReturnPair64<targetP::nbit, Native64Add>(
++                SmallInverseNTTReturnPair64<targetP::nbit, Native64Add, StressInverseReaders>(
+                     sh_result, ntt.inverse_root_, ntt.n_inverse_, tid, inverse_pair);
+             else
+ #endif
+@@ -1709,6 +1749,11 @@ __device__ inline void AccumulateBlockBinary(
+                         static_cast<T>(ntt_mod_to_torus32<N, sizeof(typename P::targetP::T) * 8>(coefficient));
+             }
+         }
++        // Register-return workers read a peer's published half after the
++        // inverse's final barrier. All those reads must finish before the next
++        // component reuses sh_work with the adjacent-coefficient ownership.
++        if constexpr (RETURN_INVERSE_PAIR64 && REGISTER_ACCUM)
++            __syncthreads();
+     }
+     __syncthreads();
+ }
+@@ -1763,7 +1808,13 @@ __device__ inline void __BlindRotate__(
+ #ifdef USE_FFT
+         AccumulateBlockBinary<P>(out, sh_acc_ntt, block, bara, bk, ntt);
+ #else
+-        AccumulateBlockBinary<P, StageMonomials64, PairUnstaged64, false, Native64Add, RegisterMonomials31, KeySwitchAfter31>(
++        AccumulateBlockBinary<P, StageMonomials64, PairUnstaged64,
++#ifdef USE_HIP_SCALAR_MONOMIAL_CACHE64
++            true,
++#else
++            false,
++#endif
++            Native64Add, RegisterMonomials31, KeySwitchAfter31>(
+             out, sh_acc_ntt, block, bara, bk, ntt);
+ #endif
+     }
+@@ -2802,7 +2853,12 @@ __device__ inline void __BlindRotatePreAddKeyBundle__(
+ template <class P, int casign, int cbsign, auto offset,
+           bool NativeForwardSubtract = false, bool RegisterMonomials31 = false,
+           bool OutputExponentCache = false,
+-          bool AdjacentScalar64 = OutputExponentCache>
++          bool AdjacentScalar64 =
++#ifdef CUFHE_USE_HIP
++          true>
++#else
++          OutputExponentCache>
++#endif
+ __device__ inline void __BlindRotatePreAdd__(
+     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
+     const typename P::domainP::T* const in1,
+@@ -2813,8 +2869,8 @@ __device__ inline void __BlindRotatePreAdd__(
+     auto* const sh_acc_ntt =
+         reinterpret_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>*>(dynamic_shared);
+ 
+-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && \
+-    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
++#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE)) && \
++    (defined(USE_HIP_OUTPUT_EXPONENT_CACHE) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890))
+     constexpr bool CacheOutputExponents = OutputExponentCache &&
+         std::is_same_v<P, TFHEpp::lvl02param>;
+ #else
+@@ -2822,7 +2878,7 @@ __device__ inline void __BlindRotatePreAdd__(
+ #endif
+     uint32_t saved_exponents = 0;
+     typename P::domainP::T saved_body = 0;
+-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
++#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
+     if constexpr (CacheOutputExponents) {
+         saved_exponents = CapturePublicOutputExponents<P, casign, cbsign,
+             NUM_THREAD4HOMGATE<typename P::targetP>>(in0, in1);
+@@ -2853,7 +2909,7 @@ __device__ inline void __BlindRotatePreAdd__(
+                   offset + casign * in0[P::domainP::k * P::domainP::n] +
+                   cbsign * in1[P::domainP::k * P::domainP::n]);
+ #endif
+-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
++#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
+         // The correction barrier has captured all original mask/body data;
+         // the output workspace may overlap either original input.
+         if constexpr (CacheOutputExponents)
+diff --git a/include/keyswitch_gpu.cuh b/include/keyswitch_gpu.cuh
+index 2370950..0e6041e 100644
+--- a/include/keyswitch_gpu.cuh
++++ b/include/keyswitch_gpu.cuh
+@@ -18,6 +18,62 @@ using KeySwitchAccumulator =
+ #endif
+ 
+ 
++// HIP descriptor traversal shared by the pre/post-BR schedules. Each active
++// wave remains complete, including padding lanes in the final output group.
++// A sentinel is checked before forming a key pointer or issuing a load.
++#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
++template <class P, class Row, int Outputs, bool Adjacent, int Threads, int Count>
++__device__ __forceinline__ void HipPreparedKeySwitchOutputs(
++    typename P::targetP::T* out, const typename P::targetP::T* key,
++    const Row* rows, uint32_t (&sums)[Outputs], int output_base = 0, uint32_t* exercised_policy = nullptr)
++{
++    constexpr int Size = P::targetP::k * P::targetP::n + 1;
++    constexpr uint32_t Sentinel = sizeof(Row) == 2 ? UINT16_MAX : UINT32_MAX;
++    constexpr uint32_t Sign = sizeof(Row) == 2 ? 0x8000U : 0x80000000U;
++    const int tid = threadIdx.x;
++    if (tid == 0 && exercised_policy)
++        *exercised_policy = Outputs
++#ifdef USE_HIP_WAVE_KEYSWITCH
++            | 0x100U
++#endif
++            ;
++    constexpr int Active = Adjacent ? ((Size + Outputs - 1) / Outputs + 31) / 32 * 32 : Threads;
++    if (tid < Active) {
++#ifdef USE_HIP_WAVE_KEYSWITCH
++        for (int base = 0; base < Count; base += 32) {
++            const int d = base + (tid & 31);
++            const uint32_t own = d < Count ? rows[d] : Sentinel;
++#pragma unroll
++            for (int lane = 0; lane < 32; ++lane) {
++                const uint32_t row = __shfl(own, lane, 32);
++#else
++        for (int d = 0; d < Count; ++d) {
++            const uint32_t row = rows[d];
++#endif
++            if (row != Sentinel) {
++                const size_t offset = sizeof(Row) == 2 ? size_t(row & ~Sign) * Size : row & ~Sign;
++#pragma unroll
++                for (int e = 0; e < Outputs; ++e) {
++                    const int i = output_base + (Adjacent ? Outputs * tid + e : tid + e * Threads);
++                    if (i < Size) {
++                        const uint32_t value = __ldg(key + offset + i);
++                        sums[e] = row & Sign ? sums[e] + value : sums[e] - value;
++                    }
++                }
++            }
++#ifdef USE_HIP_WAVE_KEYSWITCH
++            }
++#endif
++        }
++#pragma unroll
++        for (int e = 0; e < Outputs; ++e) {
++            const int i = output_base + (Adjacent ? Outputs * tid + e : tid + e * Threads);
++            if (i < Size) out[i] = sums[e];
++        }
++    }
++}
++#endif
++
+ extern std::vector<TFHEpp::lvl0param::T*> ksk_devs;
+ extern std::vector<TFHEpp::lvl0param::T*> ksk_devs_lvl20;
+ 
+@@ -350,6 +406,32 @@ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared16(
+             (val < 0 ? 0x8000U : 0U);
+     }
+     __syncthreads();
++#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
++    if constexpr (std::is_same_v<P, TFHEpp::lvl20param> && !use_subset_key_switch<P> &&
++                  output_size > 512 && output_size <= 1024) {
++        if (blockDim.x == 512) {
++#ifdef USE_HIP_MULTIOUT_KEYSWITCH
++            constexpr int Outputs = 2;
++#else
++            constexpr int Outputs = 1;
++#endif
++            // A single-output control still covers both strided output groups.
++            for (int group = 0; group < 2; group += Outputs) {
++                uint32_t sums[Outputs] = {};
++#pragma unroll
++                for (int e = 0; e < Outputs; ++e)
++                    if (tid + (group + e) * 512 == output_size - 1) {
++                        const typename P::domainP::T added = casign * ina[P::domainP::k * P::domainP::n] +
++                            cbsign * inb[P::domainP::k * P::domainP::n] + offset;
++                        sums[e] = KeySwitchTorusConvert<P>(added);
++                    }
++                HipPreparedKeySwitchOutputs<P, uint16_t, Outputs, false, 512, count * P::t>(
++                    lwe, ksk, rows, sums, group * 512);
++            }
++            return;
++        }
++    }
++#endif
+ #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890) && !defined(CUFHE_USE_HIP)
+     if constexpr (std::is_same_v<P, TFHEpp::lvl20param> &&
+                   !use_subset_key_switch<P> && output_size > 512 && output_size <= 1024) {
+@@ -433,7 +515,7 @@ __device__ __forceinline__ void IdentityKeySwitchPreAddPrepared16(
+ template <class P, int Threads, bool ExtractFromTRLWE>
+ __device__ __forceinline__ void KeySwitchPrepared32(
+     typename P::targetP::T* lwe, const typename P::domainP::T* input,
+-    const typename P::targetP::T* ksk, uint32_t* rows)
++    const typename P::targetP::T* ksk, uint32_t* rows, uint32_t* exercised_policy = nullptr)
+ {
+     static_assert(std::is_same_v<P, TFHEpp::lvl10param>);
+     constexpr int domain_size = P::domainP::k * P::domainP::n;
+@@ -449,6 +531,7 @@ __device__ __forceinline__ void KeySwitchPrepared32(
+     static_assert(domain_size % Threads == 0);
+     static_assert(uint64_t(count) * P::t * halfbase * output_size < (1ULL << 31));
+     const int tid = threadIdx.x;
++    if (tid == 0 && exercised_policy) *exercised_policy = 0;
+     typename P::domainP::T saved[domain_size / Threads];
+ #pragma unroll
+     for (int slot = 0; slot < domain_size / Threads; ++slot) {
+@@ -475,6 +558,28 @@ __device__ __forceinline__ void KeySwitchPrepared32(
+     }
+     if (tid == 0) rows[count * P::t] = body;
+     __syncthreads();
++#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
++    if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
++#ifdef USE_HIP_MULTIOUT_KEYSWITCH
++        constexpr int Outputs = 2;
++#else
++        constexpr int Outputs = 1;
++#endif
++        for (int group = 0; group < 2; group += Outputs) {
++            uint32_t sums[Outputs] = {};
++#pragma unroll
++            for (int slot = 0; slot < Outputs; ++slot) {
++                const int i = tid + (group + slot) * Threads;
++                if (i == output_size - 1) sums[slot] = rows[count * P::t];
++                else if constexpr (use_subset_key_switch<P>)
++                    if (i < output_size) sums[slot] = KeySwitchTorusConvert<P>(saved[group + slot]);
++            }
++            HipPreparedKeySwitchOutputs<P, uint32_t, Outputs, false, Threads, count * P::t>(
++                lwe, ksk, rows, sums, group * Threads, exercised_policy);
++        }
++        return;
++    }
++#endif
+ #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+     if constexpr (!ExtractFromTRLWE && Threads == 512 &&
+                   output_size > Threads && output_size <= 2 * Threads) {
+@@ -538,7 +643,7 @@ __device__ __forceinline__ void KeySwitchPrepared32(
+ template <class P, int Threads, bool ExtractFromTRLWE>
+ __device__ __forceinline__ void KeySwitchPrepared16(
+     typename P::targetP::T* lwe, const typename P::domainP::T* trlwe,
+-    const typename P::targetP::T* ksk, uint16_t* rows)
++    const typename P::targetP::T* ksk, uint16_t* rows, uint32_t* exercised_policy = nullptr)
+ {
+     static_assert(std::is_same_v<P, TFHEpp::lvl20param>);
+     static_assert(std::is_same_v<typename P::targetP::T, uint16_t>);
+@@ -553,6 +658,7 @@ __device__ __forceinline__ void KeySwitchPrepared16(
+     static_assert(domain_size % Threads == 0);
+     static_assert(uint64_t(domain_size) * P::t * halfbase < (1ULL << 15));
+     const int tid = threadIdx.x;
++    if (tid == 0 && exercised_policy) *exercised_policy = 0;
+     typename P::domainP::T saved[domain_size / Threads];
+ #pragma unroll
+     for (int slot = 0; slot < domain_size / Threads; ++slot)
+@@ -576,6 +682,27 @@ __device__ __forceinline__ void KeySwitchPrepared16(
+     }
+     if (tid == 0) rows[domain_size * P::t] = body;
+     __syncthreads();
++#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
++    if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
++#ifdef USE_HIP_MULTIOUT_KEYSWITCH
++        constexpr int Outputs = ExtractFromTRLWE ? 2 : 5;
++#else
++        constexpr int Outputs = 1;
++#endif
++        constexpr bool Adjacent = Outputs > 1;
++        for (int base = 0; base < output_size; base += Outputs * Threads) {
++            uint32_t sums[Outputs] = {};
++#pragma unroll
++            for (int e = 0; e < Outputs; ++e) {
++                const int i = base + (Adjacent ? Outputs * tid + e : tid + e * Threads);
++                if (i == output_size - 1) sums[e] = rows[domain_size * P::t];
++            }
++            HipPreparedKeySwitchOutputs<P, uint16_t, Outputs, Adjacent, Threads, domain_size * P::t>(
++                lwe, ksk, rows, sums, base, exercised_policy);
++        }
++        return;
++    }
++#endif
+ #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 890) && !defined(CUFHE_USE_HIP)
+     if constexpr (Threads == 512 && output_size > Threads && output_size <= 2 * Threads) {
+         if constexpr (!ExtractFromTRLWE) {
+diff --git a/include/ntt_pair64.cuh b/include/ntt_pair64.cuh
+index 9b7ceb7..64abe4d 100644
+--- a/include/ntt_pair64.cuh
++++ b/include/ntt_pair64.cuh
+@@ -29,6 +29,21 @@ __host__ __device__ __forceinline__ uint64_t small_mod64_madd4(
+           "l"(static_cast<uint64_t>(p2)), "l"(static_cast<uint64_t>(p2 >> 64)),
+           "l"(static_cast<uint64_t>(p3)), "l"(static_cast<uint64_t>(p3 >> 64)));
+     carry = top;
++#elif defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
++    uint32_t limbs[4] = {uint32_t(first), uint32_t(first >> 32),
++                         uint32_t(first >> 64), uint32_t(first >> 96)};
++    carry = 0;
++    const unsigned __int128 products[3] = {p1, p2, p3};
++#pragma unroll
++    for (int product = 0; product < 3; ++product) {
++        unsigned next = 0;
++#pragma unroll
++        for (int limb = 0; limb < 4; ++limb)
++            limbs[limb] = __builtin_addc(limbs[limb], uint32_t(products[product] >> (32 * limb)), next, &next);
++        carry += next;
++    }
++    lo = (uint64_t(limbs[1]) << 32) | limbs[0];
++    hi = (uint64_t(limbs[3]) << 32) | limbs[2];
+ #else
+     auto sum = first;
+     carry = 0;
+@@ -38,8 +53,12 @@ __host__ __device__ __forceinline__ uint64_t small_mod64_madd4(
+     lo = static_cast<uint64_t>(sum); hi = static_cast<uint64_t>(sum >> 64);
+ #endif
+     const uint64_t subtraction = (hi >> 32) | (carry << 32);
++#ifdef USE_HIP_NATIVE_NTT64
++    const uint64_t corrected = small_mod64_sub(lo, subtraction);
++#else
+     const uint64_t difference = lo - subtraction;
+     const uint64_t corrected = difference - (lo < subtraction ? uint64_t{UINT32_MAX} : 0);
++#endif
+     const uint64_t hi_lo = static_cast<uint32_t>(hi);
+     return small_mod64_add<NativeAdd>(corrected, (hi_lo << 32) - hi_lo);
+ }
+@@ -172,8 +191,13 @@ __device__ __forceinline__ void SmallInverseNTTPair64(
+         if (stage == (Power - 6) / 2 - 1) {
+             SmallGentlemanSandeUnit<Power, 64, NativeAdd>(a, b, d_const_inverse_root_64[rlo]);
+             SmallGentlemanSandeUnit<Power, 64, NativeAdd>(c, d, d_const_inverse_root_64[rhi]);
++#ifdef USE_HIP_SCALED_INVERSE64
++            SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(a, c, d_const_inverse_root_64[r1]);
++            SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(b, d, d_const_inverse_root_64[r1]);
++#else
+             SmallGentlemanSandeScaledUnit<Power, 64, NativeAdd>(a, c, d_const_inverse_root_64[r1], n_inverse);
+             SmallGentlemanSandeScaledUnit<Power, 64, NativeAdd>(b, d, d_const_inverse_root_64[r1], n_inverse);
++#endif
+         } else {
+             SmallGentlemanSandeRadix4Unit<Power, 64, NativeAdd>(a, b, c, d,
+                 d_const_inverse_root_64[rlo], d_const_inverse_root_64[rhi],
+@@ -188,7 +212,7 @@ __device__ __forceinline__ void SmallInverseNTTPair64(
+ 
+ // The final scalar inverse stage has N/4 workers. Retain its low/even-quarter
+ // outputs, publish the other half, then return two coefficients to every worker.
+-template <int Power, int NativeAdd = 0>
++template <int Power, int NativeAdd = 0, bool StressReaders = false>
+ __device__ __forceinline__ void SmallInverseNTTReturnPair64(
+     uint64_t* sh, const uint64_t* roots, uint64_t n_inverse, int tid,
+     uint64_t* output_pair)
+@@ -232,7 +256,7 @@ __device__ __forceinline__ void SmallInverseNTTReturnPair64(
+             if (stage == (Power - 6) / 2 - 1) {
+                 SmallGentlemanSandeUnit<Power, 64, NativeAdd>(a, b, d_const_inverse_root_64[rlo]);
+                 SmallGentlemanSandeUnit<Power, 64, NativeAdd>(c, d, d_const_inverse_root_64[rhi]);
+-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
++#if defined(USE_HIP_SCALED_INVERSE64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890)
+                 SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(a, c, d_const_inverse_root_64[r1]);
+                 SmallGentlemanSandeGoldilocksScaledUnit<Power, NativeAdd>(b, d, d_const_inverse_root_64[r1]);
+ #else
+@@ -251,6 +275,14 @@ __device__ __forceinline__ void SmallInverseNTTReturnPair64(
+         t <<= 2; shift += 2; m >>= 2;
+         __syncthreads();
+     }
++#if defined(__HIP_DEVICE_COMPILE__)
++    // Test-only scheduling skew: production instantiations eliminate this.
++    // Delay peer-half readers after publication to exercise workspace reuse.
++    if constexpr (StressReaders) {
++        if (tid >= Quarter)
++            for (int delay = 0; delay < 4096; ++delay) asm volatile("s_nop 7" ::: "memory");
++    }
++#endif
+     if (tid >= Quarter) {
+         output_pair[0] = sh[tid]; output_pair[1] = sh[tid + N / 2];
+     }
+diff --git a/include/ntt_small_modulus.cuh b/include/ntt_small_modulus.cuh
+index 1046091..c560bd1 100644
+--- a/include/ntt_small_modulus.cuh
++++ b/include/ntt_small_modulus.cuh
+@@ -231,6 +231,17 @@ template <int NativeAdd = 0>
+ __host__ __device__ __forceinline__ SmallNTTValue
+ small_mod64_add(SmallNTTValue a, SmallNTTValue b)
+ {
++#if defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
++    unsigned carry;
++    const uint32_t lo = __builtin_addc(uint32_t(a), uint32_t(b), 0, &carry);
++    const uint32_t hi = __builtin_addc(uint32_t(a >> 32), uint32_t(b >> 32), carry, &carry);
++    const uint64_t sum = (uint64_t(hi) << 32) | lo;
++    const uint32_t correction = -(carry != 0 || sum >= small_ntt::P);
++    const uint32_t outlo = __builtin_addc(lo, correction, 0, &carry);
++    const uint32_t outhi = hi + carry;
++    return (uint64_t(outhi) << 32) | outlo;
++#endif
++
+ #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+     if constexpr (NativeAdd == 1) {
+         uint32_t lo, hi;
+@@ -269,13 +280,27 @@ small_mod64_add(SmallNTTValue a, SmallNTTValue b)
+ __host__ __device__ __forceinline__ SmallNTTValue
+ small_mod64_sub(SmallNTTValue a, SmallNTTValue b)
+ {
++#if defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
++    unsigned borrow;
++    const uint32_t lo = __builtin_subc(uint32_t(a), uint32_t(b), 0, &borrow);
++    const uint32_t hi = __builtin_subc(uint32_t(a >> 32), uint32_t(b >> 32), borrow, &borrow);
++    const uint32_t correction = -borrow;
++    const uint32_t outlo = __builtin_subc(lo, correction, 0, &borrow);
++    return (uint64_t(hi - borrow) << 32) | outlo;
++#else
++
+     SmallNTTValue tmp = a - b;
+     return tmp - static_cast<uint32_t>(-(tmp > a));
++#endif
+ }
+ 
+ __host__ __device__ __forceinline__ SmallNTTValue
+ small_mod64_sub_borrow(SmallNTTValue a, SmallNTTValue b)
+ {
++#if defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
++    return small_mod64_sub(a, b);
++#endif
++
+ #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
+     uint32_t lo, hi;
+     // Export the full-width borrow directly, then subtract its existing
+@@ -309,9 +334,13 @@ small_mod64_reduce_wide(unsigned __int128 value)
+     // can be noncanonical, but remains below 2^64. Since folded_hi <= p-B,
+     // a carried sum wraps to at most p-B-1: its B-1 correction stays below p.
+     // A sum without carry uses the usual >=p correction.
++#ifdef USE_HIP_NATIVE_NTT64
++    const SmallNTTValue corrected = small_mod64_sub(lo, hi_hi);
++#else
+     const SmallNTTValue difference = lo - hi_hi;
+     const SmallNTTValue corrected = difference -
+         (lo < hi_hi ? SmallNTTValue{UINT32_MAX} : 0);
++#endif
+     const SmallNTTValue folded_hi = (hi_lo << 32) - hi_lo;
+     return small_mod64_add<NativeAdd>(corrected, folded_hi);
+ }
+@@ -372,6 +401,16 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod64_madd2(
+           "l"(static_cast<uint64_t>(product1)),
+           "l"(static_cast<uint64_t>(product1 >> 64)));
+     const uint64_t carry = carry_word;
++#elif defined(USE_HIP_NATIVE_NTT64) && defined(__HIP_DEVICE_COMPILE__)
++    unsigned next = 0;
++    uint32_t limbs[4];
++#pragma unroll
++    for (int limb = 0; limb < 4; ++limb)
++        limbs[limb] = __builtin_addc(uint32_t(first >> (32 * limb)),
++            uint32_t(product1 >> (32 * limb)), next, &next);
++    const uint64_t carry = next;
++    const uint64_t lo = (uint64_t(limbs[1]) << 32) | limbs[0];
++    const uint64_t hi = (uint64_t(limbs[3]) << 32) | limbs[2];
+ #else
+     const unsigned __int128 with_addend = first + product1;
+     const uint64_t carry = with_addend < first;
+@@ -379,8 +418,12 @@ __host__ __device__ __forceinline__ SmallNTTValue small_mod64_madd2(
+     const uint64_t hi = static_cast<uint64_t>(with_addend >> 64);
+ #endif
+     const uint64_t subtraction = (hi >> 32) | (carry << 32);
++#ifdef USE_HIP_NATIVE_NTT64
++    const uint64_t corrected = small_mod64_sub(lo, subtraction);
++#else
+     const uint64_t difference = lo - subtraction;
+     const uint64_t corrected = difference - (lo < subtraction ? uint64_t{UINT32_MAX} : 0);
++#endif
+     const uint64_t hi_lo = static_cast<uint32_t>(hi);
+     return small_mod64_add<NativeAdd>(corrected, (hi_lo << 32) - hi_lo);
+ }
+@@ -703,7 +746,7 @@ ntt_abs_to_torus64_goldilocks(SmallNTTValue val)
+ __host__ __device__ __forceinline__ uint64_t
+ ntt_magnitude_to_torus64_goldilocks(SmallNTTValue val)
+ {
+-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
++#if defined(USE_HIP_FAST_TORUS64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
+     const uint32_t hi = static_cast<uint32_t>(val >> 32);
+     const uint32_t lo = static_cast<uint32_t>(val);
+     return val + hi + static_cast<uint64_t>(lo > hi + 0x80000000u);
+@@ -725,7 +768,7 @@ ntt_mod_to_torus64(SmallNTTValue val)
+         return neg ? static_cast<uint64_t>(-torus64) : torus64;
+     }
+     else {
+-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
++#if defined(USE_HIP_FAST_TORUS64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
+         if constexpr (DirectSigned) {
+             // For a canonical residue v=h*2^32+l, combine the existing signed
+             // magnitude conversion into v+h+(l>threshold), modulo 2^64.
+@@ -877,7 +920,7 @@ __device__ __forceinline__ void SmallGentlemanSandeShoupUnit(uint32_t& U,
+     const uint32_t u = U;
+     const uint32_t v = V;
+     U = small_mod31_add(u, v);
+-#if defined(USE_CUDA_UNREDUCED_INVERSE_DIFF)
++#if (defined(USE_CUDA_UNREDUCED_INVERSE_DIFF) || defined(USE_HIP_UNREDUCED_INVERSE_DIFF))
+     // Canonical inputs give u + p - v < 2p < 2^32. Shoup accepts this
+     // unreduced difference and returns the same canonical product.
+     V = small_mod31_mult_shoup(u + small_ntt31::P - v, root, root_shoup);
+@@ -917,7 +960,7 @@ __device__ __forceinline__ void SmallGentlemanSandeScaledShoupUnit(
+     const uint32_t u = U;
+     const uint32_t v = V;
+     U = small_mod31_mult(small_mod31_add(u, v), n_inverse);
+-#if defined(USE_CUDA_UNREDUCED_INVERSE_DIFF)
++#if (defined(USE_CUDA_UNREDUCED_INVERSE_DIFF) || defined(USE_HIP_UNREDUCED_INVERSE_DIFF))
+     V = small_mod31_mult_shoup(u + small_ntt31::P - v, scaled_root,
+                                scaled_root_shoup);
+ #else
+@@ -1429,7 +1472,7 @@ __device__ __forceinline__ void SmallInverseNTT(
+                 if ((N_POWER - 6) % 2 == 0 && lp == (N_POWER - 6) / 2 - 1) {
+                     SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(a, b, root0_lo);
+                     SmallGentlemanSandeUnit<N_POWER, Q_BITS, NativeAdd>(c, d, root0_hi);
+-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
++#if defined(USE_HIP_SCALED_INVERSE64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
+                     SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(a, c, root1);
+                     SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(b, d, root1);
+ #else
+@@ -1462,7 +1505,7 @@ __device__ __forceinline__ void SmallInverseNTT(
+         if constexpr (Q_BITS == 64) {
+             // Entry 1 is pre-scaled by 1/N, so this final butterfly also
+             // performs the inverse normalization.
+-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP)
++#if defined(USE_HIP_SCALED_INVERSE64) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && !defined(CUFHE_USE_HIP))
+             SmallGentlemanSandeGoldilocksScaledUnit<N_POWER, NativeAdd>(
+                 sh[in_shared_address], sh[in_shared_address + t],
+                 d_const_inverse_root_64[1]);
+@@ -1510,7 +1553,7 @@ __device__ __forceinline__ void SmallNTTPairButterfly31(
+                            : d_const_forward_root_31_shoup[index];
+ #endif
+     } else {
+-#if defined(USE_CUDA_PACKED_PAIRED_ROOTS) && defined(USE_CUDA_SHOUP_NTT)
++#if (defined(USE_CUDA_PACKED_PAIRED_ROOTS) || defined(USE_HIP_PACKED_PAIRED_ROOTS)) && defined(USE_CUDA_SHOUP_NTT)
+         const uint2 pair = __ldg(
+             reinterpret_cast<const uint2*>(roots + (2U << N_POWER)) + index);
+         root = pair.x;
+@@ -1518,7 +1561,7 @@ __device__ __forceinline__ void SmallNTTPairButterfly31(
+         root = __ldg(&roots[index]);
+ #endif
+ #if defined(USE_CUDA_SHOUP_NTT)
+-#if defined(USE_CUDA_PACKED_PAIRED_ROOTS)
++#if (defined(USE_CUDA_PACKED_PAIRED_ROOTS) || defined(USE_HIP_PACKED_PAIRED_ROOTS))
+         quotient = pair.y;
+ #else
+         quotient = __ldg(&roots[(1U << N_POWER) + index]);
+diff --git a/src/bootstrap_gpu.cu b/src/bootstrap_gpu.cu
+index a9706de..8187102 100644
+--- a/src/bootstrap_gpu.cu
++++ b/src/bootstrap_gpu.cu
+@@ -1458,7 +1458,7 @@ __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
+         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
+ 
+     // Select the measured cache only for this single-blind-rotation binary schedule.
+-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
++#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
+     if constexpr (CacheOutputExponents && std::is_same_v<brP, TFHEpp::lvl02param> &&
+                   std::is_same_v<typename iksP::targetP, typename brP::domainP>) {
+         __BlindRotatePreAdd__<brP, casign, cbsign, offset, true, true, true>(
+@@ -1741,7 +1741,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+                                                 ntt)
+ {
+     extern __shared__ char dyn_sh[];
+-#if !defined(USE_FFT) && !defined(CUFHE_USE_HIP) &&     defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
++#if !defined(USE_FFT) && (defined(USE_HIP_SCALAR_MONOMIAL_CACHE64) || (!defined(CUFHE_USE_HIP) && defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890))
+     // Preserve all original inputs through both rotations; no output workspace.
+     constexpr bool adjacent64 =
+         std::is_same_v<brP, TFHEpp::lvl02param> && UseWarpNTTTail<64>;
+@@ -1760,7 +1760,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+                       dyn_sh + fft_bytes + trlwe_bytes);
+ 
+     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ,
+-                          adjacent64, false, false, adjacent64>(
++                          adjacent64,
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                          true,
++#else
++                          false,
++#endif
++                          false, adjacent64>(
+         trlwe1, inc, in1, bk, ntt);
+     volatile const uint32_t tid = ThisThreadRankInBlock();
+     volatile const uint32_t bdim = ThisBlockSize();
+@@ -1773,7 +1779,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+         __syncthreads();
+ 
+         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+-                              adjacent64, false, false, adjacent64>(
++                              adjacent64,
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                          true,
++#else
++                          false,
++#endif
++                          false, adjacent64>(
+             trlwe1, inc, in0, bk, ntt);
+         __SampleExtractRegistersCombine__<typename brP::targetP, 0, false>(
+             tlwe, saved, trlwe1);
+@@ -1782,7 +1794,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+     }
+     else {
+         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+-                              adjacent64, false, false, adjacent64>(
++                              adjacent64,
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                          true,
++#else
++                          false,
++#endif
++                          false, adjacent64>(
+             trlwe0, inc, in0, bk, ntt);
+ 
+         constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
+@@ -1815,7 +1833,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+                                                  ntt)
+ {
+     extern __shared__ char dyn_sh[];
+-#if !defined(USE_FFT) && !defined(CUFHE_USE_HIP) &&     defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
++#if !defined(USE_FFT) && (defined(USE_HIP_SCALAR_MONOMIAL_CACHE64) || (!defined(CUFHE_USE_HIP) && defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890))
+     // Preserve all original inputs through both rotations; no output workspace.
+     constexpr bool adjacent64 =
+         std::is_same_v<brP, TFHEpp::lvl02param> && UseWarpNTTTail<64>;
+@@ -1834,7 +1852,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+                       dyn_sh + fft_bytes + trlwe_bytes);
+ 
+     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ,
+-                          adjacent64, false, false, adjacent64>(
++                          adjacent64,
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                          true,
++#else
++                          false,
++#endif
++                          false, adjacent64>(
+         trlwe1, inc, in1, bk, ntt);
+     volatile const uint32_t tid = ThisThreadRankInBlock();
+     volatile const uint32_t bdim = ThisBlockSize();
+@@ -1847,7 +1871,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+         __syncthreads();
+ 
+         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+-                              adjacent64, false, false, adjacent64>(
++                              adjacent64,
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                          true,
++#else
++                          false,
++#endif
++                          false, adjacent64>(
+             trlwe1, inc, in0, bk, ntt);
+         __SampleExtractRegistersCombine__<typename brP::targetP, 0, true>(
+             tlwe, saved, trlwe1);
+@@ -1856,7 +1886,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+     }
+     else {
+         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
+-                              adjacent64, false, false, adjacent64>(
++                              adjacent64,
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                          true,
++#else
++                          false,
++#endif
++                          false, adjacent64>(
+             trlwe0, inc, in0, bk, ntt);
+ 
+         constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
+@@ -2537,7 +2573,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+     __syncthreads();
+     // Exact carry lowering benefits this scalar 64-bit MUX schedule.
+     __BlindRotate__<brP, false, false,
+-                    sizeof(typename brP::targetP::T) == 8>(tlwe1, tlwelvl0, μ, bk, ntt);
++                    sizeof(typename brP::targetP::T) == 8
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                    , true
++#endif
++                    >(tlwe1, tlwelvl0, μ, bk, ntt);
+ 
+     __KeySwitchMuxPreAdd__<iksP, brP, -1, 1, -iksP::domainP::μ>(
+         tlwelvl0, inc, in0, ksk, dyn_sh);
+@@ -2547,7 +2587,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+     // The low-LDS layout reuses tlwe1 for the second blind rotation.
+     __syncthreads();
+     __BlindRotate__<brP, false, false,
+-                    sizeof(typename brP::targetP::T) == 8>(tlwe0, tlwelvl0, μ, bk, ntt);
++                    sizeof(typename brP::targetP::T) == 8
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                    , true
++#endif
++                    >(tlwe0, tlwelvl0, μ, bk, ntt);
+ 
+     volatile const uint32_t tid = ThisThreadRankInBlock();
+     volatile const uint32_t bdim = ThisBlockSize();
+@@ -2601,7 +2645,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+     __syncthreads();
+     // Exact carry lowering benefits this scalar 64-bit MUX schedule.
+     __BlindRotate__<brP, false, false,
+-                    sizeof(typename brP::targetP::T) == 8>(tlwe1, tlwelvl0, μ, bk, ntt);
++                    sizeof(typename brP::targetP::T) == 8
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                    , true
++#endif
++                    >(tlwe1, tlwelvl0, μ, bk, ntt);
+ 
+     __KeySwitchMuxPreAdd__<iksP, brP, -1, 1, -iksP::domainP::μ>(
+         tlwelvl0, inc, in0, ksk, dyn_sh);
+@@ -2611,7 +2659,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
+     // The low-LDS layout reuses tlwe1 for the second blind rotation.
+     __syncthreads();
+     __BlindRotate__<brP, false, false,
+-                    sizeof(typename brP::targetP::T) == 8>(tlwe0, tlwelvl0, μ, bk, ntt);
++                    sizeof(typename brP::targetP::T) == 8
++#ifdef USE_HIP_REGISTER_MONOMIALS31
++                    , true
++#endif
++                    >(tlwe0, tlwelvl0, μ, bk, ntt);
+ 
+     volatile const uint32_t tid = ThisThreadRankInBlock();
+     volatile const uint32_t bdim = ThisBlockSize();
+diff --git a/test/test_bootstrap_bench.cc b/test/test_bootstrap_bench.cc
+index 5fe954a..820ae0f 100644
+--- a/test/test_bootstrap_bench.cc
++++ b/test/test_bootstrap_bench.cc
+@@ -16,7 +16,7 @@
+ 
+ // Real encrypted inputs and keys: unlike zero-key microbenchmarks, the
+ // block-binary monomial accesses and key-switch digits vary across samples.
+-// Arguments: streams, gates per stream, repetitions, [batch|packed|gate name], [graph].
++// Arguments: streams, gates per stream, repetitions, [batch|packed|packed-mux|packed-nmux|gate name], [graph].
+ // MUX/NMux use three independent ciphertexts and cover all eight truth cases.
+ int main(int argc, char** argv)
+ {
+@@ -45,20 +45,22 @@ int main(int argc, char** argv)
+     const int per_stream = argc > 2 ? std::atoi(argv[2]) : 4;
+     const int repeats = argc > 3 ? std::atoi(argv[3]) : 3;
+     const std::string_view mode = argc > 4 ? argv[4] : "nand";
++    const bool resources = std::getenv("CUFHE_BENCH_RESOURCES") != nullptr;
+     const bool graph_mode = argc > 5 && std::string_view(argv[5]) == "graph";
+     if (argc > 5 && !graph_mode) return 2;
+ #ifndef CUFHE_BENCH_HAS_CUDA_GRAPH
+     if (graph_mode) return 2;
+ #endif
+     const bool batch = mode == "batch";
+-    const bool packed_scalar = mode == "packed";
++    const bool packed_mux = mode == "packed-mux" || mode == "packed-nmux";
++    const bool packed_scalar = mode == "packed" || packed_mux;
+     const bool packed_buffers = batch || packed_scalar;
+     const bool bootstrap = mode == "bootstrap";
+ #if !defined(CUFHE_BENCH_BR_IKS) || defined(CUFHE_BENCH_LVL02)
+     if (bootstrap) return 2;
+ #endif
+-    const bool nmux = mode == "nmux";
+-    const bool mux = nmux || mode == "mux";
++    const bool nmux = mode == "nmux" || mode == "packed-nmux";
++    const bool mux = nmux || mode == "mux" || mode == "packed-mux";
+     using BinaryGate = void (*)(P::T*, const P::T*, const P::T*, cudaStream_t, int);
+     struct NamedGate { std::string_view name; unsigned truth; BinaryGate launch; };
+ #ifdef CUFHE_BENCH_BR_IKS
+@@ -75,7 +77,7 @@ int main(int argc, char** argv)
+ #undef BINARY
+     const NamedGate* binary = nullptr;
+     for (const auto& gate : gates)
+-        if (gate.name == (packed_buffers ? "nand" : mode)) binary = &gate;
++        if (gate.name == (packed_buffers && !packed_mux ? "nand" : mode)) binary = &gate;
+     if (!binary && !mux && !bootstrap) {
+         std::cerr << "Unknown gate: " << mode << '\n';
+         return 2;
+@@ -99,7 +101,7 @@ int main(int argc, char** argv)
+ #else
+               << " order=iks-br"
+ #endif
+-              << " gate=" << (packed_buffers ? "nand" : mode)
++              << " gate=" << (packed_mux ? (nmux ? "nmux" : "mux") : packed_buffers ? "nand" : mode)
+ #ifdef USE_FFT
+               << " backend=fft"
+ #else
+@@ -153,7 +155,7 @@ int main(int argc, char** argv)
+     }
+     check(cudaDeviceSynchronize());
+     constexpr size_t stride = P::k * P::n + 1;
+-    P::T *batch_a = nullptr, *batch_b = nullptr, *batch_out = nullptr;
++    P::T *batch_a = nullptr, *batch_b = nullptr, *batch_c = nullptr, *batch_out = nullptr;
+     if (packed_buffers) {
+         check(cudaMalloc(&batch_a, count * stride * sizeof(P::T)));
+         check(cudaMalloc(&batch_b, count * stride * sizeof(P::T)));
+@@ -169,6 +171,12 @@ int main(int argc, char** argv)
+                       staging.begin() + i * stride);
+         check(cudaMemcpy(batch_b, staging.data(), staging.size() * sizeof(P::T),
+                          cudaMemcpyHostToDevice));
++        if (packed_mux) {
++            check(cudaMalloc(&batch_c, count * stride * sizeof(P::T)));
++            for (int i = 0; i < count; ++i)
++                std::copy(c[i].tlwehost.begin(), c[i].tlwehost.end(), staging.begin() + i * stride);
++            check(cudaMemcpy(batch_c, staging.data(), staging.size() * sizeof(P::T), cudaMemcpyHostToDevice));
++        }
+         // Complete pageable DMA before submission on nonblocking streams.
+         check(cudaStreamSynchronize(nullptr));
+     }
+@@ -181,6 +189,17 @@ int main(int argc, char** argv)
+ #endif
+                 batch_out, stride, batch_a, stride, batch_b, stride, count,
+                 streams[0].st(), 0);
++        else if (packed_mux) {
++            for (int i = 0; i < count; ++i) {
++#ifdef CUFHE_BENCH_BR_IKS
++                const auto launch = nmux ? &cufhe::NMuxBootstrap<BR, BR::targetP::μ, IKS> : &cufhe::MuxBootstrap<BR, BR::targetP::μ, IKS>;
++#else
++                const auto launch = nmux ? &cufhe::NMuxBootstrap<IKS, BR, P::μ> : &cufhe::MuxBootstrap<IKS, BR, P::μ>;
++#endif
++                launch(batch_out + i * stride, batch_c + i * stride, batch_b + i * stride,
++                       batch_a + i * stride, streams[i % streams_count].st(), 0);
++            }
++        }
+         else if (packed_scalar)
+             for (int i = 0; i < count; ++i)
+                 binary->launch(batch_out + i * stride, batch_a + i * stride,
+@@ -228,8 +247,8 @@ int main(int argc, char** argv)
+     cudaGraph_t graph = nullptr;
+     cudaGraphExec_t graph_exec = nullptr;
+     cudaEvent_t fork_event = nullptr;
+-    std::vector<cudaEvent_t> join_events(graph_mode ? streams_count - 1 : 0);
+-    if (graph_mode) {
++    std::vector<cudaEvent_t> join_events((graph_mode || resources) ? streams_count - 1 : 0);
++    if (graph_mode || resources) {
+         // Load kernels and configure their shared limits before capture.
+         submit();
+         check(cudaDeviceSynchronize());
+@@ -250,6 +269,30 @@ int main(int argc, char** argv)
+         size_t nodes = 0;
+         check(cudaGraphGetNodes(graph, nullptr, &nodes));
+         std::cout << "graph_nodes=" << nodes << std::endl;
++#ifdef CUFHE_USE_HIP
++        if (resources) {
++            std::vector<cudaGraphNode_t> entries(nodes);
++            check(cudaGraphGetNodes(graph, entries.data(), &nodes));
++            for (size_t i = 0; i < nodes; ++i) {
++                cudaGraphNodeType type;
++                check(cudaGraphNodeGetType(entries[i], &type));
++                if (type != cudaGraphNodeTypeKernel) continue;
++                cudaKernelNodeParams params{};
++                check(cudaGraphKernelNodeGetParams(entries[i], &params));
++                hipFuncAttributes attributes{};
++                check(hipFuncGetAttributes(&attributes, params.func));
++                int active = 0;
++                const int threads = params.blockDim.x * params.blockDim.y * params.blockDim.z;
++                check(hipOccupancyMaxActiveBlocksPerMultiprocessor(&active, params.func, threads, params.sharedMemBytes));
++                std::cout << "resource_node=" << i << " registers=" << attributes.numRegs
++                          << " static_lds=" << attributes.sharedSizeBytes
++                          << " dynamic_lds=" << params.sharedMemBytes
++                          << " local_bytes=" << attributes.localSizeBytes
++                          << " threads=" << threads << " resident_blocks=" << active
++                          << " grid=" << params.gridDim.x << ',' << params.gridDim.y << ',' << params.gridDim.z << '\n';
++            }
++        }
++#endif
+     }
+ #endif
+     std::vector<double> times;
+@@ -279,7 +322,7 @@ int main(int argc, char** argv)
+         }
+     }
+ #ifdef CUFHE_BENCH_HAS_CUDA_GRAPH
+-    if (graph_mode) {
++    if (graph_mode || resources) {
+         check(cudaGraphExecDestroy(graph_exec));
+         check(cudaGraphDestroy(graph));
+         check(cudaEventDestroy(fork_event));
+@@ -293,6 +336,7 @@ int main(int argc, char** argv)
+         for (int i = 0; i < count; ++i)
+             std::copy_n(staging.begin() + i * stride, stride,
+                         out[i].tlwehost.begin());
++        if (batch_c) check(cudaFree(batch_c));
+         check(cudaFree(batch_a));
+         check(cudaFree(batch_b));
+         check(cudaFree(batch_out));
+diff --git a/test/test_keyswitch_gpu.cu b/test/test_keyswitch_gpu.cu
+index 31597ae..fc104a5 100644
+--- a/test/test_keyswitch_gpu.cu
++++ b/test/test_keyswitch_gpu.cu
+@@ -80,7 +80,7 @@ void Compare(Output* original, Output* prepared, const Input* a,
+ // reference extracts to disjoint storage and runs the original key switch.
+ template <bool prepared, int Threads, bool ExtractFromTRLWE>
+ __global__ void TestExtractKeySwitch(Output* out, const Input* input,
+-                                     const Output* key)
++                                     const Output* key, uint32_t* policies = nullptr)
+ {
+     extern __shared__ uint64_t scratch[];
+     Input* working = reinterpret_cast<Input*>(scratch);
+@@ -95,7 +95,7 @@ __global__ void TestExtractKeySwitch(Output* out, const Input* input,
+         cufhe::KeySwitchPrepared32<P, Threads, ExtractFromTRLWE>(
+ #endif
+             out + blockIdx.x * output_size, working, key,
+-            reinterpret_cast<Row*>(working));
++            reinterpret_cast<Row*>(working), policies ? policies + blockIdx.x : nullptr);
+     } else {
+         for (int i = threadIdx.x; i < input_size; i += Threads) {
+             if (!ExtractFromTRLWE || i == input_size - 1) working[i] = trlwe[i];
+@@ -115,19 +115,50 @@ template <int Threads, bool ExtractFromTRLWE>
+ void CompareExtract(Output* original, Output* prepared, const Input* input,
+                     const Output* key)
+ {
++    uint32_t* policies = nullptr;
++    Check(cudaMalloc(&policies, batch_size * sizeof(uint32_t)));
+     constexpr size_t scratch = (switched_count * P::t + 1) * sizeof(Row);
+     static_assert(scratch >= input_size * sizeof(Input));
+     TestExtractKeySwitch<false, Threads, ExtractFromTRLWE><<<batch_size, Threads, scratch>>>(
+         original, input, key);
+     Check(cudaGetLastError());
+     TestExtractKeySwitch<true, Threads, ExtractFromTRLWE><<<batch_size, Threads, scratch>>>(
+-        prepared, input, key);
++        prepared, input, key, policies);
+     Check(cudaGetLastError());
+     std::vector<Output> expected(batch_size * output_size), actual(expected.size());
+     Check(cudaMemcpy(expected.data(), original, expected.size() * sizeof(Output),
+                      cudaMemcpyDeviceToHost));
+     Check(cudaMemcpy(actual.data(), prepared, actual.size() * sizeof(Output),
+                      cudaMemcpyDeviceToHost));
++#if defined(CUFHE_USE_HIP)
++    uint32_t wanted = 0;
++#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
++    if constexpr (Threads == 512) {
++#ifdef USE_HIP_MULTIOUT_KEYSWITCH
++#ifdef CUFHE_TEST_COMPACT_LVL20
++        wanted = ExtractFromTRLWE ? 2 : 5;
++#else
++        wanted = 2;
++#endif
++#else
++        wanted = 1;
++#endif
++#ifdef USE_HIP_WAVE_KEYSWITCH
++        wanted |= 0x100U;
++#endif
++    }
++#endif
++    std::vector<uint32_t> seen(batch_size);
++    Check(cudaMemcpy(seen.data(), policies, batch_size * sizeof(uint32_t), cudaMemcpyDeviceToHost));
++    for (auto value : seen) {
++        if (value != wanted) {
++            std::fprintf(stderr, "key-switch policy mismatch: got %u wanted %u\n", value, wanted);
++            std::exit(1);
++        }
++    }
++    std::printf("key-switch exercised policy=%u threads=%d extracted=%d: %s\n", wanted, Threads, ExtractFromTRLWE, wanted ? "PASS" : "SKIP (generic control)");
++#endif
++    Check(cudaFree(policies));
+     if (expected != actual) {
+         std::fprintf(stderr, "extraction / prepared key-switch mismatch (%d threads)\n", Threads);
+         std::exit(1);
+diff --git a/test/test_small_modulus.cu b/test/test_small_modulus.cu
+index 69f9b38..a83eb5f 100644
+--- a/test/test_small_modulus.cu
++++ b/test/test_small_modulus.cu
+@@ -1055,11 +1055,11 @@ bool TestPair64Compare() {
+ #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
+ // Compare the complete cached external product with the independently selected
+ // uncached scalar schedule, including decomposition and final torus conversion.
+-template <bool Cached, bool Paired = false, bool Staged = false>
++template <bool Cached, bool Paired = false, bool Staged = false, bool StressReaders = false>
+ __global__ __launch_bounds__(TFHEpp::lvl2param::n / 2, 1)
+ void TestScalarMonomialCacheKernel(
+     uint64_t* out, const uint64_t* input, const uint64_t* key,
+-    const uint32_t* exponents, TestNTTHandler64 ntt)
++    const uint32_t* exponents, TestNTTHandler64 ntt, uint32_t* policies)
+ {
+     using P = TFHEpp::lvl02param;
+     using Target = P::targetP;
+@@ -1075,13 +1075,13 @@ void TestScalarMonomialCacheKernel(
+         cufhe::AccumulateBlockBinaryPaired64<P, Staged, 2>(
+             trlwe, scratch, 0, bara, key, ntt);
+     else
+-        cufhe::AccumulateBlockBinary<P, false, false, Cached, 0, false, false, false, true, false>(
+-            trlwe, scratch, 0, bara, key, ntt);
++        cufhe::AccumulateBlockBinary<P, false, false, Cached, 0, false, false, false, true, false, StressReaders>(
++            trlwe, scratch, 0, bara, key, ntt, policies ? policies + sample : nullptr);
+     for (int i = tid; i < Words; i += N / 2)
+         out[sample * Words + i] = trlwe[i];
+ }
+ 
+-template <bool Paired = false, bool Staged = false>
++template <bool Paired = false, bool Staged = false, bool StressReaders = false>
+ bool TestScalarMonomialCache(bool& table_symmetry)
+ {
+     using Target = TFHEpp::lvl2param;
+@@ -1133,7 +1133,9 @@ bool TestScalarMonomialCache(bool& table_symmetry)
+                  i % 16 == 2 ? p / 2 : rng() % p;
+     uint64_t *dinput = nullptr, *dkey = nullptr, *dref = nullptr, *dgot = nullptr;
+     uint32_t* dpowers = nullptr;
+-    bool ok = cudaMalloc(&dinput, input.size() * sizeof(uint64_t)) == cudaSuccess &&
++    uint32_t* dpolicy = nullptr;
++    bool ok = cudaMalloc(&dpolicy, Cases * sizeof(uint32_t)) == cudaSuccess &&
++        cudaMalloc(&dinput, input.size() * sizeof(uint64_t)) == cudaSuccess &&
+         cudaMalloc(&dkey, key.size() * sizeof(uint64_t)) == cudaSuccess &&
+         cudaMalloc(&dref, input.size() * sizeof(uint64_t)) == cudaSuccess &&
+         cudaMalloc(&dgot, input.size() * sizeof(uint64_t)) == cudaSuccess &&
+@@ -1142,15 +1144,29 @@ bool TestScalarMonomialCache(bool& table_symmetry)
+         cudaMemcpy(dkey, key.data(), key.size() * sizeof(uint64_t), cudaMemcpyHostToDevice) == cudaSuccess &&
+         cudaMemcpy(dpowers, exponents.data(), exponents.size() * sizeof(uint32_t), cudaMemcpyHostToDevice) == cudaSuccess &&
+         cudaFuncSetAttribute(TestScalarMonomialCacheKernel<false>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess &&
+-        cudaFuncSetAttribute(TestScalarMonomialCacheKernel<true, Paired, Staged>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
++        cudaFuncSetAttribute(TestScalarMonomialCacheKernel<true, Paired, Staged, StressReaders>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
+     if (ok) {
+-        TestScalarMonomialCacheKernel<false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt);
++        TestScalarMonomialCacheKernel<false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt, nullptr);
+         ok = cudaGetLastError() == cudaSuccess;
+-        TestScalarMonomialCacheKernel<true, Paired, Staged><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
++        TestScalarMonomialCacheKernel<true, Paired, Staged, StressReaders><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt, dpolicy);
+         ok = cudaGetLastError() == cudaSuccess && ok;
+         std::vector<uint64_t> expected(input.size()), actual(input.size());
+         ok = cudaMemcpy(expected.data(), dref, expected.size() * sizeof(uint64_t), cudaMemcpyDeviceToHost) == cudaSuccess &&
+             cudaMemcpy(actual.data(), dgot, actual.size() * sizeof(uint64_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
++#if defined(CUFHE_USE_HIP) && defined(USE_HIP_SCALAR_MONOMIAL_CACHE64)
++        if constexpr (!Paired) {
++            constexpr uint32_t Wanted =
++#ifdef USE_HIP_REGISTER_NTT_IO64
++                7;
++#else
++                1;
++#endif
++            std::vector<uint32_t> policies(Cases);
++            ok = cudaMemcpy(policies.data(), dpolicy, Cases * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
++            for (auto policy : policies) ok = (policy == Wanted) && ok;
++            std::cout << "scalar64 exercised policy=" << Wanted << " " << (ok ? "PASS" : "FAIL") << '\n';
++        }
++#endif
+         if (ok && actual != expected) {
+             for (size_t i = 0; i < actual.size(); ++i) if (actual[i] != expected[i]) {
+                 std::cerr << "scalar monomial cache mismatch at coefficient " << i << '\n'; break;
+@@ -1158,7 +1174,7 @@ bool TestScalarMonomialCache(bool& table_symmetry)
+             ok = false;
+         }
+     }
+-    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers);
++    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers); cudaFree(dpolicy);
+     cufhe::DeleteXaiNTT_lvl02(); ntt.Destroy();
+     return ok;
+ }
+@@ -1168,7 +1184,7 @@ bool TestScalarMonomialCache(bool& table_symmetry)
+ template <bool Cached, bool KeySwitchAfter31 = false, bool Paired = true>
+ __global__ void TestPairedMonomialCache31Kernel(
+     uint32_t* out, const uint32_t* input, const uint32_t* key,
+-    const uint32_t* exponents, cufhe::CuNTTHandler<TFHEpp::lvl1param::n, 32> ntt)
++    const uint32_t* exponents, cufhe::CuNTTHandler<TFHEpp::lvl1param::n, 32> ntt, uint32_t* policies)
+ {
+     using P = TFHEpp::lvl01param;
+     using Target = P::targetP;
+@@ -1182,7 +1198,7 @@ __global__ void TestPairedMonomialCache31Kernel(
+     const uint32_t bara[2] = {exponents[2 * sample], exponents[2 * sample + 1]};
+     if constexpr (Paired)
+         cufhe::AccumulateBlockBinaryPairedNTT<P, Cached, KeySwitchAfter31, KeySwitchAfter31>(
+-            trlwe, scratch31, 0, bara, key, ntt);
++            trlwe, scratch31, 0, bara, key, ntt, policies ? policies + sample : nullptr);
+     else
+         cufhe::AccumulateBlockBinary<P, false, false, false, 0, false, false, false, true, false>(
+             trlwe, scratch31, 0, bara, key, ntt);
+@@ -1222,7 +1238,9 @@ bool TestPairedMonomialCache31()
+                  i % 16 == 2 ? p / 2 : rng() % p;
+     uint32_t *dinput = nullptr, *dkey = nullptr, *dref = nullptr, *dgot = nullptr;
+     uint32_t* dpowers = nullptr;
+-    bool ok = cudaMalloc(&dinput, input.size() * sizeof(uint32_t)) == cudaSuccess &&
++    uint32_t* dpolicy = nullptr;
++    bool ok = cudaMalloc(&dpolicy, Cases * sizeof(uint32_t)) == cudaSuccess &&
++        cudaMalloc(&dinput, input.size() * sizeof(uint32_t)) == cudaSuccess &&
+         cudaMalloc(&dkey, key.size() * sizeof(uint32_t)) == cudaSuccess &&
+         cudaMalloc(&dref, input.size() * sizeof(uint32_t)) == cudaSuccess &&
+         cudaMalloc(&dgot, input.size() * sizeof(uint32_t)) == cudaSuccess &&
+@@ -1234,17 +1252,23 @@ bool TestPairedMonomialCache31()
+         cudaFuncSetAttribute(TestPairedMonomialCache31Kernel<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess &&
+         cudaFuncSetAttribute(TestPairedMonomialCache31Kernel<true, true>, cudaFuncAttributeMaxDynamicSharedMemorySize, Shared) == cudaSuccess;
+     if (ok) {
+-        TestPairedMonomialCache31Kernel<false, false, false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt);
++        TestPairedMonomialCache31Kernel<false, false, false><<<Cases, N / 2, Shared>>>(dref, dinput, dkey, dpowers, ntt, nullptr);
+         ok = cudaGetLastError() == cudaSuccess;
+         for (bool key_switch_after : {false, true}) {
+             if (key_switch_after)
+-                TestPairedMonomialCache31Kernel<true, true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
++                TestPairedMonomialCache31Kernel<true, true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt, dpolicy);
+             else
+-                TestPairedMonomialCache31Kernel<true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt);
++                TestPairedMonomialCache31Kernel<true><<<Cases, N / 2, Shared>>>(dgot, dinput, dkey, dpowers, ntt, dpolicy);
+             ok = cudaGetLastError() == cudaSuccess && ok;
+             std::vector<uint32_t> expected(input.size()), actual(input.size());
+             ok = cudaMemcpy(expected.data(), dref, expected.size() * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess &&
+                 cudaMemcpy(actual.data(), dgot, actual.size() * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
++#if defined(CUFHE_USE_HIP) && defined(USE_HIP_REGISTER_MONOMIALS31)
++            std::vector<uint32_t> policies(Cases);
++            ok = cudaMemcpy(policies.data(), dpolicy, Cases * sizeof(uint32_t), cudaMemcpyDeviceToHost) == cudaSuccess && ok;
++            for (auto policy : policies) ok = (policy == (key_switch_after ? 3U : 1U)) && ok;
++            std::cout << "register31 exercised policy=" << (key_switch_after ? 3 : 1) << " " << (ok ? "PASS" : "FAIL") << '\n';
++#endif
+             if (ok && actual != expected) {
+                 for (size_t i = 0; i < actual.size(); ++i) if (actual[i] != expected[i]) {
+                     std::cerr << "31-bit paired monomial cache mismatch at coefficient " << i << '\n'; break;
+@@ -1253,13 +1277,13 @@ bool TestPairedMonomialCache31()
+             }
+         }
+     }
+-    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers);
++    cudaFree(dinput); cudaFree(dkey); cudaFree(dref); cudaFree(dgot); cudaFree(dpowers); cudaFree(dpolicy);
+     cufhe::DeleteXaiNTT(); ntt.Destroy();
+     return ok;
+ }
+ #endif
+ 
+-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
++#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
+ template <int Sign0, int Sign1>
+ __global__ void TestOutputExponentsKernel(uint16_t* seen, uint16_t* out,
+     uint16_t* a, uint16_t* b, int alias)
+@@ -1541,6 +1565,12 @@ int main()
+ #endif
+ #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
+     scalar_cache = TestScalarMonomialCache(monomial_symmetry);
++#if defined(USE_HIP_REGISTER_NTT_IO64)
++    bool stressed_symmetry = true;
++    const bool stressed = TestScalarMonomialCache<false, false, true>(stressed_symmetry);
++    scalar_cache &= stressed && stressed_symmetry;
++    std::cout << "scalar64 delayed peer-readers / workspace reuse: " << (stressed ? "PASS" : "FAIL") << '\n';
++#endif
+     bool paired_symmetry = true;
+     const bool paired_cache = TestScalarMonomialCache<true>(paired_symmetry);
+     scalar_cache &= paired_cache && paired_symmetry;
+@@ -1555,29 +1585,42 @@ int main()
+               << (paired_cache && paired_symmetry ? "PASS" : "FAIL") << '\n';
+     std::cout << "64-bit complete monomial adjacent-pair symmetry (1048576 pairs): "
+               << (monomial_symmetry ? "PASS" : "FAIL") << '\n';
+-#ifdef CUFHE_USE_HIP
++#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_SCALAR_MONOMIAL_CACHE64)
+     std::cout << "64-bit scalar subtraction schedules / external product (49152 coefficients): "
+ #else
+     std::cout << "64-bit scalar cached / uncached external product (49152 coefficients): "
+ #endif
+               << (scalar_cache ? "PASS" : "FAIL") << '\n';
++#endif
++#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_SCALAR_MONOMIAL_CACHE64)
++    std::cout << "scalar64 register cache / I/O: SKIP (disabled)\n";
+ #endif
+     bool cache31 = true;
+-#if defined(USE_BLOCK_BINARY) && defined(USE_CUDA_PAIRED_NTT) && !defined(USE_FFT)
++#if defined(USE_BLOCK_BINARY) && (defined(USE_CUDA_PAIRED_NTT) || defined(USE_HIP_PAIRED_NTT)) && !defined(USE_FFT)
+     cache31 = TestPairedMonomialCache31();
+-    std::cout << "31-bit register schedules / staged external product (65536 coefficients): "
++#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_REGISTER_MONOMIALS31)
++    std::cout << "31-bit paired / scalar external product consistency (65536 coefficients): "
++#else
++    std::cout << "31-bit register schedules / external product (65536 coefficients): "
++#endif
+               << (cache31 ? "PASS" : "FAIL") << '\n';
++#endif
++#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_REGISTER_MONOMIALS31)
++    std::cout << "register31 cache: SKIP (disabled)\n";
+ #endif
+     bool output_exponents = true;
+-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
++#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
+     output_exponents = TestOutputExponents();
+     std::cout << "Output exponent cache (4762800 exponents / body-padding / both aliases): "
+               << (output_exponents ? "PASS" : "FAIL") << '\n';
++#endif
++#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_OUTPUT_EXPONENT_CACHE)
++    std::cout << "output exponent cache: SKIP (disabled)\n";
+ #endif
+     bool full_output_br = true;
+ #if defined(CUFHE_HAS_PAIR_NTT64) && defined(USE_BLOCK_BINARY) && !defined(USE_FFT)
+     full_output_br = TestFullOutputCacheBR();
+-#ifdef CUFHE_USE_HIP
++#if defined(CUFHE_USE_HIP) && !defined(USE_HIP_OUTPUT_EXPONENT_CACHE)
+     std::cout << "Full BR / MUX-sign schedule consistency (172032 coefficients): "
+ #else
+     std::cout << "Full BR original / output-cache / MUX signs (172032 coefficients / exact-forward aliases): "

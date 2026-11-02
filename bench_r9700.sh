@@ -2,6 +2,10 @@
 # Reproducible R9700 checks and measurements. Run each GPU job exclusively.
 set -euo pipefail
 cd "$(dirname "$0")"
+if [[ ${1:-} == remaining ]]; then
+    shift
+    exec python3 ./bench_r9700_remaining.py "$@"
+fi
 action=${1:-build}
 profiles=("${@:2}")
 if ((${#profiles[@]} == 0)); then
@@ -24,7 +28,7 @@ for profile in "${profiles[@]}"; do
     result="measurements/r9700/$profile"
     mkdir -p "$result"
     targets=(test_bootstrap_bench test_bootstrap_bench_lvl02 test_bootstrap_bench_lvl01_br_iks test_bootstrap_bench_lvl02_br_iks test_bootstrap_batch test_bootstrap_public_batch test_bootstrap_binary test_bootstrap_public_binary test_bootstrap_mux test_bootstrap_public_mux test_keyswitch_gpu test_keyswitch_gpu_lvl20)
-    if [[ "$profile" == *ntt* ]]; then
+    if [[ "$profile" == *ntt* || "$profile" == r9700-remaining-* ]]; then
         targets+=(test_small_modulus)
         if [[ "$profile" != *baseline* ]]; then targets+=(test_bootstrap_cooperative test_bootstrap_public_cooperative); fi
     else targets+=(test_fft_roundtrip); fi

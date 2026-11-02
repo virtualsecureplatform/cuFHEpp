@@ -1,0 +1,17 @@
+{
+  "source": "00b58898b54a09cb",
+  "isolated_root": "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source",
+  "single_pipeline": true,
+  "shared_gpu_lock": "/tmp/cufhepp-r9700-gpu.lock",
+  "profile_lock_redirected_from": "/tmp/cufhepp-r9700-ntt-throughput-experiment.lock",
+  "isolated_profile_lock": "/tmp/cufhepp-policy-probe-00b58898b54a09cb-ntt-throughput.lock",
+  "phases": [
+    "build-exhaustive",
+    "check-exhaustive",
+    "screen-critical30"
+  ],
+  "variants": [
+    "multi",
+    "multi-mux"
+  ]
+}

@@ -1458,7 +1458,7 @@ __device__ inline void __HomGate__(typename iksP::targetP::T* const out,
         reinterpret_cast<typename brP::targetP::T*>(dyn_sh + fft_bytes);
 
     // Select the measured cache only for this single-blind-rotation binary schedule.
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
     if constexpr (CacheOutputExponents && std::is_same_v<brP, TFHEpp::lvl02param> &&
                   std::is_same_v<typename iksP::targetP, typename brP::domainP>) {
         __BlindRotatePreAdd__<brP, casign, cbsign, offset, true, true, true>(
@@ -1741,7 +1741,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                                 ntt)
 {
     extern __shared__ char dyn_sh[];
-#if !defined(USE_FFT) && !defined(CUFHE_USE_HIP) &&     defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if !defined(USE_FFT) && (defined(USE_HIP_SCALAR_MONOMIAL_CACHE64) || (!defined(CUFHE_USE_HIP) && defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890))
     // Preserve all original inputs through both rotations; no output workspace.
     constexpr bool adjacent64 =
         std::is_same_v<brP, TFHEpp::lvl02param> && UseWarpNTTTail<64>;
@@ -1760,7 +1760,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                       dyn_sh + fft_bytes + trlwe_bytes);
 
     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ,
-                          adjacent64, false, false, adjacent64>(
+                          adjacent64,
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                          true,
+#else
+                          false,
+#endif
+                          false, adjacent64>(
         trlwe1, inc, in1, bk, ntt);
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
@@ -1773,7 +1779,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
         __syncthreads();
 
         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
-                              adjacent64, false, false, adjacent64>(
+                              adjacent64,
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                          true,
+#else
+                          false,
+#endif
+                          false, adjacent64>(
             trlwe1, inc, in0, bk, ntt);
         __SampleExtractRegistersCombine__<typename brP::targetP, 0, false>(
             tlwe, saved, trlwe1);
@@ -1782,7 +1794,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
     }
     else {
         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
-                              adjacent64, false, false, adjacent64>(
+                              adjacent64,
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                          true,
+#else
+                          false,
+#endif
+                          false, adjacent64>(
             trlwe0, inc, in0, bk, ntt);
 
         constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
@@ -1815,7 +1833,7 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                                                  ntt)
 {
     extern __shared__ char dyn_sh[];
-#if !defined(USE_FFT) && !defined(CUFHE_USE_HIP) &&     defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if !defined(USE_FFT) && (defined(USE_HIP_SCALAR_MONOMIAL_CACHE64) || (!defined(CUFHE_USE_HIP) && defined(CUFHE_WARP_TRANSFORM_TAIL) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890))
     // Preserve all original inputs through both rotations; no output workspace.
     constexpr bool adjacent64 =
         std::is_same_v<brP, TFHEpp::lvl02param> && UseWarpNTTTail<64>;
@@ -1834,7 +1852,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
                       dyn_sh + fft_bytes + trlwe_bytes);
 
     __BlindRotatePreAdd__<brP, 1, 1, -brP::domainP::μ,
-                          adjacent64, false, false, adjacent64>(
+                          adjacent64,
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                          true,
+#else
+                          false,
+#endif
+                          false, adjacent64>(
         trlwe1, inc, in1, bk, ntt);
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
@@ -1847,7 +1871,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
         __syncthreads();
 
         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
-                              adjacent64, false, false, adjacent64>(
+                              adjacent64,
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                          true,
+#else
+                          false,
+#endif
+                          false, adjacent64>(
             trlwe1, inc, in0, bk, ntt);
         __SampleExtractRegistersCombine__<typename brP::targetP, 0, true>(
             tlwe, saved, trlwe1);
@@ -1856,7 +1886,13 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
     }
     else {
         __BlindRotatePreAdd__<brP, -1, 1, -brP::domainP::μ,
-                              adjacent64, false, false, adjacent64>(
+                              adjacent64,
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                          true,
+#else
+                          false,
+#endif
+                          false, adjacent64>(
             trlwe0, inc, in0, bk, ntt);
 
         constexpr uint32_t trlwe_size = (brP::targetP::k + 1) * brP::targetP::n;
@@ -2537,7 +2573,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
     __syncthreads();
     // Exact carry lowering benefits this scalar 64-bit MUX schedule.
     __BlindRotate__<brP, false, false,
-                    sizeof(typename brP::targetP::T) == 8>(tlwe1, tlwelvl0, μ, bk, ntt);
+                    sizeof(typename brP::targetP::T) == 8
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                    , true
+#endif
+                    >(tlwe1, tlwelvl0, μ, bk, ntt);
 
     __KeySwitchMuxPreAdd__<iksP, brP, -1, 1, -iksP::domainP::μ>(
         tlwelvl0, inc, in0, ksk, dyn_sh);
@@ -2547,7 +2587,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
     // The low-LDS layout reuses tlwe1 for the second blind rotation.
     __syncthreads();
     __BlindRotate__<brP, false, false,
-                    sizeof(typename brP::targetP::T) == 8>(tlwe0, tlwelvl0, μ, bk, ntt);
+                    sizeof(typename brP::targetP::T) == 8
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                    , true
+#endif
+                    >(tlwe0, tlwelvl0, μ, bk, ntt);
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
@@ -2601,7 +2645,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
     __syncthreads();
     // Exact carry lowering benefits this scalar 64-bit MUX schedule.
     __BlindRotate__<brP, false, false,
-                    sizeof(typename brP::targetP::T) == 8>(tlwe1, tlwelvl0, μ, bk, ntt);
+                    sizeof(typename brP::targetP::T) == 8
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                    , true
+#endif
+                    >(tlwe1, tlwelvl0, μ, bk, ntt);
 
     __KeySwitchMuxPreAdd__<iksP, brP, -1, 1, -iksP::domainP::μ>(
         tlwelvl0, inc, in0, ksk, dyn_sh);
@@ -2611,7 +2659,11 @@ __global__ __launch_bounds__(NUM_THREAD4HOMGATE<typename brP:: targetP>, MIN_BLO
     // The low-LDS layout reuses tlwe1 for the second blind rotation.
     __syncthreads();
     __BlindRotate__<brP, false, false,
-                    sizeof(typename brP::targetP::T) == 8>(tlwe0, tlwelvl0, μ, bk, ntt);
+                    sizeof(typename brP::targetP::T) == 8
+#ifdef USE_HIP_REGISTER_MONOMIALS31
+                    , true
+#endif
+                    >(tlwe0, tlwelvl0, μ, bk, ntt);
 
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();

@@ -1,0 +1,34 @@
+{
+  "scope": "Isolated diagnostic only; preserves the original qualification data and does not establish profile-wide performance equivalence",
+  "source": "f3f746602ae5f7c2",
+  "profile": "r9700-ntt-latency",
+  "benchmark": "test_bootstrap_bench",
+  "mode": "packed-nmux",
+  "streams": 128,
+  "runs": 3,
+  "repetitions": 30,
+  "invocations": 12,
+  "errors": 0,
+  "results": [
+    {
+      "phase": "original-candidate",
+      "gains": [
+        0.041225689733152326,
+        -0.047066565347163136,
+        -0.018709168819613042
+      ],
+      "median_gain": -0.018709168819613042,
+      "loss_above_two_percent_in_all_runs": false
+    },
+    {
+      "phase": "original-original",
+      "gains": [
+        -0.030453505062652653,
+        -0.0394112619288467,
+        -0.03901688988792107
+      ],
+      "median_gain": -0.03901688988792107,
+      "loss_above_two_percent_in_all_runs": true
+    }
+  ]
+}

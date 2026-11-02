@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "baseline",
+  "complete_points": 116,
+  "expected_points": 116,
+  "full_grid_complete": true,
+  "wins": 1,
+  "regressions": 2,
+  "needs_30": 20,
+  "unresolved_regressions": 0
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "backend": "ntt",
+    "binary": "build-cuda-port-check/test/test_bootstrap_bench",
+    "sha256": "6a71c8e8b39444ef2cc001d42ae76a3c5042cdcce9251f3d01748accce6aa028",
+    "images_command": [
+      "/usr/local/cuda-13.0/bin/cuobjdump",
+      "--list-elf",
+      "build-cuda-port-check/test/test_bootstrap_bench"
+    ],
+    "compile": "passed",
+    "runtime": "not-tested-no-NVIDIA-device"
+  },
+  {
+    "backend": "fft",
+    "binary": "build-cuda-fft-port-check/test/test_bootstrap_bench",
+    "sha256": "c8bf9198ee68f14b8077758f95f57babb7a0a01ada4464f427f97b5e4530e7d9",
+    "images_command": [
+      "/usr/local/cuda-13.0/bin/cuobjdump",
+      "--list-elf",
+      "build-cuda-fft-port-check/test/test_bootstrap_bench"
+    ],
+    "compile": "passed",
+    "runtime": "not-tested-no-NVIDIA-device"
+  }
+]

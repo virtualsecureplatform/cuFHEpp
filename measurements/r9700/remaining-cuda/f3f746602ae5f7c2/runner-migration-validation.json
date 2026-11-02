@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "changed_files": [
+    "bench_r9700_remaining.py"
+  ],
+  "previous": "2d79cdeec061447d",
+  "current": "f3f746602ae5f7c2",
+  "unchanged_cpp_cmake_dependency": true,
+  "regression_fixture": "2d79cdeec061447d/runner-final-fixes-validation.json",
+  "cuda_compile_evidence": "2d79cdeec061447d/cuda-compatibility",
+  "cuda_runtime": "unavailable"
+}

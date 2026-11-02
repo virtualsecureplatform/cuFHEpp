@@ -1,0 +1,18 @@
+{
+  "source": "f3f746602ae5f7c2",
+  "binaries": {
+    "test_bootstrap_bench": "3630ceea1f553b60d7f40f0c5257e1b37ed51cda5a2bfc77926a46db3b73627f",
+    "test_bootstrap_bench_lvl02": "bd2298e7cc6abd86262554b564d7ae9ca8af1db69d1324f359d07198defcdd08",
+    "test_bootstrap_bench_lvl01_br_iks": "393377a2820ccd5b7d626b43ae231543af9fd9fb730c9c6c77b9b00aede89845",
+    "test_bootstrap_bench_lvl02_br_iks": "c78d2a045cca431f67e5b5898e773ad0b81687916371baf93cb4542ac412b6f5",
+    "test_keyswitch_gpu": "8f8f5cd9090e18b47e09e569428201f5a402e1f61c2f7e07ed9dd63cec2b506e",
+    "test_keyswitch_gpu_lvl20": "1847215c0f0a6895f63bfcadf3eecd6af7169be191cc6002fa76c5ad18aae23d",
+    "test_bootstrap_binary": "7c106ab9e8966f2e917dd0d4033fc0d0b82c68a33ab062d5a58f9cb9ca23cca4",
+    "test_bootstrap_public_binary": "d0b5f1068be4953fc97e5051e3483f9e7584cb9318a87fa2d2c23503d25d0244",
+    "test_bootstrap_mux": "5e478328b4987bdb54123e4fe3becac0b946979ceed25986ee7341e8292bc7d3",
+    "test_bootstrap_public_mux": "7faed3866a735745df664616e22da99917115a68ea430972c2c0eb0ef3728942",
+    "test_bootstrap_batch": "d8dbb336cf9cda986442084229114232952f25d2af050d381773898d0b9fd2fd",
+    "test_bootstrap_public_batch": "3eca2d5fb986ab5a0abcfea6df34d3b59d0fddb0275392fd35d83468bf09169b",
+    "test_fft_roundtrip": "c88c592c5a76f75ccfc9e7e04d20d73a33145b45cc2dc74ece8f299edc1b61a7"
+  }
+}

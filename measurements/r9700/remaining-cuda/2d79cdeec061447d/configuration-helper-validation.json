@@ -1,0 +1,178 @@
+{
+  "status": "PASS",
+  "method": "mock main; no GPU or build mutations",
+  "records": [
+    {
+      "action": "build",
+      "calls": [
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "build",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-waves2",
+            "latency-all-waves3",
+            "latency-all-waves4",
+            "latency-all-groups2",
+            "latency-all-groups3",
+            "latency-all-groups5",
+            "latency-all-groups9"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench",
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl01_br_iks",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 8
+        }
+      ]
+    },
+    {
+      "action": "check",
+      "calls": [
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "check",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-waves2",
+            "latency-all-waves3",
+            "latency-all-waves4",
+            "latency-all-groups2",
+            "latency-all-groups3",
+            "latency-all-groups5",
+            "latency-all-groups9"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench",
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl01_br_iks",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 8
+        }
+      ]
+    },
+    {
+      "action": "screen",
+      "calls": [
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "screen",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-waves2"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench",
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl01_br_iks",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 8
+        },
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "screen",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-waves3"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench",
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl01_br_iks",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 8
+        },
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "screen",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-waves4"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench",
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl01_br_iks",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 8
+        },
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "screen",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-groups2"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 12
+        },
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "screen",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-groups3"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 12
+        },
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "screen",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-groups5"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 12
+        },
+        {
+          "argv": [
+            "measurements/r9700/remaining-cuda/2d79cdeec061447d/experiment_configs.py",
+            "screen",
+            "--profiles",
+            "r9700-ntt-latency",
+            "--variants",
+            "latency-all-groups9"
+          ],
+          "benchmarks": [
+            "test_bootstrap_bench_lvl02",
+            "test_bootstrap_bench_lvl02_br_iks"
+          ],
+          "cases": 12
+        }
+      ]
+    }
+  ]
+}

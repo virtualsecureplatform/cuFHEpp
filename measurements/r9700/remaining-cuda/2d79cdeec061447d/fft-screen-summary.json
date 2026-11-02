@@ -1,0 +1,371 @@
+[
+  {
+    "variant": "multi",
+    "control": "prepared",
+    "points": 32,
+    "repeatable_gain_points": 10,
+    "regressions": [],
+    "wins": [
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.0768754005021377,
+        "median_improvement": 0.07735079568626613,
+        "max_improvement": 0.07755722620594596,
+        "improvements": [
+          0.07755722620594596,
+          0.0768754005021377,
+          0.07735079568626613
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "min_improvement": 0.05965650305551817,
+        "median_improvement": 0.05994813959076717,
+        "max_improvement": 0.06168348057433537,
+        "improvements": [
+          0.06168348057433537,
+          0.05994813959076717,
+          0.05965650305551817
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "min_improvement": 0.058567829531517734,
+        "median_improvement": 0.05900603303830654,
+        "max_improvement": 0.060115404509510695,
+        "improvements": [
+          0.05900603303830654,
+          0.058567829531517734,
+          0.060115404509510695
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.06413210652707702,
+        "median_improvement": 0.07603492714744087,
+        "max_improvement": 0.07856019295302019,
+        "improvements": [
+          0.06413210652707702,
+          0.07603492714744087,
+          0.07856019295302019
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.053487686763705966,
+        "median_improvement": 0.07918111968337482,
+        "max_improvement": 0.108822601010101,
+        "improvements": [
+          0.108822601010101,
+          0.053487686763705966,
+          0.07918111968337482
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.10308181104478076,
+        "median_improvement": 0.10419157261653356,
+        "max_improvement": 0.10858753923793252,
+        "improvements": [
+          0.10858753923793252,
+          0.10308181104478076,
+          0.10419157261653356
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "min_improvement": 0.08191157558051121,
+        "median_improvement": 0.08254808917486156,
+        "max_improvement": 0.08444155091427952,
+        "improvements": [
+          0.08254808917486156,
+          0.08444155091427952,
+          0.08191157558051121
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "min_improvement": 0.08254286628214591,
+        "median_improvement": 0.08485714142018674,
+        "max_improvement": 0.085231879296782,
+        "improvements": [
+          0.085231879296782,
+          0.08254286628214591,
+          0.08485714142018674
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.09450931489249148,
+        "median_improvement": 0.1051889423228699,
+        "max_improvement": 0.10550364863943273,
+        "improvements": [
+          0.09450931489249148,
+          0.1051889423228699,
+          0.10550364863943273
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.07360490590725055,
+        "median_improvement": 0.10125336262345142,
+        "max_improvement": 0.10219515708570137,
+        "improvements": [
+          0.07360490590725055,
+          0.10125336262345142,
+          0.10219515708570137
+        ]
+      }
+    ],
+    "status": "exploratory-not-original-qualified"
+  },
+  {
+    "variant": "multi-wave",
+    "control": "prepared",
+    "points": 32,
+    "repeatable_gain_points": 10,
+    "regressions": [],
+    "wins": [
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.0857159417846115,
+        "median_improvement": 0.08670066486139072,
+        "max_improvement": 0.08996158448265013,
+        "improvements": [
+          0.08670066486139072,
+          0.08996158448265013,
+          0.0857159417846115
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "min_improvement": 0.07083771814214224,
+        "median_improvement": 0.07166190261220329,
+        "max_improvement": 0.07245878810348416,
+        "improvements": [
+          0.07083771814214224,
+          0.07245878810348416,
+          0.07166190261220329
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "min_improvement": 0.06889931268643656,
+        "median_improvement": 0.06945447112969116,
+        "max_improvement": 0.07172712802914283,
+        "improvements": [
+          0.07172712802914283,
+          0.06889931268643656,
+          0.06945447112969116
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.07182883064406331,
+        "median_improvement": 0.08464141515301671,
+        "max_improvement": 0.08525339540874233,
+        "improvements": [
+          0.07182883064406331,
+          0.08525339540874233,
+          0.08464141515301671
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.06213841918261798,
+        "median_improvement": 0.06434985189559683,
+        "max_improvement": 0.09110694637567252,
+        "improvements": [
+          0.06213841918261798,
+          0.06434985189559683,
+          0.09110694637567252
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.09850381936407071,
+        "median_improvement": 0.10072150223697218,
+        "max_improvement": 0.10072483588621439,
+        "improvements": [
+          0.10072483588621439,
+          0.10072150223697218,
+          0.09850381936407071
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": false,
+        "min_improvement": 0.07901752576592769,
+        "median_improvement": 0.07902821789648407,
+        "max_improvement": 0.08109523656337714,
+        "improvements": [
+          0.07901752576592769,
+          0.07902821789648407,
+          0.08109523656337714
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "batch",
+        "streams": 1,
+        "count": 17,
+        "graph": true,
+        "min_improvement": 0.07901953424152974,
+        "median_improvement": 0.08056768712506424,
+        "max_improvement": 0.08081739163650214,
+        "improvements": [
+          0.08056768712506424,
+          0.07901953424152974,
+          0.08081739163650214
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 1,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.09067845870522984,
+        "median_improvement": 0.1012184677465966,
+        "max_improvement": 0.10667129768501715,
+        "improvements": [
+          0.09067845870522984,
+          0.10667129768501715,
+          0.1012184677465966
+        ]
+      },
+      {
+        "profile": "r9700-fft",
+        "variant": "multi-wave",
+        "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+        "mode": "packed",
+        "streams": 128,
+        "count": 1,
+        "graph": false,
+        "min_improvement": 0.0958071534322752,
+        "median_improvement": 0.09716309744487817,
+        "max_improvement": 0.09814689470538018,
+        "improvements": [
+          0.09716309744487817,
+          0.09814689470538018,
+          0.0958071534322752
+        ]
+      }
+    ],
+    "status": "exploratory-not-original-qualified"
+  },
+  {
+    "variant": "wave",
+    "control": "prepared",
+    "points": 32,
+    "repeatable_gain_points": 0,
+    "regressions": [],
+    "wins": [],
+    "status": "exploratory-not-original-qualified"
+  }
+]

@@ -1,0 +1,120 @@
+{
+  "scope": "Focused exact-reference/policy evidence only; not exhaustive configuration coverage, performance qualification or whole-plan completion",
+  "source": "f3f746602ae5f7c2",
+  "evidence_source": "2d79cdeec061447d",
+  "unchanged_cpp_build_and_harness_files": 61,
+  "all_combined_options": {
+    "USE_HIP_MULTIOUT_KEYSWITCH": "ON",
+    "USE_HIP_WAVE_KEYSWITCH": "ON",
+    "USE_HIP_OUTPUT_EXPONENT_CACHE": "ON",
+    "USE_HIP_SCALAR_MONOMIAL_CACHE64": "ON",
+    "USE_HIP_REGISTER_NTT_IO64": "ON",
+    "USE_HIP_REGISTER_MONOMIALS31": "ON",
+    "USE_HIP_NATIVE_NTT64": "ON",
+    "USE_HIP_FAST_TORUS64": "ON",
+    "USE_HIP_SCALED_INVERSE64": "ON",
+    "USE_HIP_PACKED_PAIRED_ROOTS": "ON",
+    "USE_HIP_UNREDUCED_INVERSE_DIFF": "ON",
+    "USE_HIP_MONOMIAL_PREFETCH": "OFF"
+  },
+  "combined_effective_cache_matches": true,
+  "combined_test_receipt_exhaustive": false,
+  "requirements": [
+    {
+      "requirement": "prepared-key-schedules",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt-throughput/all/test_keyswitch_gpu_lvl20.log",
+      "log_sha256": "edd4fbdf4289348d353539181773051db2246d9e4b612372abf5c3198eef6663",
+      "verified_markers": [
+        "key-switch exercised policy=258 threads=512 extracted=1: PASS",
+        "key-switch exercised policy=261 threads=512 extracted=0: PASS",
+        "aliased scratch"
+      ]
+    },
+    {
+      "requirement": "output-exponent-cache",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt-throughput/all/test_small_modulus.log",
+      "log_sha256": "20ef3cfe25dc8611a071f3c4cb68148d0a2686991846c00364f64b21ef863e5a",
+      "verified_markers": [
+        "Output exponent cache (4762800 exponents / body-padding / both aliases): PASS",
+        "Full BR original / output-cache / MUX signs (172032 coefficients / exact-forward aliases): PASS"
+      ]
+    },
+    {
+      "requirement": "scalar64-cache-register-io-and-reuse",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt-throughput/all/test_small_modulus.log",
+      "log_sha256": "20ef3cfe25dc8611a071f3c4cb68148d0a2686991846c00364f64b21ef863e5a",
+      "verified_markers": [
+        "scalar64 exercised policy=7 PASS",
+        "scalar64 delayed peer-readers / workspace reuse: PASS",
+        "64-bit scalar cached / uncached external product (49152 coefficients): PASS"
+      ]
+    },
+    {
+      "requirement": "register31-consumer-schedules",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt-throughput/all/test_small_modulus.log",
+      "log_sha256": "20ef3cfe25dc8611a071f3c4cb68148d0a2686991846c00364f64b21ef863e5a",
+      "verified_markers": [
+        "register31 exercised policy=1 PASS",
+        "register31 exercised policy=3 PASS",
+        "31-bit register schedules / external product (65536 coefficients): PASS"
+      ]
+    },
+    {
+      "requirement": "native-arithmetic",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt-throughput/all/test_small_modulus.log",
+      "log_sha256": "20ef3cfe25dc8611a071f3c4cb68148d0a2686991846c00364f64b21ef863e5a",
+      "verified_markers": [
+        "64-bit host/device modular addition (300256 cases): PASS",
+        "64-bit host/device modular subtraction (200144 cases): PASS",
+        "64-bit host/device full uint128 reduction (1000400 cases): PASS",
+        "64-bit host/device madd2 (266384 cases): PASS",
+        "64-bit host/device madd4 (396611 cases): PASS"
+      ]
+    },
+    {
+      "requirement": "exact-torus-scaled-inverse",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt-throughput/all/test_small_modulus.log",
+      "log_sha256": "20ef3cfe25dc8611a071f3c4cb68148d0a2686991846c00364f64b21ef863e5a",
+      "verified_markers": [
+        "64-bit host/device exact torus conversion (500200 cases): PASS",
+        "64-bit host/device fixed inverse scaling: PASS"
+      ]
+    },
+    {
+      "requirement": "packed-roots-inverse-difference",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt-throughput/all/test_small_modulus.log",
+      "log_sha256": "20ef3cfe25dc8611a071f3c4cb68148d0a2686991846c00364f64b21ef863e5a",
+      "verified_markers": [
+        "31-bit inverse butterflies (100125 cases): PASS",
+        "31-bit paired roundtrip / negacyclic square: PASS"
+      ]
+    },
+    {
+      "requirement": "software-monomial-prefetch",
+      "status": "focused-reference-evidence-verified",
+      "log": "../2d79cdeec061447d/r9700-ntt/prefetch/test_small_modulus.log",
+      "log_sha256": "21fdddecc49c2049c0a1e5ec885bd94916351f08bb7b4639b0391216862725b7",
+      "verified_markers": [
+        "64-bit staged paired / independent scalar external product: PASS"
+      ]
+    }
+  ],
+  "inverse_reuse_negative_control_verified": true,
+  "current_evidence_binaries": [
+    {
+      "configuration": "build-remaining-r9700-ntt-throughput-all",
+      "binary_hashes_verified": 11
+    },
+    {
+      "configuration": "build-remaining-r9700-ntt-prefetch",
+      "binary_hashes_verified": 11
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "scope": "Current public headers, pinned dependency and excluded AES/ASCON source; not whole-plan completion",
+  "source": "f3f746602ae5f7c2",
+  "original_backend": "b0818d28c5eab44dda1592225a132a4abd97517f",
+  "tfhepp": "1dd9a1addef4cae01da9bb6bfff0d22b55bec683",
+  "dependency_worktree_clean": true,
+  "public_headers": [
+    {
+      "path": "include/bootstrap_gpu.cuh",
+      "sha256": "b5581c5a8de863bfc7974e9586a211a21cb204a993dcea31ab21f48b87ca4693",
+      "unchanged_from_original": true
+    },
+    {
+      "path": "include/cufhe_gpu.cuh",
+      "sha256": "18f182fc32e2e9a6a18d48120b47c724f97afc9c09be8acbd1b798fbe0c45c7c",
+      "unchanged_from_original": true
+    },
+    {
+      "path": "include/tfhepp_keygen.hpp",
+      "sha256": "fed792d314838f4ccae97479a3cb01cc30245cfb8624c2d861e028b4a4303f9c",
+      "unchanged_from_original": true
+    }
+  ],
+  "aes_ascon_source_unchanged": true
+}

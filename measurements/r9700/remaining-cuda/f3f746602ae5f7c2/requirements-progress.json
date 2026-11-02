@@ -1,0 +1,139 @@
+{
+  "status": "complete-with-documented-target-limitations",
+  "requirements": [
+    {
+      "requirement": "prepared-key-schedules",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed complete wave32 participation, output bounds/body initialization, sentinel-before-pointer guards and shared descriptor lifetime. Independent multi-output/wave controls and exact aliased extraction references exercise the intended policies.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "output-exponent-cache",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed capture-before-publication and saved-body ordering for output/input aliases. Exact exponent, padding, both-alias and full blind-rotation/MUX-sign references passed.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "scalar64-cache-and-register-io",
+      "status": "satisfied",
+      "evidence_or_next_step": "Scalar monomial/input reuse, adjacent reconstruction, vector key loads, direct forward/inverse pairs and low-LDS register accumulation are implemented. Reviewed peer-reader ownership/reuse barrier; policy7 and independent uncached product references passed. Three corrected stress runs pass and three barrier-removed controls fail as expected.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "register31-cache-and-inverse-add",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed independent monomial/input caching and consumer-specific product/inverse-add selection without requiring staging. Both raw/public consumer policies1/3 and independent scalar product references passed.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "native-limb-arithmetic",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed add/borrow chains and wide-product carry reduction without changing modulus/constants. Host/device full-width references passed and actual gfx1201 ADD/SUB/carry-MAD instructions are captured.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "fast-torus-and-scaled-inverse",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed exact integer conversion/normalization ports and unchanged torus rounding contract. Boundary/random host/device conversion, inverse scaling and complete product references passed.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "packed-roots-and-unreduced-difference",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed packed root/quotient alignment and canonical inverse inputs giving an unreduced difference below2p. Independent paired/scalar, butterfly and convolution references passed; controls require Shoup.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "vector-monomial-prefetch",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed aligned vector loads, publication after the first forward transform, and barriers before staged consumers. Independent staged-paired versus scalar references passed; this is a software-prefetch experiment, not a claimed asynchronous DMA equivalent.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "direct-asynchronous-lds-copy",
+      "status": "satisfied-with-target-limitation",
+      "evidence_or_next_step": "Both installed gfx1201 builtin probes compile to unavailable(-1) result stores. The plan capability gate is documented; tested software vector prefetch supplies the fallback. Direct asynchronous LDS copying itself is not claimed implemented on this toolchain.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "independent-controls-and-prerequisites",
+      "status": "satisfied",
+      "evidence_or_next_step": "All12 new HIP options defaultOFF and reject CUDA activation. Reviewed dependency checks and explicit prerequisite error logs. FFT wave-only configurations preserve prepared-key-switchOFF; runner report scoping and helper batching were validated before the final campaign.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "public-library-compatibility",
+      "status": "satisfied-with-runtime-limitation",
+      "evidence_or_next_step": "Public bootstrap/key-generation headers are byte-identical to the original backend. Reviewed CUDA predicates: added reuse barrier is eliminated on existing CUDA paths and HIP-only code stays disabled. NTT/FFT SM80/SM89 images compile; NVIDIA runtime hardware was unavailable, so no runtime/performance claim is made.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "resident-mux-cli-and-resources",
+      "status": "satisfied",
+      "evidence_or_next_step": "Reviewed resident buffer setup outside timing, all8 MUX truth cases, stream fork/join graph capture and resource querying from submitted kernels. Timed transfers are rejected by the parser. Registers/private bytes/static and dynamic LDS/geometry/runtime occupancy limits are recorded, not inferred from register counts alone.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "per-feature-measurements",
+      "status": "satisfied",
+      "evidence_or_next_step": "All planned initial per-feature screens and targeted diagnostics are complete. The reconciled26 experiments preserve original screening evidence and eight full-grid feature qualifications, with no pending feature decisions and no promotion.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "original-backend-baseline",
+      "status": "satisfied",
+      "evidence_or_next_step": "Original backend b0818d28c5eab44dda1592225a132a4abd97517f uses the same TFHEpp pin and updated harness. Reviewed provenance, actual binary hashes and alternating independent process invocations; final audit matches every original/candidate record to its measured executable.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "combined-winner-selection",
+      "status": "satisfied",
+      "evidence_or_next_step": "Promising individual and combined feature candidates received complete original-backend qualification and required longer runs. Each failed the no-regression/uncertainty gate; therefore there are no qualified new features to combine or enable. Retained baseline settings were then retuned and fully qualified.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "occupancy-and-group-retuning",
+      "status": "satisfied",
+      "evidence_or_next_step": "Waves1(control),2,3,4 were measured in all four profiles and forced groups2,3,5,9 in all three NTT profiles. Group screens cover all1..22 batches in both orders;216 capacity-neighbor captures verify actual limits16/10/6/7 in all3 runs. No new launch setting qualified.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "full-batch-concurrency-grid",
+      "status": "satisfied",
+      "evidence_or_next_step": "All four final settings completed584 workloads(156 for each NTT profile,116 for FFT), each with3 original/candidate pairs. Literal workload coverage includes the full standard batch/concurrency/graph grid and40 transition extras per NTT profile. All3504 selected raw logs were reparsed with zero errors, resources and binary hashes verified.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "thirty-repeat-uncertain-points",
+      "status": "satisfied",
+      "evidence_or_next_step": "All required feature qualification reruns and100 final workload reruns at30 repetitions are complete(20paired,33throughput,15latency,32FFT;300 comparisons). Original repeatable latency loss is preserved; isolated A/B was mixed and identical-binary A/A also differed3-4%. Confirmation integrity was verified; no causal slowdown or equivalence claim is used to pass a promotion gate.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "final-exhaustive-tests",
+      "status": "satisfied",
+      "evidence_or_next_step": "All four retained settings passed exhaustive key-switch, binary/MUX, batch and applicable transform/cooperative tests plus raw/public MUX graph modes. Current executable hashes are verified:15 per NTT profile and13 FFT. Focused feature fixtures are explicitly distinguished from this exhaustive final coverage.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "preset-promotion",
+      "status": "satisfied",
+      "evidence_or_next_step": "No feature or launch candidate met the full promotion rule. Existing13 preset definitions preserve every prior inherited setting; only two explicitly experimental presets were added and all12 new production flags areOFF. Timing uncertainty is documented rather than treated as performance equivalence.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "final-idea-outcomes-and-report",
+      "status": "satisfied",
+      "evidence_or_next_step": "README and linked per-feature/final measurement reports contain completed decisions, exact workload/rerun scope, target limits, and retained baseline uncertainty. Original latency loss and independent confirmation are both retained. The rejected optional consumer-schedule prototype was not integrated.",
+      "completion_audit": "requirements-completion-audit.json"
+    },
+    {
+      "requirement": "dependency-and-parameter-invariants",
+      "status": "satisfied",
+      "evidence_or_next_step": "TFHEpp remains pinned to1dd9a1addef4cae01da9bb6bfff0d22b55bec683 with a clean tracked worktree. Reviewed diffs preserve cryptographic parameter constants, primes, rounding contracts and public interfaces. KeyBundle/AES/ASCON optimization scope was not expanded.",
+      "completion_audit": "requirements-completion-audit.json"
+    }
+  ],
+  "source": "f3f746602ae5f7c2",
+  "earlier_evidence": "2d79cdeec061447d"
+}

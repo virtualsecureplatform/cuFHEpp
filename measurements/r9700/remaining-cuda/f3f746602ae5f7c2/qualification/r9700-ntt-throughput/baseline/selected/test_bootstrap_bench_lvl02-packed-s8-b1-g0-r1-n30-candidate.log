@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nand backend=ntt block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=4.64386
+repeat=1 ms/gate=4.58097
+repeat=2 ms/gate=4.68952
+repeat=3 ms/gate=4.607
+repeat=4 ms/gate=4.62083
+repeat=5 ms/gate=4.58978
+repeat=6 ms/gate=4.65063
+repeat=7 ms/gate=4.60693
+repeat=8 ms/gate=4.63522
+repeat=9 ms/gate=4.57156
+repeat=10 ms/gate=4.7002
+repeat=11 ms/gate=4.5943
+repeat=12 ms/gate=4.61941
+repeat=13 ms/gate=4.57944
+repeat=14 ms/gate=4.63904
+repeat=15 ms/gate=4.6066
+repeat=16 ms/gate=4.60262
+repeat=17 ms/gate=4.5639
+repeat=18 ms/gate=4.69412
+repeat=19 ms/gate=4.59296
+repeat=20 ms/gate=4.60735
+repeat=21 ms/gate=4.57144
+repeat=22 ms/gate=4.62744
+repeat=23 ms/gate=4.58809
+repeat=24 ms/gate=4.5924
+repeat=25 ms/gate=4.54542
+repeat=26 ms/gate=4.67601
+repeat=27 ms/gate=4.57988
+repeat=28 ms/gate=4.59339
+repeat=29 ms/gate=4.55638
+dispatch=packed streams=8 gates=8 median_ms/gate=4.6066 errors=0
+observed_noise_rms=4.2237e-09 observed_max_abs_noise=6.44223e-09

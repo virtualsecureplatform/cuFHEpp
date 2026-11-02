@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "verified_invocations": 12,
+  "raw_logs_reparsed": true,
+  "binary_hashes_verified": true,
+  "resource_nodes_per_invocation": 128,
+  "original_original_control_uses_identical_binary": true,
+  "scope": "Diagnostic integrity only; no performance-equivalence or causal claim"
+}

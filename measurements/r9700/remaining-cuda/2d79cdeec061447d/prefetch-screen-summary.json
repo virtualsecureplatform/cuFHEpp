@@ -1,0 +1,556 @@
+{
+  "status": "complete-exploratory-not-original-qualified",
+  "profile": "r9700-ntt",
+  "variant": "prefetch",
+  "matched_control": "staging",
+  "points": 32,
+  "repeatable_wins": 9,
+  "median_regressions": 1,
+  "preset_decision": "standalone-staging-prefetch-bundle-ineligible",
+  "comparisons": [
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.039402676382363944,
+      "median_improvement": 0.05063992898369829,
+      "max_improvement": 0.05235618094274397,
+      "improvements": [
+        0.05063992898369829,
+        0.05235618094274397,
+        0.039402676382363944
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "min_improvement": 0.029203425252917525,
+      "median_improvement": 0.030747482978079943,
+      "max_improvement": 0.03536951806266464,
+      "improvements": [
+        0.03536951806266464,
+        0.029203425252917525,
+        0.030747482978079943
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "min_improvement": 0.03396310044877826,
+      "median_improvement": 0.035958177873119834,
+      "max_improvement": 0.037598042522398734,
+      "improvements": [
+        0.037598042522398734,
+        0.03396310044877826,
+        0.035958177873119834
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": 0.01619325630582602,
+      "median_improvement": 0.017188488132798163,
+      "max_improvement": 0.018608932916657217,
+      "improvements": [
+        0.01619325630582602,
+        0.017188488132798163,
+        0.018608932916657217
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.041883370450073065,
+      "median_improvement": 0.048334115438761316,
+      "max_improvement": 0.04955931420183879,
+      "improvements": [
+        0.048334115438761316,
+        0.04955931420183879,
+        0.041883370450073065
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.04596239527304813,
+      "median_improvement": 0.053443130473587286,
+      "max_improvement": 0.06354187312970472,
+      "improvements": [
+        0.04596239527304813,
+        0.053443130473587286,
+        0.06354187312970472
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.03627838876350331,
+      "median_improvement": 0.04882445462140128,
+      "max_improvement": 0.05052335266397634,
+      "improvements": [
+        0.03627838876350331,
+        0.05052335266397634,
+        0.04882445462140128
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.04676825970307508,
+      "median_improvement": 0.05076827927187688,
+      "max_improvement": 0.05152500271352789,
+      "improvements": [
+        0.05152500271352789,
+        0.04676825970307508,
+        0.05076827927187688
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.0440763337359662,
+      "median_improvement": 0.04952075585211113,
+      "max_improvement": 0.052359436045523955,
+      "improvements": [
+        0.052359436045523955,
+        0.04952075585211113,
+        0.0440763337359662
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "min_improvement": 0.029194880594352934,
+      "median_improvement": 0.0310545266857557,
+      "max_improvement": 0.03165844276347718,
+      "improvements": [
+        0.029194880594352934,
+        0.03165844276347718,
+        0.0310545266857557
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "min_improvement": 0.029902638287416572,
+      "median_improvement": 0.03199636711750409,
+      "max_improvement": 0.032336828156536934,
+      "improvements": [
+        0.03199636711750409,
+        0.029902638287416572,
+        0.032336828156536934
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": 0.015536825350889849,
+      "median_improvement": 0.01571740568559754,
+      "max_improvement": 0.01729156121194586,
+      "improvements": [
+        0.01571740568559754,
+        0.01729156121194586,
+        0.015536825350889849
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.04594610253945852,
+      "median_improvement": 0.051169094070974475,
+      "max_improvement": 0.05167558722258214,
+      "improvements": [
+        0.04594610253945852,
+        0.051169094070974475,
+        0.05167558722258214
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.018443399316900533,
+      "median_improvement": 0.03543523527116221,
+      "max_improvement": 0.0449462777155043,
+      "improvements": [
+        0.0449462777155043,
+        0.03543523527116221,
+        0.018443399316900533
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.026883522448579278,
+      "median_improvement": 0.040907645168109075,
+      "max_improvement": 0.0438822322066984,
+      "improvements": [
+        0.026883522448579278,
+        0.0438822322066984,
+        0.040907645168109075
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.038649789697346226,
+      "median_improvement": 0.042389118490016475,
+      "max_improvement": 0.04528618434655207,
+      "improvements": [
+        0.042389118490016475,
+        0.038649789697346226,
+        0.04528618434655207
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": 0.0010415884693342203,
+      "median_improvement": 0.001100523924637553,
+      "max_improvement": 0.002134662403611043,
+      "improvements": [
+        0.0010415884693342203,
+        0.001100523924637553,
+        0.002134662403611043
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "min_improvement": 0.00863076705990784,
+      "median_improvement": 0.008996660487168406,
+      "max_improvement": 0.009623707730748166,
+      "improvements": [
+        0.00863076705990784,
+        0.008996660487168406,
+        0.009623707730748166
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "min_improvement": 0.009022721546383172,
+      "median_improvement": 0.009428255617937698,
+      "max_improvement": 0.009977966025032092,
+      "improvements": [
+        0.009977966025032092,
+        0.009428255617937698,
+        0.009022721546383172
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": -0.49125276014763064,
+      "median_improvement": -0.47908278541775795,
+      "max_improvement": -0.4775911958821981,
+      "improvements": [
+        -0.49125276014763064,
+        -0.4775911958821981,
+        -0.47908278541775795
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.008269563070846697,
+      "median_improvement": -0.0024744173095299082,
+      "max_improvement": 0.002973435617827924,
+      "improvements": [
+        -0.008269563070846697,
+        0.002973435617827924,
+        -0.0024744173095299082
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.022962962962963074,
+      "median_improvement": 0.027250672333703152,
+      "max_improvement": 0.039390199983052376,
+      "improvements": [
+        -0.022962962962963074,
+        0.027250672333703152,
+        0.039390199983052376
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.002904933217549477,
+      "median_improvement": -0.00018656071860423395,
+      "max_improvement": 0.0011933297338564408,
+      "improvements": [
+        -0.002904933217549477,
+        -0.00018656071860423395,
+        0.0011933297338564408
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.0020117183456289656,
+      "median_improvement": -0.000468052008838038,
+      "max_improvement": 0.001423844931593532,
+      "improvements": [
+        0.001423844931593532,
+        -0.0020117183456289656,
+        -0.000468052008838038
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.0022696537832291863,
+      "median_improvement": -0.0019090609865048958,
+      "max_improvement": 0.003674954063074276,
+      "improvements": [
+        0.003674954063074276,
+        -0.0022696537832291863,
+        -0.0019090609865048958
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": false,
+      "min_improvement": -0.0008583378417745813,
+      "median_improvement": -0.0007489202523665028,
+      "max_improvement": -0.0005717910344729127,
+      "improvements": [
+        -0.0007489202523665028,
+        -0.0005717910344729127,
+        -0.0008583378417745813
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 17,
+      "graph": true,
+      "min_improvement": -0.0011693482154728763,
+      "median_improvement": -0.0006268377595621821,
+      "max_improvement": -0.0005611314284375002,
+      "improvements": [
+        -0.0005611314284375002,
+        -0.0006268377595621821,
+        -0.0011693482154728763
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "batch",
+      "streams": 1,
+      "count": 512,
+      "graph": false,
+      "min_improvement": -0.0017415360514627665,
+      "median_improvement": -0.0016161984525935313,
+      "max_improvement": 0.001965548985295662,
+      "improvements": [
+        -0.0017415360514627665,
+        0.001965548985295662,
+        -0.0016161984525935313
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.00207761225332459,
+      "median_improvement": 0.00036167316582391695,
+      "max_improvement": 0.004896569782665616,
+      "improvements": [
+        0.00036167316582391695,
+        -0.00207761225332459,
+        0.004896569782665616
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.05920413359206722,
+      "median_improvement": 3.9230741208817754e-05,
+      "max_improvement": 0.03485382132760306,
+      "improvements": [
+        3.9230741208817754e-05,
+        0.03485382132760306,
+        -0.05920413359206722
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-mux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.010382045716611277,
+      "median_improvement": -0.0052209897217012635,
+      "max_improvement": 0.0026833781260726663,
+      "improvements": [
+        -0.010382045716611277,
+        0.0026833781260726663,
+        -0.0052209897217012635
+      ]
+    },
+    {
+      "profile": "r9700-ntt",
+      "variant": "prefetch",
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed-nmux",
+      "streams": 1,
+      "count": 1,
+      "graph": false,
+      "min_improvement": -0.0004279834009575101,
+      "median_improvement": 1.678817105466024e-05,
+      "max_improvement": 0.0021762557498857804,
+      "improvements": [
+        1.678817105466024e-05,
+        0.0021762557498857804,
+        -0.0004279834009575101
+      ]
+    }
+  ]
+}

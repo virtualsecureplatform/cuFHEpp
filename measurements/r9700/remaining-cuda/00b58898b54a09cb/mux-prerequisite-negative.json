@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "command": [
+    "cmake",
+    "--preset",
+    "r9700-ntt-throughput",
+    "-B",
+    "build-policy-invalid-mux",
+    "-DUSE_HIP_MULTIOUT_KEYSWITCH=OFF",
+    "-DUSE_HIP_MULTIOUT_MUX_KEYSWITCH=ON"
+  ],
+  "cwd": "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source",
+  "returncode": 1,
+  "expected_error": "USE_HIP_MULTIOUT_MUX_KEYSWITCH requires USE_HIP_MULTIOUT_KEYSWITCH"
+}

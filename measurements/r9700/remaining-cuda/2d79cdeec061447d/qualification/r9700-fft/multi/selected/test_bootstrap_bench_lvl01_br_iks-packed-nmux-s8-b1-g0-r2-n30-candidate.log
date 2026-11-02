@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=6.66134
+repeat=1 ms/gate=7.28654
+repeat=2 ms/gate=6.6422
+repeat=3 ms/gate=7.21698
+repeat=4 ms/gate=6.61873
+repeat=5 ms/gate=7.22559
+repeat=6 ms/gate=6.61103
+repeat=7 ms/gate=7.19192
+repeat=8 ms/gate=6.63033
+repeat=9 ms/gate=7.21078
+repeat=10 ms/gate=6.58664
+repeat=11 ms/gate=7.18283
+repeat=12 ms/gate=6.58469
+repeat=13 ms/gate=7.18587
+repeat=14 ms/gate=6.58442
+repeat=15 ms/gate=7.15306
+repeat=16 ms/gate=6.6179
+repeat=17 ms/gate=7.19925
+repeat=18 ms/gate=6.56577
+repeat=19 ms/gate=7.16671
+repeat=20 ms/gate=6.56569
+repeat=21 ms/gate=7.16849
+repeat=22 ms/gate=6.57322
+repeat=23 ms/gate=7.15967
+repeat=24 ms/gate=6.63117
+repeat=25 ms/gate=7.21216
+repeat=26 ms/gate=6.56582
+repeat=27 ms/gate=7.15868
+repeat=28 ms/gate=6.56246
+repeat=29 ms/gate=7.16514
+dispatch=packed streams=8 gates=8 median_ms/gate=7.15306 errors=0
+observed_noise_rms=0.00749998 observed_max_abs_noise=0.0144043

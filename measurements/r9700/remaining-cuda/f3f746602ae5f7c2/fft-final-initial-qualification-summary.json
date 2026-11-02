@@ -1,0 +1,10 @@
+{
+  "profile": "r9700-fft",
+  "variant": "baseline",
+  "wins": 0,
+  "regressions": 8,
+  "needs_30": 32,
+  "unresolved_regressions": 0,
+  "total_points": 116,
+  "scope": "Initial15-repetition classification; longer reruns active"
+}

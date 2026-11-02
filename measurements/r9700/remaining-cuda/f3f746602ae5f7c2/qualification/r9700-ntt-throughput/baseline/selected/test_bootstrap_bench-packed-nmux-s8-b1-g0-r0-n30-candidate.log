@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=32 order=iks-br gate=nmux backend=ntt block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=1 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=2 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=3 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=4 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=5 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=6 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=7 registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1
+repeat=0 ms/gate=1.30844
+repeat=1 ms/gate=1.66018
+repeat=2 ms/gate=1.30353
+repeat=3 ms/gate=1.65078
+repeat=4 ms/gate=1.31202
+repeat=5 ms/gate=1.63799
+repeat=6 ms/gate=1.30275
+repeat=7 ms/gate=1.63898
+repeat=8 ms/gate=1.31335
+repeat=9 ms/gate=1.65963
+repeat=10 ms/gate=1.31325
+repeat=11 ms/gate=1.64669
+repeat=12 ms/gate=1.31649
+repeat=13 ms/gate=1.64471
+repeat=14 ms/gate=1.30899
+repeat=15 ms/gate=1.63348
+repeat=16 ms/gate=1.31448
+repeat=17 ms/gate=1.64867
+repeat=18 ms/gate=1.30653
+repeat=19 ms/gate=1.64833
+repeat=20 ms/gate=1.31249
+repeat=21 ms/gate=1.64
+repeat=22 ms/gate=1.30264
+repeat=23 ms/gate=1.62943
+repeat=24 ms/gate=1.31221
+repeat=25 ms/gate=1.65315
+repeat=26 ms/gate=1.30368
+repeat=27 ms/gate=1.63744
+repeat=28 ms/gate=1.31263
+repeat=29 ms/gate=1.64094
+dispatch=packed streams=8 gates=8 median_ms/gate=1.62943 errors=0
+observed_noise_rms=0.00312656 observed_max_abs_noise=0.00639155

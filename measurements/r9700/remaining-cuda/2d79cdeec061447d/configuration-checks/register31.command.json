@@ -1,0 +1,9 @@
+[
+  "cmake",
+  "--preset",
+  "r9700-ntt-throughput",
+  "-B",
+  "build-remaining-invalid-register31",
+  "-DUSE_HIP_REGISTER_MONOMIALS31=ON",
+  "-DUSE_HIP_FUSED_NTT=OFF"
+]

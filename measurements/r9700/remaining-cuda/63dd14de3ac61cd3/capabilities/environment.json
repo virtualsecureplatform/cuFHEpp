@@ -1,0 +1,6 @@
+{
+  "base": "b0818d28c5eab44dda1592225a132a4abd97517f",
+  "hip_visible_devices": "0",
+  "omp_num_threads": 8,
+  "notes": "gfx1201 compiler probe: -1 means the builtin is unavailable for this target. No direct-to-LDS implementation is enabled."
+}

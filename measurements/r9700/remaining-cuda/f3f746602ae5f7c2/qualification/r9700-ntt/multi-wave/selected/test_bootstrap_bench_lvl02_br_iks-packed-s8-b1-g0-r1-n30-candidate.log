@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=ntt block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=16 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=3.99692
+repeat=1 ms/gate=3.95817
+repeat=2 ms/gate=3.95472
+repeat=3 ms/gate=4.00077
+repeat=4 ms/gate=3.98862
+repeat=5 ms/gate=3.9297
+repeat=6 ms/gate=3.94356
+repeat=7 ms/gate=3.95763
+repeat=8 ms/gate=3.98374
+repeat=9 ms/gate=3.95172
+repeat=10 ms/gate=3.95039
+repeat=11 ms/gate=3.99832
+repeat=12 ms/gate=3.98453
+repeat=13 ms/gate=3.92052
+repeat=14 ms/gate=3.92399
+repeat=15 ms/gate=3.94865
+repeat=16 ms/gate=3.97311
+repeat=17 ms/gate=3.94978
+repeat=18 ms/gate=3.93594
+repeat=19 ms/gate=3.99169
+repeat=20 ms/gate=3.97857
+repeat=21 ms/gate=3.90133
+repeat=22 ms/gate=3.91188
+repeat=23 ms/gate=3.94694
+repeat=24 ms/gate=3.96484
+repeat=25 ms/gate=3.94348
+repeat=26 ms/gate=3.93104
+repeat=27 ms/gate=3.99259
+repeat=28 ms/gate=3.96407
+repeat=29 ms/gate=3.90231
+dispatch=packed streams=8 gates=8 median_ms/gate=3.95472 errors=0
+observed_noise_rms=0.0102918 observed_max_abs_noise=0.0202637

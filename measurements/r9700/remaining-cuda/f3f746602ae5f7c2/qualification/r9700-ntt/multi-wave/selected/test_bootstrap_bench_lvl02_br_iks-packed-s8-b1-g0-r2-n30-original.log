@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=ntt block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=4.20245
+repeat=1 ms/gate=4.17111
+repeat=2 ms/gate=4.12776
+repeat=3 ms/gate=4.19339
+repeat=4 ms/gate=4.13923
+repeat=5 ms/gate=4.13549
+repeat=6 ms/gate=4.19908
+repeat=7 ms/gate=4.16332
+repeat=8 ms/gate=4.21334
+repeat=9 ms/gate=4.16677
+repeat=10 ms/gate=4.12993
+repeat=11 ms/gate=4.19486
+repeat=12 ms/gate=4.138
+repeat=13 ms/gate=4.12324
+repeat=14 ms/gate=4.19632
+repeat=15 ms/gate=4.15776
+repeat=16 ms/gate=4.21192
+repeat=17 ms/gate=4.15189
+repeat=18 ms/gate=4.11773
+repeat=19 ms/gate=4.18773
+repeat=20 ms/gate=4.12783
+repeat=21 ms/gate=4.11695
+repeat=22 ms/gate=4.18092
+repeat=23 ms/gate=4.14014
+repeat=24 ms/gate=4.20254
+repeat=25 ms/gate=4.14173
+repeat=26 ms/gate=4.10059
+repeat=27 ms/gate=4.1703
+repeat=28 ms/gate=4.11262
+repeat=29 ms/gate=4.09851
+dispatch=packed streams=8 gates=8 median_ms/gate=4.15776 errors=0
+observed_noise_rms=0.0128018 observed_max_abs_noise=0.0270233

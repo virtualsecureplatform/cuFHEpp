@@ -1,0 +1,68 @@
+{
+  "staging": {
+    "benchmarks": [
+      "test_bootstrap_bench",
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl01_br_iks",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Both levels and orders are retained in this exploratory screen."
+  },
+  "prefetch": {
+    "benchmarks": [
+      "test_bootstrap_bench",
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl01_br_iks",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Both levels and orders are retained in this exploratory screen."
+  },
+  "native64": {
+    "benchmarks": [
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Only 64-bit NTT operations change; 31-bit transforms and key switching are unchanged."
+  },
+  "torus64": {
+    "benchmarks": [
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Only 64-bit NTT operations change; 31-bit transforms and key switching are unchanged."
+  },
+  "inverse64": {
+    "benchmarks": [
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Only 64-bit NTT operations change; 31-bit transforms and key switching are unchanged."
+  },
+  "multi": {
+    "benchmarks": [
+      "test_bootstrap_bench",
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl01_br_iks",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Both levels and orders are retained in this exploratory screen."
+  },
+  "wave": {
+    "benchmarks": [
+      "test_bootstrap_bench",
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl01_br_iks",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Both levels and orders are retained in this exploratory screen."
+  },
+  "multi-wave": {
+    "benchmarks": [
+      "test_bootstrap_bench",
+      "test_bootstrap_bench_lvl02",
+      "test_bootstrap_bench_lvl01_br_iks",
+      "test_bootstrap_bench_lvl02_br_iks"
+    ],
+    "reason": "Both levels and orders are retained in this exploratory screen."
+  }
+}

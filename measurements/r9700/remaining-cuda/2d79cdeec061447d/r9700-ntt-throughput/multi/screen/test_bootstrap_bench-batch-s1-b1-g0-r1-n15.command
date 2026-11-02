@@ -1,0 +1,1 @@
+/home/nimda/sources/cuFHEpp/build-remaining-r9700-ntt-throughput-multi/test/test_bootstrap_bench 1 1 15 batch

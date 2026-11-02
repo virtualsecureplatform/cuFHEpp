@@ -1,0 +1,377 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "baseline",
+  "wins": 1,
+  "regressions": 5,
+  "unresolved_regressions": 12,
+  "needs_30": 0,
+  "total_points": 156,
+  "standard_points": 116,
+  "transition_extra_points": 40,
+  "longer_points": 20,
+  "repeatable_regressions": 0,
+  "scope": "Completed retained paired-setting measurements; no new promotion and no performance-equivalence claim",
+  "decision": "retain-existing-settings-no-qualified-launch-winner",
+  "mixed_or_regressing_points": [
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.07006597146107985
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.06583824364873503
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.06436635386223344
+        }
+      ],
+      "median_gain": 0.06583824364873503,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.0022643800273181025
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.0016132162437532127
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.2390080106004937
+        }
+      ],
+      "median_gain": -0.0022643800273181025,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.09565986912071778
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.004339222835062717
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.12337324661817639
+        }
+      ],
+      "median_gain": 0.004339222835062717,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-mux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.03914917673662632
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.03251288182017675
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.04532207501693475
+        }
+      ],
+      "median_gain": -0.03914917673662632,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench",
+      "mode": "packed-nmux",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.0019201228878649168
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.00047916044805429436
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.030374437401324395
+        }
+      ],
+      "median_gain": -0.00047916044805429436,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.34660571408850105
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.0011139670785689226
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.18719637584912674
+        }
+      ],
+      "median_gain": -0.0011139670785689226,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.000767980130556678
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.26567115463076285
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.27684012744056874
+        }
+      ],
+      "median_gain": -0.26567115463076285,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl01_br_iks",
+      "mode": "packed-nmux",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.10022563443840693
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.013132697196816978
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.0018938262968871689
+        }
+      ],
+      "median_gain": 0.0018938262968871689,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.00526840420920105
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.1616327131546229
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.15545900299645887
+        }
+      ],
+      "median_gain": -0.15545900299645887,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "mode": "packed",
+      "streams": 32,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.08831960502783454
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.05309368730880015
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": 0.030232812546617138
+        }
+      ],
+      "median_gain": 0.030232812546617138,
+      "repeatable_win": false,
+      "regression": false,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 8,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": 0.0062914203292121496
+        },
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": -0.07746221573745271
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.08938981353717668
+        }
+      ],
+      "median_gain": -0.07746221573745271,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "mode": "packed",
+      "streams": 128,
+      "count": 1,
+      "graph": false,
+      "complete": true,
+      "rows": [
+        {
+          "run": 0,
+          "repetitions": 30,
+          "gain": 0.0267458049388144
+        },
+        {
+          "run": 1,
+          "repetitions": 30,
+          "gain": -0.028081891675949988
+        },
+        {
+          "run": 2,
+          "repetitions": 30,
+          "gain": -0.031099390482837164
+        }
+      ],
+      "median_gain": -0.028081891675949988,
+      "repeatable_win": false,
+      "regression": true,
+      "needs_30": false,
+      "unresolved_regression": true
+    }
+  ]
+}

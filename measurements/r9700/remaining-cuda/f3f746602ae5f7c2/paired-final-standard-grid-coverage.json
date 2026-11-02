@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "baseline",
+  "source": "f3f746602ae5f7c2",
+  "standard_points": 116,
+  "raw_records": 696,
+  "runs": 3,
+  "repetitions": 15,
+  "errors": 0,
+  "scope": "Standard-grid coverage only; boundary supplements and longer-rerun decision pending"
+}

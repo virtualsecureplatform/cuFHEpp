@@ -1,0 +1,72 @@
+{
+  "status": "review-complete-see-isolated-confirmation",
+  "evidence_base": "..",
+  "scope": "One retained-baseline raw31 NMux128 point; not profile-wide equivalence or cause attribution",
+  "original_qualification_gains": [
+    -0.030240873904672005,
+    -0.021911175941156324,
+    -0.02745165475948541
+  ],
+  "resource_configurations_identical": true,
+  "normalized_device_instructions_identical": true,
+  "observations": [
+    {
+      "run": 0,
+      "member": "candidate",
+      "median_ms_per_gate": 1.31093,
+      "binary_sha256": "a03ec594acd5b0ead532f1e6b82ff947a179ab942c0b7680409e2eda11294977",
+      "resource_nodes": 128,
+      "resource_configuration": "registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1",
+      "log": "qualification/r9700-ntt-latency/baseline/selected/test_bootstrap_bench-packed-nmux-s128-b1-g0-r0-n30-candidate.log"
+    },
+    {
+      "run": 0,
+      "member": "original",
+      "median_ms_per_gate": 1.27245,
+      "binary_sha256": "0109eb7c4f6e156994c14eaa0d04ca82e0e4c263d4024e7803f46c64897a9dab",
+      "resource_nodes": 128,
+      "resource_configuration": "registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1",
+      "log": "qualification/r9700-ntt-latency/baseline/selected/test_bootstrap_bench-packed-nmux-s128-b1-g0-r0-n30-original.log"
+    },
+    {
+      "run": 1,
+      "member": "candidate",
+      "median_ms_per_gate": 1.31708,
+      "binary_sha256": "a03ec594acd5b0ead532f1e6b82ff947a179ab942c0b7680409e2eda11294977",
+      "resource_nodes": 128,
+      "resource_configuration": "registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1",
+      "log": "qualification/r9700-ntt-latency/baseline/selected/test_bootstrap_bench-packed-nmux-s128-b1-g0-r1-n30-candidate.log"
+    },
+    {
+      "run": 1,
+      "member": "original",
+      "median_ms_per_gate": 1.28884,
+      "binary_sha256": "0109eb7c4f6e156994c14eaa0d04ca82e0e4c263d4024e7803f46c64897a9dab",
+      "resource_nodes": 128,
+      "resource_configuration": "registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1",
+      "log": "qualification/r9700-ntt-latency/baseline/selected/test_bootstrap_bench-packed-nmux-s128-b1-g0-r1-n30-original.log"
+    },
+    {
+      "run": 2,
+      "member": "candidate",
+      "median_ms_per_gate": 1.31446,
+      "binary_sha256": "a03ec594acd5b0ead532f1e6b82ff947a179ab942c0b7680409e2eda11294977",
+      "resource_nodes": 128,
+      "resource_configuration": "registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1",
+      "log": "qualification/r9700-ntt-latency/baseline/selected/test_bootstrap_bench-packed-nmux-s128-b1-g0-r2-n30-candidate.log"
+    },
+    {
+      "run": 2,
+      "member": "original",
+      "median_ms_per_gate": 1.27934,
+      "binary_sha256": "0109eb7c4f6e156994c14eaa0d04ca82e0e4c263d4024e7803f46c64897a9dab",
+      "resource_nodes": 128,
+      "resource_configuration": "registers=162 static_lds=1264 dynamic_lds=24576 local_bytes=12 threads=512 resident_blocks=2 grid=1,1,1",
+      "log": "qualification/r9700-ntt-latency/baseline/selected/test_bootstrap_bench-packed-nmux-s128-b1-g0-r2-n30-original.log"
+    }
+  ],
+  "confirmation_controller_pid": 301620,
+  "confirmation_waits_for_main_controller": 3775684,
+  "confirmation_evidence": "latency-nmux-baseline-review/confirmation/summary.json",
+  "confirmation_validation": "latency-nmux-baseline-review/confirmation/validation.json"
+}

@@ -34,7 +34,7 @@ __device__ inline uint32_t modSwitchFromTorus(
                       P::targetP::nbit));
 }
 
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
 // Capture before the caller's correction barrier; publish only after it.
 // The existing test-vector barrier makes the output metadata ready to consume.
 template <class P, int Sign0, int Sign1, int Threads>
@@ -945,7 +945,7 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
     NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const scratch,
     const uint32_t block, const uint32_t* const bara,
     const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
-    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt, uint32_t* exercised_policy = nullptr)
 {
     using targetP = typename P::targetP;
     using T = typename targetP::T;
@@ -963,11 +963,14 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
 #if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
     Value* const staged_monomials = scratch + 2 * N;
 #endif
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && defined(CUFHE_STAGED_MONOMIALS_DEVICE) && defined(CUFHE_PAIRED_NTT_MADD4)
+#if defined(USE_HIP_REGISTER_MONOMIALS31) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890 && defined(CUFHE_STAGED_MONOMIALS_DEVICE) && defined(CUFHE_PAIRED_NTT_MADD4))
     constexpr bool CacheMonomials = RegisterMonomials && P::domainP::ell == 2;
 #else
     constexpr bool CacheMonomials = false;
 #endif
+    if (exercised_policy && tid == 0)
+        *exercised_policy = (CacheMonomials ? 1U : 0U) |
+            (CacheMonomials && KeySwitchAfter31 ? 2U : 0U);
     Value cached_x0[2], cached_x1[2];
     if constexpr (CacheMonomials) {
 #pragma unroll
@@ -977,6 +980,9 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
             cached_x1[e] = __ldg(block_xai_fft + bara[1] * N + i);
         }
     }
+#ifdef USE_HIP_MONOMIAL_PREFETCH
+    uint2 prefetched[2];
+#endif
     Value accum[2][2] = {};
     T cached_input[2][2];
     constexpr T offset = offsetgen<targetP>() +
@@ -986,7 +992,10 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
     // Every digit pair uses these same monomials. Start their copy before
     // decomposition, keeping the copy's address calculations outside the loop.
     if constexpr (P::domainP::ell == 2 && !CacheMonomials) {
-#if defined(CUFHE_USE_HIP)
+#if defined(USE_HIP_MONOMIAL_PREFETCH)
+        prefetched[0] = __ldg(reinterpret_cast<const uint2*>(block_xai_fft + bara[0] * N) + tid);
+        prefetched[1] = __ldg(reinterpret_cast<const uint2*>(block_xai_fft + bara[1] * N) + tid);
+#elif defined(CUFHE_USE_HIP)
 #pragma unroll
         for (int e = 0; e < 2; ++e) {
             const int i = tid + e * THREADS;
@@ -1043,6 +1052,10 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
 #if defined(CUFHE_STAGED_MONOMIALS_DEVICE)
         if constexpr (P::domainP::ell == 2 && !CacheMonomials) {
             if (pair == 0) {
+#ifdef USE_HIP_MONOMIAL_PREFETCH
+                reinterpret_cast<uint2*>(staged_monomials)[tid] = prefetched[0];
+                reinterpret_cast<uint2*>(staged_monomials + N)[tid] = prefetched[1];
+#endif
 #if !defined(CUFHE_USE_HIP)
                 __pipeline_wait_prior(0);
 #endif
@@ -1059,8 +1072,8 @@ __device__ inline void AccumulateBlockBinaryPairedNTT(
                 const Value x0 = CacheMonomials ? cached_x0[e] : staged_monomials[i];
                 const Value x1 = CacheMonomials ? cached_x1[e] : staged_monomials[N + i];
 #else
-                const Value x0 = __ldg(&block_xai_fft[bara[0] * N + i]);
-                const Value x1 = __ldg(&block_xai_fft[bara[1] * N + i]);
+                const Value x0 = CacheMonomials ? cached_x0[e] : __ldg(&block_xai_fft[bara[0] * N + i]);
+                const Value x1 = CacheMonomials ? cached_x1[e] : __ldg(&block_xai_fft[bara[1] * N + i]);
 #endif
                 const Value d0 = work0[i], d1 = work1[i];
                 if constexpr (CacheMonomials && !KeySwitchAfter31) {
@@ -1193,8 +1206,14 @@ __device__ inline void AccumulateBlockBinaryPaired64(
     auto* const monomials = scratch + (RegisterAccum ? 2 : targetP::k + 3) * N;
     constexpr T offset = offsetgen<targetP>() +
         (T{1} << (64 - targetP::l * targetP::Bgbit - 1));
+#ifdef USE_HIP_MONOMIAL_PREFETCH
+    ulonglong2 prefetched[2];
+#endif
     if constexpr (StageMonomials64) {
-#if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
+#if defined(USE_HIP_MONOMIAL_PREFETCH)
+    prefetched[0] = __ldg(reinterpret_cast<const ulonglong2*>(block_xai_fft_lvl02 + bara[0] * N) + tid);
+    prefetched[1] = __ldg(reinterpret_cast<const ulonglong2*>(block_xai_fft_lvl02 + bara[1] * N) + tid);
+#elif defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
     __pipeline_memcpy_async(monomials + 2 * tid,
         block_xai_fft_lvl02 + bara[0] * N + 2 * tid, 16);
     __pipeline_memcpy_async(monomials + N + 2 * tid,
@@ -1245,6 +1264,10 @@ __device__ inline void AccumulateBlockBinaryPaired64(
         // Uniform constant roots benefit the staged paired schedule.
         SmallForwardNTTPair64<targetP::nbit, StageMonomials64, NativeAdd, StageMonomials64>(work0, work1, ntt.forward_root_, tid);
         if (StageMonomials64 && pair == 0) {
+#ifdef USE_HIP_MONOMIAL_PREFETCH
+            reinterpret_cast<ulonglong2*>(monomials)[tid] = prefetched[0];
+            reinterpret_cast<ulonglong2*>(monomials + N)[tid] = prefetched[1];
+#endif
 #if defined(CUFHE_ASYNC_MONOMIALS_DEVICE)
             __pipeline_wait_prior(0);
 #endif
@@ -1367,12 +1390,12 @@ template <class P, bool StageMonomials64 = false, bool PairUnstaged64 = false,
           bool NativeForwardSubtract = false, int Native64Add = 0,
           bool RegisterMonomials31 = false, bool KeySwitchAfter31 = false,
           bool ReuseInput31 = false, bool AdjacentScalar64 = true,
-          bool AllowPairedProducts = true>
+          bool AllowPairedProducts = true, bool StressInverseReaders = false>
 __device__ inline void AccumulateBlockBinary(
     typename P::targetP::T* const trlwe,
     NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const sh_acc_ntt, const uint32_t block,
     const uint32_t* const bara, const NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>* const bk,
-    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt)
+    const CuNTTHandler<P::targetP::n, sizeof(typename P::targetP::T) * 8> ntt, uint32_t* exercised_policy = nullptr)
 {
     if constexpr (AllowPairedProducts && USE_PAIRED_NTT<typename P::targetP>) {
         AccumulateBlockBinaryPairedNTT<P, RegisterMonomials31, KeySwitchAfter31, ReuseInput31>(trlwe, sh_acc_ntt, block, bara, bk, ntt);
@@ -1440,7 +1463,7 @@ __device__ inline void AccumulateBlockBinary(
     // Adjacent NTT values of x^a-1 are equal for even a and add to -2
     // for odd a. Preserve the existing lane cache when no register tail is available.
     constexpr bool CACHE_SCALAR_MONOMIALS64 =
-#if !defined(CUFHE_USE_HIP) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if defined(USE_HIP_SCALAR_MONOMIAL_CACHE64) || (!defined(CUFHE_USE_HIP) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890)
         sizeof(T) == 8 && NativeForwardSubtract && !StageMonomials64 &&
         P::domainP::ell == 2 && NUM_THREADS % 32 == 0;
 #else
@@ -1448,10 +1471,19 @@ __device__ inline void AccumulateBlockBinary(
 #endif
     constexpr bool DIRECT_SCALAR_NTT64 =
 #if defined(CUFHE_WARP_TRANSFORM_TAIL)
-        AdjacentScalar64 && CACHE_SCALAR_MONOMIALS64 && UseWarpNTTTail<64>;
+        AdjacentScalar64 && CACHE_SCALAR_MONOMIALS64 && UseWarpNTTTail<64>
+#ifdef CUFHE_USE_HIP
+#if !defined(USE_HIP_REGISTER_NTT_IO64)
+        && false
+#endif
+#endif
+        ;
 #else
         false;
 #endif
+    if (exercised_policy && tid == 0)
+        *exercised_policy = (CACHE_SCALAR_MONOMIALS64 ? 1U : 0U) |
+            (DIRECT_SCALAR_NTT64 ? 2U : 0U);
     // The forward warp tail owns adjacent coefficients. Cache each polynomial
     // at the even coordinate, then reconstruct its odd partner exactly.
     Value cached_monomial[2];
@@ -1668,7 +1700,15 @@ __device__ inline void AccumulateBlockBinary(
 
     // The next inverse uses a disjoint shared segment while upper threads
     // finish loading the previous component's published half.
-    constexpr bool RETURN_INVERSE_PAIR64 = DIRECT_SCALAR_NTT64 && !REGISTER_ACCUM;
+    constexpr bool RETURN_INVERSE_PAIR64 = DIRECT_SCALAR_NTT64 && (
+#ifdef USE_HIP_REGISTER_NTT_IO64
+        true
+#else
+        !REGISTER_ACCUM
+#endif
+        );
+    if (exercised_policy && tid == 0 && RETURN_INVERSE_PAIR64)
+        *exercised_policy |= 4U;
     for (int component = 0; component <= targetP::k; component++) {
         Value* const sh_result = REGISTER_ACCUM ? sh_work : &sh_accum[component * N];
         if constexpr (REGISTER_ACCUM) {
@@ -1684,7 +1724,7 @@ __device__ inline void AccumulateBlockBinary(
         if (tid < NUM_THREADS) {
 #if defined(CUFHE_HAS_PAIR_NTT64)
             if constexpr (RETURN_INVERSE_PAIR64)
-                SmallInverseNTTReturnPair64<targetP::nbit, Native64Add>(
+                SmallInverseNTTReturnPair64<targetP::nbit, Native64Add, StressInverseReaders>(
                     sh_result, ntt.inverse_root_, ntt.n_inverse_, tid, inverse_pair);
             else
 #endif
@@ -1709,6 +1749,11 @@ __device__ inline void AccumulateBlockBinary(
                         static_cast<T>(ntt_mod_to_torus32<N, sizeof(typename P::targetP::T) * 8>(coefficient));
             }
         }
+        // Register-return workers read a peer's published half after the
+        // inverse's final barrier. All those reads must finish before the next
+        // component reuses sh_work with the adjacent-coefficient ownership.
+        if constexpr (RETURN_INVERSE_PAIR64 && REGISTER_ACCUM)
+            __syncthreads();
     }
     __syncthreads();
 }
@@ -1763,7 +1808,13 @@ __device__ inline void __BlindRotate__(
 #ifdef USE_FFT
         AccumulateBlockBinary<P>(out, sh_acc_ntt, block, bara, bk, ntt);
 #else
-        AccumulateBlockBinary<P, StageMonomials64, PairUnstaged64, false, Native64Add, RegisterMonomials31, KeySwitchAfter31>(
+        AccumulateBlockBinary<P, StageMonomials64, PairUnstaged64,
+#ifdef USE_HIP_SCALAR_MONOMIAL_CACHE64
+            true,
+#else
+            false,
+#endif
+            Native64Add, RegisterMonomials31, KeySwitchAfter31>(
             out, sh_acc_ntt, block, bara, bk, ntt);
 #endif
     }
@@ -2802,7 +2853,12 @@ __device__ inline void __BlindRotatePreAddKeyBundle__(
 template <class P, int casign, int cbsign, auto offset,
           bool NativeForwardSubtract = false, bool RegisterMonomials31 = false,
           bool OutputExponentCache = false,
-          bool AdjacentScalar64 = OutputExponentCache>
+          bool AdjacentScalar64 =
+#ifdef CUFHE_USE_HIP
+          true>
+#else
+          OutputExponentCache>
+#endif
 __device__ inline void __BlindRotatePreAdd__(
     typename P::targetP::T* const out, const typename P::domainP::T* const in0,
     const typename P::domainP::T* const in1,
@@ -2813,8 +2869,8 @@ __device__ inline void __BlindRotatePreAdd__(
     auto* const sh_acc_ntt =
         reinterpret_cast<NTTValueFor<P::targetP::n, sizeof(typename P::targetP::T) * 8>*>(dynamic_shared);
 
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP) && \
-    defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE)) && \
+    (defined(USE_HIP_OUTPUT_EXPONENT_CACHE) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890))
     constexpr bool CacheOutputExponents = OutputExponentCache &&
         std::is_same_v<P, TFHEpp::lvl02param>;
 #else
@@ -2822,7 +2878,7 @@ __device__ inline void __BlindRotatePreAdd__(
 #endif
     uint32_t saved_exponents = 0;
     typename P::domainP::T saved_body = 0;
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
     if constexpr (CacheOutputExponents) {
         saved_exponents = CapturePublicOutputExponents<P, casign, cbsign,
             NUM_THREAD4HOMGATE<typename P::targetP>>(in0, in1);
@@ -2853,7 +2909,7 @@ __device__ inline void __BlindRotatePreAdd__(
                   offset + casign * in0[P::domainP::k * P::domainP::n] +
                   cbsign * in1[P::domainP::k * P::domainP::n]);
 #endif
-#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && !defined(CUFHE_USE_HIP)
+#if defined(USE_BLOCK_BINARY) && !defined(USE_FFT) && (!defined(CUFHE_USE_HIP) || defined(USE_HIP_OUTPUT_EXPONENT_CACHE))
         // The correction barrier has captured all original mask/body data;
         // the output workspace may overlap either original input.
         if constexpr (CacheOutputExponents)

@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=32 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=6.6975
+repeat=1 ms/gate=5.00022
+repeat=2 ms/gate=6.71795
+repeat=3 ms/gate=4.95479
+repeat=4 ms/gate=6.692
+repeat=5 ms/gate=4.94378
+repeat=6 ms/gate=6.65604
+repeat=7 ms/gate=4.94993
+repeat=8 ms/gate=6.65318
+repeat=9 ms/gate=4.97704
+repeat=10 ms/gate=6.67416
+repeat=11 ms/gate=4.91905
+repeat=12 ms/gate=6.66438
+repeat=13 ms/gate=4.90941
+repeat=14 ms/gate=6.63984
+repeat=15 ms/gate=4.92943
+repeat=16 ms/gate=6.62938
+repeat=17 ms/gate=4.96173
+repeat=18 ms/gate=6.65611
+repeat=19 ms/gate=4.90449
+repeat=20 ms/gate=6.63726
+repeat=21 ms/gate=4.89477
+repeat=22 ms/gate=6.61047
+repeat=23 ms/gate=4.91768
+repeat=24 ms/gate=6.60916
+repeat=25 ms/gate=4.94718
+repeat=26 ms/gate=6.65057
+repeat=27 ms/gate=4.88879
+repeat=28 ms/gate=6.62612
+repeat=29 ms/gate=4.88587
+dispatch=packed streams=8 gates=8 median_ms/gate=6.60916 errors=0
+observed_noise_rms=0.00676079 observed_max_abs_noise=0.0121918

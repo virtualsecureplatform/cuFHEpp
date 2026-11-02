@@ -1,0 +1,20 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=nand backend=ntt block_binary=1 mode=batch timed_transfers=0
+graph_nodes=1
+resource_node=0 registers=166 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=10,1,1
+repeat=0 ms/gate=1.38109
+repeat=1 ms/gate=1.41117
+repeat=2 ms/gate=1.38348
+repeat=3 ms/gate=1.39228
+repeat=4 ms/gate=1.38953
+repeat=5 ms/gate=1.3848
+repeat=6 ms/gate=1.3878
+repeat=7 ms/gate=1.39316
+repeat=8 ms/gate=1.38829
+repeat=9 ms/gate=1.3805
+repeat=10 ms/gate=1.38963
+repeat=11 ms/gate=1.40309
+repeat=12 ms/gate=1.37944
+repeat=13 ms/gate=1.38905
+repeat=14 ms/gate=1.39624
+dispatch=batch streams=1 gates=10 median_ms/gate=1.38905 errors=0
+observed_noise_rms=5.07282e-09 observed_max_abs_noise=9.08079e-09

@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nand backend=fft block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=86 static_lds=16 dynamic_lds=16384 local_bytes=12 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=2.6609
+repeat=1 ms/gate=3.53844
+repeat=2 ms/gate=2.65702
+repeat=3 ms/gate=3.53343
+repeat=4 ms/gate=2.65738
+repeat=5 ms/gate=3.53747
+repeat=6 ms/gate=2.65501
+repeat=7 ms/gate=3.52874
+repeat=8 ms/gate=2.65496
+repeat=9 ms/gate=3.52961
+repeat=10 ms/gate=2.64005
+repeat=11 ms/gate=3.50909
+repeat=12 ms/gate=2.64065
+repeat=13 ms/gate=3.51018
+repeat=14 ms/gate=2.6385
+repeat=15 ms/gate=3.50276
+repeat=16 ms/gate=2.63918
+repeat=17 ms/gate=3.50713
+repeat=18 ms/gate=2.62881
+repeat=19 ms/gate=3.49205
+repeat=20 ms/gate=2.62384
+repeat=21 ms/gate=3.49062
+repeat=22 ms/gate=2.62622
+repeat=23 ms/gate=3.48482
+repeat=24 ms/gate=2.62499
+repeat=25 ms/gate=3.48957
+repeat=26 ms/gate=2.61684
+repeat=27 ms/gate=3.48123
+repeat=28 ms/gate=2.61255
+repeat=29 ms/gate=3.47347
+dispatch=packed streams=8 gates=8 median_ms/gate=3.47347 errors=0
+observed_noise_rms=0.00567697 observed_max_abs_noise=0.0119476

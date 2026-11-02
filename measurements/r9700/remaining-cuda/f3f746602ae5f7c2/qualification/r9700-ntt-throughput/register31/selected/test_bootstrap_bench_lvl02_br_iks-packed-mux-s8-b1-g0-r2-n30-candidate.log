@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=mux backend=ntt block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=119 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=6.76756
+repeat=1 ms/gate=7.9822
+repeat=2 ms/gate=6.83028
+repeat=3 ms/gate=8.16095
+repeat=4 ms/gate=6.75734
+repeat=5 ms/gate=8.11542
+repeat=6 ms/gate=6.77428
+repeat=7 ms/gate=7.97911
+repeat=8 ms/gate=6.76484
+repeat=9 ms/gate=7.97572
+repeat=10 ms/gate=6.83332
+repeat=11 ms/gate=8.12142
+repeat=12 ms/gate=6.76191
+repeat=13 ms/gate=8.11347
+repeat=14 ms/gate=6.76687
+repeat=15 ms/gate=7.97469
+repeat=16 ms/gate=6.7652
+repeat=17 ms/gate=7.97753
+repeat=18 ms/gate=6.81295
+repeat=19 ms/gate=8.12878
+repeat=20 ms/gate=6.73618
+repeat=21 ms/gate=8.10769
+repeat=22 ms/gate=6.74046
+repeat=23 ms/gate=7.94654
+repeat=24 ms/gate=6.761
+repeat=25 ms/gate=7.96571
+repeat=26 ms/gate=6.8243
+repeat=27 ms/gate=8.12166
+repeat=28 ms/gate=6.74036
+repeat=29 ms/gate=8.11249
+dispatch=packed streams=8 gates=8 median_ms/gate=7.94654 errors=0
+observed_noise_rms=0.00797217 observed_max_abs_noise=0.0149536

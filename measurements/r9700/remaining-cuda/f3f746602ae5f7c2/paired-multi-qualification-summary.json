@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-ntt",
+  "variant": "multi",
+  "complete_points": 116,
+  "expected_points": 116,
+  "wins": 45,
+  "regressions": 2,
+  "unresolved_regressions": 7,
+  "needs_30": 0,
+  "decision": "experimental-opt-in"
+}

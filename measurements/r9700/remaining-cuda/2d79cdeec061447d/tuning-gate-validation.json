@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "report": {
+        "regressions": 0,
+        "unresolved_regressions": 1,
+        "wins": 3
+      },
+      "reject": true
+    },
+    {
+      "report": {
+        "regressions": 1,
+        "unresolved_regressions": 0,
+        "wins": 3
+      },
+      "reject": true
+    },
+    {
+      "report": {
+        "regressions": 0,
+        "unresolved_regressions": 0,
+        "wins": 0
+      },
+      "reject": true
+    },
+    {
+      "report": {
+        "regressions": 0,
+        "unresolved_regressions": 0,
+        "wins": 3
+      },
+      "reject": false
+    }
+  ]
+}

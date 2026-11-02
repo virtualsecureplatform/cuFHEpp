@@ -1,0 +1,28 @@
+{
+  "r9700-fft": {
+    "selected-waves2": {
+      "flags": {},
+      "control": "baseline",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "2",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+      }
+    },
+    "selected-waves3": {
+      "flags": {},
+      "control": "baseline",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "3",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+      }
+    },
+    "selected-waves4": {
+      "flags": {},
+      "control": "baseline",
+      "cache": {
+        "CUFHE_HIP_MIN_WAVES_PER_EU": "4",
+        "CUFHE_HIP_COOPERATIVE_GROUPS": "0"
+      }
+    }
+  }
+}

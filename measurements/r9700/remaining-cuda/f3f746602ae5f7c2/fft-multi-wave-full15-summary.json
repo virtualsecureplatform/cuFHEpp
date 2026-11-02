@@ -1,0 +1,11 @@
+{
+  "profile": "r9700-fft",
+  "variant": "multi-wave",
+  "complete_points": 116,
+  "expected_points": 116,
+  "wins": 36,
+  "regressions": 8,
+  "needs_30": 36,
+  "unresolved_regressions": 0,
+  "status": "full15-complete-longer-runs-pending"
+}

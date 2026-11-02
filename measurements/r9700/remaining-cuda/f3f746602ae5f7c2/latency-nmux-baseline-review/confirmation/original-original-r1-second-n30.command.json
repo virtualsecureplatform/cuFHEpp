@@ -1,0 +1,28 @@
+{
+  "argv": [
+    "/home/nimda/sources/cuFHEpp/build-remaining-original/r9700-ntt-latency/test/test_bootstrap_bench",
+    "128",
+    "1",
+    "30",
+    "packed-nmux"
+  ],
+  "environment": {
+    "HIP_VISIBLE_DEVICES": "0",
+    "OMP_NUM_THREADS": "8",
+    "CUFHE_BENCH_RESOURCES": "1",
+    "LD_LIBRARY_PATH": "/opt/rocm/lib:"
+  },
+  "binary_sha256": "0109eb7c4f6e156994c14eaa0d04ca82e0e4c263d4024e7803f46c64897a9dab",
+  "before": {
+    "/sys/class/drm/card1/device/vendor": "0x1002",
+    "/sys/class/drm/card1/device/device": "0x7551",
+    "/sys/class/drm/card1/device/pp_dpm_sclk": "S: 41Mhz *\n1: 500Mhz \n2: 2350Mhz",
+    "/sys/class/drm/card1/device/pp_dpm_mclk": "0: 96Mhz \n1: 456Mhz \n2: 772Mhz *\n3: 875Mhz \n4: 1124Mhz \n5: 1258Mhz",
+    "/sys/class/drm/card1/device/gpu_busy_percent": "3",
+    "/sys/class/drm/card2/device/vendor": "0x1002",
+    "/sys/class/drm/card2/device/device": "0x164e",
+    "/sys/class/drm/card2/device/pp_dpm_sclk": "0: 400Mhz \n1: 600Mhz *\n2: 2200Mhz",
+    "/sys/class/drm/card2/device/pp_dpm_mclk": "0: 2400Mhz *",
+    "/sys/class/drm/card2/device/gpu_busy_percent": "0"
+  }
+}

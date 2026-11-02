@@ -1,0 +1,8 @@
+{
+  "time_ns": 1793478415732937414,
+  "read_only": true,
+  "settings_changed": false,
+  "power_dpm_force_performance_level": "auto",
+  "pp_dpm_sclk": "0: 500Mhz \n1: 3260Mhz *\n2: 2350Mhz",
+  "pp_dpm_mclk": "0: 96Mhz \n1: 456Mhz \n2: 772Mhz \n3: 875Mhz *\n4: 1124Mhz \n5: 1258Mhz"
+}

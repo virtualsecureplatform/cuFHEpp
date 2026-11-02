@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=ntt block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=1 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=2 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=3 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=4 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=5 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=6 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+resource_node=7 registers=163 static_lds=16 dynamic_lds=24576 local_bytes=20 threads=512 resident_blocks=2 grid=1,1,1
+repeat=0 ms/gate=1.54971
+repeat=1 ms/gate=1.21485
+repeat=2 ms/gate=1.54502
+repeat=3 ms/gate=1.21671
+repeat=4 ms/gate=1.55156
+repeat=5 ms/gate=1.21437
+repeat=6 ms/gate=1.54458
+repeat=7 ms/gate=1.22127
+repeat=8 ms/gate=1.54755
+repeat=9 ms/gate=1.21435
+repeat=10 ms/gate=1.54443
+repeat=11 ms/gate=1.21635
+repeat=12 ms/gate=1.55225
+repeat=13 ms/gate=1.21697
+repeat=14 ms/gate=1.5422
+repeat=15 ms/gate=1.22001
+repeat=16 ms/gate=1.55143
+repeat=17 ms/gate=1.21368
+repeat=18 ms/gate=1.54121
+repeat=19 ms/gate=1.21448
+repeat=20 ms/gate=1.54513
+repeat=21 ms/gate=1.21083
+repeat=22 ms/gate=1.53818
+repeat=23 ms/gate=1.21364
+repeat=24 ms/gate=1.54273
+repeat=25 ms/gate=1.21036
+repeat=26 ms/gate=1.5393
+repeat=27 ms/gate=1.21477
+repeat=28 ms/gate=1.53887
+repeat=29 ms/gate=1.20595
+dispatch=packed streams=8 gates=8 median_ms/gate=1.53818 errors=0
+observed_noise_rms=0.0067196 observed_max_abs_noise=0.0103302

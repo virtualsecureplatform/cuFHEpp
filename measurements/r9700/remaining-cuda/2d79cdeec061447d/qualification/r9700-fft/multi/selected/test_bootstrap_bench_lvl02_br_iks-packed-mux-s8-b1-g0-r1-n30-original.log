@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=mux backend=fft block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=9.82487
+repeat=1 ms/gate=10.6882
+repeat=2 ms/gate=9.8186
+repeat=3 ms/gate=10.7286
+repeat=4 ms/gate=9.77495
+repeat=5 ms/gate=10.617
+repeat=6 ms/gate=9.76944
+repeat=7 ms/gate=10.6293
+repeat=8 ms/gate=9.75394
+repeat=9 ms/gate=10.618
+repeat=10 ms/gate=9.77064
+repeat=11 ms/gate=10.7096
+repeat=12 ms/gate=9.74852
+repeat=13 ms/gate=10.5842
+repeat=14 ms/gate=9.7435
+repeat=15 ms/gate=10.6268
+repeat=16 ms/gate=9.75445
+repeat=17 ms/gate=10.6107
+repeat=18 ms/gate=9.78796
+repeat=19 ms/gate=10.7145
+repeat=20 ms/gate=9.75131
+repeat=21 ms/gate=10.5903
+repeat=22 ms/gate=9.74639
+repeat=23 ms/gate=10.6142
+repeat=24 ms/gate=9.75886
+repeat=25 ms/gate=10.6118
+repeat=26 ms/gate=9.76596
+repeat=27 ms/gate=10.6845
+repeat=28 ms/gate=9.75937
+repeat=29 ms/gate=10.5993
+dispatch=packed streams=8 gates=8 median_ms/gate=10.5842 errors=0
+observed_noise_rms=0.0147852 observed_max_abs_noise=0.0257874

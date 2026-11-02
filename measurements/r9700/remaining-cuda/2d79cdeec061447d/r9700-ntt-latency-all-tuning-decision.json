@@ -1,0 +1,8 @@
+{
+  "profile": "r9700-ntt-latency",
+  "candidate": "all",
+  "status": "experimental-opt-in",
+  "reason": "Full original qualification has regressions or no repeatable improvement; tuning not launched",
+  "regressions": 8,
+  "wins": 85
+}

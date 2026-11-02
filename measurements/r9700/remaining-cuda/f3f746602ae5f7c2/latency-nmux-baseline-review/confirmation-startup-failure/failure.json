@@ -1,0 +1,6 @@
+{
+  "status": "startup-failed-before-GPU",
+  "exit_code": 127,
+  "reason": "Diagnostic runner omitted ROCm LD_LIBRARY_PATH; libamdhip64.so.7 unavailable to loader",
+  "measurements_produced": 0
+}

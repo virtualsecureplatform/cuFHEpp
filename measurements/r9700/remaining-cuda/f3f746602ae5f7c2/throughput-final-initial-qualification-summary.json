@@ -1,0 +1,10 @@
+{
+  "profile": "r9700-ntt-throughput",
+  "variant": "baseline",
+  "wins": 0,
+  "regressions": 10,
+  "needs_30": 33,
+  "unresolved_regressions": 0,
+  "total_points": 156,
+  "scope": "Initial15-repetition classification; longer reruns active"
+}

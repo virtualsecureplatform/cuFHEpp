@@ -1,0 +1,16 @@
+{
+  "binary": "build-remaining-r9700-ntt-throughput-baseline/test/test_small_modulus",
+  "sha256": "b53c99a22f53406bd41b4348d3f8fc96e0170aa24453d902336da8b423aecfe7",
+  "command": [
+    "/opt/rocm/llvm/bin/llvm-objdump",
+    "-d",
+    "--disassemble-symbols=_ZN12_GLOBAL__N_119TestMadd4WideKernelEPKNS_13Madd4WideCaseEPmm.intern.17d732ff77eeadcb,_ZN12_GLOBAL__N_123TestGoldilocksAddKernelEPK15HIP_vector_typeIyLj2EEPS0_IyLj3EEm.intern.17d732ff77eeadcb,_ZN12_GLOBAL__N_123TestGoldilocksSubKernelEPK15HIP_vector_typeIyLj2EEPmm.intern.17d732ff77eeadcb,_ZN12_GLOBAL__N_125TestGoldilocksTorusKernelEPKmP15HIP_vector_typeIyLj3EEm.intern.17d732ff77eeadcb",
+    "build-remaining-r9700-ntt-throughput-baseline/test/test_small_modulus.0.hipv4-amdgcn-amd-amdhsa--gfx1201"
+  ],
+  "symbols": [
+    "_ZN12_GLOBAL__N_119TestMadd4WideKernelEPKNS_13Madd4WideCaseEPmm.intern.17d732ff77eeadcb",
+    "_ZN12_GLOBAL__N_123TestGoldilocksAddKernelEPK15HIP_vector_typeIyLj2EEPS0_IyLj3EEm.intern.17d732ff77eeadcb",
+    "_ZN12_GLOBAL__N_123TestGoldilocksSubKernelEPK15HIP_vector_typeIyLj2EEPmm.intern.17d732ff77eeadcb",
+    "_ZN12_GLOBAL__N_125TestGoldilocksTorusKernelEPKmP15HIP_vector_typeIyLj3EEm.intern.17d732ff77eeadcb"
+  ]
+}

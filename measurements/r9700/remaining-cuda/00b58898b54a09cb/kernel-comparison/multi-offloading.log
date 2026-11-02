@@ -1,0 +1,4 @@
+
+/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-remaining-r9700-ntt-throughput-multi/test/test_bootstrap_bench_lvl02:	file format elf64-x86-64
+Extracting offload bundle: /home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-remaining-r9700-ntt-throughput-multi/test/test_bootstrap_bench_lvl02.0.host-x86_64-unknown-linux-gnu-
+Extracting offload bundle: /home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-remaining-r9700-ntt-throughput-multi/test/test_bootstrap_bench_lvl02.0.hipv4-amdgcn-amd-amdhsa--gfx1201

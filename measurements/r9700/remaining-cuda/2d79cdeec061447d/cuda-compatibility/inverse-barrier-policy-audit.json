@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "source": "2d79cdeec061447d",
+  "header_sha256": "4a846a6b8486afd915960eef59d46506c83eb247dcfddfeb5c3cfe76d785b383",
+  "scope": "New inverse-workspace reuse barrier only; broaderCUDA compile receipts remain separate",
+  "reason": "HIP register-I/O option is forbidden for CUDA builds. Without that option, the existing RETURN=DIRECT&&!REGISTER policy is unchanged and RETURN&&REGISTER is always false, so if constexpr removes the added barrier.",
+  "cases": [
+    {
+      "direct": false,
+      "register_accumulation": false,
+      "old_return_pairs": false,
+      "cuda_return_pairs": false,
+      "new_barrier_instantiated": false
+    },
+    {
+      "direct": false,
+      "register_accumulation": true,
+      "old_return_pairs": false,
+      "cuda_return_pairs": false,
+      "new_barrier_instantiated": false
+    },
+    {
+      "direct": true,
+      "register_accumulation": false,
+      "old_return_pairs": true,
+      "cuda_return_pairs": true,
+      "new_barrier_instantiated": false
+    },
+    {
+      "direct": true,
+      "register_accumulation": true,
+      "old_return_pairs": false,
+      "cuda_return_pairs": false,
+      "new_barrier_instantiated": false
+    }
+  ]
+}

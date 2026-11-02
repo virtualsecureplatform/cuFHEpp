@@ -1,0 +1,605 @@
+{
+  "profile": "r9700-ntt-latency",
+  "variant": "groups9",
+  "control": "baseline",
+  "initial_points_complete": 28,
+  "runs": 3,
+  "repetitions": 15,
+  "repeatable_wins": 0,
+  "median_regressions": 18,
+  "status": "initial-screen-only-supplemental-batches-still-pending",
+  "points": [
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.1163295482550093,
+        -0.10781280853024433,
+        -0.10551272781904042
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      "gains": [
+        -0.11542998012942429,
+        -0.12262496735579265,
+        -0.11961025989757101
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      "gains": [
+        -0.15008433916815989,
+        -0.14658172208995057,
+        -0.14994725703840084
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      "gains": [
+        -0.07635508591828999,
+        -0.07709700110538487,
+        -0.0759816749234663
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      "gains": [
+        -0.45756709277117436,
+        -0.4530356809265832,
+        -0.4553887544723345
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        10,
+        false
+      ],
+      "gains": [
+        -0.4677999173978642,
+        -0.46559006761438604,
+        -0.47133374840391284
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      "gains": [
+        -0.17057610875863594,
+        -0.16952269497617656,
+        -0.17368215468174553
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      "gains": [
+        -0.16494952063450286,
+        -0.1641394429589278,
+        -0.16279464914219433
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      "gains": [
+        -0.1646590730718569,
+        -0.15929702513173294,
+        -0.16114922976689905
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        -0.000507930471074225,
+        2.624960625585704e-05,
+        -0.001691359430141981
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        0.0010445129958156496,
+        0.0014556058928320015,
+        -0.0014836980862047433
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        20,
+        false
+      ],
+      "gains": [
+        -0.00620240198334332,
+        0.000843031410341144,
+        -0.0018571844374741797
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        21,
+        false
+      ],
+      "gains": [
+        0.0031515324384613352,
+        -0.0003832826200886874,
+        0.008280481124506744
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02",
+        "batch",
+        1,
+        22,
+        false
+      ],
+      "gains": [
+        0.0015100037750095385,
+        -8.205586034737422e-05,
+        -7.547578457889337e-05
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        1,
+        false
+      ],
+      "gains": [
+        -0.10579622755280882,
+        -0.10725266434028113,
+        -0.10555764175741666
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        5,
+        false
+      ],
+      "gains": [
+        -0.12228304363135845,
+        -0.1201151109808416,
+        -0.12075250166777862
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        6,
+        false
+      ],
+      "gains": [
+        -0.14685842071783162,
+        -0.14574447873058305,
+        -0.1498080563735802
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        7,
+        false
+      ],
+      "gains": [
+        -0.07946433073758996,
+        -0.07976865290012158,
+        -0.08091756995210475
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        9,
+        false
+      ],
+      "gains": [
+        -0.395268748592448,
+        -0.39582648856180014,
+        -0.3959601835086173
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        10,
+        false
+      ],
+      "gains": [
+        -0.4104599401817408,
+        -0.4070092380462813,
+        -0.4083680938285017
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        11,
+        false
+      ],
+      "gains": [
+        -0.12374261387428453,
+        -0.12506170194931587,
+        -0.12398139534883734
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        15,
+        false
+      ],
+      "gains": [
+        -0.11448913522384063,
+        -0.11576302663627303,
+        -0.11717991976713527
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        16,
+        false
+      ],
+      "gains": [
+        -0.11299067151980124,
+        -0.11524464654590583,
+        -0.11724496436889353
+      ],
+      "repeatable_win": false,
+      "median_regression": true
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        17,
+        false
+      ],
+      "gains": [
+        -0.0006594810171125509,
+        0.001306680354458134,
+        -0.001014791993694919
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        17,
+        true
+      ],
+      "gains": [
+        -0.0014443193367872365,
+        -0.0019542818079585356,
+        0.0031377911458136953
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        20,
+        false
+      ],
+      "gains": [
+        -0.0010298200743998898,
+        0.0003742071197909702,
+        -0.0023042150765473224
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        21,
+        false
+      ],
+      "gains": [
+        0.0020401949338686443,
+        -0.0031979319931392247,
+        -0.006631308386827461
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    },
+    {
+      "key": [
+        "test_bootstrap_bench_lvl02_br_iks",
+        "batch",
+        1,
+        22,
+        false
+      ],
+      "gains": [
+        -0.0008133722516512343,
+        1.7071634285104054e-06,
+        -0.0008731788837663679
+      ],
+      "repeatable_win": false,
+      "median_regression": false
+    }
+  ],
+  "actual_boundary_evidence": [
+    {
+      "benchmark": "test_bootstrap_bench_lvl02",
+      "groups": 9,
+      "active_blocks_per_multiprocessor": 2,
+      "multiprocessors": 32,
+      "early_cap": 16,
+      "actual_capacity": 7,
+      "registers": 79,
+      "static_lds": 1264,
+      "dynamic_lds": 28688,
+      "local_bytes": 12,
+      "threads": 512,
+      "neighbours": [
+        {
+          "count": 6,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b6-g0-r0-n15.log"
+        },
+        {
+          "count": 7,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b7-g0-r0-n15.log"
+        },
+        {
+          "count": 9,
+          "expected_grid": 9,
+          "observed_nodes": [
+            [
+              166,
+              1264,
+              40968,
+              12,
+              512,
+              1,
+              9,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02-batch-s1-b9-g0-r0-n15.log"
+        }
+      ],
+      "missing_first_fallback_count": 8,
+      "supplemental_count8_queued": true
+    },
+    {
+      "benchmark": "test_bootstrap_bench_lvl02_br_iks",
+      "groups": 9,
+      "active_blocks_per_multiprocessor": 2,
+      "multiprocessors": 32,
+      "early_cap": 21,
+      "actual_capacity": 7,
+      "registers": 79,
+      "static_lds": 1264,
+      "dynamic_lds": 28688,
+      "local_bytes": 12,
+      "threads": 512,
+      "neighbours": [
+        {
+          "count": 6,
+          "expected_grid": 54,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              54,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b6-g0-r0-n15.log"
+        },
+        {
+          "count": 7,
+          "expected_grid": 63,
+          "observed_nodes": [
+            [
+              79,
+              1264,
+              28688,
+              12,
+              512,
+              2,
+              63,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b7-g0-r0-n15.log"
+        },
+        {
+          "count": 9,
+          "expected_grid": 9,
+          "observed_nodes": [
+            [
+              164,
+              16,
+              40968,
+              12,
+              512,
+              1,
+              9,
+              1,
+              1
+            ]
+          ],
+          "log": "r9700-ntt-latency/groups9/screen/test_bootstrap_bench_lvl02_br_iks-batch-s1-b9-g0-r0-n15.log"
+        }
+      ],
+      "missing_first_fallback_count": 8,
+      "supplemental_count8_queued": true
+    }
+  ]
+}

@@ -80,7 +80,7 @@ void Compare(Output* original, Output* prepared, const Input* a,
 // reference extracts to disjoint storage and runs the original key switch.
 template <bool prepared, int Threads, bool ExtractFromTRLWE>
 __global__ void TestExtractKeySwitch(Output* out, const Input* input,
-                                     const Output* key)
+                                     const Output* key, uint32_t* policies = nullptr)
 {
     extern __shared__ uint64_t scratch[];
     Input* working = reinterpret_cast<Input*>(scratch);
@@ -95,7 +95,7 @@ __global__ void TestExtractKeySwitch(Output* out, const Input* input,
         cufhe::KeySwitchPrepared32<P, Threads, ExtractFromTRLWE>(
 #endif
             out + blockIdx.x * output_size, working, key,
-            reinterpret_cast<Row*>(working));
+            reinterpret_cast<Row*>(working), policies ? policies + blockIdx.x : nullptr);
     } else {
         for (int i = threadIdx.x; i < input_size; i += Threads) {
             if (!ExtractFromTRLWE || i == input_size - 1) working[i] = trlwe[i];
@@ -115,19 +115,50 @@ template <int Threads, bool ExtractFromTRLWE>
 void CompareExtract(Output* original, Output* prepared, const Input* input,
                     const Output* key)
 {
+    uint32_t* policies = nullptr;
+    Check(cudaMalloc(&policies, batch_size * sizeof(uint32_t)));
     constexpr size_t scratch = (switched_count * P::t + 1) * sizeof(Row);
     static_assert(scratch >= input_size * sizeof(Input));
     TestExtractKeySwitch<false, Threads, ExtractFromTRLWE><<<batch_size, Threads, scratch>>>(
         original, input, key);
     Check(cudaGetLastError());
     TestExtractKeySwitch<true, Threads, ExtractFromTRLWE><<<batch_size, Threads, scratch>>>(
-        prepared, input, key);
+        prepared, input, key, policies);
     Check(cudaGetLastError());
     std::vector<Output> expected(batch_size * output_size), actual(expected.size());
     Check(cudaMemcpy(expected.data(), original, expected.size() * sizeof(Output),
                      cudaMemcpyDeviceToHost));
     Check(cudaMemcpy(actual.data(), prepared, actual.size() * sizeof(Output),
                      cudaMemcpyDeviceToHost));
+#if defined(CUFHE_USE_HIP)
+    uint32_t wanted = 0;
+#if defined(USE_HIP_MULTIOUT_KEYSWITCH) || defined(USE_HIP_WAVE_KEYSWITCH)
+    if constexpr (Threads == 512) {
+#ifdef USE_HIP_MULTIOUT_KEYSWITCH
+#ifdef CUFHE_TEST_COMPACT_LVL20
+        wanted = ExtractFromTRLWE ? 2 : 5;
+#else
+        wanted = 2;
+#endif
+#else
+        wanted = 1;
+#endif
+#ifdef USE_HIP_WAVE_KEYSWITCH
+        wanted |= 0x100U;
+#endif
+    }
+#endif
+    std::vector<uint32_t> seen(batch_size);
+    Check(cudaMemcpy(seen.data(), policies, batch_size * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    for (auto value : seen) {
+        if (value != wanted) {
+            std::fprintf(stderr, "key-switch policy mismatch: got %u wanted %u\n", value, wanted);
+            std::exit(1);
+        }
+    }
+    std::printf("key-switch exercised policy=%u threads=%d extracted=%d: %s\n", wanted, Threads, ExtractFromTRLWE, wanted ? "PASS" : "SKIP (generic control)");
+#endif
+    Check(cudaFree(policies));
     if (expected != actual) {
         std::fprintf(stderr, "extraction / prepared key-switch mismatch (%d threads)\n", Threads);
         std::exit(1);

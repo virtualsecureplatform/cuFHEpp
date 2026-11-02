@@ -146,7 +146,11 @@ endif()
 # cause spills. The Torus64 option also relaxes the Ada register budget.
 # R9700 features are independently selectable for reproducible comparisons.
 foreach(feature PAIRED_NTT PAIRED_NTT64 FUSED_NTT MONOMIAL_STAGING
-                PREPARED_KEYSWITCH NATIVE_KEYSWITCH WAVE_MODSWITCH_CORRECTION LOW_LDS
+                PREPARED_KEYSWITCH NATIVE_KEYSWITCH OUTPUT_EXPONENT_CACHE FAST_TORUS64
+                MULTIOUT_KEYSWITCH WAVE_KEYSWITCH SCALAR_MONOMIAL_CACHE64
+                REGISTER_NTT_IO64 REGISTER_MONOMIALS31 NATIVE_NTT64
+                SCALED_INVERSE64 PACKED_PAIRED_ROOTS UNREDUCED_INVERSE_DIFF
+                MONOMIAL_PREFETCH WAVE_MODSWITCH_CORRECTION LOW_LDS
                 COOPERATIVE_BATCH COOPERATIVE_SCALAR)
   option(USE_HIP_${feature} "Enable HIP ${feature} scheduling" OFF)
   if(USE_HIP_${feature})
@@ -156,6 +160,21 @@ foreach(feature PAIRED_NTT PAIRED_NTT64 FUSED_NTT MONOMIAL_STAGING
     add_compile_definitions(USE_HIP_${feature})
   endif()
 endforeach()
+
+foreach(feature MULTIOUT_KEYSWITCH WAVE_KEYSWITCH)
+  if(USE_HIP_${feature} AND NOT USE_HIP_PREPARED_KEYSWITCH)
+    message(FATAL_ERROR "USE_HIP_${feature} requires USE_HIP_PREPARED_KEYSWITCH")
+  endif()
+endforeach()
+if(USE_HIP_REGISTER_MONOMIALS31 AND (NOT USE_HIP_PAIRED_NTT OR NOT USE_HIP_FUSED_NTT))
+  message(FATAL_ERROR "USE_HIP_REGISTER_MONOMIALS31 requires paired and fused NTT")
+endif()
+if(USE_HIP_REGISTER_NTT_IO64 AND (NOT USE_HIP_SCALAR_MONOMIAL_CACHE64 OR NOT USE_HIP_LOW_LDS))
+  message(FATAL_ERROR "USE_HIP_REGISTER_NTT_IO64 requires scalar caching and low LDS")
+endif()
+if(USE_HIP_MONOMIAL_PREFETCH AND NOT USE_HIP_MONOMIAL_STAGING)
+  message(FATAL_ERROR "USE_HIP_MONOMIAL_PREFETCH requires monomial staging")
+endif()
 
 set(CUFHE_HIP_MIN_WAVES_PER_EU "1" CACHE STRING
     "Minimum HIP waves per execution unit requested by gate launch bounds (1-4)")
@@ -216,6 +235,10 @@ option(USE_CUDA_WORD32_REDUCTION
 option(USE_CUDA_SHOUP_NTT
        "Use Shoup precomputed-quotient twiddle multiplication in the lvl1 NTT"
        ON)
+if((USE_HIP_PACKED_PAIRED_ROOTS OR USE_HIP_UNREDUCED_INVERSE_DIFF) AND NOT USE_CUDA_SHOUP_NTT)
+  message(FATAL_ERROR "HIP root/difference controls require Shoup NTT")
+endif()
+
 option(USE_CUDA_MIN_BLOCKS
        "Apply architecture-specific minimum-residency bounds to GPU gate blocks"
        ON)

@@ -1,0 +1,42 @@
+{
+  "profile": "r9700-ntt-throughput",
+  "variant": "baseline",
+  "source": "f3f746602ae5f7c2",
+  "standard_points": 116,
+  "raw_records": 696,
+  "runs": 3,
+  "repetitions": 15,
+  "errors": 0,
+  "literal_workload_set_verified": true,
+  "batch_counts": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    16,
+    17,
+    32,
+    64,
+    128,
+    512
+  ],
+  "resident_stream_counts": [
+    1,
+    8,
+    32,
+    128
+  ],
+  "resident_modes": [
+    "packed",
+    "packed-mux",
+    "packed-nmux"
+  ],
+  "graph_batch": 17,
+  "scope": "Standard-grid coverage only; boundary supplements and longer-rerun decision pending"
+}

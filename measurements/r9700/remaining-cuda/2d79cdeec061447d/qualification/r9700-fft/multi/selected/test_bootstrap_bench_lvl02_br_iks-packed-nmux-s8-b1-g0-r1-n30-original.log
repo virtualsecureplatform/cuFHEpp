@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=114 static_lds=16 dynamic_lds=40968 local_bytes=20 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=7.4441
+repeat=1 ms/gate=7.46902
+repeat=2 ms/gate=7.44715
+repeat=3 ms/gate=7.43844
+repeat=4 ms/gate=7.42667
+repeat=5 ms/gate=7.4083
+repeat=6 ms/gate=7.4275
+repeat=7 ms/gate=7.38054
+repeat=8 ms/gate=7.36611
+repeat=9 ms/gate=7.3647
+repeat=10 ms/gate=7.38469
+repeat=11 ms/gate=7.36854
+repeat=12 ms/gate=7.33231
+repeat=13 ms/gate=7.33361
+repeat=14 ms/gate=7.34906
+repeat=15 ms/gate=7.3324
+repeat=16 ms/gate=7.31745
+repeat=17 ms/gate=7.33697
+repeat=18 ms/gate=7.34602
+repeat=19 ms/gate=7.3405
+repeat=20 ms/gate=7.30331
+repeat=21 ms/gate=7.3222
+repeat=22 ms/gate=7.33263
+repeat=23 ms/gate=7.31523
+repeat=24 ms/gate=7.29404
+repeat=25 ms/gate=7.32649
+repeat=26 ms/gate=7.34833
+repeat=27 ms/gate=7.33127
+repeat=28 ms/gate=7.287
+repeat=29 ms/gate=7.31062
+dispatch=packed streams=8 gates=8 median_ms/gate=7.34602 errors=0
+observed_noise_rms=0.00872161 observed_max_abs_noise=0.0177612

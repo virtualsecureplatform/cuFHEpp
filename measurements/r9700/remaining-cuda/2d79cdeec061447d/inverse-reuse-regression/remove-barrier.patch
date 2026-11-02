@@ -1,0 +1,12 @@
+--- include/gatebootstrapping_gpu.cuh
++++ include/gatebootstrapping_gpu.cuh
+@@ -1752,8 +1752,7 @@
+         // Register-return workers read a peer's published half after the
+         // inverse's final barrier. All those reads must finish before the next
+         // component reuses sh_work with the adjacent-coefficient ownership.
+-        if constexpr (RETURN_INVERSE_PAIR64 && REGISTER_ACCUM)
+-            __syncthreads();
++
+     }
+     __syncthreads();
+ }

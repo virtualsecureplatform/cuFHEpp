@@ -1,0 +1,28 @@
+[
+  {
+    "source": "00b58898b54a09cb",
+    "backend": "ntt",
+    "binary": "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-policy-cuda-ntt/test/test_bootstrap_bench",
+    "sha256": "7d86b12ab90b4c5fbc78a33f7a260e6b83704034f08d8dcd10ed65b41a2fae2b",
+    "compile": "PASS",
+    "images_command": [
+      "/usr/local/cuda-13.0/bin/cuobjdump",
+      "--list-elf",
+      "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-policy-cuda-ntt/test/test_bootstrap_bench"
+    ],
+    "runtime": "not-tested-no-NVIDIA-device"
+  },
+  {
+    "source": "00b58898b54a09cb",
+    "backend": "fft",
+    "binary": "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-policy-cuda-fft/test/test_bootstrap_bench",
+    "sha256": "33557996cbea0bbbc2cec0f12dd6ab8421c676723a9132810b6a9e0729fe143f",
+    "compile": "PASS",
+    "images_command": [
+      "/usr/local/cuda-13.0/bin/cuobjdump",
+      "--list-elf",
+      "/home/nimda/sources/cuFHEpp/build-remaining-policy-probe/source/build-policy-cuda-fft/test/test_bootstrap_bench"
+    ],
+    "runtime": "not-tested-no-NVIDIA-device"
+  }
+]

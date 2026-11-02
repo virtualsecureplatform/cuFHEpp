@@ -1,0 +1,10 @@
+{
+  "profile": "r9700-ntt-latency",
+  "variant": "baseline",
+  "wins": 0,
+  "regressions": 4,
+  "needs_30": 15,
+  "unresolved_regressions": 0,
+  "total_points": 156,
+  "scope": "Initial15-repetition classification; longer reruns active"
+}

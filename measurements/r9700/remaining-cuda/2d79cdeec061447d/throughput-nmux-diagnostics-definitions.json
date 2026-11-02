@@ -1,0 +1,142 @@
+{
+  "r9700-ntt-throughput": {
+    "multi": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    },
+    "wave": {
+      "flags": {
+        "WAVE_KEYSWITCH": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    },
+    "multi-wave": {
+      "flags": {
+        "MULTIOUT_KEYSWITCH": "ON",
+        "WAVE_KEYSWITCH": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    },
+    "scalar-cache": {
+      "flags": {
+        "SCALAR_MONOMIAL_CACHE64": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    },
+    "register-io": {
+      "flags": {
+        "SCALAR_MONOMIAL_CACHE64": "ON",
+        "REGISTER_NTT_IO64": "ON"
+      },
+      "control": "scalar-cache",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    },
+    "native64": {
+      "flags": {
+        "NATIVE_NTT64": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    },
+    "torus64": {
+      "flags": {
+        "FAST_TORUS64": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    },
+    "inverse64": {
+      "flags": {
+        "SCALED_INVERSE64": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench_lvl02"
+      ],
+      "cases": [
+        [
+          "packed-nmux",
+          32,
+          1,
+          false
+        ]
+      ]
+    }
+  }
+}

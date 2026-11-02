@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=16 order=br-iks gate=nand backend=ntt block_binary=1 mode=packed timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=164 static_lds=16 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=4.24292
+repeat=1 ms/gate=4.13987
+repeat=2 ms/gate=4.1448
+repeat=3 ms/gate=4.1974
+repeat=4 ms/gate=4.1888
+repeat=5 ms/gate=4.15685
+repeat=6 ms/gate=4.19189
+repeat=7 ms/gate=4.22747
+repeat=8 ms/gate=4.26663
+repeat=9 ms/gate=4.17695
+repeat=10 ms/gate=4.15132
+repeat=11 ms/gate=4.19313
+repeat=12 ms/gate=4.18679
+repeat=13 ms/gate=4.14572
+repeat=14 ms/gate=4.20869
+repeat=15 ms/gate=4.25902
+repeat=16 ms/gate=4.22848
+repeat=17 ms/gate=4.16842
+repeat=18 ms/gate=4.13513
+repeat=19 ms/gate=4.18896
+repeat=20 ms/gate=4.18713
+repeat=21 ms/gate=4.14949
+repeat=22 ms/gate=4.19747
+repeat=23 ms/gate=4.22523
+repeat=24 ms/gate=4.26263
+repeat=25 ms/gate=4.1511
+repeat=26 ms/gate=4.13703
+repeat=27 ms/gate=4.18759
+repeat=28 ms/gate=4.18681
+repeat=29 ms/gate=4.14675
+dispatch=packed streams=8 gates=8 median_ms/gate=4.18759 errors=0
+observed_noise_rms=0.00933539 observed_max_abs_noise=0.015152

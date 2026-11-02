@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=1 l=4 torus_bits=16 order=br-iks gate=nmux backend=fft block_binary=1 mode=packed-nmux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=1 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=2 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=3 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=4 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=5 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=6 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+resource_node=7 registers=95 static_lds=16 dynamic_lds=16384 local_bytes=20 threads=512 resident_blocks=3 grid=1,1,1
+repeat=0 ms/gate=4.95037
+repeat=1 ms/gate=4.94984
+repeat=2 ms/gate=4.95376
+repeat=3 ms/gate=4.94511
+repeat=4 ms/gate=4.92679
+repeat=5 ms/gate=4.92735
+repeat=6 ms/gate=4.92295
+repeat=7 ms/gate=4.92319
+repeat=8 ms/gate=4.93305
+repeat=9 ms/gate=4.93537
+repeat=10 ms/gate=4.91782
+repeat=11 ms/gate=4.91016
+repeat=12 ms/gate=4.90816
+repeat=13 ms/gate=4.90481
+repeat=14 ms/gate=4.89949
+repeat=15 ms/gate=4.9027
+repeat=16 ms/gate=4.92244
+repeat=17 ms/gate=4.91189
+repeat=18 ms/gate=4.89988
+repeat=19 ms/gate=4.892
+repeat=20 ms/gate=4.88707
+repeat=21 ms/gate=4.89281
+repeat=22 ms/gate=4.88561
+repeat=23 ms/gate=4.89921
+repeat=24 ms/gate=4.91105
+repeat=25 ms/gate=4.91133
+repeat=26 ms/gate=4.89847
+repeat=27 ms/gate=4.89099
+repeat=28 ms/gate=4.88795
+repeat=29 ms/gate=4.89669
+dispatch=packed streams=8 gates=8 median_ms/gate=4.91105 errors=0
+observed_noise_rms=0.00618909 observed_max_abs_noise=0.0119781

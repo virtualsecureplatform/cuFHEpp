@@ -1,0 +1,91 @@
+{
+  "r9700-ntt-throughput": {
+    "register31": {
+      "flags": {
+        "REGISTER_MONOMIALS31": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench"
+      ],
+      "cases": [
+        [
+          "packed",
+          8,
+          1,
+          false
+        ],
+        [
+          "packed-mux",
+          128,
+          1,
+          false
+        ],
+        [
+          "packed-nmux",
+          8,
+          1,
+          false
+        ]
+      ]
+    },
+    "roots31": {
+      "flags": {
+        "PACKED_PAIRED_ROOTS": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench"
+      ],
+      "cases": [
+        [
+          "packed",
+          8,
+          1,
+          false
+        ],
+        [
+          "packed-mux",
+          128,
+          1,
+          false
+        ],
+        [
+          "packed-nmux",
+          8,
+          1,
+          false
+        ]
+      ]
+    },
+    "difference31": {
+      "flags": {
+        "UNREDUCED_INVERSE_DIFF": "ON"
+      },
+      "control": "baseline",
+      "benchmarks": [
+        "test_bootstrap_bench"
+      ],
+      "cases": [
+        [
+          "packed",
+          8,
+          1,
+          false
+        ],
+        [
+          "packed-mux",
+          128,
+          1,
+          false
+        ],
+        [
+          "packed-nmux",
+          8,
+          1,
+          false
+        ]
+      ]
+    }
+  }
+}

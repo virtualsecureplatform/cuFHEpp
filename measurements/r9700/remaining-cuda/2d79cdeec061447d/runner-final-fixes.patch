@@ -1,0 +1,22 @@
+--- a/bench_r9700_remaining.py
++++ b/bench_r9700_remaining.py
+@@ -172,7 +172,7 @@
+         options = {'USE_HIP_' + n: 'OFF' for n in NEW}
+         options.update({'USE_HIP_' + n: value for n, value in VARIANTS[v].items()})
+         options.update(CACHE_OPTIONS.get(v, {}))
+-        if 'fft' in p and v != 'baseline':
++        if 'fft' in p and v in ('prepared', 'multi', 'wave', 'multi-wave'):
+             options['USE_HIP_PREPARED_KEYSWITCH'] = 'ON'
+         build = ROOT / f'build-remaining-{p}-{v}'
+         dest = result_root / p / v
+@@ -232,7 +232,9 @@
+                             log.with_suffix('.json').write_text(json.dumps(dict(profile=p, variant=member, against=against, phase=args.action, repetitions=args.repeats, benchmark=name, mode=mode, streams=streams, count=count, graph=graph, run=run, **{k: value for k, value in data.items() if k != 'streams'}), indent=2) + '\n')
+         print(f'{p}/{v} {args.action} complete', flush=True)
+     if args.action == 'report':
+-        records = [json.loads(path.read_text()) for path in result_root.glob('*/*/*/*.json')]
++        records = [json.loads(path.read_text()) for profile in args.profiles
++                   for phase in ('screen', 'run')
++                   for path in (result_root / profile).glob(f'*/{phase}/*.json')]
+         index = {(r['profile'], r['variant'], r['benchmark'], r['mode'], r['streams'], r['count'], r['graph'], r['run'], r.get('against', ''), r['phase']): r for r in sorted(records, key=lambda item: len(item['samples_ms_per_gate']))}
+         outcomes = []
+         for p, v in configs:

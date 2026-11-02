@@ -1,0 +1,42 @@
+GPU=AMD Radeon AI PRO R9700 n=630 N=1024 k=2 l=3 torus_bits=64 order=iks-br gate=mux backend=ntt block_binary=1 mode=packed-mux timed_transfers=0
+graph_nodes=8
+resource_node=0 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=1 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=2 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=3 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=4 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=5 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=6 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+resource_node=7 registers=110 static_lds=1264 dynamic_lds=40968 local_bytes=12 threads=512 resident_blocks=1 grid=1,1,1
+repeat=0 ms/gate=7.94
+repeat=1 ms/gate=9.14373
+repeat=2 ms/gate=7.96886
+repeat=3 ms/gate=8.94628
+repeat=4 ms/gate=7.89653
+repeat=5 ms/gate=8.96775
+repeat=6 ms/gate=7.90585
+repeat=7 ms/gate=9.10409
+repeat=8 ms/gate=7.89851
+repeat=9 ms/gate=9.13586
+repeat=10 ms/gate=7.9606
+repeat=11 ms/gate=8.94682
+repeat=12 ms/gate=7.87363
+repeat=13 ms/gate=8.9628
+repeat=14 ms/gate=7.90165
+repeat=15 ms/gate=9.08288
+repeat=16 ms/gate=7.89114
+repeat=17 ms/gate=9.14297
+repeat=18 ms/gate=7.95499
+repeat=19 ms/gate=8.93275
+repeat=20 ms/gate=7.87953
+repeat=21 ms/gate=8.95378
+repeat=22 ms/gate=7.91437
+repeat=23 ms/gate=9.08646
+repeat=24 ms/gate=7.89364
+repeat=25 ms/gate=9.12508
+repeat=26 ms/gate=7.95567
+repeat=27 ms/gate=8.94548
+repeat=28 ms/gate=7.8755
+repeat=29 ms/gate=8.95905
+dispatch=packed streams=8 gates=8 median_ms/gate=8.93275 errors=0
+observed_noise_rms=4.97479e-09 observed_max_abs_noise=9.02378e-09

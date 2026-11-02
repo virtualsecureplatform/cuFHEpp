@@ -1,0 +1,42 @@
+{
+  "benchmarks": [
+    "test_bootstrap_bench",
+    "test_bootstrap_bench_lvl02",
+    "test_bootstrap_bench_lvl01_br_iks",
+    "test_bootstrap_bench_lvl02_br_iks"
+  ],
+  "cases": [
+    [
+      "batch",
+      1,
+      1,
+      false
+    ],
+    [
+      "batch",
+      1,
+      512,
+      false
+    ],
+    [
+      "packed-mux",
+      8,
+      1,
+      false
+    ],
+    [
+      "packed-mux",
+      32,
+      1,
+      false
+    ],
+    [
+      "packed-nmux",
+      32,
+      1,
+      false
+    ]
+  ],
+  "repetitions": 30,
+  "fresh_keys": 3
+}
